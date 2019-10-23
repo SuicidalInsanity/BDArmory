@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using BDArmory.Core.Services;
 using BDArmory.Core.Utils;
@@ -133,7 +133,7 @@ namespace BDArmory.Core.Extension
                 Debug.Log("[BDArmory]: Ballistic Hitpoints Applied : " + Math.Round(damage_, 2));
             }
 
-            //CheckDamageFX(p);
+            CheckDamageFX(p);
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace BDArmory.Core.Extension
             if (BDArmorySettings.DRAW_DEBUG_LABELS)
                 Debug.Log("[BDArmory]: Explosive Hitpoints Applied to " + p.name + ": " + Math.Round(damage, 2));
 
-            //CheckDamageFX(p);
+            CheckDamageFX(p);
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace BDArmory.Core.Extension
 
             if (part.name.Contains("B9.Aero.Wing.Procedural"))
             {
-                size = size * 0.1f;
+                //size = size * 0.1f;
             }
 
             float scaleMultiplier = 1f;
@@ -310,10 +310,18 @@ namespace BDArmory.Core.Extension
 
         public static bool IsAero(this Part part)
         {
-            return part.Modules.Contains("ModuleControlSurface") ||
-                   part.Modules.Contains("ModuleLiftingSurface");
-        }
-
+			return part.Modules.Contains("ModuleLiftingSurface") ||
+				   part.Modules.Contains("FARWingAerodynamicModel");
+		}
+		public static bool IsCtrlSrf(this Part part)
+		{
+			return part.Modules.Contains("ModuleControlSurface") ||
+				   part.Modules.Contains("FARControllableSurface");
+		}
+		public static bool IsProcpart(this Part part)
+		{
+			return part.Modules.Contains("ProceduralPart");
+		}
         public static string GetExplodeMode(this Part part)
         {
             return Dependencies.Get<DamageService>().GetExplodeMode_svc(part);
@@ -411,14 +419,22 @@ namespace BDArmory.Core.Extension
         {
             if (part.GetComponent<ModuleEngines>() != null && part.GetDamagePercentatge() <= 0.35f)
             {
-                part.gameObject.AddOrGetComponent<DamageFX>();
-                DamageFX.engineDamaged = true;
-            }
+				//part.gameObject.AddOrGetComponent<DamageFX>();
+				// DamageFX.engineDamaged = true;
+			//	ModuleEngines engine;
+			//	engine = part.GetComponent<ModuleEngines>();
+			//	engine.flameout = true;
+			//	engine.heatProduction *= 1.0125f;
+			//	engine.maxThrust *= 0.825f;
+			}
 
             if (part.GetComponent<ModuleLiftingSurface>() != null && part.GetDamagePercentatge() <= 0.35f)
             {
-                //part.gameObject.AddOrGetComponent<DamageFX>();
-            }
+				//part.gameObject.AddOrGetComponent<DamageFX>();
+			//	ModuleLiftingSurface wing;
+			//	wing = part.GetComponent<ModuleLiftingSurface>();
+			//	wing.deflectionLiftCoeff *= 0.825f;
+			}
         }
 
         public static Vector3 GetBoundsSize(Part part)
