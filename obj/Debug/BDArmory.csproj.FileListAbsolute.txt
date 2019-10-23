@@ -1,0 +1,35 @@
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\obj\Debug\BDArmory.csprojAssemblyReference.cache
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\obj\Debug\BDArmory.csproj.CoreCompileInputs.cache
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\BDArmory.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\BDArmory.pdb
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\Assembly-CSharp-firstpass.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\Assembly-CSharp.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\BDArmory.Core.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\KSPAssets.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\UnityEngine.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\UnityEngine.UI.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\KSPTrackIR.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\Mono.Cecil.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\Ionic.Zip.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\TDx.TDxInput.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\obj\Debug\BDArmory.csproj.CopyComplete
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\obj\Debug\BDArmory.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\obj\Debug\BDArmory.pdb
+C:\Users\Marsden\Desktop\BDArmory-1.3.0\BDArmory\bin\Debug\BDArmory.Core.pdb
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\BDArmory.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\BDArmory.pdb
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\Assembly-CSharp-firstpass.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\Assembly-CSharp.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\KSPAssets.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\UnityEngine.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\UnityEngine.UI.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\KSPTrackIR.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\Mono.Cecil.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\Ionic.Zip.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\TDx.TDxInput.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\bin\Debug\BDArmory.Core.pdb
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\obj\Debug\BDArmory.csprojAssemblyReference.cache
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\obj\Debug\BDArmory.csproj.CoreCompileInputs.cache
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\obj\Debug\BDArmory.csproj.CopyComplete
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\obj\Debug\BDArmory.dll
+C:\Users\Marsden\Desktop\BDArmory-1.3.0 - Copy\BDArmory\obj\Debug\BDArmory.pdb
