@@ -323,10 +323,45 @@ namespace BDArmory.Core.Extension
         }
 
         public static bool IsAero(this Part part)
-        {
-            return part.Modules.Contains("ModuleControlSurface") ||
-                   part.Modules.Contains("ModuleLiftingSurface");
-        }
+		{
+			if (part.Modules.Contains("ModuleLiftingSurface") || part.Modules.Contains("FARWingAerodynamicModel"))
+			{
+				if (part.name.Contains("mk2") || part.name.Contains("M2X") || part.name.Contains("HeatShield")) // don't grab Mk2 parts or heatshields. Caps-sensitive
+					return false;
+				else return true;
+			}
+			else return false;
+		}
+		public static bool IsCtrlSrf(this Part part)
+		{
+			if (part.Modules.Contains("ModuleControlSurface") ||
+				   part.Modules.Contains("FARControllableSurface"))
+				return true;
+			else return false;
+		}
+		public static bool IsProcpart(this Part part)
+		{
+			if (part.Modules.Contains("ProceduralPart"))
+				return true;
+			else return false;
+		}
+		public static bool IsMotor(this Part part)
+		{
+			if (part.GetComponent<ModuleEngines>() != null || part.GetComponent<ModuleEnginesFX>() != null)
+				return true;
+			else return false;
+		}
+		/* // not working, debug
+		public static bool IsCone(this Part part)
+		{
+			AttachNode bottom = part.FindAttachNode("bottom");
+			AttachNode top = part.FindAttachNode("top");
+			if ((top != null && bottom == null) || (top == null && bottom != null))
+				return true;
+			else
+				return false;
+		}
+		*/
 
         public static string GetExplodeMode(this Part part)
         {
