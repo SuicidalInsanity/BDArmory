@@ -40,7 +40,7 @@ namespace BDArmory.Core.Module
         private float previousHitpoints;
         private bool _updateHitpoints = false;
         private bool _forceUpdateHitpointsUI = false;
-        private const int HpRounding = 100;
+        private const int HpRounding = 25;
 
         public override void OnLoad(ConfigNode node)
         {
@@ -153,36 +153,57 @@ namespace BDArmory.Core.Module
         #region Hitpoints Functions
 
         public float CalculateTotalHitpoints()
+	{
+		float hitpoints;
+
+		if (!part.IsMissile())
 		{
-			float hitpoints;
+			//var averageSize = part.GetAverageBoundSize(); 
+			//var sphereRadius = averageSize * 0.5f; //most parts are cylindrical, why use a sphere for cylindrical volume calcs?
+			//var sphereSurface = 4 * Mathf.PI * sphereRadius * sphereRadius;
+			//var structuralVolume = sphereSurface * 0.1f; 
+			var averageSize = part.GetVolume(); // this grabs x/y/z dimensions from PartExtensions.cs 
+			var structuralVolume = averageSize * 0.785f; //a cylinder diameter X length y is ~78.5% the volume of a rectangle of h/w x, length y. 
+															 //(mk2 parts are ~66% volume of equivilent rectangle, but are reinforced hulls, so..
+		//if (part.IsCone())                              //cones are ~36-37% volume
+		//{                                               //parts that aren't cylinders or close enough and need exceptions: Wings, control surfaces, radiators/solar panels
+		//	structuralVolume = averageSize * 0.368f;
+		//}
+			//var dryPartmass = part.mass - part.resourceMass;
+			var dryPartmass = part.mass;
+			var density = (dryPartmass * 1000) / structuralVolume;  // account for resource mass, density to be calc'd from drymass
 
-			if (!part.IsMissile())
+			//var structuralMass = density * structuralVolume; // this means HP is solely determined my part mass, after assuming all parts have min density of 1000kg/m3
+			//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | structuralMass : " + structuralMass);
+			//3. final calculations
+			//hitpoints = structuralMass * hitpointMultiplier * 0.33f; 
+
+			//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | structuralVolume : " + structuralVolume);
+			//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | dry mass : " + dryPartmass);
+			//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | Density : " + density);
+
+			if (part.IsAero())
 			{
-				//var averageSize = part.GetAverageBoundSize(); 
-				//var sphereRadius = averageSize * 0.5f; //most parts are cylindrical, why use a sphere for cylindrical volume calcs?
-				//var sphereSurface = 4 * Mathf.PI * sphereRadius * sphereRadius;
-				//var structuralVolume = sphereSurface * 0.1f; 
-				var averageSize = part.GetVolume(); // this grabs x/y/z dimensions from PartExtensions.cs 
-				var structuralVolume = averageSize * 0.785f; //a cylinder diameter X length y is ~78.5% the volume of a rectangle of h/w x, length y. 
-															 //(mk2 parts are ~66% volume of equivalent rectangle, but are reinforced hulls, so..
-			//if (part.IsCone())                              //cones are ~36-37% volume
-			//{                                               //parts that aren't cylinders or close enough and need exceptions: Wings, control surfaces, radiators/solar panels
-			//	structuralVolume = averageSize * 0.368f;
-			//}
-				var dryPartmass = part.mass - part.resourceMass;
-				var density = (dryPartmass * 1000) / structuralVolume;  // account for resource mass, density to be calc'd from drymass
+				hitpoints = (dryPartmass * 1000) * 3.5f * hitpointMultiplier * 0.33f; // stock wings are half the mass of proc wings, at least in FAR. Will need to check stock aero wing masses.
 
-				//var structuralMass = density * structuralVolume; // this means HP is solely determined my part mass, after assuming all parts have min density of 1000kg/m3
-				//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | structuralMass : " + structuralMass);
-				//3. final calculations
-				//hitpoints = structuralMass * hitpointMultiplier * 0.33f; 
-
-				if (dryPartmass < 1) //differentiate between sub ton and 1 ton + parts, the former need a boost to bave some health, the latter need a nerf or will have health for days
+				if (part.name.Contains("B9.Aero.Wing.Procedural")) //Only IDs B9 proc wings, no others. Find a better way besides hardcoding in a reference to this specific trio of parts?
+				{
+					hitpoints = (dryPartmass * 1000) * 1.75f * hitpointMultiplier * 0.33f; // since wings are basically a 2d object, lets have mass be our scalar - afterall, 2x the mass will ~= 2x the surface area
+				}
+				Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | Is Aero part");
+			}
+			else if (part.IsCtrlSrf())
+			{
+				hitpoints = (((dryPartmass * 1000) * 2.5f) + 100) * hitpointMultiplier * 0.33f; // Crtl surfaces will have actuators of some flavor, are going to be more vulnerable to damage. +100 for guaranteed min health
+			}
+			else
+			{
+				if (dryPartmass < 1)
 				{
 					density = Mathf.Clamp(density, 150, 350);// things like crew cabins are heavy, but most of that mass isn't going to be structural plating, so lets limit structural density
-															 // important to note: a lot of the HP values in the old system came from the calculation assuming everytihng had a minimum density of 1000kg/m3
+																 // important to note: a lot of the HP values in the old system came from the calculation assuming everytihng had a minimum density of 1000kg/m3
 					hitpoints = ((dryPartmass * density) * 20) * hitpointMultiplier * 0.33f; //multiplying mass by density extrapolates volume, so parts wit hthe same vol, but different mass appropriately affected (eg Mk1 strucural fuselage vs m1 LF tank
-																							 //as well as parts of fdifferent vol, but same density - all fueltanks - similarly affected
+																								 //as well as parts of fdifferent vol, but same density - all fueltanks - similarly affected
 					if (hitpoints > (dryPartmass * 3500) || hitpoints < (dryPartmass * 350))
 					{
 						//Debug.Log($"[BDArmory]: HitpointTracker::Clamping hitpoints for part {part.name}");
@@ -195,8 +216,8 @@ namespace BDArmory.Core.Module
 					hitpoints = ((dryPartmass * density) * 10) * hitpointMultiplier * 0.33f;
 					if (part.IsMotor())
 					{
-						hitpoints = ((dryPartmass * density) *4) * hitpointMultiplier * 0.33f; ; // engines in KSP very dense - leads to massive HP due to large mass, small volume. Engines also don't respond well to being shot, so...
-					}                                       //^ may want to consider bumping this up to 4.5-5
+						hitpoints = ((dryPartmass * density) * 4) * hitpointMultiplier * 0.33f; ; // engines in KSP very dense - leads to massive HP due to large mass, small volume. Engines also don't respond well to being shot, so...
+					}
 					if (hitpoints > (dryPartmass * 2500) || hitpoints < (dryPartmass * 250))
 					{
 						//Debug.Log($"[BDArmory]: HitpointTracker::Clamping hitpoints for part {part.name}");
@@ -204,37 +225,27 @@ namespace BDArmory.Core.Module
 					}
 
 				}
-
-				//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | structuralVolume : " + structuralVolume);
-				//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | dry mass : " + dryPartmass);
-				//Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | Density : " + density);
-
-				if (part.IsAero())
-				{
-					hitpoints = (dryPartmass * 1000) * 3.5f * hitpointMultiplier * 0.33f; // stock wings are half the mass of proc wings, at least in FAR. Will need to check stock aero wing masses.
-
-					if (part.name.Contains("B9.Aero.Wing.Procedural")) //Only IDs B9 proc wings, no others. Find a better way besides hardcoding in a reference to this specific trio of parts?
-					{
-						hitpoints = (dryPartmass * 1000) * 1.75f * hitpointMultiplier * 0.33f; // since wings are basically a 2d object, lets have mass be our scalar - afterall, 2x the mass will ~= 2x the surface area
-					}
-					Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | Is Aero part");
-				}
-				if (part.IsCtrlSrf())
-				{
-					hitpoints = (((dryPartmass * 1000) * 3.5f) + 100) * hitpointMultiplier * 0.33f; // Crtl surfaces will have actuators of some flavor, are going to be more vulnerable to damage. +100 for guaranteed min health
-				}
-
-				hitpoints = Mathf.CeilToInt(hitpoints / HpRounding) * HpRounding;
-				if (hitpoints <= 50) // this could also be boosted to increase global HP floor
-				{
-					hitpoints = 50; // maybe 200 or so?
-				}
 			}
-			else
+			hitpoints = Mathf.CeilToInt(hitpoints / HpRounding) * HpRounding;
+			if (hitpoints < 150)
 			{
-				hitpoints = 5;
-				Armor = 2;
+				hitpoints = 150;
 			}
+		}
+		else
+		{
+			hitpoints = 5;
+			Armor = 2;
+		}
+		//override based on part configuration for custom parts
+		if (maxHitPoints != 0)
+		{
+			hitpoints = maxHitPoints;
+		}
+
+		if (hitpoints <= 0) hitpoints = 150;
+		return hitpoints;
+	}
 
         public void DestroyPart()
         {
