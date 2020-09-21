@@ -95,7 +95,8 @@ namespace BDArmory.UI
         bool showModules;
         int numberOfModules;
         bool showWindowGPS;
-
+		bool showEngageList;
+        
         //gps window
         public bool showingWindowGPS
         {
@@ -855,6 +856,12 @@ namespace BDArmory.UI
                         ((float)ActiveWeaponManager.weaponArray.Length + 0.1f) * entryHeight);
                     GUI.BeginGroup(weaponListGroupRect, GUIContent.none, BDGuiSkin.box); //darker box
                     weaponLines += 0.1f;
+                    
+                    showEngageList =
+	GUI.Toggle(new Rect(leftIndent, contentTop + ((float)ActiveWeaponManager.weaponArray.Length + 0.1f), weaponListGroupRect.width - (2 * leftIndent), entryHeight),
+		showEngageList, showEngageList ? Localizer.Format("#LOC_BDArmory_DisableEngageOptions") : Localizer.Format("#LOC_BDArmory_EnableEngageOptions"), showEngageList ? BDGuiSkin.box : BDGuiSkin.button);//"Enable/Disable Engagement options"
+					weaponLines += 1.5f;
+                    
                     for (int i = 0; i < ActiveWeaponManager.weaponArray.Length; i++)
                     {
                         GUIStyle wpnListStyle;
@@ -904,6 +911,48 @@ namespace BDArmory.UI
                 }
                 weaponsHeight = Mathf.Lerp(weaponsHeight, weaponLines, 0.15f);
                 line += weaponsHeight;
+
+                float EngageLines = 0;
+				if (showEngageList && showWeaponList && !toolMinimized)
+				{
+					line += 0.25f;
+					GUI.BeginGroup(
+						new Rect(5, contentTop + (line * entryHeight), toolWindowWidth - 10, 2.3f * entryHeight),
+						GUIContent.none, BDGuiSkin.box);
+					EngageLines += 0.1f;
+
+					string Airlabel = Localizer.Format("#LOC_BDArmory_EngageAir", (ActiveWeaponManager.engageAir ? Localizer.Format("#LOC_BDArmory_false") : Localizer.Format("#LOC_BDArmory_true")));//"Engage Air; True, False
+					if (GUI.Button(new Rect(leftIndent, (EngageLines * entryHeight), ((contentWidth - (2 * leftIndent))/2), entryHeight),
+						Airlabel, ActiveWeaponManager.engageAir ? BDGuiSkin.box : BDGuiSkin.button))
+					{
+						ActiveWeaponManager.ToggleEngageAir();
+					}
+						string Missilelabel = Localizer.Format("#LOC_BDArmory_EngageMissile", (ActiveWeaponManager.engageMissile ? Localizer.Format("#LOC_BDArmory_false") : Localizer.Format("#LOC_BDArmory_true")));//"Engage Missile; True, False
+					if (GUI.Button(new Rect(leftIndent + ((contentWidth - (2 * leftIndent)) / 2), (EngageLines * entryHeight), ((contentWidth - (2 * leftIndent))/2), entryHeight),
+						Missilelabel, ActiveWeaponManager.engageMissile ? BDGuiSkin.box : BDGuiSkin.button))
+					{
+						ActiveWeaponManager.ToggleEngageMissile();
+					}
+					EngageLines += 1.1f;
+					string Srflabel = Localizer.Format("#LOC_BDArmory_EngageSurface", (ActiveWeaponManager.engageSrf ? Localizer.Format("#LOC_BDArmory_false") : Localizer.Format("#LOC_BDArmory_true")));//"Engage Surface; True, False
+					if (GUI.Button(new Rect(leftIndent, (EngageLines * entryHeight), ((contentWidth - (2 * leftIndent))/2), entryHeight),
+						Srflabel, ActiveWeaponManager.engageSrf ? BDGuiSkin.box : BDGuiSkin.button))
+					{
+						ActiveWeaponManager.ToggleEngageSrf();
+					}
+
+					string SLWlabel = Localizer.Format("#LOC_BDArmory_EngageSLW", (ActiveWeaponManager.engageSLW ? Localizer.Format("#LOC_BDArmory_false") : Localizer.Format("#LOC_BDArmory_true")));//"Engage SLW; True, False
+					if (GUI.Button(new Rect(leftIndent + ((contentWidth - (2 * leftIndent)) / 2), (EngageLines * entryHeight), ((contentWidth - (2 * leftIndent)) / 2), entryHeight),
+						SLWlabel, ActiveWeaponManager.engageSLW ? BDGuiSkin.box : BDGuiSkin.button))
+					{
+						ActiveWeaponManager.ToggleEngageSLW();
+					}
+					EngageLines += 1.1f;
+					GUI.EndGroup();
+				}
+				EngageHeight = Mathf.Lerp(EngageHeight, EngageLines, 0.15f);
+				line += EngageHeight;
+				line += 0.1f;
 
                 float guardLines = 0;
                 if (showGuardMenu && !toolMinimized)
