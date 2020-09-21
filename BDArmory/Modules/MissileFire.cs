@@ -229,6 +229,72 @@ namespace BDArmory.Modules
 
         public bool hasSingleFired;
 
+	public bool engageAir = true;
+		public bool engageMissile = true;
+		public bool engageSrf = true;
+		public bool engageSLW = true;
+
+		public void ToggleEngageAir()
+		{
+			engageAir = !engageAir;
+			using (List<IBDWeapon>.Enumerator weapon = vessel.FindPartModulesImplementing<IBDWeapon>().GetEnumerator())
+				while (weapon.MoveNext())
+				{
+					if (weapon.Current == null) continue;
+					EngageableWeapon engageableWeapon = weapon.Current as EngageableWeapon;
+					if (engageableWeapon != null)
+					{
+						engageableWeapon.engageAir = engageAir;
+					}
+
+				}
+		}
+		public void ToggleEngageMissile()
+		{
+			engageMissile = !engageMissile;
+			using (List<IBDWeapon>.Enumerator weapon = vessel.FindPartModulesImplementing<IBDWeapon>().GetEnumerator())
+				while (weapon.MoveNext())
+				{
+					if (weapon.Current == null) continue;
+					EngageableWeapon engageableWeapon = weapon.Current as EngageableWeapon;
+					if (engageableWeapon != null)
+					{
+						engageableWeapon.engageMissile = engageMissile;
+					}
+
+				}
+		}
+		public void ToggleEngageSrf()
+		{
+			engageSrf = !engageSrf;
+			using (List<IBDWeapon>.Enumerator weapon = vessel.FindPartModulesImplementing<IBDWeapon>().GetEnumerator())
+				while (weapon.MoveNext())
+				{
+					if (weapon.Current == null) continue;
+					EngageableWeapon engageableWeapon = weapon.Current as EngageableWeapon;
+					if (engageableWeapon != null)
+					{
+						engageableWeapon.engageGround = engageSrf;
+					}
+
+				}
+		}
+		public void ToggleEngageSLW()
+		{
+			engageSLW = !engageSLW;
+			using (List<IBDWeapon>.Enumerator weapon = vessel.FindPartModulesImplementing<IBDWeapon>().GetEnumerator())
+				while (weapon.MoveNext())
+				{
+					if (weapon.Current == null) continue;
+					EngageableWeapon engageableWeapon = weapon.Current as EngageableWeapon;
+					if (engageableWeapon != null)
+					{
+						engageableWeapon.engageSLW = engageSLW;
+					}
+
+				}
+		}
+
         //bomb aimer
         Part bombPart;
         Vector3 bombAimerPosition = Vector3.zero;
