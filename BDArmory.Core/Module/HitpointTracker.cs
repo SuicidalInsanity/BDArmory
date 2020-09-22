@@ -184,11 +184,11 @@ namespace BDArmory.Core.Module
 
 			if (part.IsAero())
 			{
-				hitpoints = (dryPartmass * 1000) * 3.5f * hitpointMultiplier * 0.33f; // stock wings are half the mass of proc wings, at least in FAR. Will need to check stock aero wing masses.
+				hitpoints = (dryPartmass * 1000) * 3.5f * hitpointMultiplier * 0.33f; // stock wings are half the mass of proc wings, at least in FAR. Appear to be same mass in stock aero.
 
 				if (part.name.Contains("B9.Aero.Wing.Procedural")) //Only IDs B9 proc wings, no others. Find a better way besides hardcoding in a reference to this specific trio of parts?
 				{
-					hitpoints = (dryPartmass * 1000) * 1.75f * hitpointMultiplier * 0.33f; // since wings are basically a 2d object, lets have mass be our scalar - afterall, 2x the mass will ~= 2x the surface area
+					hitpoints = (dryPartmass * 1000) * 3.5f * hitpointMultiplier * 0.33f; // since wings are basically a 2d object, lets have mass be our scalar - afterall, 2x the mass will ~= 2x the surface area
 				}
 				Debug.Log("[BDArmory]: Hitpoint Calc" + part.name + " | Is Aero part");
 			}
@@ -201,9 +201,9 @@ namespace BDArmory.Core.Module
 				if (dryPartmass < 1)
 				{
 					density = Mathf.Clamp(density, 150, 350);// things like crew cabins are heavy, but most of that mass isn't going to be structural plating, so lets limit structural density
-																 // important to note: a lot of the HP values in the old system came from the calculation assuming everytihng had a minimum density of 1000kg/m3
-					hitpoints = ((dryPartmass * density) * 20) * hitpointMultiplier * 0.33f; //multiplying mass by density extrapolates volume, so parts wit hthe same vol, but different mass appropriately affected (eg Mk1 strucural fuselage vs m1 LF tank
-																								 //as well as parts of fdifferent vol, but same density - all fueltanks - similarly affected
+														// important to note: a lot of the HP values in the old system came from the calculation assuming everytihng had a minimum density of 1000kg/m3
+					hitpoints = ((dryPartmass * density) * 20) * hitpointMultiplier * 0.33f; //multiplying mass by density extrapolates volume, so parts wit hthe same vol, but different mass appropriately affected (eg Mk1 strucural fuselage vs mk1 LF tank
+														//as well as parts of fdifferent vol, but same density - all fueltanks - similarly affected
 					if (hitpoints > (dryPartmass * 3500) || hitpoints < (dryPartmass * 350))
 					{
 						//Debug.Log($"[BDArmory]: HitpointTracker::Clamping hitpoints for part {part.name}");
