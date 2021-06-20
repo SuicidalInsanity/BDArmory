@@ -189,6 +189,7 @@ namespace BDArmory.UI
             {
                 oldThickness = Thickness;
                 SetThickness = true;
+                maxThickness = 0;
                 CalculateArmorMass();
             }
 
@@ -218,7 +219,7 @@ namespace BDArmory.UI
                 }
             }
             previous_index = selected_index;
-            line++;
+            line += 0.5f;
             float HullLines = 0;
             showHullMenu = GUI.Toggle(new Rect(10, (line + armorLines)*lineHeight, 280, lineHeight),
                 showHullMenu, Localizer.Format("#LOC_BDArmory_HullMat"), showHullMenu ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
@@ -264,6 +265,7 @@ namespace BDArmory.UI
                     CalculateArmorMass(true);
                 }
             }
+            line += 0.5f;
             GUI.DragWindow();
             height = Mathf.Lerp(height, (line+armorLines+HullLines) * lineHeight, 0.15f);
             windowRect.height = height;
@@ -300,10 +302,6 @@ namespace BDArmory.UI
                                             maxThickness = armor.maxSupportedArmor;
                                         }
                                     }
-                                    else
-                                    {
-                                        maxThickness = 10;
-                                    }
                                 }
                                 if (SetType)
                                 {
@@ -338,6 +336,7 @@ namespace BDArmory.UI
             }
             SetType = false;
             SetThickness = false;
+            //add a shipModified call to get the Editor Engineeer report to update mass            
         }
         void VisualizeArmor()
         {

@@ -217,6 +217,7 @@ namespace BDArmory.Core.Module
                 if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI")
                 {
                     Fields["ArmorTypeNum"].guiActiveEditor = false;
+                    Fields["guiArmorTypeString"].guiActiveEditor = false;
                 }
                 UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields["ArmorTypeNum"].uiControlEditor;
                 ATrangeEditor.onFieldChanged = ArmorSetup;
@@ -235,6 +236,7 @@ namespace BDArmory.Core.Module
                     HTrangeEditor.minValue = 2;
                     HTrangeEditor.maxValue = 2;
                     Fields["HullTypeNum"].guiActiveEditor = false;
+                    Fields["guiHullTypeString"].guiActiveEditor = false;
                 }
             }
             GameEvents.onEditorShipModified.Add(ShipModified);
