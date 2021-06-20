@@ -27,32 +27,32 @@ namespace BDArmory.Core.Module
         UI_FloatRange(minValue = 0f, maxValue = 500f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float Armor = 10f;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Armor Type"),//Ammunition Types
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Armor_ArmorType"),//Armor Types
         UI_FloatRange(minValue = 1, maxValue = 999, stepIncrement = 1, scene = UI_Scene.All)]
         public float ArmorTypeNum = 1; //replace with prev/next buttons? //or a popup GUI box with a list of selectable types...
 
          //Add a part material type setting, so parts can be selected to be made out of wood/aluminium/steel to adjust base partmass/HP?
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Hull Type"),//hull material Types
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Armor_HullType"),//hull material Types
         UI_FloatRange(minValue = 1, maxValue = 3, stepIncrement = 1, scene = UI_Scene.Editor)]
         public float HullTypeNum = 2;
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Current Hull Material")]//Status
-        public string guiHullTypeString = "Aluminium";
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_Armor_HullMat")]//Status
+        public string guiHullTypeString = "#LOC_BDArmory_Aluminium";
 
         public float HullmassAdjust = 0f;
 
         private float OldArmorType = 1;
 
-        [KSPField(advancedTweakable = true, guiActive = false, guiActiveEditor = true, guiName = "Armor Mass")]//armor mass
+        [KSPField(advancedTweakable = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorMass")]//armor mass
         public float armorMass = 0f;
 
-        [KSPField(advancedTweakable = true, guiActive = false, guiActiveEditor = true, guiName = "Armor Cost")]//armor cost
+        [KSPField(advancedTweakable = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorCost")]//armor cost
         public float armorCost = 0f;
 
         [KSPField(isPersistant = true)]
         public string SelectedArmorType = "None"; //presumably Aubranium can use this to filter allowed/banned types
 
-        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "Current Armor")]//Status
+        [KSPField(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorCurrent")]//Status
         public string guiArmorTypeString = "def";
 
         private ArmorInfo armorInfo;
@@ -214,16 +214,27 @@ namespace BDArmory.Core.Module
                 {
                     typecount++;
                 }
+                if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI")
+                {
+                    Fields["ArmorTypeNum"].guiActiveEditor = false;
+                }
                 UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields["ArmorTypeNum"].uiControlEditor;
                 ATrangeEditor.onFieldChanged = ArmorSetup;
                 ATrangeEditor.maxValue = (float)typecount;
+                if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI")
+                {
+                    Fields["ArmorTypeNum"].guiActiveEditor = false;
+                    ATrangeEditor.maxValue = 1;
+                }
                 UI_FloatRange HTrangeEditor = (UI_FloatRange)Fields["HullTypeNum"].uiControlEditor;
                 HTrangeEditor.onFieldChanged = HullSetup;
                 //if part is an engine/fueltank don't allow wood construction/mass reduction
-                //change out for vesselregistry when able
-                if (part.isEngine() || part.HasFuel())
+                if (part.IsMissile() || part.IsWeapon() || part.isEngine() || (part.name == "Weapon Manager" || part.name == "BDModulePilotAI"))
                 {
+                    HullTypeNum = 2;
                     HTrangeEditor.minValue = 2;
+                    HTrangeEditor.maxValue = 2;
+                    Fields["HullTypeNum"].guiActiveEditor = false;
                 }
             }
             GameEvents.onEditorShipModified.Add(ShipModified);
@@ -530,6 +541,10 @@ namespace BDArmory.Core.Module
                     ArmorTypeNum = 1; //reset to 'None'
                 }
             }
+            if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI")
+            {
+                ArmorTypeNum = 1; //reset to 'None'
+            }
             armorInfo = ArmorInfo.armors[ArmorInfo.armorNames[(int)ArmorTypeNum - 1]]; //what does this return if armorname cannot be found (mod armor removed/not present in install?)
             if (startsArmored && ArmorTypeNum < 2)
             {
@@ -561,6 +576,7 @@ namespace BDArmory.Core.Module
 
         public void SetArmor()
         {
+            if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI") return; //replace with newer implementation
             if (ArmorTypeNum > 1)
             {
                 UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields["Armor"].uiControlFlight;
@@ -609,13 +625,8 @@ namespace BDArmory.Core.Module
         }
         public void HullSetup(BaseField field, object obj)
         {
-            if (part.isEngine() || part.HasFuel())
-            {
-                if (HullTypeNum < 2)
-                {
-                    HullTypeNum = 2;
-                }
-            }
+            if (part.IsMissile() || part.IsWeapon() || part.isEngine()) return; //don't change weapons/engines
+            if (part.name == "Weapon Manager" || part.name == "BDModulePilotAI") return; //replace with newer implementation
             if (HullTypeNum == 1)
             {
                 HullmassAdjust = (partMass / 3)- partMass;

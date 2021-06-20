@@ -287,7 +287,10 @@ namespace BDArmory.Core.Extension
             return part.Modules.Contains("MissileBase") || part.Modules.Contains("MissileLauncher") ||
                    part.Modules.Contains("BDModularGuidance");
         }
-
+        public static bool IsWeapon(this Part part)
+        {
+            return part.Modules.Contains("ModuleWeapon");
+        }
         public static float GetArea(this Part part, bool isprefab = false, Part prefab = null)
         {
             var size = part.GetSize();
