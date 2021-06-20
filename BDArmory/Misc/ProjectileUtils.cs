@@ -229,7 +229,7 @@ namespace BDArmory.Misc
                     {
                         if (ductility < 0.05f) //ceramics
                         {
-                            volumeToReduce = (Mathf.Pow(Mathf.CeilToInt(caliber / 100), 2) * 100 * thickness);
+                            volumeToReduce = (Mathf.Pow(Mathf.CeilToInt(caliber / 500), 2) * 500 * thickness);
                             //total failue of 10x10cm armor tile(s)
                             if (BDArmorySettings.DRAW_DEBUG_LABELS)
                             {
@@ -241,8 +241,17 @@ namespace BDArmory.Misc
                             caliberModifier = 2 + (20 / ductility * 10) * penetrationFactor;
                         }
                     }
-                    if (penetrationFactor > 0.66 && penetrationFactor < 1)
+                    if (penetrationFactor > 0.66 && penetrationFactor <= 1)
                     {
+                        if (ductility < 0.05f) //ceramics
+                        {
+                            volumeToReduce = (Mathf.Pow(Mathf.CeilToInt(caliber / 500), 2) * 500 * thickness);
+                            //stops round, but shatters material in doing so
+                            if (BDArmorySettings.DRAW_DEBUG_LABELS)
+                            {
+                                Debug.Log("[BDArmory.ProjectileUtils]: Armor failure!");
+                            }
+                        }
                         spallCaliber = ((1 - penetrationFactor) + 1) * (Mathf.Pow(0.5f * caliber, 2) * Mathf.PI / 100);
                         volumeToReduce = spallCaliber;
                         spallMass = spallCaliber * (density / 10000);
@@ -352,7 +361,7 @@ namespace BDArmory.Misc
                         {
                             if (thickness < (shrapnelThickness * 1.7))//armor cracks; 
                             {
-                                volumeToReduce = (Mathf.Pow(Mathf.CeilToInt(caliber / 100), 2) * 100 * (thickness / 10));
+                                volumeToReduce = (Mathf.Pow(Mathf.CeilToInt(caliber / 500), 2) * 500 * (thickness / 10));
                                 hitPart.ReduceArmor(volumeToReduce);
                                 if (BDArmorySettings.DRAW_DEBUG_LABELS)
                                 {
@@ -458,7 +467,7 @@ namespace BDArmory.Misc
                         {
                             if (ductility < 0.05f) //ceramics
                             {
-                                hitPart.ReduceArmor((Mathf.Pow(Mathf.CeilToInt(spallCaliber / 100), 2) * 100 * thickness));
+                                hitPart.ReduceArmor((Mathf.Pow(Mathf.CeilToInt(spallCaliber / 500), 2) * 500 * thickness));
                                 //total failue of 10x10cm armor tile(s)
                                 if (BDArmorySettings.DRAW_DEBUG_LABELS)
                                 {
