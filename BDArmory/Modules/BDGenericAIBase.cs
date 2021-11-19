@@ -408,6 +408,11 @@ namespace BDArmory.Modules
             ActivatePilot();
         }
 
+        public virtual void CommandFollowWaypoints()
+        {
+            ActivatePilot();
+        }
+
         #endregion WingCommander
     }
 }

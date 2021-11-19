@@ -88,20 +88,16 @@ namespace BDArmory.Competition
             Invalid
         }
 
-        private bool pendingSync = false;
-        private bool competitionStarted = false;
+        private bool syncActive = false;
         public StatusType status = StatusType.Offline;
 
         private Coroutine syncCoroutine;
 
-        //        protected CompetitionModel competition = null;
-
-        //        protected HeatModel activeHeat = null;
-
-
         public BDAScoreClient client;
 
         public string vesselPath;
+
+        private double waitStartedAt = -1;
 
         void Awake()
         {
@@ -115,10 +111,10 @@ namespace BDArmory.Competition
 
         void Update()
         {
-            if (pendingSync && !Core.BDArmorySettings.REMOTE_LOGGING_ENABLED)
+            if (syncActive && !Core.BDArmorySettings.REMOTE_LOGGING_ENABLED)
             {
                 Debug.Log("[BDArmory.BDAScoreService] Cancel due to disable");
-                pendingSync = false;
+                syncActive = false;
                 if (syncCoroutine != null)
                     StopCoroutine(syncCoroutine);
                 return;
@@ -140,7 +136,7 @@ namespace BDArmory.Competition
             if (syncCoroutine != null)
                 StopCoroutine(syncCoroutine);
             BDACompetitionMode.Instance.StopCompetition();
-            pendingSync = false;
+            syncActive = false;
             status = status == StatusType.Waiting ? StatusType.Stopped : StatusType.Cancelled;
             if (status == StatusType.Cancelled)
             {
@@ -155,12 +151,12 @@ namespace BDArmory.Competition
 
         public IEnumerator SynchronizeWithService(string hash)
         {
-            if (pendingSync)
+            if (syncActive)
             {
                 Debug.Log("[BDArmory.BDAScoreService] Sync in progress");
                 yield break;
             }
-            pendingSync = true;
+            syncActive = true;
 
             Debug.Log(string.Format("[BDArmory.BDAScoreService] Sync started {0}", hash));
 
@@ -168,38 +164,76 @@ namespace BDArmory.Competition
             // first, get competition metadata
             yield return client.GetCompetition(hash);
 
-            status = StatusType.FetchingPlayers;
-            // next, get player metadata
-            yield return client.GetPlayers(hash);
-
             // abort if we didn't receive a valid competition
             if (client.competition == null)
             {
                 status = StatusType.Invalid;
-                pendingSync = false;
+                syncActive = false;
                 yield break;
             }
 
-            switch (client.competition.status)
+            status = StatusType.FetchingPlayers;
+            // next, get player metadata
+            yield return client.GetPlayers(hash);
+
+            status = StatusType.FetchingVessels;
+            // next, get vessel metadata
+            yield return client.GetVessels(hash);
+
+            status = StatusType.DownloadingCraftFiles;
+            // finally, fetch all relevant craft files
+            yield return client.GetCraftFiles(hash);
+
+            // and start the coordination
+            yield return CoordinateTournament(hash);
+        }
+
+        private IEnumerator CoordinateTournament(string hash)
+        {
+            if( client.competition == null )
             {
-                case 0:
-                    status = StatusType.PendingPlayers;
-                    // waiting for players; nothing to do
-                    Debug.Log(string.Format("[BDArmory.BDAScoreService] Waiting for players {0}", hash));
-                    break;
-                case 1:
-                    status = StatusType.FindingNextHeat;
-                    // heats generated; find next heat
-                    yield return FindNextHeat(hash);
-                    break;
-                case 2:
-                    status = StatusType.StalledNoPendingHeats;
-                    Debug.Log(string.Format("[BDArmory.BDAScoreService] Competition status 2 {0}", hash));
-                    break;
+                Debug.Log("[BDArmory.BDAScoreService] Unexpected null competition");
+                status = StatusType.Invalid;
+                yield break;
             }
 
-            pendingSync = false;
-            Debug.Log(string.Format("[BDArmory.BDAScoreService] Sync completed {0}", hash));
+            // use competition metadata to decide how to run the tournament
+            while (client.competition != null && client.competition.IsActive())
+            {
+                switch (client.competition.status)
+                {
+                    case 0:
+                        status = StatusType.PendingPlayers;
+                        // waiting for players; nothing to do
+                        Debug.Log(string.Format("[BDArmory.BDAScoreService] Waiting for players {0}", hash));
+                        break;
+                    case 1:
+                        status = StatusType.FindingNextHeat;
+                        // competition configured; finding next heat
+                        yield return FindNextHeat(hash);
+                        break;
+                    case 2:
+                        status = StatusType.Completed;
+                        Debug.Log(string.Format("[BDArmory.BDAScoreService] Competition completed {0}", hash));
+                        break;
+                }
+                // wait some delay before fetching competition status again
+                waitStartedAt = Planetarium.GetUniversalTime();
+                yield return WaitBetweenHeats(hash);
+                yield return client.GetCompetition(hash);
+            }
+
+            syncActive = false;
+        }
+
+        public double TimeUntilNextHeat()
+        {
+            return BDArmorySettings.REMOTE_INTERHEAT_DELAY - (Planetarium.GetUniversalTime() - waitStartedAt);
+        }
+
+        private IEnumerator WaitBetweenHeats(string hash)
+        {
+            yield return new WaitForSeconds(BDArmorySettings.REMOTE_INTERHEAT_DELAY);
         }
 
         private IEnumerator FindNextHeat(string hash)
@@ -216,162 +250,59 @@ namespace BDArmory.Competition
             {
                 status = StatusType.StalledNoPendingHeats;
                 Debug.Log(string.Format("[BDArmory.BDAScoreService] No inactive heat found {0}", hash));
-                yield return RetryFind(hash);
             }
             else
             {
                 Debug.Log(string.Format("[BDArmory.BDAScoreService] Found heat {1} in {0}", hash, model.order));
-                yield return FetchAndExecuteHeat(hash, model);
+                yield return RunHeatCycle(hash, model);
             }
         }
 
-        public double retryFindStartedAt = -1;
-        private IEnumerator RetryFind(string hash)
-        {
-            retryFindStartedAt = Planetarium.GetUniversalTime();
-            yield return new WaitWhile(() => Planetarium.GetUniversalTime() - retryFindStartedAt < BDArmorySettings.REMOTE_INTERHEAT_DELAY);
-            if (status != StatusType.Cancelled)
-            {
-                status = StatusType.FindingNextHeat;
-                yield return FindNextHeat(hash);
-            }
-        }
-
-        private IEnumerator FetchAndExecuteHeat(string hash, HeatModel model)
+        private IEnumerator RunHeatCycle(string hash, HeatModel heat)
         {
             status = StatusType.FetchingVessels;
-            // fetch vessel metadata for heat
-            yield return client.GetVessels(hash, model);
+            // fetching vessel manifest for this heat
+            yield return client.GetHeatVessels(hash, heat);
 
-            status = StatusType.DownloadingCraftFiles;
-            // fetch craft files for vessels
-            yield return client.GetCraftFiles(hash, model);
+            // check for active vessels
+            if( client.activeVessels.Count == 0 )
+            {
+                Debug.Log("[BDArmory.BDAScoreService] Unexpected empty active vessel set");
+                yield break;
+            }
 
             status = StatusType.StartingHeat;
-            // notify web service to start heat
-            yield return client.StartHeat(hash, model);
+            // notifying web service to start heat
+            yield return client.StartHeat(hash, heat);
 
-            // execute heat
-            int attempts = 0;
-            competitionStarted = false;
-            while (!competitionStarted && attempts++ < 3) // 3 attempts is plenty
+            // check active heat (null means start failed)
+            if( client.activeHeat == null )
             {
-                yield return ExecuteHeat(hash, model);
-                if (!competitionStarted)
-                    switch (Control.VesselSpawner.Instance.spawnFailureReason)
-                    {
-                        case Control.VesselSpawner.SpawnFailureReason.None: // Successful spawning, but competition failed to start for some reason.
-                            BDACompetitionMode.Instance.competitionStatus.Add("Failed to start heat due to " + BDACompetitionMode.Instance.competitionStartFailureReason + ", trying again.");
-                            break;
-                        case Control.VesselSpawner.SpawnFailureReason.VesselLostParts: // Recoverable spawning failure.
-                        case Control.VesselSpawner.SpawnFailureReason.TimedOut: // Recoverable spawning failure.
-                            BDACompetitionMode.Instance.competitionStatus.Add("Failed to start heat due to " + Control.VesselSpawner.Instance.spawnFailureReason + ", trying again.");
-                            break;
-                        default: // Spawning is unrecoverable.
-                            BDACompetitionMode.Instance.competitionStatus.Add("Failed to start heat due to " + Control.VesselSpawner.Instance.spawnFailureReason + ", aborting.");
-                            attempts = 3;
-                            break;
-                    }
+                Debug.Log("[BDArmory.BDAScoreService] Unable to start heat");
+                yield break;
             }
+
+            // clear scores
+            ClearScores();
+
+            // run heat using tournament coordinator
+            var coordinator = TournamentCoordinator.BuildFromDescriptor(client.competition);
+            if( coordinator == null )
+            {
+                Debug.Log("[BDArmory.BDAScoreService] Failed to build tournament coordinator");
+                yield break;
+            }
+            yield return coordinator.Execute();
 
             status = StatusType.ReportingResults;
             // report scores
-            yield return SendScores(hash, model);
+            yield return SendScores(hash, heat);
 
             status = StatusType.StoppingHeat;
             // notify web service to stop heat
-            yield return client.StopHeat(hash, model);
+            yield return client.StopHeat(hash, heat);
 
             status = StatusType.Waiting;
-            yield return RetryFind(hash);
-        }
-
-        private IEnumerator ExecuteHeat(string hash, HeatModel model)
-        {
-            Debug.Log(string.Format("[BDArmory.BDAScoreService] Running heat {0}/{1}", hash, model.order));
-            Control.VesselSpawner spawner = Control.VesselSpawner.Instance;
-
-            // orchestrate the match
-            activePlayers.Clear();
-            assists.Clear();
-            damageIn.Clear();
-            damageOut.Clear();
-            deaths.Clear();
-            HPremaining.Clear();
-            hitsIn.Clear();
-            hitsOnTarget.Clear();
-            hitsOut.Clear();
-            killsOnTarget.Clear();
-            longestHitDistance.Clear();
-            longestHitWeapon.Clear();
-            rocketDamageIn.Clear();
-            rocketDamageOut.Clear();
-            rocketPartsIn.Clear();
-            rocketPartsOut.Clear();
-            missileDamageIn.Clear();
-            missileDamageOut.Clear();
-            missilePartsIn.Clear();
-            missilePartsOut.Clear();
-            rammedPartsIn.Clear();
-            rammedPartsOut.Clear();
-
-            status = StatusType.SpawningVessels;
-            var spawnConfig = new VesselSpawner.SpawnConfig(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, true, true, 0, null, null, hash);
-            if (BDArmorySettings.RUNWAY_PROJECT)
-            {
-                switch (BDArmorySettings.RUNWAY_PROJECT_ROUND)
-                {
-                    case 33:
-                        spawnConfig = new VesselSpawner.SpawnConfig(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, 10f, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, true, true, 0, null, null, hash);
-                        break;
-                }
-            }
-            // spawner.SpawnAllVesselsOnce(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE ? BDArmorySettings.VESSEL_SPAWN_DISTANCE : BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR, BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, true, true, 0, null, null, hash);
-            spawner.SpawnAllVesselsOnce(spawnConfig);
-            while (spawner.vesselsSpawning)
-                yield return new WaitForFixedUpdate();
-            if (!spawner.vesselSpawnSuccess)
-            {
-                Debug.Log("[BDArmory.BDAScoreService] Vessel spawning failed.");
-                yield break;
-            }
-            yield return new WaitForFixedUpdate();
-
-            status = StatusType.RunningHeat;
-            // NOTE: runs in separate coroutine
-            if (BDArmorySettings.RUNWAY_PROJECT)
-            {
-                switch (BDArmorySettings.RUNWAY_PROJECT_ROUND)
-                {
-                    case 33:
-                        BDACompetitionMode.Instance.StartRapidDeployment(0);
-                        break;
-                    default:
-                        BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE);
-                        break;
-                }
-            }
-            else
-                BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE);
-            yield return new WaitForFixedUpdate(); // Give the competition start a frame to get going.
-
-            // start timer coroutine for the duration specified in settings UI
-            var duration = Core.BDArmorySettings.COMPETITION_DURATION * 60d;
-            var message = $"Starting {(duration > 0 ? $"a {duration.ToString("F0")}s" : "an unlimited")} duration competition for stage {model.stage} heat {model.order}.";
-            Debug.Log("[BDArmory.BDAScoreService]: " + message);
-            BDACompetitionMode.Instance.competitionStatus.Add(message);
-            while (BDACompetitionMode.Instance.competitionStarting || BDACompetitionMode.Instance.sequencedCompetitionStarting)
-                yield return new WaitForFixedUpdate(); // Wait for the competition to actually start.
-            if (!BDACompetitionMode.Instance.competitionIsActive)
-            {
-                message = "Competition failed to start for heat " + hash + ".";
-                BDACompetitionMode.Instance.competitionStatus.Add(message);
-                Debug.Log("[BDArmory.BDAScoreService]: " + message);
-                yield break;
-            }
-            competitionStarted = true;
-            while (BDACompetitionMode.Instance.competitionIsActive) // Wait for the competition to finish (limited duration and log dumping is handled directly by the competition now).
-                yield return new WaitForSeconds(1);
         }
 
         private IEnumerator SendScores(string hash, HeatModel heat)
@@ -383,7 +314,7 @@ namespace BDArmory.Competition
         private List<RecordModel> BuildRecords(string hash, HeatModel heat)
         {
             List<RecordModel> results = new List<RecordModel>();
-            var playerNames = activePlayers;
+            var playerNames = PlayerNames();
             Debug.Log(string.Format("[BDArmory.BDAScoreService] Building records for {0} players", playerNames.Count));
             foreach (string playerName in playerNames)
             {
@@ -441,18 +372,60 @@ namespace BDArmory.Competition
                 record.assists = ComputeTotalAssists(playerName);
                 record.death_order = ComputeDeathOrder(playerName);
                 record.death_time = ComputeDeathTime(playerName);
-                if (longestHitDistance.ContainsKey(playerName) && longestHitWeapon.ContainsKey(playerName))
-                {
-                    record.distance = (float)longestHitDistance[playerName];
-                    record.weapon = longestHitWeapon[playerName];
-                }
+                var longestHitData = LongestHitForPlayer(playerName);
+                record.weapon = longestHitData.Key;
+                record.distance = longestHitData.Value;
+
                 results.Add(record);
             }
             Debug.Log(string.Format("[BDArmory.BDAScoreService] Built records for {0} players", results.Count));
             return results;
         }
 
-        private int ComputeTotalHitsOut(string playerName)
+        public List<string> PlayerNames()
+        {
+            return activePlayers.ToList();
+        }
+
+        public KeyValuePair<string, float> LongestHitForPlayer(string playerName)
+        {
+            if (longestHitDistance.ContainsKey(playerName) && longestHitWeapon.ContainsKey(playerName))
+            {
+                return new KeyValuePair<string, float>(longestHitWeapon[playerName], (float)longestHitDistance[playerName]);
+            }
+            else
+            {
+                return new KeyValuePair<string, float>("", 0);
+            }
+        }
+
+        public void ClearScores()
+        {
+            activePlayers.Clear();
+            assists.Clear();
+            damageIn.Clear();
+            damageOut.Clear();
+            deaths.Clear();
+            HPremaining.Clear();
+            hitsIn.Clear();
+            hitsOnTarget.Clear();
+            hitsOut.Clear();
+            killsOnTarget.Clear();
+            longestHitDistance.Clear();
+            longestHitWeapon.Clear();
+            missileDamageIn.Clear();
+            missileDamageOut.Clear();
+            missilePartsIn.Clear();
+            missilePartsOut.Clear();
+            rocketDamageIn.Clear();
+            rocketDamageOut.Clear();
+            rocketPartsIn.Clear();
+            rocketPartsOut.Clear();
+            rammedPartsIn.Clear();
+            rammedPartsOut.Clear();
+        }
+
+        public int ComputeTotalHitsOut(string playerName)
         {
             int result = 0;
             if (hitsOut.ContainsKey(playerName))
@@ -462,7 +435,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private int ComputeTotalHitsIn(string playerName)
+        public int ComputeTotalHitsIn(string playerName)
         {
             int result = 0;
             if (hitsIn.ContainsKey(playerName))
@@ -472,7 +445,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private double ComputeTotalDamageOut(string playerName)
+        public double ComputeTotalDamageOut(string playerName)
         {
             double result = 0;
             if (damageOut.ContainsKey(playerName))
@@ -482,7 +455,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private double ComputeTotalDamageIn(string playerName)
+        public double ComputeTotalDamageIn(string playerName)
         {
             double result = 0;
             if (damageIn.ContainsKey(playerName))
@@ -492,14 +465,14 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private int ComputeTotalRammedPartsOut(string playerName)
+        public int ComputeTotalRammedPartsOut(string playerName)
         {
             if (rammedPartsOut.ContainsKey(playerName))
                 return rammedPartsOut[playerName];
             return 0;
         }
 
-        private int ComputeTotalRammedPartsIn(string playerName)
+        public int ComputeTotalRammedPartsIn(string playerName)
         {
             if (rammedPartsIn.ContainsKey(playerName))
                 return rammedPartsIn[playerName];
@@ -527,21 +500,21 @@ namespace BDArmory.Competition
             return 0;
         }
 
-        private int ComputeTotalMissilePartsIn(string playerName)
+        public int ComputeTotalMissilePartsIn(string playerName)
         {
             if (missilePartsIn.ContainsKey(playerName))
                 return missilePartsIn[playerName];
             return 0;
         }
 
-        private double ComputeTotalMissileDamageOut(string playerName)
+        public double ComputeTotalMissileDamageOut(string playerName)
         {
             if (missileDamageOut.ContainsKey(playerName))
                 return missileDamageOut[playerName];
             return 0;
         }
 
-        private double ComputeTotalMissileDamageIn(string playerName)
+        public double ComputeTotalMissileDamageIn(string playerName)
         {
             if (missileDamageIn.ContainsKey(playerName))
                 return missileDamageIn[playerName];
@@ -600,7 +573,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private int ComputeTotalDeaths(string playerName)
+        public int ComputeTotalDeaths(string playerName)
         {
             int result = 0;
             if (deaths.ContainsKey(playerName))
@@ -610,7 +583,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private double ComputeAverageHPremaining(string playerName)
+        public double ComputeAverageHPremaining(string playerName)
         {
             double result = 0;
             var HPLeft = BDACompetitionMode.Instance.Scores;
@@ -621,7 +594,7 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private int ComputeTotalAssists(string playerName)
+        public int ComputeTotalAssists(string playerName)
         {
             int result = 0;
             if (assists.ContainsKey(playerName))
@@ -631,14 +604,14 @@ namespace BDArmory.Competition
             return result;
         }
 
-        private int ComputeWins(string playerName)
+        public int ComputeWins(string playerName)
         {
             var stillAlive = !deaths.ContainsKey(playerName);
             var livingCount = activePlayers.Count - deaths.Count;
             return (stillAlive && livingCount == 1) ? 1 : 0;
         }
 
-        private float ComputeDeathOrder(string playerName)
+        public float ComputeDeathOrder(string playerName)
         {
             var scoreData = BDACompetitionMode.Instance.Scores.ScoreData;
             if (scoreData.ContainsKey(playerName) && scoreData[playerName].aliveState != AliveState.Alive)
@@ -651,7 +624,7 @@ namespace BDArmory.Competition
             }
         }
 
-        private float ComputeDeathTime(string playerName)
+        public float ComputeDeathTime(string playerName)
         {
             var scoreData = BDACompetitionMode.Instance.Scores.ScoreData;
             if (scoreData.ContainsKey(playerName) && scoreData[playerName].aliveState != AliveState.Alive)

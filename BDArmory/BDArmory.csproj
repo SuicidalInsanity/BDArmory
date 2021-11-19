@@ -278,6 +278,15 @@
     <Compile Include="Evolution\EngineGimbalAxisNudgeMutation.cs" />
     <Compile Include="Evolution\ControlSurfaceNudgeMutation.cs" />
     <Compile Include="Evolution\EngineGimbalNudgeMutation.cs" />
+    <Compile Include="Competition\OrchestrationStrategy.cs" />
+    <Compile Include="Competition\RankedFreeForAllStrategy.cs" />
+    <Compile Include="Competition\WaypointFollowingStrategy.cs" />
+    <Compile Include="Competition\RocketChaseStrategy.cs" />
+    <Compile Include="Competition\SpawnStrategy.cs" />
+    <Compile Include="Competition\CircularSpawnStrategy.cs" />
+    <Compile Include="Competition\PointSpawnStrategy.cs" />
+    <Compile Include="Competition\TournamentCoordinator.cs" />
+    <Compile Include="Competition\VesselSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BDArmory.Core\BDArmory.Core.csproj">

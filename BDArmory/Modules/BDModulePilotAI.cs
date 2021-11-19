@@ -28,6 +28,8 @@ namespace BDArmory.Modules
         float desiredMinAltitude;
         public string extendingReason = "";
 
+        public FlightCtrlState lastState;
+
         bool requestedExtend;
         Vector3 requestedExtendTpos;
 
@@ -558,7 +560,10 @@ namespace BDArmory.Modules
         float turningTimer;
         float evasiveTimer;
         float threatRating;
+        List<Vector3> waypoints = null;
+        int activeWaypointIndex = -1;
         Vector3 lastTargetPosition;
+        List<float> waypointScores = null;
 
         LineRenderer lr;
         Vector3 flyingToPosition;
@@ -1004,6 +1009,8 @@ namespace BDArmory.Modules
         // This is triggered every Time.fixedDeltaTime.
         protected override void AutoPilot(FlightCtrlState s)
         {
+            this.lastState = s;
+
             finalMaxSteer = 1f; // Reset finalMaxSteer, is adjusted in subsequent methods
 
             if (terrainAlertCoolDown > 0)
@@ -1101,6 +1108,17 @@ namespace BDArmory.Modules
 
         void UpdateAI(FlightCtrlState s)
         {
+            if( activeWaypointIndex >= 0 && waypoints != null && waypoints.Count > 0 )
+            {
+                var waypoint = waypoints[activeWaypointIndex];
+                var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
+                var waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
+                var rangeToTarget = (vesselTransform.position - waypointPosition).magnitude;
+                SetStatus(string.Format("Waypoint {0} ({1})", activeWaypointIndex, rangeToTarget));
+                FlyWaypoints(s);
+                return;
+            }
+
             SetStatus("Free");
 
             CheckExtend(ExtendChecks.RequestsOnly);
@@ -1534,7 +1552,7 @@ namespace BDArmory.Modules
         Vector3 debugPos;
         bool useVelRollTarget;
 
-        void FlyToPosition(FlightCtrlState s, Vector3 targetPosition, bool overrideThrottle = false)
+        public void FlyToPosition(FlightCtrlState s, Vector3 targetPosition, bool overrideThrottle = false, bool overrideTerrainAvoidance = false)
         {
             if (!belowMinAltitude) // Includes avoidingTerrain
             {
@@ -1572,7 +1590,7 @@ namespace BDArmory.Modules
 
             //test poststall
             float AoA = Vector3.Angle(vessel.ReferenceTransform.up, vessel.Velocity());
-            if (AoA > 30f)
+            if (AoA > 30f && !overrideTerrainAvoidance)
             {
                 steerMode = SteerModes.Aiming;
             }
@@ -1914,6 +1932,85 @@ namespace BDArmory.Modules
             AdjustThrottle(speed, false);
             FlyToPosition(s, targetPosition);
         }
+
+        public void ClearWaypoints()
+        {
+            Debug.Log("[BDArmory.BDModulePilotAI] Cleared waypoints");
+            this.waypoints = null;
+            this.activeWaypointIndex = -1;
+        }
+        public void SetWaypoints(List<Vector3> waypoints)
+        {
+            if( waypoints == null || waypoints.Count == 0 )
+            {
+                this.activeWaypointIndex = -1;
+                this.waypoints = null;
+                this.waypointScores = null;
+                return;
+            }
+            Debug.Log(string.Format("[BDArmory.BDModulePilotAI] Set {0} waypoints", waypoints.Count));
+            this.waypoints = waypoints;
+            this.waypointScores = new List<float>();
+            this.activeWaypointIndex = 0;
+        }
+        public bool IsFlyingWaypoints()
+        {
+            return this.activeWaypointIndex >= 0 && waypoints != null && waypoints.Count > 0;
+        }
+        public List<float> GetWaypointScores()
+        {
+            return this.waypointScores;
+        }
+
+        private double lastRange = 0;
+        private double dRange = 0;
+        void FlyWaypoints(FlightCtrlState s)
+        {
+            if( activeWaypointIndex < 0 || waypoints == null || waypoints.Count == 0 )
+            {
+                return;
+            }
+            var waypoint = waypoints[activeWaypointIndex];
+            var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
+            var waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
+            // vessel has arrived if its distance to the target is within a range threshold
+            var rangeToTarget = (vesselTransform.position - waypointPosition).magnitude;
+            dRange = rangeToTarget - lastRange;
+            //Debug.Log(string.Format("[BDArmory.BDModulePilotAI] Distance from {0}, {1} to {2}, {3} is {4} ({5})", vessel.latitude, vessel.longitude, waypoint.x, waypoint.y, rangeToTarget, dRange));
+            if (dRange > 0 && rangeToTarget < 500)
+            {
+                // moving away, proceed to next point
+                Debug.Log(string.Format("[BDArmory.BDModulePilotAI] Reached waypoint {0} with range {1}", activeWaypointIndex, rangeToTarget));
+                this.waypointScores.Add((float)rangeToTarget);
+                this.activeWaypointIndex += 1;
+                lastRange = 999;
+                dRange = 0;
+                if( activeWaypointIndex >= waypoints.Count )
+                {
+                    Debug.Log("[BDArmory.BDModulePilotAI] Waypoints complete");
+                    activeWaypointIndex = -1;
+                    waypoints = null;
+                    return;
+                }
+            }
+            lastRange = rangeToTarget;
+            FlyToNext(s);
+        }
+
+        private void FlyToNext(FlightCtrlState s)
+        {
+            if( activeWaypointIndex < 0 || waypoints == null || activeWaypointIndex >= waypoints.Count )
+            {
+                Debug.Log("[BDArmory.BDModulePilotAI] Skipping FlyToNext without valid waypoint data");
+                return;
+            }
+            // compute Vector3 from waypoint lat/lng/alt and command fly-to
+            var waypoint = waypoints[activeWaypointIndex];
+            var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
+            var waypointPosition = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z+terrainAltitude);
+            FlyToPosition(s, waypointPosition, false, true);
+        }
+
 
         //sends target speed to speedController
         void AdjustThrottle(float targetSpeed, bool useBrakes, bool allowAfterburner = true, bool forceAfterburner = false, float throttleOverride = -1f)
@@ -2966,6 +3063,12 @@ namespace BDArmory.Modules
         public override void CommandTakeOff()
         {
             base.CommandTakeOff();
+            standbyMode = false;
+        }
+
+        public override void CommandFollowWaypoints()
+        {
+            base.CommandFollowWaypoints();
             standbyMode = false;
         }
 

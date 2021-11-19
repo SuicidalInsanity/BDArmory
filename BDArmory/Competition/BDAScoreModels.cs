@@ -17,8 +17,14 @@ namespace BDArmory.Competition
         public string ended_at;
         public string created_at;
         public string updated_at;
+        public string mode;
 
-        public override string ToString() { return "{id: " + id + ", name: " + name + ", status: " + status + ", stage: " + stage + ", started_at: " + started_at + ", ended_at: " + ended_at + ", created_at: " + created_at + ", updated_at: " + updated_at + "}"; }
+        public override string ToString() { return "{id: " + id + ", name: " + name + ", status: " + status + ", stage: " + stage + ", mode: " + mode + ", started_at: " + started_at + ", ended_at: " + ended_at + ", created_at: " + created_at + ", updated_at: " + updated_at + "}"; }
+
+        public bool IsActive()
+        {
+            return ended_at == null || ended_at == "";
+        }
     }
 
     [Serializable]

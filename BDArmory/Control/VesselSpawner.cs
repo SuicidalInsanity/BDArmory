@@ -206,7 +206,7 @@ namespace BDArmory.Control
         {
             yield return SpawnAllVesselsOnceCoroutine(new SpawnConfig(latitude, longitude, altitude, spawnDistanceFactor, absDistanceOrFactor, easeInSpeed, killEverythingFirst, assignTeams, numberOfTeams, teamCounts, teamsSpecific, folder, craftFiles));
         }
-        private IEnumerator SpawnAllVesselsOnceCoroutine(SpawnConfig spawnConfig)
+        public IEnumerator SpawnAllVesselsOnceCoroutine(SpawnConfig spawnConfig)
         {
             #region Initialisation and sanity checks
             // Tally up the craft to spawn.
@@ -906,6 +906,67 @@ namespace BDArmory.Control
                 }
             }
             vesselsSpawningOnceContinuously = false; // For when VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING gets toggled.
+        }
+
+        public List<Vessel> spawnedVessels = new List<Vessel>();
+        public IEnumerator SpawnVessel(string craftUrl, double latitude, double longitude, double altitude, float initialHeading = 0.0f, float initialPitch = -0.7f)
+        {
+            if(vesselsSpawning )
+            {
+                Debug.Log("[BDArmory.VesselSpawner]: Already spawning craft");
+                yield break;
+            }
+            spawnedVessels.Clear();
+            vesselsSpawning = true;
+            vesselSpawnSuccess = false;
+            var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(latitude, longitude);
+            var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
+            Vector3d craftGeoCoords;
+            var shipFacility = EditorFacility.None;
+            FlightGlobals.currentMainBody.GetLatLonAlt(spawnPoint, out craftGeoCoords.x, out craftGeoCoords.y, out craftGeoCoords.z); // Convert spawn point to geo-coords for the actual spawning function.
+            Vessel vessel = null;
+            try
+            {
+                vessel = SpawnVesselFromCraftFile(craftUrl, craftGeoCoords, initialHeading, initialPitch, out shipFacility); // SPAWN
+            }
+            catch { vessel = null; }
+            if( vessel == null )
+            {
+                var location = string.Format("({0:##.###}, {1:##.###}, {2:####}", latitude, longitude, altitude);
+                Debug.Log("[BDArmory.VesselSpawner]: Failed to spawn craft " + craftUrl + " " + location);
+                vesselsSpawning = false;
+                yield break;
+            }
+            vessel.Landed = false;
+            vessel.ResumeStaging();
+
+            yield return new WaitForFixedUpdate();
+            yield return new WaitForFixedUpdate();
+            yield return new WaitForFixedUpdate();
+
+            // wait for loaded vessel switcher
+            var result = new List<Vessel> { vessel };
+            yield return WaitForLoadedVesselSwitcher(result);
+            if( !loadedVesselResult )
+            {
+                Debug.Log("[BDArmory.VesselSpawner]: Timeout waiting for weapon managers");
+                vesselsSpawning = false;
+                yield break;
+            }
+
+            // check for AI
+            yield return CheckForAI(result);
+            if( !checkResultAI )
+            {
+                Debug.Log("[BDArmory.VesselSpawner]: Timeout waiting for AIPilot");
+                vesselsSpawning = false;
+                yield break;
+            }
+
+            Debug.Log(string.Format("[BDArmory.VesselSpawner]: Spawned {0} craft successfully!", result.Count));
+            spawnedVessels = result;
+            vesselsSpawning = false;
+            vesselSpawnSuccess = true;
         }
 
         /// <summary>
@@ -1688,6 +1749,110 @@ namespace BDArmory.Control
                 return false;
             }
             return true;
+        }
+
+        private bool waitingForLoadedVesselSwitcher = false;
+        private bool loadedVesselResult = false;
+        private IEnumerator WaitForLoadedVesselSwitcher(List<Vessel> vessels)
+        {
+            waitingForLoadedVesselSwitcher = true;
+            loadedVesselResult = false;
+            var timeoutAt = Planetarium.GetUniversalTime() + 10.0;
+            bool timeoutElapsed = false;
+            var remainingVessels = vessels.ToList();
+            var checkedVessels = new List<Vessel>();
+
+            while( !timeoutElapsed )
+            {
+                if( !remainingVessels.Any() )
+                {
+                    break;
+                }
+                LoadedVesselSwitcher.Instance.UpdateList();
+                var weaponManagers = LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).ToList();
+
+                foreach (var vessel in remainingVessels)
+                {
+                    if (!vessel.loaded || vessel.packed) continue;
+                    VesselModuleRegistry.OnVesselModified(vessel, true);
+                    var weaponManager = VesselModuleRegistry.GetModule<MissileFire>(vessel);
+                    if (weaponManager != null && weaponManagers.Contains(weaponManager)) // The weapon manager has been added, let's go!
+                    {
+                        checkedVessels.Add(vessel);
+                        vessel.ActionGroups.ToggleGroup(BDACompetitionMode.KM_dictAG[10]); // Modular Missiles use lower AGs (1-3) for staging, use a high AG number to not affect them
+                        if (weaponManager.guardMode) weaponManager.ToggleGuardMode(); // Disable guard mode (in case someone enabled it on AG10).
+                        var engines = VesselModuleRegistry.GetModules<ModuleEngines>(vessel);
+                        if (!engines.Any(engine => engine.EngineIgnited)) // If the vessel didn't activate their engines on AG10, then activate all their engines and hope for the best.
+                        {
+                            engines.ForEach(e => e.Activate());
+                        }
+                    }
+                }
+                checkedVessels.ForEach(e => remainingVessels.Remove(e));
+                yield return new WaitForFixedUpdate();
+                timeoutElapsed = Planetarium.GetUniversalTime() > timeoutAt;
+            }
+
+            loadedVesselResult = !timeoutElapsed;
+            waitingForLoadedVesselSwitcher = false;
+        }
+
+        private bool checkResultAI = false;
+        private bool checkingAI = false;
+
+        private IEnumerator CheckForAI(List<Vessel> vessels)
+        {
+            Debug.Log("[BDArmory.VesselSpawner]: Checking for AIPilot");
+            checkingAI = true;
+            checkResultAI = false;
+            bool timeoutElapsed = false;
+            var remainingVessels = vessels.ToList();
+            var checkedVessels = new List<Vessel>();
+            var timeoutAt = Planetarium.GetUniversalTime() + 10.0;
+
+
+            while ( !checkResultAI && !timeoutElapsed )
+            {
+                // iterate through vessels and check for pilot module on each
+                if( remainingVessels.Any() )
+                {
+                    foreach (var vessel in remainingVessels)
+                    {
+                        if (!vessel.loaded)
+                        {
+                            Debug.Log("[BDArmory.VesselSpawner] Vessel not loaded");
+                            continue;
+                        }
+                        if( vessel.packed)
+                        {
+                            Debug.Log("[BDArmory.VesselSpawner] Vessel packed");
+                            continue;
+                        }
+                        var vesselPilot = VesselModuleRegistry.GetBDModulePilotAI(vessel, true);
+                        if (vesselPilot != null)
+                        {
+                            vesselPilot.ActivatePilot();
+                            ActivateVessel(vessel);
+                            checkedVessels.Add(vessel);
+                        }
+                    }
+                    checkedVessels.ForEach(e => remainingVessels.Remove(e));
+                }
+                else
+                {
+                    checkResultAI = true;
+                }
+                yield return new WaitForFixedUpdate();
+                timeoutElapsed = Planetarium.GetUniversalTime() > timeoutAt;
+            }
+
+            checkingAI = false;
+        }
+
+        private void ActivateVessel(Vessel vessel)
+        {
+            // activate AG0
+
         }
 
         #region Actual spawning of individual craft
