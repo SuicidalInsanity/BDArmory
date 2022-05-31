@@ -1037,6 +1037,7 @@ namespace BDArmory.UI
                 if (currentMode == 3) //distance-based
                 {
                     int count = 1;
+
                     foreach (var v in WeaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null && wm.vessel != null).Select(wm => wm.vessel))
                     {
                         if (v.vesselType != VesselType.Debris)
@@ -1047,17 +1048,14 @@ namespace BDArmory.UI
                     }
                     centroid /= (float)count;
                 }
-                // redo the math
-                using (var v = FlightGlobals.Vessels.GetEnumerator())
+                using(var wm = WeaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null && wm.vessel != null).ToList().GetEnumerator())
+                        // redo the math
                     // check all the planes
-                    while (v.MoveNext())
+                    while (wm.MoveNext())
                     {
-                        if (v.Current == null || !v.Current.loaded || v.Current.packed) continue;
-                        if (VesselModuleRegistry.ignoredVesselTypes.Contains(v.Current.vesselType)) continue;
-                        if ((v.Current.GetCrewCapacity()) > 0 && (v.Current.GetCrewCount() == 0)) continue; //They're dead, Jim
-                        using (var wms = VesselModuleRegistry.GetModules<MissileFire>(v.Current).GetEnumerator())
-                            while (wms.MoveNext())
-                                if (wms.Current != null && wms.Current.vessel != null)
+                        //if ((v.Current.GetCrewCapacity()) > 0 && (v.Current.GetCrewCount() == 0)) continue; //They're dead, Jim //really should be a isControllable tage, else this will never look at ProbeCore ships
+                        if (!wm.Current.vessel.IsControllable) continue;
+                                if (wm.Current != null && wm.Current.vessel != null)
                                 {
                                     float vesselScore = 1000;
                                     switch (currentMode)
@@ -1066,51 +1064,51 @@ namespace BDArmory.UI
                                             {
                                                 ScoringData scoreData = null;
                                                 int score = 0;
-                                                if (BDACompetitionMode.Instance.Scores.ScoreData.ContainsKey(wms.Current.vessel.vesselName))
+                                                if (BDACompetitionMode.Instance.Scores.ScoreData.ContainsKey(wm.Current.vessel.vesselName))
                                                 {
-                                                    scoreData = BDACompetitionMode.Instance.Scores.ScoreData[wms.Current.vessel.vesselName];
+                                                    scoreData = BDACompetitionMode.Instance.Scores.ScoreData[wm.Current.vessel.vesselName];
                                                     score = scoreData.hits; //expand to someething closer to the score parser score?
                                                 }
                                                 if (ContinuousSpawning.Instance.vesselsSpawningContinuously)
                                                 {
-                                                    if (ContinuousSpawning.Instance.continuousSpawningScores.ContainsKey(wms.Current.vessel.vesselName))
+                                                    if (ContinuousSpawning.Instance.continuousSpawningScores.ContainsKey(wm.Current.vessel.vesselName))
                                                     {
-                                                        score += ContinuousSpawning.Instance.continuousSpawningScores[wms.Current.vessel.vesselName].cumulativeHits;
+                                                        score += ContinuousSpawning.Instance.continuousSpawningScores[wm.Current.vessel.vesselName].cumulativeHits;
                                                     }
                                                 }
-                                                if (wms.Current.vessel.isActiveVessel)
+                                                if (wm.Current.vessel.isActiveVessel)
                                                 {
                                                     foundActiveVessel = true;
                                                 }
                                                 if (score > 0) vesselScore = score;
                                                 if (vesselScore > bestScore)
                                                 {
-                                                    bestVessel = wms.Current.vessel;
+                                                    bestVessel = wm.Current.vessel;
                                                     bestScore = vesselScore;
                                                 }
-                                                cameraScores[wms.Current.vessel.GetName()] = vesselScore;
+                                                cameraScores[wm.Current.vessel.GetName()] = vesselScore;
                                                 break;
                                             }
                                         case 3: //distance based - look for most distant vessel from centroid; use with CameraTools centorid option
                                             {
-                                                vesselScore = (centroid - wms.Current.vessel.CoM).magnitude;
+                                                vesselScore = (centroid - wm.Current.vessel.CoM).magnitude;
                                                 if (vesselScore > bestScore)
                                                 {
-                                                    bestVessel = wms.Current.vessel;
+                                                    bestVessel = wm.Current.vessel;
                                                     bestScore = vesselScore;
                                                 }
-                                                if (wms.Current.vessel.isActiveVessel)
+                                                if (wm.Current.vessel.isActiveVessel)
                                                 {
                                                     foundActiveVessel = true;
                                                 }
-                                                cameraScores[wms.Current.vessel.GetName()] = vesselScore;
+                                                cameraScores[wm.Current.vessel.GetName()] = vesselScore;
                                                 break;
                                             }
                                         default:
                                             {
                                                 float targetDistance = 5000 + (float)(rng.NextDouble() * 100.0);
                                                 float crashTime = 30;
-                                                string vesselName = v.Current.GetName();
+                                                string vesselName = wm.Current.vessel.GetName();
                                                 // avoid lingering on dying things
                                                 bool recentlyDamaged = false;
                                                 bool recentlyLanded = false;
@@ -1119,7 +1117,7 @@ namespace BDArmory.UI
 
                                                 if (BDACompetitionMode.Instance.Scores.Players.Contains(vesselName))
                                                 {
-                                                    var currentParts = v.Current.parts.Count;
+                                                    var currentParts = wm.Current.vessel.parts.Count;
                                                     var vdat = BDACompetitionMode.Instance.Scores.ScoreData[vesselName];
                                                     if (now - vdat.lastLostPartTime < 5d) // Lost parts within the last 5s.
                                                     {
@@ -1138,33 +1136,33 @@ namespace BDArmory.UI
                                                 vesselScore = Math.Abs(vesselScore);
                                                 float HP = 0;
                                                 float WreckFactor = 0;
-                                                var AI = VesselModuleRegistry.GetBDModulePilotAI(v.Current, true);
+                                                var AI = VesselModuleRegistry.GetBDModulePilotAI(wm.Current.vessel, true);
 
                                                 // If we're running a waypoints competition, only focus on vessels still running waypoints.
                                                 if (BDACompetitionMode.Instance.competitionType == CompetitionType.WAYPOINTS && AI != null && AI.currentCommand != Control.PilotCommands.Waypoints) continue;
 
-                                                HP = (wms.Current.currentHP / wms.Current.totalHP) * 100;
+                                                HP = (wm.Current.currentHP / wm.Current.totalHP) * 100;
                                                 if (HP < 100)
                                                 {
                                                     WreckFactor += (100 - HP) / 100; //the less plane remaining, the greater the chance it's a wreck
                                                 }
-                                                if (v.Current.verticalSpeed < -30) //falling out of the sky? Could be an intact plane diving to default alt, could be a cockpit
+                                                if (wm.Current.vessel.verticalSpeed < -30) //falling out of the sky? Could be an intact plane diving to default alt, could be a cockpit
                                                 {
                                                     WreckFactor += 0.5f;
-                                                    if (AI == null || v.Current.radarAltitude < AI.defaultAltitude) //craft is uncontrollably diving, not returning from high alt to cruising alt
+                                                    if (AI == null || wm.Current.vessel.radarAltitude < AI.defaultAltitude) //craft is uncontrollably diving, not returning from high alt to cruising alt
                                                     {
                                                         WreckFactor += 0.5f;
                                                     }
                                                 }
-                                                if (VesselModuleRegistry.GetModuleCount<ModuleEngines>(v.Current) > 0)
+                                                if (VesselModuleRegistry.GetModuleCount<ModuleEngines>(wm.Current.vessel) > 0)
                                                 {
                                                     int engineOut = 0;
-                                                    foreach (var engine in VesselModuleRegistry.GetModules<ModuleEngines>(v.Current))
+                                                    foreach (var engine in VesselModuleRegistry.GetModules<ModuleEngines>(wm.Current.vessel))
                                                     {
                                                         if (engine == null || engine.flameout || engine.finalThrust <= 0)
                                                             engineOut++;
                                                     }
-                                                    WreckFactor += (engineOut / VesselModuleRegistry.GetModuleCount<ModuleEngines>(v.Current)) / 2;
+                                                    WreckFactor += (engineOut / VesselModuleRegistry.GetModuleCount<ModuleEngines>(wm.Current.vessel)) / 2;
                                                 }
                                                 else
                                                 {
@@ -1175,18 +1173,18 @@ namespace BDArmory.UI
                                                     WreckFactor *= 2;
                                                     vesselScore *= WreckFactor; //disincentivise switching to wrecks
                                                 }
-                                                if (!recentlyLanded && v.Current.verticalSpeed < -15) // Vessels gently floating to the ground aren't interesting
+                                                if (!recentlyLanded && wm.Current.vessel.verticalSpeed < -15) // Vessels gently floating to the ground aren't interesting
                                                 {
-                                                    crashTime = (float)(-Math.Abs(v.Current.radarAltitude) / v.Current.verticalSpeed);
+                                                    crashTime = (float)(-Math.Abs(wm.Current.vessel.radarAltitude) / wm.Current.vessel.verticalSpeed);
                                                 }
                                                 if (crashTime < 30)
                                                 {
                                                     vesselScore *= crashTime / 30;
                                                 }
-                                                if (wms.Current.currentTarget != null)
+                                                if (wm.Current.currentTarget != null)
                                                 {
-                                                    targetDistance = Vector3.Distance(wms.Current.vessel.GetWorldPos3D(), wms.Current.currentTarget.position);
-                                                    if (!wms.Current.HasWeaponsAndAmmo()) // no remaining weapons
+                                                    targetDistance = Vector3.Distance(wm.Current.vessel.GetWorldPos3D(), wm.Current.currentTarget.position);
+                                                    if (!wm.Current.HasWeaponsAndAmmo()) // no remaining weapons
                                                     {
                                                         if (!BDArmorySettings.DISABLE_RAMMING && AI != null && AI.allowRamming) //ramming's fun to watch
                                                         {
@@ -1200,63 +1198,62 @@ namespace BDArmory.UI
                                                     //else got weapons and engaging
                                                 }
                                                 vesselScore *= 0.031623f * Mathf.Sqrt(targetDistance); // Equal to 1 at 1000m
-                                                if (wms.Current.currentGun != null)
+                                                if (wm.Current.currentGun != null)
                                                 {
-                                                    if (wms.Current.currentGun.recentlyFiring)
+                                                    if (wm.Current.currentGun.recentlyFiring)
                                                     {
                                                         // shooting at things is more interesting
                                                         vesselScore *= 0.25f;
                                                     }
                                                 }
-                                                if (wms.Current.guardFiringMissile)
+                                                if (wm.Current.guardFiringMissile)
                                                 {
                                                     // firing a missile at things is more interesting
                                                     vesselScore *= 0.2f;
                                                 }
                                                 // scoring for automagic camera check should not be in here
-                                                if (wms.Current.underAttack || wms.Current.underFire)
+                                                if (wm.Current.underAttack || wm.Current.underFire)
                                                 {
                                                     vesselScore *= 0.5f;
-                                                    var distance = Vector3.Distance(wms.Current.vessel.GetWorldPos3D(), wms.Current.incomingThreatPosition);
+                                                    var distance = Vector3.Distance(wm.Current.vessel.GetWorldPos3D(), wm.Current.incomingThreatPosition);
                                                     vesselScore *= 0.031623f * Mathf.Sqrt(distance); // Equal to 1 at 1000m, we don't want to overly disadvantage craft that are super far away, but could be firing missiles or doing other interesting things
                                                                                                      //we're very interested when threat and target are the same
-                                                    if (wms.Current.incomingThreatVessel != null && wms.Current.currentTarget != null)
+                                                    if (wm.Current.incomingThreatVessel != null && wm.Current.currentTarget != null)
                                                     {
-                                                        if (wms.Current.incomingThreatVessel.GetName() == wms.Current.currentTarget.Vessel.GetName())
+                                                        if (wm.Current.incomingThreatVessel.GetName() == wm.Current.currentTarget.Vessel.GetName())
                                                         {
                                                             vesselScore *= 0.25f;
                                                         }
                                                     }
-
                                                 }
-                                                if (wms.Current.incomingMissileVessel != null)
+                                                if (wm.Current.incomingMissileVessel != null)
                                                 {
-                                                    float timeToImpact = wms.Current.incomingMissileTime;
+                                                    float timeToImpact = wm.Current.incomingMissileTime;
                                                     vesselScore *= Mathf.Clamp(0.0005f * timeToImpact * timeToImpact, 0, 1); // Missiles about to hit are interesting, scale score with time to impact
 
-                                                    if (wms.Current.isFlaring || wms.Current.isChaffing)
+                                                    if (wm.Current.isFlaring || wm.Current.isChaffing)
                                                         vesselScore *= 0.8f;
                                                 }
                                                 if (recentlyDamaged)
                                                 {
                                                     vesselScore *= 0.3f; // because taking hits is very interesting;
                                                 }
-                                                if (!recentlyLanded && wms.Current.vessel.LandedOrSplashed)
+                                                if (!recentlyLanded && wm.Current.vessel.LandedOrSplashed)
                                                 {
-                                                    if (v.Current.srfSpeed > 2) //margin for physics jitter
+                                                    if (wm.Current.vessel.srfSpeed > 2) //margin for physics jitter
                                                     {
-                                                        vesselScore *= Mathf.Min(((80 / (float)v.Current.srfSpeed) / 2), 4); //srf Ai driven stuff thats still mobile
+                                                        vesselScore *= Mathf.Min(((80 / (float)wm.Current.vessel.srfSpeed) / 2), 4); //srf Ai driven stuff thats still mobile
                                                     }
                                                     else
                                                         vesselScore *= 4; // not interesting.
                                                 }
                                                 // if we're the active vessel add a penalty over time to force it to switch away eventually
-                                                if (wms.Current.vessel.isActiveVessel)
+                                                if (wm.Current.vessel.isActiveVessel)
                                                 {
                                                     vesselScore = (float)(vesselScore * timeSinceChange / 8.0);
                                                     foundActiveVessel = true;
                                                 }
-                                                if ((BDArmorySettings.TAG_MODE) && (wms.Current.Team.Name == "IT"))
+                                                if ((BDArmorySettings.TAG_MODE) && (wm.Current.Team.Name == "IT"))
                                                 {
                                                     vesselScore = 0f; // Keep camera focused on "IT" vessel during tag
                                                 }
@@ -1264,10 +1261,10 @@ namespace BDArmory.UI
                                                 // if the score is better then update this
                                                 if (vesselScore < bestScore)
                                                 {
-                                                    bestVessel = wms.Current.vessel;
+                                                    bestVessel = wm.Current.vessel;
                                                     bestScore = vesselScore;
                                                 }
-                                                cameraScores[wms.Current.vessel.GetName()] = vesselScore;
+                                                cameraScores[wm.Current.vessel.GetName()] = vesselScore;
                                                 break;
                                             }
                                     }

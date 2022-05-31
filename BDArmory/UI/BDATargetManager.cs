@@ -29,6 +29,7 @@ namespace BDArmory.UI
         public static List<IBDWeapon> FiredMissiles;
         public static List<PooledBullet> FiredBullets;
         public static List<PooledRocket> FiredRockets;
+        public static List<IBDWeapon> FiredDrones;
         public static List<DestructibleBuilding> LoadedBuildings;
         public static List<Vessel> LoadedVessels;
         public static BDATargetManager Instance;
@@ -90,6 +91,7 @@ namespace BDArmory.UI
             FiredMissiles = new List<IBDWeapon>();
             FiredBullets = new List<PooledBullet>();
             FiredRockets = new List<PooledRocket>();
+            FiredDrones = new List<IBDWeapon>();
         }
 
         public static List<GPSTargetInfo> GPSTargetList(BDTeam team)
@@ -687,10 +689,10 @@ namespace BDArmory.UI
                     db.Current.Value.Remove(target);
         }
 
-        public static void ReportVessel(Vessel v, MissileFire reporter)
+        public static void ReportVessel(Vessel v, BDTeam team)
         {
             if (!v) return;
-            if (!reporter) return;
+            if (team == null) return;
 
             TargetInfo info = v.gameObject.GetComponent<TargetInfo>();
             if (!info)
@@ -699,10 +701,10 @@ namespace BDArmory.UI
                     while (mf.MoveNext())
                     {
                         if (mf.Current == null) continue;
-                        if (reporter.Team.IsEnemy(mf.Current.Team))
+                        if (team.IsEnemy(mf.Current.Team))
                         {
                             info = v.gameObject.AddComponent<TargetInfo>();
-                            info.detectedTime[reporter.Team] = Time.time;
+                            info.detectedTime[team] = Time.time;
                             break;
                         }
                     }
@@ -713,10 +715,10 @@ namespace BDArmory.UI
                         if (ml.Current == null) continue;
                         if (ml.Current.HasFired)
                         {
-                            if (reporter.Team.IsEnemy(ml.Current.Team))
+                            if (team.IsEnemy(ml.Current.Team))
                             {
                                 info = v.gameObject.AddComponent<TargetInfo>();
-                                info.detectedTime[reporter.Team] = Time.time;
+                                info.detectedTime[team] = Time.time;
                                 break;
                             }
                         }
@@ -724,10 +726,10 @@ namespace BDArmory.UI
             }
 
             // add target to database
-            if (info && reporter.Team.IsEnemy(info.Team))
+            if (info && team.IsEnemy(info.Team))
             {
-                AddTarget(info, reporter.Team);
-                info.detectedTime[reporter.Team] = Time.time;
+                AddTarget(info, team);
+                info.detectedTime[team] = Time.time;
             }
         }
 
@@ -987,14 +989,14 @@ namespace BDArmory.UI
                         {
                             if (targetingMeOnly)
                             {
-                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf))
+                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf))
                                 {
                                     continue;
                                 }
                             }
                             else
                             {
-                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
+                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf, false))
                                 {
                                     continue;
                                 }
@@ -1022,7 +1024,7 @@ namespace BDArmory.UI
                 {
                     if (target.Current == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf, false))
                     {
                         if (target.Current.NumFriendliesEngaging(mf.Team) == 0)
                         {

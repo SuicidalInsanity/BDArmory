@@ -1670,8 +1670,8 @@ namespace BDArmory.UI
                             evadeLines++;
                         }
 
-                        evadeLines++;
                         ActivePilot.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(leftIndent, evadeLines, contentWidth), ActivePilot.evasionIgnoreMyTargetTargetingMe, Localizer.Format("#LOC_BDArmory_EvasionIgnoreMyTargetTargetingMe"), ActivePilot.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                        evadeLines++;
 
                         if (!NumFieldsEnabled)
                         {

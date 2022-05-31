@@ -719,7 +719,7 @@ namespace BDArmory.Competition
                         pilot.weaponManager.ToggleGuardMode();
 
                     foreach (var leader in leaders)
-                        BDATargetManager.ReportVessel(pilot.vessel, leader.weaponManager);
+                        BDATargetManager.ReportVessel(pilot.vessel, leader.weaponManager.Team);
 
                     pilot.ReleaseCommand();
                     pilot.CommandAttack(centerGPS);

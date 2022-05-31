@@ -265,7 +265,7 @@ namespace BDArmory.UI
                     BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_DISTANCE_FACTOR / 10f, 1f, 10f) * 10f);
                 }
 
-                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_SpawnEaseInSpeed")}:  ({(BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED > 0 ? BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED : "Instant")})", leftLabel);//Spawn Ease In Speed
+                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_SpawnEaseInSpeed")}:  ({(BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED > 0 ? BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED.ToString("0.0") : "Instant")})", leftLabel);//Spawn Ease In Speed
                 BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, 0f, 1f) * 10f) / 10f;
 
                 GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_SpawnConcurrentVessels")}:  ({(BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0 ? BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS.ToString() : "Inf")})", leftLabel);//Max Concurrent Vessels (CS)

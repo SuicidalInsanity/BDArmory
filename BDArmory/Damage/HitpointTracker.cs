@@ -364,7 +364,8 @@ namespace BDArmory.Damage
             GameEvents.onPartDie.Add(OnPartDie);
             bottom = part.FindAttachNode("bottom");
             top = part.FindAttachNode("top");
-            if (armorVolume < 0) calcPartSize();
+            //if (armorVolume < 0) //check already occurs 429, doubling it results in the PartSize vector3 returning null
+                calcPartSize();
             SetupPrefab();
             if (HighLogic.LoadedSceneIsEditor && !isProcWing)
             {

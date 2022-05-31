@@ -257,6 +257,18 @@ namespace BDArmory.Weapons
             get { return turret ? turret.yawRange : 0; }
         }
 
+        ModuleDrone md;
+
+        public ModuleDrone drone
+        {
+            get
+            {
+                if (md) return md;
+                md = part.FindModuleImplementing<ModuleDrone>();
+                return md;
+            }
+        }
+
         //weapon interface
         public WeaponClasses GetWeaponClass()
         {
@@ -847,6 +859,9 @@ namespace BDArmory.Weapons
 
         [KSPField]
         public string APSType = "missile"; //missile/ballistic/omni
+
+        [KSPField]
+        public bool DroneWeapon = false;
 
         IEnumerator IncrementRippleIndex(float delay)
         {
@@ -1584,7 +1599,7 @@ namespace BDArmory.Weapons
         {
             if (HighLogic.LoadedSceneIsFlight && !vessel.packed)
             {
-                if (!vessel.IsControllable)
+                if (!vessel.IsControllable && !DroneWeapon)
                 {
                     if (!(weaponState == WeaponStates.PoweringDown || weaponState == WeaponStates.Disabled))
                     {
@@ -1826,8 +1841,8 @@ namespace BDArmory.Weapons
                                     pBullet.currentVelocity = (part.rb.velocity + Krakensbane.GetFrameVelocityV3f()) + firedVelocity; // use the real velocity, w/o offloading
                                     // pBullet.transform.position += (part.rb.velocity + Krakensbane.GetFrameVelocityV3f()) * Time.fixedDeltaTime; // Initially, put the bullet at the fireTransform position at the start of the next physics frame
 
-                                    pBullet.sourceWeapon = this.part;
-                                    pBullet.sourceVessel = vessel;
+                                    pBullet.sourceVessel = DroneWeapon ? drone.SourceVessel : vessel;
+                                    pBullet.team = DroneWeapon ? drone.Team.Name : weaponManager.Team.Name;
                                     pBullet.team = weaponManager.Team.Name;
                                     pBullet.bulletTexturePath = bulletTexturePath;
                                     pBullet.projectileColor = projectileColorC;
@@ -2002,10 +2017,10 @@ namespace BDArmory.Weapons
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
                 timeGap = (60 / BDArmorySettings.FIRE_RATE_OVERRIDE) * TimeWarp.CurrentRate;
 
-            if (timeGap <= weaponManager.targetScanInterval)
+            if (timeGap <= (DroneWeapon ? 0.5f : weaponManager.targetScanInterval))
                 return true;
             else
-                return (Time.time - timeFired >= timeGap - weaponManager.targetScanInterval);
+                return (Time.time - timeFired >= timeGap - (DroneWeapon ? 0.5f : weaponManager.targetScanInterval));
         }
         #endregion Guns
         //lasers
@@ -2299,7 +2314,7 @@ namespace BDArmory.Weapons
 
                                 if (Time.time - timeFired > 6 / 120 && BDArmorySettings.BULLET_HITS)
                                 {
-                                    BulletHitFX.CreateBulletHit(p, hit.point, hit, hit.normal, false, 10, 0, weaponManager.Team.Name);
+                                    BulletHitFX.CreateBulletHit(p, hit.point, hit, hit.normal, false, 10, 0, DroneWeapon ? drone.Team.Name : weaponManager.Team.Name);
                                 }
                             }
                         }
@@ -2468,7 +2483,7 @@ namespace BDArmory.Weapons
                                 rocket.sourceWeapon = this.part;
                                 rocketObj.transform.SetParent(currentRocketTfm.parent);
                                 rocket.rocketName = GetShortName() + " rocket";
-                                rocket.team = weaponManager.Team.Name;
+                                rocket.team = DroneWeapon ? drone.Team.Name : weaponManager.Team.Name;
                                 rocket.parentRB = part.rb;
                                 rocket.rocket = RocketInfo.rockets[currentType];
                                 rocket.rocketSoundPath = rocketSoundPath;
@@ -2555,7 +2570,7 @@ namespace BDArmory.Weapons
                                             rocket.parentRB = part.rb;
                                             rocket.rocket = RocketInfo.rockets[currentType];
                                             rocket.rocketName = GetShortName() + " rocket";
-                                            rocket.team = weaponManager.Team.Name;
+                                            rocket.team = DroneWeapon ? drone.Team.Name : weaponManager.Team.Name;
                                             rocket.rocketSoundPath = rocketSoundPath;
                                             rocket.thief = resourceSteal;
                                             rocket.dmgMult = strengthMutator;
@@ -2847,6 +2862,10 @@ namespace BDArmory.Weapons
         #region WeaponSetup
         bool WMgrAuthorized()
         {
+            if (DroneWeapon)
+            {
+                if (drone.HasFired) return true;
+            }
             MissileFire manager = BDArmorySetup.Instance.ActiveWeaponManager;
             if (manager != null && manager.vessel == vessel)
             {
@@ -3025,7 +3044,7 @@ namespace BDArmory.Weapons
             {
                 if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
                 {
-                    if (!targetAcquired && (!weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, weaponManager.targetScanInterval)))
+                    if (!targetAcquired && (DroneWeapon ? !drone.weaponManager : !weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / BDArmorySettings.FIRE_RATE_OVERRIDE, DroneWeapon ? 0.5f : weaponManager.targetScanInterval)))
                     {
                         autoFire = false;
                         return;
@@ -3033,7 +3052,7 @@ namespace BDArmory.Weapons
                 }
                 else
                 {
-                    if (!targetAcquired && (!weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / roundsPerMinute, weaponManager.targetScanInterval)))
+                    if (!targetAcquired && (DroneWeapon ? !drone.weaponManager : !weaponManager || Time.time - lastGoodTargetTime > Mathf.Max(60f / roundsPerMinute, DroneWeapon ? 0.5f : weaponManager.targetScanInterval)))
                     {
                         autoFire = false;
                         return;
@@ -3042,7 +3061,7 @@ namespace BDArmory.Weapons
             }
 
             Vector3 finalTarget = targetPosition;
-            if (aiControlled && !slaved && !targetAcquired && weaponManager)
+            if (aiControlled && !slaved && !targetAcquired && (weaponManager || DroneWeapon))
             {
                 if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
                 {
@@ -3246,7 +3265,7 @@ namespace BDArmory.Weapons
                     Vector3 simStartPos = simCurrPos;
                     float simDeltaTime = Time.fixedDeltaTime;
                     float atmosMultiplier = Mathf.Clamp01(2.5f * (float)FlightGlobals.getAtmDensity(vessel.staticPressurekPa, vessel.externalTemperature, vessel.mainBody));
-                    bool slaved = turret && weaponManager && (weaponManager.slavingTurrets || weaponManager.guardMode);
+                    bool slaved = DroneWeapon ? drone.HasFired : turret && weaponManager && (weaponManager.slavingTurrets || weaponManager.guardMode);
 
                     if (BDArmorySettings.DEBUG_LINES && BDArmorySettings.DRAW_AIMERS)
                     {
@@ -3812,6 +3831,7 @@ namespace BDArmory.Weapons
                     StartCoroutine(IncrementRippleIndex(0));
                     isRippleFiring = false;
                 }
+                if (DroneWeapon) finalFire = false;
                 if (eWeaponType == WeaponTypes.Laser)
                 {
                     if (LaserGrowTime > 0)
@@ -3851,7 +3871,7 @@ namespace BDArmory.Weapons
         {
             // This runs in the FashionablyLate timing phase of FixedUpdate before Krakensbane corrections have been applied.
             if (!(aimAndFireIfPossible || aimOnly)) return;
-            if (this == null || weaponManager == null || FlightGlobals.currentMainBody == null) return;
+            if (this == null || (!DroneWeapon && weaponManager == null) || FlightGlobals.currentMainBody == null) return;
 
             if (isAPS)
             {
@@ -4041,7 +4061,7 @@ namespace BDArmory.Weapons
                 if (!oneShotSound) audioSource.Stop();
                 wasFiring = false;
                 audioSource2.PlayOneShot(overheatSound);
-                weaponManager.ResetGuardInterval();
+                if (!DroneWeapon) weaponManager.ResetGuardInterval();
             }
             heat = Mathf.Clamp(heat - heatLoss * TimeWarp.fixedDeltaTime, 0, Mathf.Infinity);
             if (heat < maxHeat / 3 && isOverheated) //reset on cooldown
@@ -4074,7 +4094,7 @@ namespace BDArmory.Weapons
                 }
                 if (!oneShotSound) audioSource.Stop();
                 wasFiring = false;
-                weaponManager.ResetGuardInterval();
+                if (!DroneWeapon) weaponManager.ResetGuardInterval();
                 showReloadMeter = true;
                 if (hasReloadAnim)
                 {
@@ -4132,25 +4152,26 @@ namespace BDArmory.Weapons
 
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
             {
-                if (Time.time - lastGoodTargetTime > Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, weaponManager.targetScanInterval))
+                if (Time.time - lastGoodTargetTime > Mathf.Max(BDArmorySettings.FIRE_RATE_OVERRIDE / 60f, DroneWeapon ? 0.5f : weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
             }
             else
             {
-                if (Time.time - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, weaponManager.targetScanInterval))
+                if (Time.time - lastGoodTargetTime > Mathf.Max(roundsPerMinute / 60f, DroneWeapon ? 0.5f : weaponManager.targetScanInterval))
                 {
                     targetAcquisitionType = TargetAcquisitionType.None;
                 }
             }
             lastVisualTargetVessel = visualTargetVessel;
 
-            if (weaponManager)
+            if (weaponManager || DroneWeapon)
             {
                 //legacy or visual range guard targeting
-                if (aiControlled && weaponManager && visualTargetVessel &&
-                    (visualTargetVessel.transform.position - transform.position).sqrMagnitude < weaponManager.guardRange * weaponManager.guardRange)
+                if ((aiControlled && weaponManager && visualTargetVessel &&
+                    (visualTargetVessel.transform.position - transform.position).sqrMagnitude < weaponManager.guardRange * weaponManager.guardRange) ||
+                    (DroneWeapon && visualTargetVessel && (visualTargetVessel.transform.position - transform.position).sqrMagnitude < 15000 * 15000))
                 {
                     targetRadius = visualTargetVessel.GetRadius();
 
@@ -4225,7 +4246,7 @@ namespace BDArmory.Weapons
                                                    //targetparts.Shuffle(); //alternitively, increase the random range from maxtargetnum to targetparts.count, otherwise edge cases where lots of one thing (targeting command/mass) will be pulled before lighter things (weapons, maybe engines) if both selected
                             if (turret)
                             {
-                                targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, weaponManager.multiTargetNum));
+                                targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, DroneWeapon ? 1 : weaponManager.multiTargetNum));
                             }
                             else //make fixed guns all get the same target part
                             {
@@ -4262,17 +4283,18 @@ namespace BDArmory.Weapons
                     return;
                 }
 
-                if (weaponManager.slavingTurrets && turret)
+                if ((weaponManager.slavingTurrets || DroneWeapon) && turret)
                 {
                     slaved = true;
-                    targetRadius = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
-                    targetPosition = weaponManager.slavedPosition;
-                    targetVelocity = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - Krakensbane.GetFrameVelocityV3f());
+                    targetRadius = DroneWeapon ? (drone.targetVessel != null ? drone.targetVessel.GetRadius() : 35) : weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
+                    targetPosition = DroneWeapon ? drone.targetVessel.CoM : weaponManager.slavedPosition;
+                    if (DroneWeapon) targetVelocity = drone.targetVessel != null ? drone.targetVessel.rb_velocity : Vector3.zero;
+                    else targetVelocity = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - Krakensbane.GetFrameVelocityV3f());
                     //targetAcceleration = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.acceleration : weaponManager.slavedAcceleration;
                     //CS0172 Type of conditional expression cannot be determined because 'Vector3' and 'Vector3' implicitly convert to one another
-                    if (weaponManager.slavedTarget.vessel != null) targetAcceleration = weaponManager.slavedTarget.vessel.acceleration;
+                    if (DroneWeapon ? drone.targetVessel != null : weaponManager.slavedTarget.vessel != null) targetAcceleration = DroneWeapon ? drone.targetVessel.acceleration : weaponManager.slavedTarget.vessel.acceleration;
                     else
-                        targetAcceleration = weaponManager.slavedAcceleration;
+                        targetAcceleration = DroneWeapon ? Vector3.zero : weaponManager.slavedAcceleration;
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Slaved;
                     return;

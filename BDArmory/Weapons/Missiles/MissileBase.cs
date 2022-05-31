@@ -195,13 +195,13 @@ namespace BDArmory.Weapons.Missiles
 
         public enum DetonationDistanceStates { NotSafe, Cruising, CheckingProximity, Detonate }
 
-        public enum TargetingModes { None, Radar, Heat, Laser, Gps, AntiRad }
+        public enum TargetingModes { None, Radar, Heat, Laser, Gps, AntiRad, Image }
 
         public MissileStates MissileState { get; set; } = MissileStates.Idle;
 
         public DetonationDistanceStates DetonationDistanceState { get; set; } = DetonationDistanceStates.NotSafe;
 
-        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW }
+        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW, Drone }
 
         public GuidanceModes GuidanceMode;
 

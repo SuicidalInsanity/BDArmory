@@ -58,7 +58,7 @@ namespace BDArmory.Weapons.Missiles
             Vector3 relVProjected = Vector3.Project(relV, vectorToTarget);
             relSpeed = -Mathf.Sign(Vector3.Dot(relVProjected, vectorToTarget)) * relVProjected.magnitude; // Positive value when targets are closing on each other, negative when they are flying apart
 
-            if (missile.GetComponent<BDModularGuidance>() == null)
+            if (missile.GetComponent<BDModularGuidance>() == null && missile.GetComponent<ModuleDrone>() == null)
             {
                 // Basic time estimate for missile to drop and travel a safe distance from vessel assuming constant acceleration and firing vessel not accelerating
                 MissileLauncher ml = missile.GetComponent<MissileLauncher>();

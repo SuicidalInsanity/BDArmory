@@ -24,6 +24,7 @@ namespace BDArmory.Weapons
         Gun,
         Rocket,
         DefenseLaser,
-        SLW
+        SLW,
+        Drone
     }
 }
