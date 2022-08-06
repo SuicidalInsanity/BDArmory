@@ -528,44 +528,7 @@ namespace BDArmory.Weapons
             Fields["BallisticAngle"].guiActiveEditor = false;
 
             Fields["dropTime"].guiActive = false;
-            Fields["dropTime"].guiActiveEditor = false;
-
-            /*
-            // fill lockedSensorFOVBias with default values if not set by part config:
-            if (TargetingMode == TargetingModes.Heat && heatThreshold > 0 && lockedSensorFOVBias.minTime == float.MaxValue)
-            {
-                float a = lockedSensorFOV / 2f;
-                float b = -1f * ((1f - 1f / 1.2f));
-                float[] x = new float[6] { 0f * a, 0.2f * a, 0.4f * a, 0.6f * a, 0.8f * a, 1f * a };
-                if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("[BDArmory.DroneLauncher]: OnStart drone " + shortName + ": setting default lockedSensorFOVBias curve to:");
-                for (int i = 0; i < 6; i++)
-                {
-                    lockedSensorFOVBias.Add(x[i], b / (a * a) * x[i] * x[i] + 1f, -1f / 3f * x[i] / (a * a), -1f / 3f * x[i] / (a * a));
-                    if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("key = " + x[i] + " " + (b / (a * a) * x[i] * x[i] + 1f) + " " + (-1f / 3f * x[i] / (a * a)) + " " + (-1f / 3f * x[i] / (a * a)));
-                }
-            }
-
-            // fill lockedSensorVelocityBias with default values if not set by part config:
-            if (TargetingMode == TargetingModes.Heat && heatThreshold > 0 && lockedSensorVelocityBias.minTime == float.MaxValue)
-            {
-                lockedSensorVelocityBias.Add(0f, 1f);
-                lockedSensorVelocityBias.Add(180f, 1f);
-                if (BDArmorySettings.DRAW_DEBUG_LABELS)
-                {
-                    Debug.Log("[BDArmory.DroneLauncher]: OnStart drone " + shortName + ": setting default lockedSensorVelocityBias curve to:");
-                    Debug.Log("key = 0 1");
-                    Debug.Log("key = 180 1");
-                }
-            }
-
-            // fill activeRadarLockTrackCurve with default values if not set by part config:
-            if (TargetingMode == TargetingModes.Radar && activeRadarRange > 0 && activeRadarLockTrackCurve.minTime == float.MaxValue)
-            {
-                activeRadarLockTrackCurve.Add(0f, 0f);
-                activeRadarLockTrackCurve.Add(activeRadarRange, RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS);           // TODO: tune & balance constants!
-                if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log("[BDArmory.DroneLauncher]: OnStart drone " + shortName + ": setting default locktrackcurve with maxrange/minrcs: " + activeRadarLockTrackCurve.maxTime + "/" + RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS);
-            }
-            */
+            Fields["dropTime"].guiActiveEditor = false;          
         }
 
         protected virtual void OnPartDie(Part p)
@@ -853,54 +816,7 @@ namespace BDArmory.Weapons
             float planarDistanceToTarget = Vector3.ProjectOnPlane(vectorToTarget, upDirection).magnitude;
             float angleToTarget = Vector3.Angle(target - vessel.ReferenceTransform.position, vessel.ReferenceTransform.up);
             float strafingDistance = -1f;
-            float relativeVelocity = (float)(vessel.srf_velocity - v.srf_velocity).magnitude;
-            /*
-                missile = CurrentMissile;
-                if (missile != null)
-                {
-                    if (missile.GetWeaponClass() == WeaponClasses.Missile)
-                    {
-                        if (distanceToTarget > 5500f)
-                        {
-                            finalMaxSteer = GetSteerLimiterForSpeedAndPower();
-                        }
-
-                        if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget.exists)
-                        {
-                            debugString.AppendLine($"Attempting heat lock");
-                            target += v.srf_velocity.normalized * 10;
-                        }
-                        else
-                        {
-                            target = MissileGuidance.GetAirToAirFireSolution(missile, v);
-                        }
-
-                        if (angleToTarget < 20f)
-                        {
-                            steerMode = SteerModes.Aiming;
-                        }
-                    }
-                    else //bombing
-                    {
-                        if (distanceToTarget > 4500f)
-                        {
-                            finalMaxSteer = GetSteerLimiterForSpeedAndPower();
-                        }
-
-                        if (angleToTarget < 45f)
-                        {
-                            target = target + (Mathf.Max(defaultAltitude - 500f, minAltitude) * upDirection);
-                            Vector3 tDir = (target - vessel.ReferenceTransform.position).normalized;
-                            tDir = (1000 * tDir) - (vessel.Velocity().normalized * 600);
-                            target = vessel.ReferenceTransform.position + tDir;
-                        }
-                        else
-                        {
-                            target = target + (Mathf.Max(defaultAltitude - 500f, minAltitude) * upDirection);
-                        }
-                    }
-                }
-                else */
+            float relativeVelocity = (float)(vessel.srf_velocity - v.srf_velocity).magnitude;            
             if (weapon != null)
             {
                 Vector3 leadOffset = weapon.GetLeadOffset();
@@ -948,12 +864,12 @@ namespace BDArmory.Weapons
             {
                 if (strafingDistance < 0f) // target flying, or beyond range of beginning strafing run for landed/splashed targets.
                 {
-                    if (distanceToTarget > 50) // Adjust target speed based on distance from desired stand-off distance.
-                        finalmaxAirspeed = (distanceToTarget - 50) / 8f + (float)v.srfSpeed; // Beyond stand-off distance, approach a little faster.
+                    if (distanceToTarget > 200) // Adjust target speed based on distance from desired stand-off distance.
+                        finalmaxAirspeed = (distanceToTarget - 200) / 8f + (float)v.srfSpeed; // Beyond stand-off distance, approach a little faster.
                     else
                     {
                         //Mathf.Max(finalMaxSpeed = (distanceToTarget - vesselStandoffDistance) / 8f + (float)v.srfSpeed, 0); //for less aggressive braking
-                        finalmaxAirspeed = distanceToTarget / 50 * (float)v.srfSpeed; // Within stand-off distance, back off the thottle a bit.
+                        finalmaxAirspeed = distanceToTarget / 200 * (float)v.srfSpeed; // Within stand-off distance, back off the thottle a bit.
                         debugString.AppendLine($"Getting too close to Enemy. Braking!");
                     }
                 }
@@ -1131,17 +1047,6 @@ namespace BDArmory.Weapons
             }
             if (checkType == ExtendChecks.RequestsOnly) return extending;
             if (extending && extendParametersSet) return true; // Already extending.
-            /*
-            // Dropping a bomb.
-            if (extending && CurrentMissile && CurrentMissile.GetWeaponClass() == WeaponClasses.Bomb) // Run away from the bomb!
-            {
-                extendDistance = 4500;
-                desiredMinAltitude = maxAlt / 2;
-                extendParametersSet = true;
-                if (BDArmorySettings.DRAW_DEBUG_LABELS) Debug.Log($"[BDArmory.DroneAI]: {vessel.vesselName} is extending due to dropping a bomb!");
-                return true;
-            }
-            */
             // Ground targets.
             if (targetVessel != null && targetVessel.LandedOrSplashed)
             {

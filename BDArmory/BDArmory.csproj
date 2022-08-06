@@ -124,8 +124,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\_LocalDev\KSPRefs\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestWWWModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
     <Reference Include="UnityEngine.UnityWebRequestModule">
       <HintPath>..\..\_LocalDev\KSPRefs\UnityEngine.UnityWebRequestModule.dll</HintPath>
     </Reference>

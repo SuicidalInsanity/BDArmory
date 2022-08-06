@@ -27,6 +27,7 @@ namespace BDArmory.UI
         private static Dictionary<BDTeam, List<GPSTargetInfo>> GPSTargets;
         public static List<ModuleTargetingCamera> ActiveLasers;
         public static List<IBDWeapon> FiredMissiles;
+        public static List<IBDWeapon> FiredDrones;
         public static List<PooledBullet> FiredBullets;
         public static List<PooledRocket> FiredRockets;
         public static List<DestructibleBuilding> LoadedBuildings;
@@ -90,6 +91,7 @@ namespace BDArmory.UI
             FiredMissiles = new List<IBDWeapon>();
             FiredBullets = new List<PooledBullet>();
             FiredRockets = new List<PooledRocket>();
+            FiredDrones = new List<IBDWeapon>();
         }
 
         public static List<GPSTargetInfo> GPSTargetList(BDTeam team)
