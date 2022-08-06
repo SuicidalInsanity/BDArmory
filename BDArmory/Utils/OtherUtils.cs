@@ -1,6 +1,8 @@
 using UnityEngine;
 using System.Reflection;
 
+using BDArmory.Settings;
+
 namespace BDArmory.Utils
 {
     public static class OtherUtils // FIXME Suggestions for a better name?
@@ -110,6 +112,12 @@ namespace BDArmory.Utils
         public static string JsonDecompat(string json)
         {
             return json.Replace('<', '{').Replace('>', '}');
+        }
+
+        public static void SetTimeOverride(bool enabled)
+        {
+            BDArmorySettings.TIME_OVERRIDE = enabled;
+            Time.timeScale = enabled ? BDArmorySettings.TIME_SCALE : 1f;
         }
     }
 }

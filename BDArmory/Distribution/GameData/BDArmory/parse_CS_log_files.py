@@ -4,11 +4,10 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "2.2"
+VERSION = "2.3"
 
 parser = argparse.ArgumentParser(description="Log file parser for continuous spawning logs.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("logs", nargs='*', help="Log files to parse. If none are given, the latest log file is parsed.")
-parser.add_argument("-a", "--all-files", action='store_true', help="Parse all valid continuous spawning log files. (Note: the same vessel name in a later file will override the earlier file.)")
 parser.add_argument("-n", "--no-file", action='store_true', help="Don't create a csv file.")
 parser.add_argument("-w", "--weights", type=str, default="3,1.5,-1,4e-3,1e-4,4e-5,0.035,6e-4,1.5e-4, 5e-5,0.15,2e-3,3e-5,1.5e-5,0.075,0,0", help="Score weights.")
 parser.add_argument("--show-weights", action='store_true', help="Show the score weights.")
@@ -41,7 +40,7 @@ if len(args.logs) > 0:
     competition_files = [Path(filename) for filename in args.logs if filename.endswith(".log")]
 else:
     competition_files = list(sorted(list(log_dir.glob("cts-*.log"))))
-    if not args.all_files and len(competition_files) > 0:
+    if len(competition_files) > 0:
         competition_files = competition_files[-1:]
 
 data = {}

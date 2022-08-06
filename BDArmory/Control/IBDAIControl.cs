@@ -46,7 +46,7 @@ namespace BDArmory.Control
 
         string currentStatus { get; }
 
-        void ReleaseCommand();
+        void ReleaseCommand(bool resetAssignedPosition = true, bool storeCommand = true);
 
         void CommandFollow(ModuleWingCommander leader, int followerIndex);
 

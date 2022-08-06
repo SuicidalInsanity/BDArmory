@@ -61,6 +61,7 @@ namespace BDArmory.Control
         public ModuleWingCommander commandLeader { get; protected set; }
 
         protected PilotCommands command;
+        PilotCommands previousCommand;
         public string currentStatus { get; protected set; } = "Free";
         protected int commandFollowIndex;
 
@@ -360,25 +361,31 @@ namespace BDArmory.Control
 
         #region WingCommander
 
-        public virtual void ReleaseCommand()
+        public virtual void ReleaseCommand(bool resetAssignedPosition = true, bool storeCommand = true)
         {
             if (!vessel || command == PilotCommands.Free) return;
-            if (command == PilotCommands.Follow && commandLeader)
-            {
-                commandLeader = null;
-            }
             if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was released from command.");
+            previousCommand = command;
             command = PilotCommands.Free;
 
-            assignedPositionWorld = vesselTransform.position;
+            if (!storeCommand) // Clear the previous command.
+            {
+                if (previousCommand == PilotCommands.Follow) commandLeader = null;
+                previousCommand = PilotCommands.Free;
+            }
+            if (resetAssignedPosition) // Clear the assigned position.
+            {
+                assignedPositionWorld = vesselTransform.position;
+            }
         }
 
         public virtual void CommandFollow(ModuleWingCommander leader, int followerIndex)
         {
             if (!pilotEnabled) return;
-            if (leader == vessel || followerIndex < 0) return;
+            if (leader is null || leader == vessel || followerIndex < 0) return;
 
             if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was commanded to follow.");
+            previousCommand = command;
             command = PilotCommands.Follow;
             commandLeader = leader;
             commandFollowIndex = followerIndex;
@@ -394,8 +401,9 @@ namespace BDArmory.Control
         {
             if (!pilotEnabled) return;
 
-            if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was commanded to go to.");
+            if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDGenericAIBase]: {vessel.vesselName} was commanded to go to {gpsCoords}.");
             assignedPositionGeo = gpsCoords;
+            previousCommand = command;
             command = PilotCommands.FlyTo;
         }
 
@@ -403,8 +411,9 @@ namespace BDArmory.Control
         {
             if (!pilotEnabled) return;
 
-            if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was commanded to attack.");
+            if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDGenericAIBase]: {vessel.vesselName} was commanded to attack {gpsCoords}.");
             assignedPositionGeo = gpsCoords;
+            previousCommand = command;
             command = PilotCommands.Attack;
         }
 
@@ -418,9 +427,36 @@ namespace BDArmory.Control
             if (!pilotEnabled) return; // Do nothing if we haven't taken off (or activated with airspawn) yet.
 
             if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was commanded to follow waypoints.");
+            previousCommand = command;
             command = PilotCommands.Waypoints;
         }
 
+        /// <summary>
+        /// Resume a previous command.
+        /// ReleaseCommand should be called with resetAssignedPosition=false if the previous command is to be preserved.
+        /// </summary>
+        /// <returns>true if the previous command is resumed, false otherwise.</returns>
+        public virtual bool ResumeCommand()
+        {
+            switch (previousCommand)
+            {
+                case PilotCommands.Free:
+                    return false;
+                case PilotCommands.Attack:
+                    CommandAttack(assignedPositionGeo);
+                    break;
+                case PilotCommands.FlyTo:
+                    CommandFlyTo(assignedPositionGeo);
+                    break;
+                case PilotCommands.Follow:
+                    CommandFollow(commandLeader, commandFollowIndex);
+                    break;
+                case PilotCommands.Waypoints:
+                    CommandFollowWaypoints();
+                    break;
+            }
+            return true;
+        }
         #endregion WingCommander
 
         #region Waypoints
@@ -484,7 +520,7 @@ namespace BDArmory.Control
                 if (BDArmorySettings.DEBUG_AI) Debug.Log(string.Format("[BDArmory.BDGenericAIBase]: Reached waypoint {0} with range {1}", activeWaypointIndex, deviation));
                 BDACompetitionMode.Instance.Scores.RegisterWaypointReached(vessel.vesselName, activeWaypointIndex, activeWaypointLap, deviation);
 
-                if( BDArmorySettings.WAYPOINT_GUARD_INDEX>=0 && activeWaypointIndex>=BDArmorySettings.WAYPOINT_GUARD_INDEX && !weaponManager.guardMode)
+                if (BDArmorySettings.WAYPOINT_GUARD_INDEX >= 0 && activeWaypointIndex >= BDArmorySettings.WAYPOINT_GUARD_INDEX && !weaponManager.guardMode)
                 {
                     // activate guard mode
                     weaponManager.guardMode = true;
@@ -498,7 +534,7 @@ namespace BDArmory.Control
                     ReleaseCommand();
                     return;
                 }
-                else if(activeWaypointIndex >= waypoints.Count && activeWaypointLap <= waypointLapLimit)
+                else if (activeWaypointIndex >= waypoints.Count && activeWaypointLap <= waypointLapLimit)
                 {
                     activeWaypointIndex = 0;
                     activeWaypointLap++;
@@ -518,6 +554,7 @@ namespace BDArmory.Control
         }
         /// <summary>
         /// Prevent fuel resource drain until the next waypoint (coroutine).
+        /// Note: this should probably use the non-waypoint version below and just start/stop it based on the waypoint index.
         /// </summary>
         IEnumerator MaintainFuelLevelsUntilWaypointCoroutine()
         {
@@ -539,5 +576,37 @@ namespace BDArmory.Control
             }
         }
         #endregion
+
+        /// <summary>
+        /// Prevent fuel drain (control function).
+        /// </summary>
+        /// <param name="active">Activate or deactive fuel preservation.</param>
+        public void MaintainFuelLevels(bool active)
+        {
+            if (maintainingFuelLevelsCoroutine != null) StopCoroutine(maintainingFuelLevelsCoroutine);
+            if (active) maintainingFuelLevelsCoroutine = StartCoroutine(MaintainFuelLevelsCoroutine());
+        }
+
+        /// <summary>
+        /// Prevent fuel drain (coroutine).
+        /// </summary>
+        /// <returns></returns>
+        IEnumerator MaintainFuelLevelsCoroutine()
+        {
+            if (vessel == null) yield break;
+            var wait = new WaitForFixedUpdate();
+            var fuelResourceParts = new Dictionary<string, HashSet<PartResource>>();
+            ResourceUtils.DeepFind(vessel.rootPart, ResourceUtils.FuelResources, fuelResourceParts, true);
+            var fuelResources = fuelResourceParts.ToDictionary(t => t.Key, t => t.Value.ToDictionary(p => p, p => p.amount));
+            while (vessel != null)
+            {
+                foreach (var fuelResource in fuelResources.Values)
+                {
+                    foreach (var partResource in fuelResource.Keys)
+                    { partResource.amount = fuelResource[partResource]; }
+                }
+                yield return wait;
+            }
+        }
     }
 }

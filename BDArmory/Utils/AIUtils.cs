@@ -78,7 +78,7 @@ namespace BDArmory.Utils
             // float discriminant = 18f * A * B * C * D - 4f * Mathf.Pow(B, 3f) * D + Mathf.Pow(B, 2f) * Mathf.Pow(C, 2f) - 4f * A * Mathf.Pow(C, 3f) - 27f * Mathf.Pow(A, 2f) * Mathf.Pow(D, 2f);
             if (E > 0)
             { // Single solution (E is positive)
-                float F = (D1 + Mathf.Sign(D1) * Mathf.Sqrt(E)) / 2f;
+                float F = (D1 + Mathf.Sign(D1) * BDAMath.Sqrt(E)) / 2f;
                 float G = Mathf.Sign(F) * Mathf.Pow(Mathf.Abs(F), 1f / 3f);
                 float time = -1f / 3f / A * (B + G + D0 / G);
                 return Mathf.Clamp(time, 0f, maxTime);
@@ -86,8 +86,8 @@ namespace BDArmory.Utils
             else if (E < 0)
             { // Triple solution (E is negative)
                 float F_real = D1 / 2f;
-                float F_imag = Mathf.Sign(D1) * Mathf.Sqrt(-E) / 2f;
-                float F_abs = Mathf.Sqrt(F_real * F_real + F_imag * F_imag);
+                float F_imag = Mathf.Sign(D1) * BDAMath.Sqrt(-E) / 2f;
+                float F_abs = BDAMath.Sqrt(F_real * F_real + F_imag * F_imag);
                 float F_ang = Mathf.Atan2(F_imag, F_real);
                 float G_abs = Mathf.Pow(F_abs, 1f / 3f);
                 float G_ang = F_ang / 3f;
@@ -158,6 +158,33 @@ namespace BDArmory.Utils
             float back = positionFactor * lag * -1;
 
             return new Vector3(right, back, 0);
+        }
+
+        public static Vessel VesselClosestTo(Vector3 position, bool useGeoCoords = false)
+        {
+            Vessel closestV = null;
+            float closestSqrDist = float.MaxValue;
+            if (FlightGlobals.Vessels == null) return null;
+            if (useGeoCoords && FlightGlobals.currentMainBody is not null)
+            {
+                position = (Vector3)FlightGlobals.currentMainBody.GetWorldSurfacePosition(position.x, position.y, position.z);
+            }
+            using (var v = FlightGlobals.Vessels.GetEnumerator())
+                while (v.MoveNext())
+                {
+                    if (v.Current == null || !v.Current.loaded || v.Current.packed) continue;
+                    if (VesselModuleRegistry.ignoredVesselTypes.Contains(v.Current.vesselType)) continue;
+                    var wms = VesselModuleRegistry.GetMissileFire(v.Current);
+                    if (wms != null)
+                    {
+                        if (Vector3.SqrMagnitude(v.Current.vesselTransform.position - position) < closestSqrDist)
+                        {
+                            closestSqrDist = Vector3.SqrMagnitude(v.Current.vesselTransform.position - position);
+                            closestV = v.Current;
+                        }
+                    }
+                }
+            return closestV;
         }
 
         [Flags]
@@ -361,7 +388,7 @@ namespace BDArmory.Utils
                     this.body != body || movementType != vehicleType || this.maxSlopeAngle != maxSlopeAngle * Mathf.Deg2Rad)
                 {
                     GridSize = gridSize;
-                    GridDiagonal = gridSize * Mathf.Sqrt(2);
+                    GridDiagonal = gridSize * BDAMath.Sqrt(2);
                     this.body = body;
                     this.maxSlopeAngle = maxSlopeAngle * Mathf.Deg2Rad;
                     rebuildDistance = Mathf.Clamp(Mathf.Asin(MaxDistortion) * (float)body.Radius, GridSize * 4, GridSize * 256);
@@ -475,7 +502,7 @@ namespace BDArmory.Utils
             Vector3 gridToGeo(float x, float y)
             {
                 if (x == 0 && y == 0) return origin;
-                return VectorUtils.GeoCoordinateOffset(origin, body, Mathf.Atan2(y, x) * Mathf.Rad2Deg, Mathf.Sqrt(x * x + y * y) * GridSize);
+                return VectorUtils.GeoCoordinateOffset(origin, body, Mathf.Atan2(y, x) * Mathf.Rad2Deg, BDAMath.Sqrt(x * x + y * y) * GridSize);
             }
 
             Vector3 gridToGeo(Coords coords) => gridToGeo(coords.X, coords.Y);

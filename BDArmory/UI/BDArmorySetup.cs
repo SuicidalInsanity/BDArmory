@@ -247,6 +247,12 @@ namespace BDArmory.UI
             get { return gdott ? gdott : gdott = GameDatabase.Instance.GetTexture(textureDir + "greenDot", false); }
         }
 
+        private Texture2D rdott;
+
+        public Texture2D redDotTexture
+        {
+            get { return rdott ? rdott : rdott = GameDatabase.Instance.GetTexture(textureDir + "redDot", false); }
+        }
         private Texture2D gdt;
 
         public Texture2D greenDiamondTexture
@@ -780,6 +786,7 @@ namespace BDArmory.UI
 
                 { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetBias, -10, 10) },
                 { "targetWeightRange", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetWeightRange, -10, 10) },
+                { "targetWeightAirPreference", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetWeightAirPreference, -10, 10) },
                 { "targetWeightATA", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetWeightATA, -10, 10) },
                 { "targetWeightAoD", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetWeightAoD, -10, 10) },
                 { "targetWeightAccel", gameObject.AddComponent<NumericInputField>().Initialise(0, ActiveWeaponManager.targetWeightAccel,-10, 10) },
@@ -923,7 +930,7 @@ namespace BDArmory.UI
             GUI.Label(new Rect(_windowMargin + _buttonSize, _windowMargin, columnWidth - 2 * _windowMargin - numberOfButtons * _buttonSize, _windowMargin + _buttonSize), Localizer.Format("#LOC_BDArmory_WMWindow_title") + "          ", kspTitleLabel);
 
             // Version.
-            GUI.Label(new Rect(columnWidth - _windowMargin - (numberOfButtons - 1) * _buttonSize - 100, 23, 57, 10), Version + "-pre", waterMarkStyle);
+            GUI.Label(new Rect(columnWidth - _windowMargin - (numberOfButtons - 1) * _buttonSize - 100, 23, 57, 10), Version, waterMarkStyle);
 
             //SETTINGS BUTTON
             if (!BDKeyBinder.current &&
@@ -1645,11 +1652,11 @@ namespace BDArmory.UI
                     }
                     else
                     {
-                        textNumFields["targetWeightRange"].tryParseValue(GUI.TextField(new Rect(leftIndent + (90), (priorityLines * entryHeight), contentWidth - 90 - 38, entryHeight), textNumFields["targetWeightRange"].possibleValue, 4));
-                        ActiveWeaponManager.targetWeightAirPreference = (float)textNumFields["targetWeightRange"].currentValue;
+                        textNumFields["targetWeightAirPreference"].tryParseValue(GUI.TextField(new Rect(leftIndent + (90), (priorityLines * entryHeight), contentWidth - 90 - 38, entryHeight), textNumFields["targetWeightAirPreference"].possibleValue, 4));
+                        ActiveWeaponManager.targetWeightAirPreference = (float)textNumFields["targetWeightAirPreference"].currentValue;
                     }
                     GUI.Label(new Rect(leftIndent + (contentWidth - 35), (priorityLines * entryHeight), 35, entryHeight),
-                        ActiveWeaponManager.targetWeightRange.ToString(), leftLabel);
+                        ActiveWeaponManager.targetWeightAirPreference.ToString(), leftLabel);
                     priorityLines++;
 
                     GUI.Label(new Rect(leftIndent, (priorityLines * entryHeight), 85, entryHeight), Localizer.Format("#LOC_BDArmory_WMWindow_targetAngletoTarget"), leftLabel); //target proximity"
@@ -1890,71 +1897,98 @@ namespace BDArmory.UI
                     }
 
                     //TGP
-                    List<ModuleTargetingCamera>.Enumerator mtc = ActiveWeaponManager.targetingPods.GetEnumerator();
-                    while (mtc.MoveNext())
-                    {
-                        if (mtc.Current == null) continue;
-                        numberOfModules++;
-                        bool isEnabled = (mtc.Current.cameraEnabled);
-                        bool isActive = (mtc.Current == ModuleTargetingCamera.activeCam);
-                        GUIStyle moduleStyle = isEnabled ? centerLabelOrange : centerLabel; // = mtc
-                        string label = mtc.Current.part.partInfo.title;
-                        if (isActive)
+                    using (List<ModuleTargetingCamera>.Enumerator mtc = ActiveWeaponManager.targetingPods.GetEnumerator())
+                        while (mtc.MoveNext())
                         {
-                            moduleStyle = centerLabelRed;
-                            label = "[" + label + "]";
-                        }
-                        if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
-                            label, moduleStyle))
-                        {
+                            if (mtc.Current == null) continue;
+                            numberOfModules++;
+                            bool isEnabled = (mtc.Current.cameraEnabled);
+                            bool isActive = (mtc.Current == ModuleTargetingCamera.activeCam);
+                            GUIStyle moduleStyle = isEnabled ? centerLabelOrange : centerLabel; // = mtc
+                            string label = mtc.Current.part.partInfo.title;
                             if (isActive)
                             {
-                                mtc.Current.ToggleCamera();
+                                moduleStyle = centerLabelRed;
+                                label = "[" + label + "]";
                             }
-                            else
+                            if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
+                                label, moduleStyle))
                             {
-                                mtc.Current.EnableCamera();
+                                if (isActive)
+                                {
+                                    mtc.Current.ToggleCamera();
+                                }
+                                else
+                                {
+                                    mtc.Current.EnableCamera();
+                                }
                             }
+                            moduleLines++;
                         }
-                        moduleLines++;
-                    }
-                    mtc.Dispose();
 
                     //RADAR
-                    List<ModuleRadar>.Enumerator mr = ActiveWeaponManager.radars.GetEnumerator();
-                    while (mr.MoveNext())
-                    {
-                        if (mr.Current == null) continue;
-                        numberOfModules++;
-                        GUIStyle moduleStyle = mr.Current.radarEnabled ? centerLabelBlue : centerLabel;
-                        string label = mr.Current.radarName;
-                        if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
-                            label, moduleStyle))
+                    using (List<ModuleRadar>.Enumerator mr = ActiveWeaponManager.radars.GetEnumerator())
+                        while (mr.MoveNext())
                         {
-                            mr.Current.Toggle();
+                            if (mr.Current == null) continue;
+                            numberOfModules++;
+                            GUIStyle moduleStyle = mr.Current.radarEnabled ? centerLabelBlue : centerLabel;
+                            string label = mr.Current.radarName;
+                            if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
+                                label, moduleStyle))
+                            {
+                                mr.Current.Toggle();
+                            }
+                            moduleLines++;
                         }
-                        moduleLines++;
-                    }
-                    mr.Dispose();
-
+                    using (List<ModuleIRST>.Enumerator mr = ActiveWeaponManager.irsts.GetEnumerator())
+                        while (mr.MoveNext())
+                        {
+                            if (mr.Current == null) continue;
+                            numberOfModules++;
+                            GUIStyle moduleStyle = mr.Current.irstEnabled ? centerLabelBlue : centerLabel;
+                            string label = mr.Current.IRSTName;
+                            if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
+                                label, moduleStyle))
+                            {
+                                mr.Current.Toggle();
+                            }
+                            moduleLines++;
+                        }
                     //JAMMERS
-                    List<ModuleECMJammer>.Enumerator jammer = ActiveWeaponManager.jammers.GetEnumerator();
-                    while (jammer.MoveNext())
-                    {
-                        if (jammer.Current == null) continue;
-                        if (jammer.Current.alwaysOn) continue;
-
-                        numberOfModules++;
-                        GUIStyle moduleStyle = jammer.Current.jammerEnabled ? centerLabelBlue : centerLabel;
-                        string label = jammer.Current.part.partInfo.title;
-                        if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
-                            label, moduleStyle))
+                    using (List<ModuleECMJammer>.Enumerator jammer = ActiveWeaponManager.jammers.GetEnumerator())
+                        while (jammer.MoveNext())
                         {
-                            jammer.Current.Toggle();
+                            if (jammer.Current == null) continue;
+                            if (jammer.Current.alwaysOn) continue;
+
+                            numberOfModules++;
+                            GUIStyle moduleStyle = jammer.Current.jammerEnabled ? centerLabelBlue : centerLabel;
+                            string label = jammer.Current.part.partInfo.title;
+                            if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
+                                label, moduleStyle))
+                            {
+                                jammer.Current.Toggle();
+                            }
+                            moduleLines++;
                         }
-                        moduleLines++;
-                    }
-                    jammer.Dispose();
+                    //CLOAKS
+                    using (List<ModuleCloakingDevice>.Enumerator cloak = ActiveWeaponManager.cloaks.GetEnumerator())
+                        while (cloak.MoveNext())
+                        {
+                            if (cloak.Current == null) continue;
+                            if (cloak.Current.alwaysOn) continue;
+
+                            numberOfModules++;
+                            GUIStyle moduleStyle = cloak.Current.cloakEnabled ? centerLabelBlue : centerLabel;
+                            string label = cloak.Current.part.partInfo.title;
+                            if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), contentWidth, entryHeight),
+                                label, moduleStyle))
+                            {
+                                cloak.Current.Toggle();
+                            }
+                            moduleLines++;
+                        }
 
                     //Other modules
                     using (var module = ActiveWeaponManager.wmModules.GetEnumerator())
@@ -2340,7 +2374,7 @@ namespace BDArmory.UI
             GameSettings.ADVANCED_TWEAKABLES = GUI.Toggle(GameSettings.ADVANCED_TWEAKABLES ? SLeftRect(++line) : SLineRect(++line), GameSettings.ADVANCED_TWEAKABLES, Localizer.Format("#autoLOC_900906") + (GameSettings.ADVANCED_TWEAKABLES ? "" : " <— Access many more AI tuning options")); // Advanced tweakables
             BDArmorySettings.ADVANDED_USER_SETTINGS = GUI.Toggle(GameSettings.ADVANCED_TWEAKABLES ? SRightRect(line) : SLineRect(++line), BDArmorySettings.ADVANDED_USER_SETTINGS, Localizer.Format("#LOC_BDArmory_Settings_AdvancedUserSettings"));// Advanced User Settings
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GRAPHICS_UI_SECTION_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_GraphicsSettingsToggle")))//Show/hide Graphics/UI settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GRAPHICS_UI_SECTION_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_GraphicsSettingsToggle")))//Show/hide Graphics/UI settings.
             {
                 BDArmorySettings.GRAPHICS_UI_SECTION_TOGGLE = !BDArmorySettings.GRAPHICS_UI_SECTION_TOGGLE;
             }
@@ -2386,7 +2420,7 @@ namespace BDArmory.UI
                         {
                             var flare = flareObj.GetComponent<CMFlare>();
                             if (flare == null) continue;
-                            flare.EnableEmitters(BDArmorySettings.FLARE_SMOKE);
+                            flare.EnableEmitters();
                         }
                 }
                 BDArmorySettings.STRICT_WINDOW_BOUNDARIES = GUI.Toggle(SLeftRect(++line), BDArmorySettings.STRICT_WINDOW_BOUNDARIES, Localizer.Format("#LOC_BDArmory_Settings_StrictWindowBoundaries"));//"Strict Window Boundaries"
@@ -2447,9 +2481,10 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_ARMOR = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_ARMOR, Localizer.Format("#LOC_BDArmory_Settings_DebugArmor"));//"Debug Armor"
                         BDArmorySettings.DEBUG_DAMAGE = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_DAMAGE, Localizer.Format("#LOC_BDArmory_Settings_DebugDamage"));//"Debug Damage"
                         BDArmorySettings.DEBUG_AI = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_AI, Localizer.Format("#LOC_BDArmory_Settings_DebugAI"));//"Debug AI"
-                        BDArmorySettings.DEBUG_RADAR = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_RADAR, Localizer.Format("#LOC_BDArmory_Settings_DebugRadar"));//"Debug Detectors"
-                        BDArmorySettings.DEBUG_SPAWNING = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_SPAWNING, Localizer.Format("#LOC_BDArmory_Settings_DebugSpawning"));//"Debug Spawning"
-                        BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_OTHER, Localizer.Format("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
+                        BDArmorySettings.DEBUG_COMPETITION = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_COMPETITION, Localizer.Format("#LOC_BDArmory_Settings_DebugCompetition"));//"Debug Competition"
+                        BDArmorySettings.DEBUG_RADAR = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_RADAR, Localizer.Format("#LOC_BDArmory_Settings_DebugRadar"));//"Debug Detectors"
+                        BDArmorySettings.DEBUG_SPAWNING = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_SPAWNING, Localizer.Format("#LOC_BDArmory_Settings_DebugSpawning"));//"Debug Spawning"
+                        BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_OTHER, Localizer.Format("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
                     }
 #if DEBUG  // Only visible when compiled in Debug configuration.
                     if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE)
@@ -2574,7 +2609,7 @@ namespace BDArmory.UI
                 line += 0.5f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GAMEPLAY_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_GeneralSettingsToggle")))//Show/hide Gameplay settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GAMEPLAY_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_GeneralSettingsToggle")))//Show/hide Gameplay settings.
             {
                 BDArmorySettings.GAMEPLAY_SETTINGS_TOGGLE = !BDArmorySettings.GAMEPLAY_SETTINGS_TOGGLE;
             }
@@ -2665,19 +2700,12 @@ namespace BDArmory.UI
                     }
                     if (BDArmorySettings.TIME_OVERRIDE != (BDArmorySettings.TIME_OVERRIDE = GUI.Toggle(SLeftRect(++line), BDArmorySettings.TIME_OVERRIDE, Localizer.Format("#LOC_BDArmory_Settings_TimeOverride")))) // Time override.
                     {
-                        if (!BDArmorySettings.TIME_OVERRIDE)
-                        {
-                            Time.timeScale = 1f; // Reset the time scale
-                        }
-                        else
-                        {
-                            Time.timeScale = BDArmorySettings.TIME_SCALE; // Set the time scale to our setting.
-                        }
+                        OtherUtils.SetTimeOverride(BDArmorySettings.TIME_OVERRIDE);
                     }
                     if (BDArmorySettings.TIME_OVERRIDE)
                     {
                         GUI.Label(SLeftSliderRect(++line, 1), $"{Localizer.Format("#LOC_BDArmory_Settings_TimeScale")}; ({BDArmorySettings.TIME_SCALE:G2}x)", leftLabel);
-                        if (BDArmorySettings.TIME_SCALE != (BDArmorySettings.TIME_SCALE = Mathf.Round(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TIME_SCALE, 0f, 5f) * 10f) / 10f))
+                        if (BDArmorySettings.TIME_SCALE != (BDArmorySettings.TIME_SCALE = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TIME_SCALE, 0f, BDArmorySettings.TIME_SCALE_MAX), BDArmorySettings.TIME_SCALE > 5f ? 1f : 0.1f)))
                         {
                             Time.timeScale = BDArmorySettings.TIME_SCALE;
                         }
@@ -2687,7 +2715,7 @@ namespace BDArmory.UI
                 line += 0.5f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SLIDER_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_SliderSettingsToggle")))//Show/hide General Slider settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SLIDER_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_SliderSettingsToggle")))//Show/hide General Slider settings.
             {
                 BDArmorySettings.SLIDER_SETTINGS_TOGGLE = !BDArmorySettings.SLIDER_SETTINGS_TOGGLE;
             }
@@ -2751,11 +2779,14 @@ namespace BDArmory.UI
                     GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_DeathCameraInhibitPeriod")}:  ({(BDArmorySettings.DEATH_CAMERA_SWITCH_INHIBIT_PERIOD == 0 ? BDArmorySettings.CAMERA_SWITCH_FREQUENCY / 2f : BDArmorySettings.DEATH_CAMERA_SWITCH_INHIBIT_PERIOD)}s)", leftLabel); // Camera switch inhibit period after the active vessel dies.
                     BDArmorySettings.DEATH_CAMERA_SWITCH_INHIBIT_PERIOD = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.DEATH_CAMERA_SWITCH_INHIBIT_PERIOD, 0f, 10f));
                 }
+                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_Max_PWing_HP")}:  {(BDArmorySettings.MAX_PWING_HP >= 100 ? (BDArmorySettings.MAX_PWING_HP.ToString()) : "Unclamped")}", leftLabel); // Max PWing HP
+                BDArmorySettings.MAX_PWING_HP = GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.MAX_PWING_HP, 0, 10000);
+                BDArmorySettings.MAX_PWING_HP = Mathf.Round(BDArmorySettings.MAX_PWING_HP / 100) * 100;
 
                 line += 0.5f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GAME_MODES_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_GameModesSettingsToggle")))//Show/hide Game Modes settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.GAME_MODES_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_GameModesSettingsToggle")))//Show/hide Game Modes settings.
             {
                 BDArmorySettings.GAME_MODES_SETTINGS_TOGGLE = !BDArmorySettings.GAME_MODES_SETTINGS_TOGGLE;
             }
@@ -3139,7 +3170,7 @@ namespace BDArmory.UI
 
             if (BDArmorySettings.BATTLEDAMAGE)
             {
-                if (GUI.Button(SLineRect(++line), (BDArmorySettings.BATTLEDAMAGE_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_BDSettingsToggle")))//Show/hide Battle Damage settings.
+                if (GUI.Button(SLineRect(++line), (BDArmorySettings.BATTLEDAMAGE_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_BDSettingsToggle")))//Show/hide Battle Damage settings.
                 {
                     BDArmorySettings.BATTLEDAMAGE_TOGGLE = !BDArmorySettings.BATTLEDAMAGE_TOGGLE;
                 }
@@ -3207,7 +3238,7 @@ namespace BDArmory.UI
                 }
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.RADAR_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_RadarSettingsToggle"))) // Show/hide Radar settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.RADAR_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_RadarSettingsToggle"))) // Show/hide Radar settings.
             {
                 BDArmorySettings.RADAR_SETTINGS_TOGGLE = !BDArmorySettings.RADAR_SETTINGS_TOGGLE;
             }
@@ -3247,7 +3278,7 @@ namespace BDArmory.UI
                 line += 0.5f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.OTHER_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_OtherSettingsToggle"))) // Show/hide Other settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.OTHER_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_OtherSettingsToggle"))) // Show/hide Other settings.
             {
                 BDArmorySettings.OTHER_SETTINGS_TOGGLE = !BDArmorySettings.OTHER_SETTINGS_TOGGLE;
             }
@@ -3294,7 +3325,7 @@ namespace BDArmory.UI
                 line += 0.5f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.COMPETITION_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_CompSettingsToggle")))//Show/hide Competition settings.
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.COMPETITION_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_CompSettingsToggle")))//Show/hide Competition settings.
             {
                 BDArmorySettings.COMPETITION_SETTINGS_TOGGLE = !BDArmorySettings.COMPETITION_SETTINGS_TOGGLE;
             }
@@ -3352,7 +3383,7 @@ namespace BDArmory.UI
                 }
 
                 line += 0.2f;
-                if (GUI.Button(SLineRect(++line, 1, true), (BDArmorySettings.GM_SETTINGS_TOGGLE ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_GMSettingsToggle")))//Show/hide slider settings.
+                if (GUI.Button(SLineRect(++line, 1, true), (BDArmorySettings.GM_SETTINGS_TOGGLE ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_GMSettingsToggle")))//Show/hide slider settings.
                 {
                     BDArmorySettings.GM_SETTINGS_TOGGLE = !BDArmorySettings.GM_SETTINGS_TOGGLE;
                 }

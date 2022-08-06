@@ -80,6 +80,12 @@ namespace BDArmory.Weapons
             Impact      //standard contact + graze fuze, detonates on hit
             //Laser     //laser-guided smart rounds?
         }
+        public enum FillerTypes
+        {
+            None,       //No HE filler, non-explosive slug.
+            Standard,   //standard HE filler for a standard exposive shell
+            Shaped      //shaped charge filler, for HEAT rounds and similar
+        }
         public enum APSTypes
         {
             Ballistic,
@@ -97,6 +103,8 @@ namespace BDArmory.Weapons
         public WeaponTypes eWeaponType;
 
         public FuzeTypes eFuzeType;
+
+        public FillerTypes eHEType;
 
         public APSTypes eAPSType;
 
@@ -338,6 +346,8 @@ namespace BDArmory.Weapons
         #region KSPFields
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_WeaponName", guiActiveEditor = true), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name 
+        public string WeaponDisplayName;
+
         public string WeaponName;
 
         [KSPField]
@@ -413,9 +423,9 @@ namespace BDArmory.Weapons
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "Rate of Fire"),
             UI_FloatRange(minValue = 100f, maxValue = 1500, stepIncrement = 25f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]
-        public float roundsPerMinute = 650; //rocket RoF slider
+        public float roundsPerMinute = 650; //RoF slider
 
-        public float baseRPM;
+        public float baseRPM = 650;
 
         [KSPField]
         public bool isChaingun = false; //does the gun have adjustable RoF
@@ -475,7 +485,9 @@ namespace BDArmory.Weapons
         [KSPField]
         public float ChargeTime = -1;
         bool isCharging = false;
-
+        [KSPField]
+        public bool ChargeEachShot = true;
+        bool hasCharged = false;
 
         [KSPField]
         public string bulletDragTypeName = "AnalyticEstimate";
@@ -871,7 +883,7 @@ namespace BDArmory.Weapons
                 yield return new WaitForSeconds(delay);
             }
             if (weaponManager == null) yield break;
-            weaponManager.gunRippleIndex = weaponManager.gunRippleIndex + 1;
+            weaponManager.incrementRippleIndex(WeaponName);
 
             //Debug.Log("[BDArmory.ModuleWeapon]: incrementing ripple index to: " + weaponManager.gunRippleIndex);
         }
@@ -984,7 +996,8 @@ namespace BDArmory.Weapons
                 shortName = part.partInfo.title;
             }
             OriginalShortName = shortName;
-            WeaponName = shortName;
+            WeaponDisplayName = shortName;
+            WeaponName = part.partInfo.name; //have weaponname be the .cfg part name, since not all weapons have a shortName in the .cfg
             using (var emitter = part.FindModelComponents<KSPParticleEmitter>().AsEnumerable().GetEnumerator())
                 while (emitter.MoveNext())
                 {
@@ -992,7 +1005,12 @@ namespace BDArmory.Weapons
                     emitter.Current.emit = false;
                     EffectBehaviour.AddParticleEmitter(emitter.Current);
                 }
-            baseRPM = roundsPerMinute;
+
+            if (eWeaponType != WeaponTypes.Laser || (eWeaponType == WeaponTypes.Laser && pulseLaser))
+            {
+                baseRPM = float.Parse(ConfigNodeUtils.FindPartModuleConfigNodeValue(part.partInfo.partConfig, "ModuleWeapon", "roundsPerMinute"));
+            }
+            else baseRPM = 3000;
 
             if (roundsPerMinute >= 1500 || (eWeaponType == WeaponTypes.Laser && !pulseLaser))
             {
@@ -1338,8 +1356,9 @@ namespace BDArmory.Weapons
             if (hasFireAnimation)
             {
                 List<string> animList = BDAcTools.ParseNames(fireAnimName);
-                fireState = new AnimationState[animList.Count]; //this should become animList.Count, for cases where there's a bultibarrel weapon with a single fireanim
-                for (int i = 0; i < fireTransforms.Length; i++)
+                fireState = new AnimationState[animList.Count]; //this should become animList.Count, for cases where there's a multibarrel weapon with a single fireanim
+                //for (int i = 0; i < fireTransforms.Length; i++)
+                for (int i = 0; i < animList.Count; i++)
                 {
                     try
                     {
@@ -1815,7 +1834,22 @@ namespace BDArmory.Weapons
                                     pBullet.caliber = bulletInfo.caliber;
                                     pBullet.bulletVelocity = bulletInfo.bulletVelocity;
                                     pBullet.bulletMass = bulletInfo.bulletMass;
-                                    pBullet.explosive = bulletInfo.explosive;
+                                    if (bulletInfo.tntMass > 0)
+                                    {
+                                        switch (eHEType)
+                                        {
+                                            case FillerTypes.Standard:
+                                                pBullet.HEType = PooledBullet.PooledBulletTypes.Explosive;
+                                                break;
+                                            case FillerTypes.Shaped:
+                                                pBullet.HEType = PooledBullet.PooledBulletTypes.Shaped;
+                                                break;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        pBullet.HEType = PooledBullet.PooledBulletTypes.Slug;
+                                    }
                                     pBullet.incendiary = bulletInfo.incendiary;
                                     pBullet.apBulletMod = bulletInfo.apBulletMod;
                                     pBullet.bulletDmgMult = bulletDmgMult;
@@ -2001,6 +2035,7 @@ namespace BDArmory.Weapons
                         {
                             StartCoroutine(IncrementRippleIndex(initialFireDelay * TimeWarp.CurrentRate)); //this is why ripplefire is slower, delay to stagger guns should only be being called once
                             isRippleFiring = true;
+                            //need to know what next weapon in ripple sequence is, and have firedelay be set to whatever it's RPM is, not this weapon's or a generic average
                         }
                     }
                 }
@@ -2232,7 +2267,7 @@ namespace BDArmory.Weapons
 
                                     if (armor != null)// technically, lasers shouldn't do damage until armor gone, but that would require localized armor tracking instead of the monolithic model currently used                                              
                                     {
-                                        damage = (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime)) * Mathf.Clamp((1 - (Mathf.Sqrt(armor.Diffusivity * (armor.Density / 1000)) * armor.ArmorThickness) / initialDamage), 0.005f, 1); //old calc lacked a clamp, could potentially become negative damage
+                                        damage = (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime)) * Mathf.Clamp((1 - (BDAMath.Sqrt(armor.Diffusivity * (armor.Density / 1000)) * armor.ArmorThickness) / initialDamage), 0.005f, 1); //old calc lacked a clamp, could potentially become negative damage
                                     }  //clamps laser damage to not go negative, allow some small amount of bleedthrough - ~30 Be/Steel will negate ABL, ~62 Ti, 42 DU
                                     else
                                     {
@@ -3061,7 +3096,7 @@ namespace BDArmory.Weapons
             }
 
             Vector3 finalTarget = targetPosition;
-            if (aiControlled && !slaved && !targetAcquired && (weaponManager || DroneWeapon))
+            if ((aiControlled && !slaved && !targetAcquired && weaponManager) || (!(aiControlled && !slaved && !targetAcquired && weaponManager) && weaponManager.staleTarget) || DroneWeapon)
             {
                 if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
                 {
@@ -3072,6 +3107,8 @@ namespace BDArmory.Weapons
                 }
                 // Continue aiming towards where the target is expected to be while reloading based on the last measured pos, vel, acc.
                 finalAimTarget = AIUtils.PredictPosition(lastFinalAimTarget, targetVelocity, targetAcceleration, Time.time - lastGoodTargetTime); // FIXME Check this predicted position when in orbit.
+                fixedLeadOffset = targetPosition - finalAimTarget; //for aiming fixed guns to moving target
+
 #if DEBUG
                 debugTargetPosition = AIUtils.PredictPosition(debugLastTargetPosition, targetVelocity, targetAcceleration, Time.time - lastGoodTargetTime);
 #endif
@@ -3213,7 +3250,7 @@ namespace BDArmory.Weapons
                 {
                     turret.smoothRotation = false;
                 }
-                turret.AimToTarget(finalAimTarget);
+                turret.AimToTarget(finalAimTarget); //no aimbot turrets when target out of sight
                 turret.smoothRotation = origSmooth;
             }
         }
@@ -3778,7 +3815,7 @@ namespace BDArmory.Weapons
                     if (useRippleFire) //old method wouldn't catch non-ripple guns (i.e. Vulcan) trying to fire at targets beyond fire range
                     {
                         //StartCoroutine(IncrementRippleIndex(0));
-                        StartCoroutine(IncrementRippleIndex(initialFireDelay * TimeWarp.CurrentRate));
+                        StartCoroutine(IncrementRippleIndex(initialFireDelay * TimeWarp.CurrentRate)); //FIXME - possibly not getting called in all circumstances? Investigate later, future SI
                         isRippleFiring = true;
                     }
                 }
@@ -3793,7 +3830,7 @@ namespace BDArmory.Weapons
                             roundsPerMinute = Mathf.Lerp((baseRPM / 10), baseRPM, spooltime);
                         }
                     }
-                    if (!useRippleFire || weaponManager.gunRippleIndex == rippleIndex) // Don't fire rippling weapons when they're on the wrong part of the cycle. Spool up and grow lasers though.
+                    if (!useRippleFire || weaponManager.GetRippleIndex(WeaponName) == rippleIndex) // Don't fire rippling weapons when they're on the wrong part of the cycle. Spool up and grow lasers though.
                     {
                         finalFire = true;
                     }
@@ -3826,7 +3863,7 @@ namespace BDArmory.Weapons
             }
             else
             {
-                if (weaponManager != null && weaponManager.gunRippleIndex == rippleIndex)
+                if (weaponManager != null && weaponManager.GetRippleIndex(WeaponName) == rippleIndex)
                 {
                     StartCoroutine(IncrementRippleIndex(0));
                     isRippleFiring = false;
@@ -3864,6 +3901,7 @@ namespace BDArmory.Weapons
                         roundsPerMinute = Mathf.Lerp(baseRPM, (baseRPM / 10), spooltime);
                     }
                 }
+                if (ChargeTime > 0) hasCharged = false;
             }
         }
 
@@ -3898,7 +3936,7 @@ namespace BDArmory.Weapons
 
                 if (finalFire)
                 {
-                    if (ChargeTime > 0)
+                    if (ChargeTime > 0 && !hasCharged)
                     {
                         if (!isCharging)
                         {
@@ -4058,6 +4096,7 @@ namespace BDArmory.Weapons
             {
                 isOverheated = true;
                 autoFire = false;
+                hasCharged = false;
                 if (!oneShotSound) audioSource.Stop();
                 wasFiring = false;
                 audioSource2.PlayOneShot(overheatSound);
@@ -4085,6 +4124,7 @@ namespace BDArmory.Weapons
             {
                 isReloading = true;
                 autoFire = false;
+                hasCharged = false;
                 if (eWeaponType == WeaponTypes.Laser)
                 {
                     for (int i = 0; i < laserRenderers.Length; i++)
@@ -4622,7 +4662,7 @@ namespace BDArmory.Weapons
                 acceleration = Vector3.ProjectOnPlane(acceleration, VectorUtils.GetUpDirection(position));
 
             var distance = Vector3.Distance(position, part.transform.position);
-            var alpha = Mathf.Max(1f - Mathf.Sqrt(distance) / 512f, 0.1f);
+            var alpha = Mathf.Max(1f - BDAMath.Sqrt(distance) / 512f, 0.1f);
             var beta = alpha * alpha;
             if (!reset)
             {
@@ -4771,6 +4811,7 @@ namespace BDArmory.Weapons
             }
             UpdateGUIWeaponState();
             isCharging = false;
+            if (!ChargeEachShot) hasCharged = true;
             switch (eWeaponType)
             {
                 case WeaponTypes.Laser:
@@ -4885,6 +4926,26 @@ namespace BDArmory.Weapons
                     break;
             }
         }
+        void ParseBulletHEType(string type)
+        {
+            type = type.ToLower();
+            switch (type)
+            {
+                case "standard":
+                    eHEType = FillerTypes.Standard;
+                    break;
+                    //legacy support for older configs that are still explosive = true
+                case "true":
+                    eHEType = FillerTypes.Standard;
+                    break;
+                case "shaped":
+                    eHEType = FillerTypes.Shaped;
+                    break;
+                default:
+                    eHEType = FillerTypes.None;
+                    break;
+            }
+        }
         void ParseAPSType(string type)
         {
             type = type.ToLower();
@@ -4969,6 +5030,7 @@ namespace BDArmory.Weapons
                 fadeColor = bulletInfo.fadeColor;
                 ParseBulletDragType();
                 ParseBulletFuzeType(bulletInfo.fuzeType);
+                ParseBulletHEType(bulletInfo.explosive);
                 tntMass = bulletInfo.tntMass;
                 beehive = bulletInfo.beehive;
                 Impulse = bulletInfo.impulse;
@@ -5009,11 +5071,15 @@ namespace BDArmory.Weapons
                     {
                         guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Nuclear") + " ";
                     }
-                    if (bulletInfo.explosive && !bulletInfo.nuclear)
+                    if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
                     {
                         if (eFuzeType == FuzeTypes.Timed || eFuzeType == FuzeTypes.Proximity || eFuzeType == FuzeTypes.Flak)
                         {
                             guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Flak") + " ";
+                        }
+                        else if (eHEType == FillerTypes.Shaped)
+                        {
+                            guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Shaped") + " ";
                         }
                         guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Explosive") + " ";
                     }
@@ -5029,7 +5095,7 @@ namespace BDArmory.Weapons
                     {
                         guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Beehive") + " ";
                     }
-                    if (!bulletInfo.explosive && bulletInfo.apBulletMod <= 0.8)
+                    if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
                     {
                         guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Slug");
                     }
@@ -5249,6 +5315,7 @@ namespace BDArmory.Weapons
                             continue;
                         }
                         ParseBulletFuzeType(binfo.fuzeType);
+                        ParseBulletHEType(binfo.explosive);
                         output.AppendLine($"Bullet type: {(string.IsNullOrEmpty(binfo.DisplayName) ? binfo.name : binfo.DisplayName)}");
                         output.AppendLine($"Bullet mass: {Math.Round(binfo.bulletMass, 2)} kg");
                         output.AppendLine($"Muzzle velocity: {Math.Round(binfo.bulletVelocity, 2)} m/s");
@@ -5258,7 +5325,7 @@ namespace BDArmory.Weapons
                             output.AppendLine($"Cannister Round");
                             output.AppendLine($" - Submunition count: {binfo.subProjectileCount}");
                         }
-                        if (binfo.explosive && !binfo.nuclear)
+                        if ((binfo.tntMass > 0) && !binfo.nuclear)
                         {
                             output.AppendLine($"Blast:");
                             output.AppendLine($"- tnt mass:  {Math.Round(binfo.tntMass, 3)} kg");
@@ -5323,7 +5390,7 @@ namespace BDArmory.Weapons
                             output.AppendLine("");
                             continue;
                         }
-                        output.AppendLine($"Bullet type: {(string.IsNullOrEmpty(rinfo.DisplayName) ? rinfo.name : rinfo.DisplayName)}");
+                        output.AppendLine($"Rocket type: {(string.IsNullOrEmpty(rinfo.DisplayName) ? rinfo.name : rinfo.DisplayName)}");
                         output.AppendLine($"Rocket mass: {Math.Round(rinfo.rocketMass * 1000, 2)} kg");
                         //output.AppendLine($"Thrust: {thrust}kn"); mass and thrust don't really tell us the important bit, so lets replace that with accel
                         output.AppendLine($"Acceleration: {rinfo.thrust / rinfo.rocketMass}m/s2");
@@ -5460,7 +5527,7 @@ namespace BDArmory.Weapons
         {
             if (instance != null && instance.WPNmodule != null)
             {
-                instance.WPNmodule.WeaponName = instance.WPNmodule.shortName;
+                instance.WPNmodule.WeaponDisplayName = instance.WPNmodule.shortName;
                 instance.WPNmodule = null;
                 instance.UpdateGUIState();
             }
@@ -5603,7 +5670,7 @@ namespace BDArmory.Weapons
             {
                 string newName = string.IsNullOrEmpty(txtName.Trim()) ? WPNmodule.OriginalShortName : txtName.Trim();
 
-                WPNmodule.WeaponName = newName;
+                WPNmodule.WeaponDisplayName = newName;
                 WPNmodule.shortName = newName;
                 instance.WPNmodule.HideUI();
             }

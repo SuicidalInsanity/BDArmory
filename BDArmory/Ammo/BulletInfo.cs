@@ -12,7 +12,7 @@ namespace BDArmory.Bullets
         public float caliber { get; private set; }
         public float bulletMass { get; private set; }
         public float bulletVelocity { get; private set; }
-        public bool explosive { get; private set; } //left for legacy support
+        public string explosive { get; private set; } //left for legacy support
         public bool incendiary { get; private set; } //left for legacy support
         //public string attributeTags { get; private set; } //replace this with a string? tags to add: HE, incendiary, EMP, nuclear, beehive, homing, massmod, impulse; 
                                                           //nuclear can use tntmass for kT, beehive can use submunition#, would need submunition bulletType, homing would need degrees/s, massmod needs mass mod, impulse needs impulse
@@ -36,7 +36,7 @@ namespace BDArmory.Bullets
         public static BulletInfo defaultBullet;
 
         public BulletInfo(string name, string DisplayName, float caliber, float bulletVelocity, float bulletMass, 
-                          bool explosive, bool incendiary, float tntMass, bool EMP, bool nuclear, bool beehive, string subMunitionType, float massMod, float impulse, string fuzeType, float apBulletDmg,
+                          string explosive, bool incendiary, float tntMass, bool EMP, bool nuclear, bool beehive, string subMunitionType, float massMod, float impulse, string fuzeType, float apBulletDmg,
                           int subProjectileCount, string bulletDragTypeName, string projectileColor, string startColor, bool fadeColor)
         {
             this.name = name;
@@ -85,7 +85,7 @@ namespace BDArmory.Bullets
                         (float)ParseField(node, "caliber", typeof(float)),
                         (float)ParseField(node, "bulletVelocity", typeof(float)),
                         (float)ParseField(node, "bulletMass", typeof(float)),
-                        (bool)ParseField(node, "explosive", typeof(bool)),
+                        (string)ParseField(node, "explosive", typeof(string)),
                         (bool)ParseField(node, "incendiary", typeof(bool)),
                         (float)ParseField(node, "tntMass", typeof(float)),
                         (bool)ParseField(node, "EMP", typeof(bool)),
@@ -130,7 +130,7 @@ namespace BDArmory.Bullets
                         (float)ParseField(node, "caliber", typeof(float)),
                         (float)ParseField(node, "bulletVelocity", typeof(float)),
                         (float)ParseField(node, "bulletMass", typeof(float)),
-                        (bool)ParseField(node, "explosive", typeof(bool)),
+                        (string)ParseField(node, "explosive", typeof(string)),
                         (bool)ParseField(node, "incendiary", typeof(bool)),
                         (float)ParseField(node, "tntMass", typeof(float)),
                         (bool)ParseField(node, "EMP", typeof(bool)),

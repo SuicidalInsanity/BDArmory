@@ -5,6 +5,7 @@ using UniLinq;
 using UnityEngine;
 
 using BDArmory.Control;
+using BDArmory.Competition.VesselSpawning;
 using BDArmory.Extensions;
 using BDArmory.Guidances;
 using BDArmory.Radar;
@@ -57,8 +58,11 @@ namespace BDArmory.Weapons.Missiles
         [KSPField(isPersistant = true)]
         public int GuidanceIndex = 2;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ActiveRadarRange"), UI_FloatRange(minValue = 6000f, maxValue = 50000f, stepIncrement = 1000f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Active Radar Range
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ActiveRadarRange"), UI_FloatRange(minValue = 0, maxValue = 50000f, stepIncrement = 1000f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Active Radar Range
         public float ActiveRadarRange = 6000;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ChaffFactor"), UI_FloatRange(minValue = 0, maxValue = 2, stepIncrement = 0.1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Active Radar Range
+        public float ChaffEffectivity = 1;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_SteerLimiter"), UI_FloatRange(minValue = .1f, maxValue = 1f, stepIncrement = .05f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Steer Limiter
         public float MaxSteer = 1;
@@ -147,6 +151,16 @@ namespace BDArmory.Weapons.Missiles
                     GuidanceMode = GuidanceModes.AGMBallistic;
                     GuidanceLabel = "Ballistic";
                     break;
+
+                case 5:
+                    GuidanceMode = GuidanceModes.PN;
+                    GuidanceLabel = "Proportional Navigation";
+                    break;
+
+                case 6:
+                    GuidanceMode = GuidanceModes.APN;
+                    GuidanceLabel = "Augmented Pro-Nav";
+                    break;
             }
 
             if (Fields["CruiseAltitude"] != null)
@@ -178,6 +192,7 @@ namespace BDArmory.Weapons.Missiles
 
         public override void OnFixedUpdate()
         {
+            base.OnFixedUpdate();
             if (HasFired && !HasExploded)
             {
                 UpdateGuidance();
@@ -395,7 +410,7 @@ namespace BDArmory.Weapons.Missiles
             WeaponName = GetShortName();
 
             activeRadarRange = ActiveRadarRange;
-
+            chaffEffectivity = ChaffEffectivity;
             //TODO: BDModularGuidance should be configurable?
             heatThreshold = 50;
             lockedSensorFOV = 5;
@@ -606,11 +621,17 @@ namespace BDArmory.Weapons.Missiles
             if (TargetAcquired)
             {
                 float timeToImpact;
-                aamTarget = MissileGuidance.GetAirToAirTargetModular(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact);
+                if (GuidanceIndex == 6) // Augmented Pro-Nav
+                    aamTarget = MissileGuidance.GetAPNTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, 3f, out timeToImpact);
+                else if (GuidanceIndex == 5) // Pro-Nav
+                    aamTarget = MissileGuidance.GetPNTarget(TargetPosition, TargetVelocity, vessel, 3f, out timeToImpact);
+                else // AAM Lead
+                    aamTarget = MissileGuidance.GetAirToAirTargetModular(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact);
                 TimeToImpact = timeToImpact;
+
                 if (Vector3.Angle(aamTarget - vessel.CoM, vessel.transform.forward) > maxOffBoresight * 0.75f)
                 {
-                    Debug.LogFormat("[BDArmory.BDModularGuidance]: Missile with Name={0} has exceeded the max off boresight, checking missed target ", vessel.vesselName);
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.LogFormat("[BDArmory.BDModularGuidance]: Missile with Name={0} has exceeded the max off boresight, checking missed target ", vessel.vesselName);
                     aamTarget = TargetPosition;
                 }
                 DrawDebugLine(vessel.CoM, aamTarget);
@@ -634,7 +655,7 @@ namespace BDArmory.Weapons.Missiles
 
                     if (targetViewAngle > maxOffBoresight)
                     {
-                        Debug.Log("[BDArmory.BDModularGuidance]: AGM Missile guidance failed - target out of view");
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: AGM Missile guidance failed - target out of view");
                         guidanceActive = false;
                     }
                 }
@@ -664,15 +685,13 @@ namespace BDArmory.Weapons.Missiles
         private void CheckMiss(Vector3 targetPosition)
         {
             if (HasMissed) return;
+            if (MissileState != MissileStates.PostThrust) return;
             // if I'm to close to my vessel avoid explosion
             if ((vessel.CoM - SourceVessel.CoM).magnitude < 4 * DetonationDistance) return;
-            // if I'm getting closer to  my target avoid explosion
+            // if I'm getting closer to my target avoid explosion
             if ((vessel.CoM - targetPosition).sqrMagnitude >
                 (vessel.CoM + (vessel.Velocity() * Time.fixedDeltaTime) - (targetPosition + (TargetVelocity * Time.fixedDeltaTime))).sqrMagnitude) return;
-
-            if (MissileState != MissileStates.PostThrust) return;
-
-            Debug.Log("[BDArmory.BDModularGuidance]: Missile CheckMiss showed miss for " + vessel.vesselName + " with target at " + (targetPosition - vessel.CoM).ToString("0.0"));
+            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.BDModularGuidance]: Missile CheckMiss showed miss for {vessel.vesselName} ({SourceVessel}) with target at {targetPosition - vessel.CoM:G3}");
 
             var pilotAI = VesselModuleRegistry.GetModule<BDModulePilotAI>(vessel); // Get the pilot AI if the  missile has one.
             if (pilotAI != null)
@@ -691,7 +710,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void ResetMissile()
         {
-            Debug.Log("[BDArmory.BDModularGuidance]: Resetting missile " + vessel.vesselName);
+            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: Resetting missile " + vessel.vesselName);
             heatTarget = TargetSignatureData.noTarget;
             vrd = null;
             radarTarget = TargetSignatureData.noTarget;
@@ -711,7 +730,7 @@ namespace BDArmory.Weapons.Missiles
             MissileState = MissileStates.Idle;
             if (mfChecked && weaponManager != null)
             {
-                Debug.Log("[BDArmory.BDModularGuidance]: disabling target lock for " + vessel.vesselName);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: disabling target lock for " + vessel.vesselName);
                 weaponManager.guardFiringMissile = false; // Disable target lock.
                 mfChecked = false;
             }
@@ -723,7 +742,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (MissileState == MissileStates.PostThrust && (vessel.LandedOrSplashed || vessel.Velocity().magnitude < 10f))
             {
-                Debug.Log("[BDArmory.BDModularGuidance]: Missile CheckMiss showed miss for " + vessel.vesselName);
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: Missile CheckMiss showed miss for " + vessel.vesselName);
 
                 var pilotAI = VesselModuleRegistry.GetModule<BDModulePilotAI>(vessel); // Get the pilot AI if the  missile has one.
                 if (pilotAI != null)
@@ -744,6 +763,7 @@ namespace BDArmory.Weapons.Missiles
 
         public void GuidanceSteer(FlightCtrlState s)
         {
+            FloatingOriginCorrection();
             debugString.Length = 0;
             if (guidanceActive && MissileReferenceTransform != null && _velocityTransform != null)
             {
@@ -754,7 +774,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (mfChecked && weaponManager != null && !weaponManager.guardFiringMissile)
                 {
-                    Debug.Log("[BDArmory.BDModularGuidance]: enabling target lock for " + vessel.vesselName);
+                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.BDModularGuidance]: enabling target lock for " + vessel.vesselName);
                     weaponManager.guardFiringMissile = true; // Enable target lock.
                 }
 
@@ -788,6 +808,12 @@ namespace BDArmory.Weapons.Missiles
 
                     case 4:
                         newTargetPosition = BallisticGuidance();
+                        break;
+                    case 5:
+                        newTargetPosition = AAMGuidance();
+                        break;
+                    case 6:
+                        newTargetPosition = AAMGuidance();
                         break;
                 }
                 CheckMiss(newTargetPosition);
@@ -880,7 +906,7 @@ namespace BDArmory.Weapons.Missiles
         /// <param name="parent"></param>
         /// <param name="last"></param>
         /// <returns></returns>
-        private PartModule FindFirstDecoupler(Part parent, PartModule last)
+        public static PartModule FindFirstDecoupler(Part parent, PartModule last)
         {
             if (parent == null || !parent) return last;
 
@@ -902,7 +928,7 @@ namespace BDArmory.Weapons.Missiles
         /// </summary>
         public void ExecuteNextStage()
         {
-            Debug.LogFormat("[BDArmory.BDModularGuidance]: Executing next stage {0} for {1}", _nextStage, vessel.vesselName);
+            if (BDArmorySettings.DEBUG_MISSILES) Debug.LogFormat("[BDArmory.BDModularGuidance]: Executing next stage {0} for {1}", _nextStage, vessel.vesselName);
             vessel.ActionGroups.ToggleGroup(
                 (KSPActionGroup)Enum.Parse(typeof(KSPActionGroup), "Custom0" + (int)_nextStage));
 
@@ -976,6 +1002,8 @@ namespace BDArmory.Weapons.Missiles
                 Jettison();
                 AddTargetInfoToVessel();
                 IncreaseTolerance();
+                if (SpawnUtils.CountActiveEngines(vessel) == 0) // Activate all engines if none are activated by action group "staging".
+                    SpawnUtils.ActivateAllEngines(vessel, true, false);
 
                 this.initialMissileRollPlane = -this.vessel.transform.up;
                 this.initialMissileForward = this.vessel.transform.forward;
@@ -1033,7 +1061,7 @@ namespace BDArmory.Weapons.Missiles
         public void SwitchGuidanceMode()
         {
             GuidanceIndex++;
-            if (GuidanceIndex > 4)
+            if (GuidanceIndex > 6)
             {
                 GuidanceIndex = 1;
             }
@@ -1115,6 +1143,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (HasExploded || !HasFired) return;
             if (SourceVessel == null) SourceVessel = vessel;
+            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.BDModularGuidance]: Detonating missile {vessel.vesselName} ({SourceVessel})");
 
             if (StageToTriggerOnProximity != 0)
             {

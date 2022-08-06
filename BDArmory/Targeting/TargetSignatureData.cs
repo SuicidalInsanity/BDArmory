@@ -132,30 +132,27 @@ namespace BDArmory.Targeting
             }
         }
 
-        public Vector3 predictedPositionWithChaffFactor
+        public Vector3 predictedPositionWithChaffFactor(float chaffEffectivity = 1f)
         {
-            get
+            // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
+            float decoyFactor = 0f;
+            Vector3 posDistortion = Vector3.zero;
+
+            if (vessel != null)
             {
-                // get chaff factor of vessel and calculate decoy distortion caused by chaff echos
-                float decoyFactor = 0f;
-                Vector3 posDistortion = Vector3.zero;
+                // chaff check
+                decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
 
-                if (vessel != null)
+                if (decoyFactor > 0f)
                 {
-                    // chaff check
-                    decoyFactor = (1f - RadarUtils.GetVesselChaffFactor(vessel));
-
-                    if (decoyFactor > 0f)
-                    {
-                        // with ecm on better chaff effectiveness due to higher modifiedSignature
-                        // higher speed -> missile decoyed further "behind" where the chaff drops (also means that for head-on engagements chaff is most like less effective!)
-                        posDistortion = (vessel.GetSrfVelocity() * -1f * Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f)) + (UnityEngine.Random.insideUnitSphere * UnityEngine.Random.Range(targetInfo.radarModifiedSignature, targetInfo.radarModifiedSignature * targetInfo.radarModifiedSignature) * decoyFactor);
-                        posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f);
-                    }
+                    // with ecm on better chaff effectiveness due to higher modifiedSignature
+                    // higher speed -> missile decoyed further "behind" where the chaff drops (also means that for head-on engagements chaff is most like less effective!)
+                    posDistortion = (vessel.GetSrfVelocity() * -1f * Mathf.Clamp(decoyFactor * decoyFactor, 0f, 0.5f)) + (UnityEngine.Random.insideUnitSphere * UnityEngine.Random.Range(targetInfo.radarModifiedSignature, targetInfo.radarModifiedSignature * targetInfo.radarModifiedSignature) * decoyFactor);
+                    posDistortion *= Mathf.Max(BDArmorySettings.CHAFF_FACTOR, 0f) * chaffEffectivity;
                 }
-
-                return position + (velocity * age) + posDistortion;
             }
+
+            return position + (velocity * age) + posDistortion;
         }
 
         public float altitude

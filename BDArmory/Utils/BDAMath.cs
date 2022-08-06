@@ -58,5 +58,9 @@ namespace BDArmory.Utils
             var rounded = Mathf.Round(value / unit) * unit;
             return (unit % 1 != 0) ? rounded : Mathf.Round(rounded); // Fix near-integer loss of precision.
         }
+
+        // This is a fun workaround for M1-chip Macs (Apple Silicon). Specific issue the workaround is for is here: 
+        // https://issuetracker.unity3d.com/issues/m1-incorrect-calculation-of-values-using-multiplication-with-mathf-dot-sqrt-when-an-unused-variable-is-declared
+        public static float Sqrt(float value) => (float)System.Math.Sqrt((double)value);
     }
 }

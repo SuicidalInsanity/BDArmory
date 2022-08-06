@@ -1,5 +1,6 @@
 using System;
 using BDArmory.Extensions;
+using BDArmory.Utils;
 using UnityEngine;
 
 namespace BDArmory.FX
@@ -30,7 +31,7 @@ namespace BDArmory.FX
             audioSource.maxDistance = 5000;
             audioSource.dopplerLevel = 0f;
             audioSource.pitch = UnityEngine.Random.Range(0.93f, 1f);
-            audioSource.volume = Mathf.Sqrt(originalShipVolume);
+            audioSource.volume = BDAMath.Sqrt(originalShipVolume);
 
             audioSource.PlayOneShot(GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/seismicCharge"));
 

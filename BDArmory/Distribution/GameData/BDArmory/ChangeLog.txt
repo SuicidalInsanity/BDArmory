@@ -1,4 +1,36 @@
-﻿v1.5.0.0-pre
+﻿v1.5.1.0
+IMPROVEMENTS / FIXES
+- General:
+	- Remove the "-pre" from the version string, fix some typos.
+- AI:
+	- Allow a vessel that's lost parts after launch to still be auto-tuned.
+	- Don't reset the assigned fly-to position when arriving at an orbiting point so that planes actually orbit the targeted point.
+	- Resume various pilot commands if interrupted once the cause of the interruption is removed.
+	- Adjust the fly-to point's altitude closer to the default altitude when at longer ranges so planes with higher default altitudes will attack from above and vice-versa.
+	- Reduce the half-life of the velocity smoothing for the turn radius calculation to allow faster updates for terrain avoidance.
+	- AI can now fire antirad missiles at targets detected via RWR.
+	- Fix AI not firing heatseekers.
+	- Fix launch authorisation check throwing an NRE for modular missiles.
+	- Further fix to bombs ignoring max missiles/tge.
+- Competition:
+	- Calculate the proper separation between teams for starting a competition - fixes the competitions not starting bug.
+	- Set the number of teams to 0 in one-at-a-time waypoint mode tournaments so spawning works correctly.
+	- Ignore modular missile engines when activating all engines during spawning.
+- Weapons:
+	- Add pro-nav gain parameter as tunable parameter for missile parts (pronavGain), set pro-nav gain to 3 by default.
+	- Anti-rad missiles now continue to target the last known GPS point instead of disabling guidance.
+	- Fix ShapedCharge warheads doing no damage.
+	- Activate modular missile engines directly instead of using staging (which sometimes doesn't work).
+	- Apply Floating Origin/Krakensbane corrections to missile guidances - fixes missiles detonating partway to target due to miss checks.
+- Armor:
+	- Fix ProcArmor max scalar clamp not appearing.
+	- Add Yield and YoungModulus fields to armour for reflection - fixes armour definitions without these properties not loading properly.
+	- Tweak penetration calcs for ultra-low ductility armor materials.
+- UI:
+	- Missile names now linked to launching craft teamcolor.
+	- Set the AI GUI window rect in Start, not Awake, to guarantee that BDArmorySettings values have been read - fixes the 0-height AI GUI window.
+
+v1.5.0.0
 FIXES
 - Fix 'resizeSquare' texture not being loaded sometimes (due to a race condition?).
 - Clean up log spam from ExplosionFX.
@@ -11,9 +43,20 @@ FIXES
 - Fixes Proc Armor bugs.
 - Fixes broken hydraulics on Chaingun, Hydra Turret and Patriot Launcher models.
 - Fixes custom armor volumes in .cfgs being ignored.
+- Fix some EMP weapon Selection logic.
+- EMP AMRAAM and EMP Hellfire missiles now have different names to differentiate them from vanilla variants.
+- Fixes Armor explosion resistance.
+- Armor panels no longer indestructible.
+- VTOL AI no longer toggles off guard mode in competitions.
+- Fixes Debris icons not appearing when Team Icons enabled.
+- Fixes Chaingun/Rocketpod Rounds Per Minute slider values when reverting to VAB/SPH.
+- Fixes ripplefire issue with weapons with different rates of fire in one weapongroup.
+- Fix for issue where AI was not leading target when KSP was running on M1 Macs (Apple Silicon).
+- Fixes JDAM inaccuracy issue.
 
 IMPROVEMENTS
 - General:
+	- Rebranded as "BDArmory Plus" (BDA+) on SpaceDock/CKAN (from "BDArmory for Runway Project") and forum thread created.
 	- Major internal refactor to better organise code.
 	- Switch to a single DLL release.
 	- Add missing HP rounding to some parts.
@@ -24,16 +67,21 @@ IMPROVEMENTS
 	- Add a toggle to the UI settings section to disable gapless particle emitters (mostly used for engine trails).
 	- Debug labels now organized by type for easier debug tracking.
 	- Refactor the debug settings to be more specific and to have an on-screen only debug labels.
-    - Adds SelfSealingTanks/Firebottle options to Proc Part Tanks.
-	- Adds Oblique Triangle Proc Armor panel.
-	- Bullets now ignore flags.
+	- Adds SelfSealingTanks/Firebottle options to Proc Part Tanks.
+	- Bullets/explosions/etc now ignore flags.
 	- Adds new CameraTools switching modes, right click the cameraTools button [A] on the VesselSwitcherGUI.
-	 - [S] - Camera will autoswitch to vessel with highest score
-	 - [D] - Camera will switch to furthest vessel from dogfight centroid
+		- [S] - Camera will autoswitch to vessel with highest score.
+		- [D] - Camera will switch to furthest vessel from dogfight centroid.
 	- Restore the precision of Vector2d persistent fields.
 	- Update the continuous spawning log parsing script.
 	- Add some extra layer masks (internal kerbals are 1<<16, wheels are 1<<26).
 	- Add a BodyUtils.GetTerrainAltitudeAtPos function.
+	- Adds optional setting to clamp proc part/proc wing max HP to a configurable maximum when Runway Project enabled.
+	- Adds UI Icon team color reset button.
+	- Adds missile names to missile warning icons when vessel names enabled.
+	- Add a config option for the maximum time scaling.
+	- Add a new logarithmic float range PAW slider type.
+
 - AI:
 	- Add a 5° deadzone around being on target for dynamic damping to avoid feed-back loop in PID.
 	- Add a check for requested extending already being satisfied.
@@ -44,7 +92,26 @@ IMPROVEMENTS
 	- Fix AI takeoff behavior.
 	- Add Store/Restore option to save control surface configs in Pilot AI.
 	- Add extend angle to AI to clamp climb/dive angle when doing Air-to-air extending.
-	- Add Air/Ground target preference weighting to Target Priorities
+	- Add Air/Ground target preference weighting to Target Priorities.
+	- Make the extend toggle apply to air-to-air missiles as well as air-to-air guns.
+	- Update the AI GUI help text for the current extending settings.
+	- Make the AI GUI vertically resizable.
+	- AI will now head to target's last known position if contact lost (out of sight range/angle/radar detection), with accuracy of predicted position decaying over time.
+	- AI will now enable radars when guard mode enabled.
+	- Add an altitude steer limiter to the pilot AI.
+	- Apply user-defined steer limiters to roll.
+	- Force VTOL AI to aim towards targets when trying to fire missiles (if it can't already fire the missile).
+	- Add a PID auto-tuning mode:
+		- The AI will use gradient descent to optimize the plane's ability to turn to a range of headings and stabilize in those directions.
+		- The loss being minimized is ∫f(x,θ)dθ over the range θ ∈ (30°,120°) (using the midpoint Riemann sum), where f(x,θ) is ∫(δp²·(α+t²)/θ² + γ·δr²·(α+t)/100/θ)dt for the current PID values (x) and heading change (θ), where δp is the pointing error, δr is the roll error, α is the fast response relevance and γ is the roll relevance (which is automatically adjusted over time to balance the contribution from the pointing and roll errors).
+		- Usage: Once the plane is airborne (and not in combat), enable auto-tuning and set the sliders to the desired values (the defaults are reasonable starting points and can be preset in the SPH; adjusting some of the sliders will restart the auto-tuning), then allow the auto-tuning to run until it stops automatically when the learning rate (LR) decreases to below 1e-3. The PID values will revert to those giving the lowest loss and these will be stored so they can be restored in the SPH.
+		- Recommendations:
+			1. Set the auto-tuning altitude and speed to those expected to be used in combat.
+			2. Use 5-10x time-scaling.
+			3. Avoid mountainous terrain.
+			4. Tune without dynamic damping first and use the result as the starting point for dynamic damping with all the damping values set to the tuned static damping value and the dynamic damping factors set to 1.
+			5. Since the PID values are (currently) being optimized for flying to fixed points, the tuned I value may not be optimal for moving targets in combat and a slightly larger I may be desirable.
+
 - GameModes:
 	- Waypoints:
 		- Add support for multiple waypoint gate models.
@@ -56,22 +123,28 @@ IMPROVEMENTS
 		- Convert Waypoints from hardcoded courses to a config based implementation.
 		- Add support for unique Waypoint names.
 		- Add support for independently scaling (model and approach threshold) individual waypoints.
-		- Add support for independantly setting individual waypoint altitudes.
+		- Add support for independently setting individual waypoint altitudes.
 		- Waypoint Scale and Waypoint Altitude are now global overrides that will set all WPs to the specified value if not set to default; else will use values from the course data.
 		- Adds support for off-world waypoint courses both locally and API-run competitions.
 		- Add a slider for activating guard mode when passing a waypoint.
 		- Allow multiple laps for waypoints.
+
 - Weapons:
 	- Use min of missile drop time or 2 sec instead of fixed two second period for check target will be within missile maxOffBoresight at future time.
 	- Sidam Turret retextured (thanks Concodroid!).
+	- Allow turrets to fire outside of visual range if they have a radar lock.
 	- Issue 348; weapons will no longer manually fire if mouse cursor is over Weapon Manager GUI.
 	- APBulletMod now implemented for sabot rounds.
 	- Adjusted Sabot depth calculation, should no longer overpenetrate quite so much.
-	- Sabots now recognized as AP ammo in ammo labels
+	- Sabots now recognized as AP ammo in ammo labels.
 	- Weapons and explosions no longer cause armor damage/shrapnel/spalling damage in paintball mode.
 	- Add charge-up mechanic for weapons.
-	  - Adds new .cfg fields: ChargeTime = n; hasChargeAnimation = T/F; chargeAnimName = animName
-  - Weapon debug lines now account for frame velocity and flight integrator delay.
+		- Adds new .cfg fields: ChargeTime = n; ChargeEachShot = T/F; hasChargeAnimation = T/F; chargeAnimName = animName.
+	- Weapon debug lines now account for frame velocity and flight integrator delay.
+	- Rockets now support beehive/nuclear warhead options.
+	- EMP weapons fired at targets with AI/ WM off will not cause them to activate when target reboots.
+	- Bullets now support shaped charge HE fillers (for HEAT rounds and similar):
+		- Bullet.cfg 'explosive =' field no longer true/false, now select from 'Standard' or 'Shaped' in place of explosive = true, or 'None' in place of explosive = false.
 	- Missiles:
 		- Adds Missile multi-targeting.
 		- Adds new Max Missile Tgts setting in WM to set max targets to engage with missiles.
@@ -87,14 +160,38 @@ IMPROVEMENTS
 		- Continuous Rod warhead missiles now target a point a few meters above their target to better take advantage of planar AoE.
 		- Missiles no longer prematurely detonate if DetonateAtMinimumDistance is enabled.
 		- Fix HARMs ignoring max missiles on target.
+		- Add chaffEffectivity parameter to missile configs. See AIM-120 config for more details.
+		- Modular Missile ActiveRadarRange can now be set to 0.
+		- Deprecate allAspect parameter, missile modders should now use uncagedLock instead (old missiles will automatically have the uncagedLock parameter value set to the value of allAspect.
+		- Implemented Proportional Navigation and Augmented Proportional Navigation as missile guidance options for missile parts and modular missiles. For missile parts, set:
+			- homingType = pronav [for Pro-Nav].
+			- homingType = augpronav [for Augmented Pro-Nav].
+
+- Armor:
+	- Adds Oblique Triangle Proc Armor panel.
+	- Proc Armor nodes on triangular panels now orient themselves to current angle of panel edge.
+	- Proc Armor max scale can now be set in .cfg, unclamped in SPH/VAB.
+	- Armor penetration formula now uses the Tate/Alekseevskii formula. Penetration depths should be similar in most cases for modded ammos, but may need recalibration of their apBulletMod.
+	- Add Lift Visualization, Total Lift, and Wing Loading readouts (stock only, disabled when using FAR) to the BDA Armor Tool.
+
+- Detectors
+	- Adds IRST implementation for thermal detection alternative to radar.
+		-Adds thermal occlusion mechanic; heatsources hidden behind other parts will be harder to detect by IRST.
+	- Adds support for optic/thermal cloaking countermeasures.
+	- Adds new AN/AAQ-42 IRST Pod part.
+	- Radars must now be capable of detecting a target before it can be locked.
+
 - Spawning:
 	- Refactor spawning into more modular coroutines for use with the spawn and orchestration strategies.
 	- Add an 'instant' lowering mode for vessel easing after spawn (VESSEL_SPAWN_EASE_IN_SPEED = 0).
-	- Add a DEBUG_SPAWNING option.
 	- Add a test for spawning a vessel into an active competition using the SingleVesselSpawning class (debug build only).
+	- Randomise team spawn order (similar to random FFA ordering).
+	- Switch the camera to a random plane after spawning instead of the last plane spawned.
+
 - RWP:
 	- Hall of Shame now supports multiple craft.
 	- Add HoS support to Waypoint mode.
+
 
 v1.4.18.4
 IMPROVEMENTS
@@ -496,6 +593,7 @@ IMPROVEMENTS
 	- Add ability to add custom spawn sites to spawn menu.
 	- Add Persistent UI button to Vessel Switcher to keep VS and Web Orchestration windows open when F2 UI toggled off.
 	- Add an estimate of the current memory usage to the settings menu when Auto-Quit Memory Threshold is enabled.
+	- Allow a user-set max value to the Time Scaling factor.
 - Game Modes:
 	- Add secret Disco Mode.
 	- Zombie Mode option moved to cheat mode access.
@@ -510,6 +608,7 @@ IMPROVEMENTS
 	- Only adjust the altitude for failed spawns for ground spawns.
 	- Allow specifying both '-c' and tournament dir to parse the specified tournament dir as a collection (i.e., without the tournament folder structure).
 	- Rebalance the score weights in the parsing script.
+	- Add a Gauntlet tournament style for teams tournaments (like N-choose-K, but between two groups of teams).
 - Kerbal Safety:
 	- Reconfigure inventories when the kerbal inventory slider is adjusted.
 - AI:

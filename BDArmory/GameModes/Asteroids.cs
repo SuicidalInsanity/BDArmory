@@ -311,7 +311,7 @@ namespace BDArmory.GameModes
                         asteroid.Splashed = false;
                         var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection, upDirection).normalized;
                         var x = (float)RNG.NextDouble();
-                        var distance = Mathf.Sqrt(1f - x) * radius;
+                        var distance = BDAMath.Sqrt(1f - x) * radius;
                         StartCoroutine(RepositionWhenReady(asteroid, direction * distance));
                     }
                     --spawnRateTracker;
@@ -344,7 +344,7 @@ namespace BDArmory.GameModes
                 {
                     foreach (var vessel in LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).Where(wm => wm != null && wm.vessel != null).Select(wm => wm.vessel))
                     { maxSqrDistance = Mathf.Max(maxSqrDistance, (vessel.transform.position - averagePosition).sqrMagnitude); }
-                    radius = maxSqrDistance > 5e5f ? Mathf.Sqrt(maxSqrDistance) * 1.5f : 1000f;
+                    radius = maxSqrDistance > 5e5f ? BDAMath.Sqrt(maxSqrDistance) * 1.5f : 1000f;
                 }
             }
             else
@@ -715,7 +715,7 @@ namespace BDArmory.GameModes
             {
                 var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection, upDirection).normalized;
                 var x = (float)RNG.NextDouble();
-                var distance = Mathf.Sqrt(1f - x) * radius;
+                var distance = BDAMath.Sqrt(1f - x) * radius;
                 var height = RNG.NextDouble() * (altitude - 50f) + 50f;
                 var position = spawnPoint + direction * distance;
                 position += (height - BodyUtils.GetRadarAltitudeAtPos(position)) * upDirection;

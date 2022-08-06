@@ -11,6 +11,7 @@ using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
+using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Competition.VesselSpawning
 {
@@ -64,7 +65,7 @@ namespace BDArmory.Competition.VesselSpawning
                 }
             return count;
         }
-        
+
         #region Camera
         public static void ShowSpawnPoint(int worldIndex, double latitude, double longitude, double altitude = 0, float distance = 100, bool spawning = false) => SpawnUtilsInstance.Instance.ShowSpawnPoint(worldIndex, latitude, longitude, altitude, distance, spawning); // Note: this may launch a coroutine when not spawning and there's no active vessel!
         public static void RevertSpawnLocationCamera(bool keepTransformValues = true) => SpawnUtilsInstance.Instance.RevertSpawnLocationCamera(keepTransformValues);
@@ -88,10 +89,11 @@ namespace BDArmory.Competition.VesselSpawning
             return VesselModuleRegistry.GetModules<ModuleEngines>(vessel).Where(engine => engine.EngineIgnited).ToList().Count + FireSpitter.CountActiveEngines(vessel);
         }
 
-        public static void ActivateAllEngines(Vessel vessel, bool activate = true)
+        public static void ActivateAllEngines(Vessel vessel, bool activate = true, bool ignoreModularMissileEngines = true)
         {
             foreach (var engine in VesselModuleRegistry.GetModules<ModuleEngines>(vessel))
             {
+                if (ignoreModularMissileEngines && IsModularMissileEngine(engine)) continue; // Ignore modular missile engines.
                 var mme = engine.part.FindModuleImplementing<MultiModeEngine>();
                 if (mme == null)
                 {
@@ -125,6 +127,25 @@ namespace BDArmory.Competition.VesselSpawning
                 }
             }
             FireSpitter.ActivateFSEngines(vessel, activate);
+        }
+
+        public static bool IsModularMissileEngine(ModuleEngines engine)
+        {
+            var part = engine.part;
+            if (part is not null)
+            {
+                var firstDecoupler = BDModularGuidance.FindFirstDecoupler(part.parent, null);
+                if (firstDecoupler is not null && HasMMGInChildren(firstDecoupler.part)) return true;
+            }
+            return false;
+        }
+        static bool HasMMGInChildren(Part part)
+        {
+            if (part is null) return false;
+            if (part.FindModuleImplementing<BDModularGuidance>() is not null) return true;
+            foreach (var child in part.children)
+                if (HasMMGInChildren(child)) return true;
+            return false;
         }
         #endregion
 
@@ -401,7 +422,7 @@ namespace BDArmory.Competition.VesselSpawning
                 var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(latitude, longitude);
                 var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(latitude, longitude, terrainAltitude + altitude);
                 FloatingOrigin.SetOffset(spawnPoint); // This adjusts local coordinates, such that spawnPoint is (0,0,0).
-                var radialUnitVector = - FlightGlobals.currentMainBody.transform.position.normalized;
+                var radialUnitVector = -FlightGlobals.currentMainBody.transform.position.normalized;
                 var refDirection = Math.Abs(Vector3.Dot(Vector3.up, radialUnitVector)) < 0.71f ? Vector3.up : Vector3.forward; // Avoid that the reference direction is colinear with the local surface normal.
                 var flightCamera = FlightCamera.fetch;
                 var cameraPosition = Vector3.RotateTowards(distance * radialUnitVector, Vector3.Cross(radialUnitVector, refDirection), 70f * Mathf.Deg2Rad, 0);
@@ -441,7 +462,7 @@ namespace BDArmory.Competition.VesselSpawning
 
         public void RevertSpawnLocationCamera(bool keepTransformValues = true)
         {
-            if (!spawnLocationCamera.activeSelf) return;
+            if (spawnLocationCamera == null || !spawnLocationCamera.activeSelf) return;
             if (delayedShowSpawnPointCoroutine != null) { StopCoroutine(delayedShowSpawnPointCoroutine); delayedShowSpawnPointCoroutine = null; }
             var flightCamera = FlightCamera.fetch;
             if (originalCameraParentTransform != null)

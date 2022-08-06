@@ -53,13 +53,14 @@ namespace BDArmory.CounterMeasure
 
             // NEW (1.10 and later): generate flare within spectrum of emitting vessel's heat signature, but narrow range for low heats
 
-            thermal = BDATargetManager.GetVesselHeatSignature(sourceVessel);
+            thermal = BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero); //if enabling heatSig occlusion in IR missiles the thermal value of flares will have to be adjusted to compensate.
+            //Then again, these are being ejected in a range of temps, which should cover potential differences in heatreturn from a target based on occlusion. Have vector3.Zero replaced with missile position to sim occlusion level missile owuld see and set flare temps accordingly?
             // float minMult = Mathf.Clamp(-0.265f * Mathf.Log(sourceHeat) + 2.3f, 0.65f, 0.8f);
             float thermalMinMult = Mathf.Clamp(((0.00093f * thermal * thermal - 1.4457f * thermal + 1141.95f) / 1000f), 0.65f, 0.8f); // Equivalent to above, but uses polynomial for speed
             thermal *= UnityEngine.Random.Range(thermalMinMult, Mathf.Max(BDArmorySettings.FLARE_FACTOR, 0f) - thermalMinMult + 0.8f);
 
             if (BDArmorySettings.DEBUG_OTHER)
-                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetDisplayName() + ":" + BDATargetManager.GetVesselHeatSignature(sourceVessel).ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
+                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetDisplayName() + ":" + BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero).ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
         }
 
         void OnEnable()
@@ -81,7 +82,7 @@ namespace BDArmory.CounterMeasure
                     }
             }
 
-            EnableEmitters(BDArmorySettings.FLARE_SMOKE);
+            EnableEmitters();
 
             BDArmorySetup.numberOfParticleEmitters++;
 
@@ -90,13 +91,12 @@ namespace BDArmory.CounterMeasure
                 lights = gameObject.GetComponentsInChildren<Light>();
             }
 
-            IEnumerator<Light> lgt = lights.AsEnumerable().GetEnumerator();
-            while (lgt.MoveNext())
-            {
-                if (lgt.Current == null) continue;
-                lgt.Current.enabled = true;
-            }
-            lgt.Dispose();
+            using (IEnumerator<Light> lgt = lights.AsEnumerable().GetEnumerator())
+                while (lgt.MoveNext())
+                {
+                    if (lgt.Current == null) continue;
+                    lgt.Current.enabled = true;
+                }
             startTime = Time.time;
 
             //ksp force applier
@@ -211,14 +211,15 @@ namespace BDArmory.CounterMeasure
             transform.position += velocity * Time.fixedDeltaTime;
         }
 
-        public void EnableEmitters(bool enable)
+        public void EnableEmitters()
         {
             if (pEmitters == null) return;
             using (var emitter = pEmitters.GetEnumerator())
                 while (emitter.MoveNext())
                 {
                     if (emitter.Current == null) continue;
-                    emitter.Current.emit = enable;
+                    if (emitter.Current.name == "pEmitter") emitter.Current.emit = BDArmorySettings.FLARE_SMOKE;
+                    else emitter.Current.emit = true;
                 }
         }
     }

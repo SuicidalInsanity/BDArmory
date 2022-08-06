@@ -113,11 +113,15 @@ namespace BDArmory.UI
                 {
                     guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Nuclear") + " ";
                 }
-                if (bulletInfo.explosive && !bulletInfo.nuclear)
+                if (bulletInfo.tntMass > 0 && !bulletInfo.nuclear)
                 {
                     if (bulletInfo.fuzeType.ToLower() == "flak" || bulletInfo.fuzeType.ToLower() == "proximity")
                     {
                         guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Flak") + " ";
+                    }
+                    else if (bulletInfo.explosive.ToLower() == "Shaped")
+                    {
+                        guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Shaped") + " ";
                     }
                     guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Explosive") + " ";
                 }
@@ -133,7 +137,7 @@ namespace BDArmory.UI
                 {
                     guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Beehive") + " ";
                 }
-                if (!bulletInfo.explosive && bulletInfo.apBulletMod <= 0.8)
+                if (bulletInfo.tntMass <= 0 && bulletInfo.apBulletMod <= 0.8)
                 {
                     guiAmmoTypeString += Localizer.Format("#LOC_BDArmory_Ammo_Slug");
                 }

@@ -22,6 +22,7 @@ namespace BDArmory.Targeting
         public MissileBase MissileBaseModule;
         public MissileFire weaponManager;
         Dictionary<BDTeam, List<MissileFire>> friendliesEngaging = new Dictionary<BDTeam, List<MissileFire>>();
+        public Dictionary<BDTeam, bool> detected = new Dictionary<BDTeam, bool>();
         public Dictionary<BDTeam, float> detectedTime = new Dictionary<BDTeam, float>();
 
         public float radarBaseSignature = -1;

@@ -145,61 +145,68 @@ namespace BDArmory.Competition.VesselSpawning
                 { yield return waitForFixedUpdate; }
 
                 currentUpdateTick = BDACompetitionMode.Instance.nextUpdateTick;
-                // Reacquire the spawn point as the local coordinate system may have changed (floating origin adjustments, local body rotation, etc.).
-                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
-                radialUnitVector = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
-                // Check if sliders have changed.
-                if (spawnSlots.Count != (BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0 ? Math.Min(spawnConfig.craftFiles.Count, BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS) : spawnConfig.craftFiles.Count))
+                if (currentlySpawningCount == 0) // Do nothing while we're spawning vessels.
                 {
-                    spawnSlots = OptimiseSpawnSlots(BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0 ? Math.Min(spawnConfig.craftFiles.Count, BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS) : spawnConfig.craftFiles.Count);
-                    continuousSpawnedVesselCount %= spawnSlots.Count;
-                }
-                // Add any craft that hasn't been spawned or has died to the spawn queue if it isn't already in the queue.
-                foreach (var craftURL in spawnConfig.craftFiles.Where(craftURL => (BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL > 0 ? spawnCounts[craftURL] < BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL : true) && !spawnQueue.Contains(craftURL) && (!craftURLToVesselName.ContainsKey(craftURL) || (BDACompetitionMode.Instance.Scores.Players.Contains(craftURLToVesselName[craftURL]) && BDACompetitionMode.Instance.Scores.ScoreData[craftURLToVesselName[craftURL]].deathTime >= 0))))
-                {
-                    spawnQueue.Enqueue(craftURL);
-                    ++spawnCounts[craftURL];
-                }
-                LoadedVesselSwitcher.Instance.UpdateList();
-                var currentlyActive = LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).ToList().Count;
-                if (spawnQueue.Count + currentlySpawningCount == 0 && currentlyActive < 2)// Nothing left to spawn or being spawned and only 1 vessel surviving. Time to call it quits and let the competition end.
-                {
-                    LogMessage("Spawn queue is empty and not enough vessels are active, ending competition.", false);
-                    BDACompetitionMode.Instance.StopCompetition();
-                    break;
-                }
-                while (craftToSpawn.Count + currentlySpawningCount + currentlyActive < spawnSlots.Count && spawnQueue.Count > 0)
-                    craftToSpawn.Enqueue(spawnQueue.Dequeue());
-                if (BDArmorySettings.DEBUG_SPAWNING)
-                {
-                    var missing = spawnConfig.craftFiles.Where(craftURL => craftURLToVesselName.ContainsKey(craftURL) && (!spawnCounts.ContainsKey(craftURL) || spawnCounts[craftURL] < BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL) && !craftToSpawn.Contains(craftURL) && !FlightGlobals.Vessels.Where(v => !VesselModuleRegistry.ignoredVesselTypes.Contains(v.vesselType) && VesselModuleRegistry.GetModuleCount<MissileFire>(v) > 0).Select(v => v.vesselName).Contains(craftURLToVesselName[craftURL])).ToList();
-                    if (missing.Count > 0)
+                    // Reacquire the spawn point as the local coordinate system may have changed (floating origin adjustments, local body rotation, etc.).
+                    spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(spawnConfig.latitude, spawnConfig.longitude, terrainAltitude + spawnConfig.altitude);
+                    radialUnitVector = (spawnPoint - FlightGlobals.currentMainBody.transform.position).normalized;
+                    // Check if sliders have changed.
+                    if (spawnSlots.Count != (BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0 ? Math.Min(spawnConfig.craftFiles.Count, BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS) : spawnConfig.craftFiles.Count))
                     {
-                        LogMessage("MISSING vessels: " + string.Join(", ", craftURLToVesselName.Where(c => missing.Contains(c.Key)).Select(c => c.Value)), false);
-                    }
-                }
-                if (craftToSpawn.Count > 0)
-                {
-                    VesselModuleRegistry.CleanRegistries(); // Clean out any old entries.
-                    // Configure vessel spawn configs
-                    foreach (var craftURL in craftToSpawn)
-                    {
-                        if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Spawning vessel from {Path.Combine(AutoSpawnFolder, craftURL.Substring(AutoSpawnPath.Length))}", false);
-                        var heading = 360f * spawnSlots[continuousSpawnedVesselCount] / spawnSlots.Count;
-                        ++continuousSpawnedVesselCount;
+                        spawnSlots = OptimiseSpawnSlots(BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS > 0 ? Math.Min(spawnConfig.craftFiles.Count, BDArmorySettings.VESSEL_SPAWN_CONCURRENT_VESSELS) : spawnConfig.craftFiles.Count);
                         continuousSpawnedVesselCount %= spawnSlots.Count;
-                        var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis(heading, radialUnitVector) * refDirection, radialUnitVector).normalized;
-                        craftSpawnPosition = spawnPoint + spawnDistance * direction;
-                        FlightGlobals.currentMainBody.GetLatLonAlt(craftSpawnPosition, out craftGeoCoords.x, out craftGeoCoords.y, out craftGeoCoords.z); // Convert spawn point to geo-coords for the actual spawning function.
-                        StartCoroutine(SpawnCraft(new VesselSpawnConfig(craftURL, craftSpawnPosition, direction, (float)spawnConfig.altitude, -80f, true, 0, true)));
                     }
-                    craftURLToVesselName = spawnedVesselURLs.ToDictionary(kvp => kvp.Value, kvp => kvp.Key); // Update the vesselName-to-craftURL dictionary for the latest spawns.
-                    craftToSpawn.Clear(); // Clear the queue since we just spawned all those vessels.
-                }
+                    // Add any craft that hasn't been spawned or has died to the spawn queue if it isn't already in the queue.
+                    foreach (var craftURL in spawnConfig.craftFiles.Where(craftURL => (BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL > 0 ? spawnCounts[craftURL] < BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL : true) && !spawnQueue.Contains(craftURL) && (!craftURLToVesselName.ContainsKey(craftURL) || (BDACompetitionMode.Instance.Scores.Players.Contains(craftURLToVesselName[craftURL]) && BDACompetitionMode.Instance.Scores.ScoreData[craftURLToVesselName[craftURL]].deathTime >= 0))))
+                    {
+                        if (BDArmorySettings.DEBUG_SPAWNING)
+                        {
+                            LogMessage($"Adding {craftURL}" + (craftURLToVesselName.ContainsKey(craftURL) ? $" ({craftURLToVesselName[craftURL]})" : "") + " to the spawn queue.", false);
+                        }
+                        spawnQueue.Enqueue(craftURL);
+                        ++spawnCounts[craftURL];
+                    }
+                    LoadedVesselSwitcher.Instance.UpdateList();
+                    var currentlyActive = LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).ToList().Count;
+                    if (spawnQueue.Count + currentlySpawningCount == 0 && currentlyActive < 2)// Nothing left to spawn or being spawned and only 1 vessel surviving. Time to call it quits and let the competition end.
+                    {
+                        LogMessage("Spawn queue is empty and not enough vessels are active, ending competition.", false);
+                        BDACompetitionMode.Instance.StopCompetition();
+                        break;
+                    }
+                    while (craftToSpawn.Count + currentlySpawningCount + currentlyActive < spawnSlots.Count && spawnQueue.Count > 0)
+                        craftToSpawn.Enqueue(spawnQueue.Dequeue());
+                    if (BDArmorySettings.DEBUG_SPAWNING)
+                    {
+                        var missing = spawnConfig.craftFiles.Where(craftURL => craftURLToVesselName.ContainsKey(craftURL) && (!spawnCounts.ContainsKey(craftURL) || spawnCounts[craftURL] < BDArmorySettings.VESSEL_SPAWN_LIVES_PER_VESSEL) && !craftToSpawn.Contains(craftURL) && !FlightGlobals.Vessels.Where(v => !VesselModuleRegistry.ignoredVesselTypes.Contains(v.vesselType) && VesselModuleRegistry.GetModuleCount<MissileFire>(v) > 0).Select(v => v.vesselName).Contains(craftURLToVesselName[craftURL])).ToList();
+                        if (missing.Count > 0)
+                        {
+                            LogMessage("MISSING vessels: " + string.Join(", ", craftURLToVesselName.Where(c => missing.Contains(c.Key)).Select(c => c.Value)), false);
+                        }
+                    }
+                    if (craftToSpawn.Count > 0)
+                    {
+                        VesselModuleRegistry.CleanRegistries(); // Clean out any old entries.
+                                                                // Configure vessel spawn configs
+                        foreach (var craftURL in craftToSpawn)
+                        {
+                            if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Spawning vessel from {Path.Combine(AutoSpawnFolder, craftURL.Substring(AutoSpawnPath.Length))}", false);
+                            var heading = 360f * spawnSlots[continuousSpawnedVesselCount] / spawnSlots.Count;
+                            ++continuousSpawnedVesselCount;
+                            continuousSpawnedVesselCount %= spawnSlots.Count;
+                            var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis(heading, radialUnitVector) * refDirection, radialUnitVector).normalized;
+                            craftSpawnPosition = spawnPoint + spawnDistance * direction;
+                            FlightGlobals.currentMainBody.GetLatLonAlt(craftSpawnPosition, out craftGeoCoords.x, out craftGeoCoords.y, out craftGeoCoords.z); // Convert spawn point to geo-coords for the actual spawning function.
+                            StartCoroutine(SpawnCraft(new VesselSpawnConfig(craftURL, craftSpawnPosition, direction, (float)spawnConfig.altitude, -80f, true, 0, true)));
+                        }
+                        craftURLToVesselName = spawnedVesselURLs.ToDictionary(kvp => kvp.Value, kvp => kvp.Key); // Update the vesselName-to-craftURL dictionary for the latest spawns.
+                        craftToSpawn.Clear(); // Clear the queue since we just spawned all those vessels.
+                    }
 
-                // Start the competition once we have enough craft.
-                if (currentlyActive > 1 && !(BDACompetitionMode.Instance.competitionIsActive || BDACompetitionMode.Instance.competitionStarting))
-                { BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE); }
+                    // Start the competition once we have enough craft.
+                    if (currentlyActive > 1 && !(BDACompetitionMode.Instance.competitionIsActive || BDACompetitionMode.Instance.competitionStarting))
+                    { BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE); }
+                }
 
                 // Kill off vessels that are out of ammo for too long if we're in continuous spawning mode and a competition is active.
                 if (BDACompetitionMode.Instance.competitionIsActive)

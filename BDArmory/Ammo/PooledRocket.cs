@@ -435,6 +435,11 @@ namespace BDArmory.Bullets
                             float Strength = Armor.Strength;
                             float safeTemp = Armor.SafeUseTemp;
                             float Density = Armor.Density;
+                            float vFactor = Armor.vFactor;
+                            float muParam1 = Armor.muParam1;
+                            float muParam2 = Armor.muParam2;
+                            float muParam3 = Armor.muParam3;
+
                             int armorType = (int)Armor.ArmorTypeNum;
                             if (BDArmorySettings.DEBUG_ARMOR)
                             {
@@ -445,7 +450,15 @@ namespace BDArmory.Bullets
                             //calculate bullet deformation
                             float newCaliber = ProjectileUtils.CalculateDeformation(armorStrength, bulletEnergy, caliber, impactVelocity, hardness, Density, HERatio, 1, false);
                             //calculate penetration
-                            penetration = ProjectileUtils.CalculatePenetration(caliber, newCaliber, rocketMass * 1000, impactVelocity, Ductility, Density, Strength, thickness, 1);
+                            if (Ductility > 0.05)
+                            {
+                                penetration = ProjectileUtils.CalculatePenetration(caliber, impactVelocity, rocketMass * 1000f, 1f, Strength, vFactor, muParam1, muParam2, muParam3);
+                            }
+                            else
+                            {
+                                penetration = ProjectileUtils.CalculateCeramicPenetration(caliber, newCaliber, rocketMass * 1000, impactVelocity, Ductility, Density, Strength, thickness, 1);
+                            }
+
                             caliber = newCaliber; //update bullet with new caliber post-deformation(if any)
                             penetrationFactor = ProjectileUtils.CalculateArmorPenetration(hitPart, penetration, thickness);
 
@@ -503,7 +516,7 @@ namespace BDArmory.Bullets
                             }
                             else
                             {
-                                float cockpitPen = (float)(16f * impactVelocity * Mathf.Sqrt(rocketMass) / Mathf.Sqrt(caliber));
+                                float cockpitPen = (float)(16f * impactVelocity * BDAMath.Sqrt(rocketMass) / BDAMath.Sqrt(caliber));
                                 if (cockpitPen > Mathf.Max(20 / anglemultiplier, 1))
                                     ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker > 0 ? false : true, penTicker > 0 ? false : true, (cockpitPen > Mathf.Max(20 / anglemultiplier, 1)) ? true : false);
                                 if (!explosive)
@@ -851,14 +864,13 @@ namespace BDArmory.Bullets
                     pBullet.caliber = sBullet.caliber;
                     pBullet.bulletVelocity = sBullet.bulletVelocity;
                     pBullet.bulletMass = sBullet.bulletMass;
-                    pBullet.explosive = sBullet.explosive;
                     pBullet.incendiary = sBullet.incendiary;
                     pBullet.apBulletMod = sBullet.apBulletMod;
                     pBullet.bulletDmgMult = bulletDmgMult;
                     pBullet.ballisticCoefficient = sBullet.bulletMass / (((Mathf.PI * 0.25f * sBullet.caliber * sBullet.caliber) / 1000000f) * 0.295f);
                     pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = 0;
                     pBullet.timeToLiveUntil = 4000 / sBullet.bulletVelocity * 1.1f + Time.time;
-                    Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, (sBullet.subProjectileCount / Mathf.Sqrt(currentVelocity.magnitude / 10))) * (sBullet.bulletVelocity / 10); //more subprojectiles = wider spread, higher base velocity = tighter spread
+                    Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, (sBullet.subProjectileCount / BDAMath.Sqrt(currentVelocity.magnitude / 10))) * (sBullet.bulletVelocity / 10); //more subprojectiles = wider spread, higher base velocity = tighter spread
                     pBullet.currentVelocity = (currentVelocity + Krakensbane.GetFrameVelocityV3f()) + firedVelocity; // use the real velocity, w/o offloading
                     pBullet.sourceWeapon = sourceWeapon;
                     pBullet.sourceVessel = sourceVessel;
@@ -874,7 +886,7 @@ namespace BDArmory.Bullets
                     pBullet.tracerLuminance = 1.75f;
                     pBullet.bulletDrop = true;
 
-                    if (sBullet.explosive)
+                    if (sBullet.tntMass > 0)
                     {
                         pBullet.explModelPath = explModelPath;
                         pBullet.explSoundPath = explSoundPath;

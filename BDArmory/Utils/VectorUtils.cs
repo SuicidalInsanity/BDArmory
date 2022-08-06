@@ -52,7 +52,7 @@ namespace BDArmory.Utils
             // If the determinant is negative, then there is no solution
             if (det > 0f)
             {
-                return 2f * c / (Mathf.Sqrt(det) - b);
+                return 2f * c / (BDAMath.Sqrt(det) - b);
             }
             else
             {
@@ -117,7 +117,7 @@ namespace BDArmory.Utils
             // Technically this will raise an exception if the first random produces a zero (which should never happen now that it's log(1-rnd))
             try
             {
-                return Mathf.Sqrt(-2 * Mathf.Log(1f - UnityEngine.Random.value)) * Mathf.Cos(Mathf.PI * UnityEngine.Random.value);
+                return BDAMath.Sqrt(-2 * Mathf.Log(1f - UnityEngine.Random.value)) * Mathf.Cos(Mathf.PI * UnityEngine.Random.value);
             }
             catch (Exception e)
             { // I have no idea what exception Mathf.Log raises when it gets a zero
@@ -147,7 +147,7 @@ namespace BDArmory.Utils
             // Technically this will raise an exception if the random produces a zero, which should almost never happen
             try
             {
-                return Mathf.Sqrt(-2 * Mathf.Log(UnityEngine.Random.value));
+                return BDAMath.Sqrt(-2 * Mathf.Log(UnityEngine.Random.value));
             }
             catch (Exception e)
             { // I have no idea what exception Mathf.Log raises when it gets a zero
@@ -228,8 +228,8 @@ namespace BDArmory.Utils
             float dlat = lat2 - lat1;
             float dlon = (destination.y - start.y) * Mathf.Deg2Rad;
             float a = Mathf.Sin(dlat / 2) * Mathf.Sin(dlat / 2) + Mathf.Cos(lat1) * Mathf.Cos(lat2) * Mathf.Sin(dlon / 2) * Mathf.Sin(dlon / 2);
-            float distance = 2 * Mathf.Atan2(Mathf.Sqrt(a), Mathf.Sqrt(1 - a)) * (float)body.Radius;
-            return Mathf.Sqrt(distance * distance + (destination.z - start.z) * (destination.z - start.z));
+            float distance = 2 * Mathf.Atan2(BDAMath.Sqrt(a), BDAMath.Sqrt(1 - a)) * (float)body.Radius;
+            return BDAMath.Sqrt(distance * distance + (destination.z - start.z) * (destination.z - start.z));
         }
 
         public static Vector3 RotatePointAround(Vector3 pointToRotate, Vector3 pivotPoint, Vector3 axis, float angle)

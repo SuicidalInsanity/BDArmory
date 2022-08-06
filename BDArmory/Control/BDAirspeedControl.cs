@@ -197,6 +197,8 @@ namespace BDArmory.Control
                 return false;
             }
             return engine.primaryEngineID == "Dry" && engine.secondaryEngineID == "Wet";
+            //presumably there's a reason this is looking specifically for MMEs with "Wet" and "Dry" as the IDs instead of !String.IsNullOrEmpty(engine.primaryEngineID). To permit only properly configured Jets?
+
         }
 
         float GravAccel()

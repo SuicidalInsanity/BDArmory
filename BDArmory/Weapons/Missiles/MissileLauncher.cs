@@ -26,6 +26,9 @@ namespace BDArmory.Weapons.Missiles
         public string homingType = "AAM";
 
         [KSPField]
+        public float pronavGain = 3f;
+
+        [KSPField]
         public string targetingType = "none";
 
         [KSPField]
@@ -600,6 +603,9 @@ namespace BDArmory.Weapons.Missiles
 
             SetInitialDetonationDistance();
 
+            // set uncagedLock = true if depreciated allAspect = true
+            uncagedLock = (allAspect) ? allAspect : uncagedLock;
+
             // fill lockedSensorFOVBias with default values if not set by part config:
             if ((TargetingMode == TargetingModes.Heat || TargetingModeTerminal == TargetingModes.Heat) && heatThreshold > 0 && lockedSensorFOVBias.minTime == float.MaxValue)
             {
@@ -677,7 +683,7 @@ namespace BDArmory.Weapons.Missiles
                 else if (partModules.Current.moduleName == "BDModuleNuke")
                 {
                     warheadType = WarheadTypes.Nuke;
-                    StandOffDistance = Mathf.Sqrt(((BDModuleNuke)partModules.Current).yield) * 500;
+                    StandOffDistance = BDAMath.Sqrt(((BDModuleNuke)partModules.Current).yield) * 500;
                 }
                 else continue;
                 break;
@@ -810,7 +816,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     if (part.FindModuleImplementing<BDModuleNuke>() != null)
                     {
-                        return Mathf.Sqrt(part.FindModuleImplementing<BDModuleNuke>().yield) * 500;
+                        return BDAMath.Sqrt(part.FindModuleImplementing<BDModuleNuke>().yield) * 500;
                     }
                     else
                     {
@@ -948,6 +954,8 @@ namespace BDArmory.Weapons.Missiles
 
         public override void OnFixedUpdate()
         {
+            base.OnFixedUpdate();
+            FloatingOriginCorrection();
             try // FIXME Remove this once the fix is sufficiently tested.
             {
                 debugString.Length = 0;
@@ -1193,7 +1201,7 @@ namespace BDArmory.Weapons.Missiles
 
                     finalMaxTorque = Mathf.Clamp((TimeIndex - dropTime) * torqueRampUp, 0, maxTorque); //ramp up torque
 
-                    if (GuidanceMode == GuidanceModes.AAMLead)
+                    if ((GuidanceMode == GuidanceModes.AAMLead) || (GuidanceMode == GuidanceModes.APN) || (GuidanceMode == GuidanceModes.PN))
                     {
                         AAMGuidance();
                     }
@@ -1334,7 +1342,7 @@ namespace BDArmory.Weapons.Missiles
                                 TargetPosition = radarTarget.predictedPosition;
                             }
                             else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor;
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody);
@@ -1822,9 +1830,16 @@ namespace BDArmory.Weapons.Missiles
                     //TargetPosition += VectorUtils.GetUpDirection(TargetPosition) * (blastRadius < 10? (blastRadius / 2) : 10);
                 }
                 DrawDebugLine(transform.position + (part.rb.velocity * Time.fixedDeltaTime), TargetPosition);
+
                 float timeToImpact;
-                aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                TimeToImpact = timeToImpact;
+                if (GuidanceMode == GuidanceModes.APN) // Augmented Pro-Nav
+                    aamTarget = MissileGuidance.GetAPNTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, pronavGain, out timeToImpact);
+                else if (GuidanceMode == GuidanceModes.PN) // Pro-Nav
+                    aamTarget = MissileGuidance.GetPNTarget(TargetPosition, TargetVelocity, vessel, pronavGain, out timeToImpact);
+                else // AAM Lead
+                    aamTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
+
+                
                 if (Vector3.Angle(aamTarget - transform.position, transform.forward) > maxOffBoresight * 0.75f)
                 {
                     aamTarget = TargetPosition;
@@ -2181,6 +2196,14 @@ namespace BDArmory.Weapons.Missiles
                     GuidanceMode = GuidanceModes.SLW;
                     break;
 
+                case "pronav":
+                    GuidanceMode = GuidanceModes.PN;
+                    break;
+
+                case "augpronav":
+                    GuidanceMode = GuidanceModes.APN;
+                    break;
+
                 default:
                     GuidanceMode = GuidanceModes.None;
                     break;
@@ -2340,7 +2363,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetingMode == TargetingModes.Heat)
             {
-                output.AppendLine($"All Aspect: {allAspect}");
+                output.AppendLine($"Uncaged Lock: {uncagedLock}");
                 output.AppendLine($"Min Heat threshold: {heatThreshold}");
                 output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                 output.AppendLine($"Locked FOV: {lockedSensorFOV}");
@@ -2367,7 +2390,7 @@ namespace BDArmory.Weapons.Missiles
 
                     if (TargetingModeTerminal == TargetingModes.Heat)
                     {
-                        output.AppendLine($"All Aspect: {allAspect}");
+                        output.AppendLine($"Uncaged Lock: {uncagedLock}");
                         output.AppendLine($"Min Heat threshold: {heatThreshold}");
                         output.AppendLine($"Max Offborsight: {maxOffBoresight}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");

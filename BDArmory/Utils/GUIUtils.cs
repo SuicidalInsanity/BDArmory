@@ -1,4 +1,3 @@
-using Object = UnityEngine.Object;
 using System.Collections.Generic;
 using System;
 using UniLinq;
@@ -29,7 +28,9 @@ namespace BDArmory.Utils
 
         public static void DrawTextureOnWorldPos(Vector3 worldPos, Texture texture, Vector2 size, float wobble)
         {
-            Vector3 screenPos = GetMainCamera().WorldToViewportPoint(worldPos);
+            var cam = GetMainCamera();
+            if (cam == null) return;
+            Vector3 screenPos = cam.WorldToViewportPoint(worldPos);
             if (screenPos.z < 0) return; //dont draw if point is behind camera
             if (screenPos.x != Mathf.Clamp01(screenPos.x)) return; //dont draw if off screen
             if (screenPos.y != Mathf.Clamp01(screenPos.y)) return;
@@ -47,7 +48,13 @@ namespace BDArmory.Utils
 
         public static bool WorldToGUIPos(Vector3 worldPos, out Vector2 guiPos)
         {
-            Vector3 screenPos = GetMainCamera().WorldToViewportPoint(worldPos);
+            var cam = GetMainCamera();
+            if (cam == null)
+            {
+                guiPos = Vector2.zero;
+                return false;
+            }
+            Vector3 screenPos = cam.WorldToViewportPoint(worldPos);
             bool offScreen = false;
             if (screenPos.z < 0) offScreen = true; //dont draw if point is behind camera
             if (screenPos.x != Mathf.Clamp01(screenPos.x)) offScreen = true; //dont draw if off screen
@@ -343,16 +350,19 @@ namespace BDArmory.Utils
         //refreshes part action window
         public static void RefreshAssociatedWindows(Part part)
         {
-            IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
-            while (window.MoveNext())
-            {
-                if (window.Current == null) continue;
-                if (window.Current.part == part)
-                {
-                    window.Current.displayDirty = true;
-                }
-            }
-            window.Dispose();
+            if (part == null || part.PartActionWindow == null) return;
+            part.PartActionWindow.UpdateWindow();
+            // part.PartActionWindow.displayDirty = true;
+            // IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
+            // while (window.MoveNext())
+            // {
+            //     if (window.Current == null) continue;
+            //     if (window.Current.part == part)
+            //     {
+            //         window.Current.displayDirty = true;
+            //     }
+            // }
+            // window.Dispose();
         }
 
     }

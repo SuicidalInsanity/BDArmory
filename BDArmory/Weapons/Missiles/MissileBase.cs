@@ -97,7 +97,12 @@ namespace BDArmory.Weapons.Missiles
         public float heatThreshold = 150;
 
         [KSPField]
-        public bool allAspect = false;
+        public float chaffEffectivity = 1f;                            // Modifies  how the missile targeting is affected by chaff, 1 is fully affected (normal behavior), lower values mean less affected (0 is ignores chaff), higher values means more affected
+
+        public bool allAspect = false;                                 // DEPRECIATED, replaced by uncagedIRLock. uncagedIRLock is automatically set to this value upon loading (to maintain compatability with old BDA mods)
+
+        [KSPField]
+        public bool uncagedLock = false;                             //if true it simulates a modern IR missile with "uncaged lock" ability. Even if the target is not within boresight fov, it can be radar locked and the target information transfered to the missile. It will then try to lock on with the heat seeker. If false, it is an older missile which requires a direct "in boresight" lock.
 
         [KSPField]
         public bool isTimed = false;
@@ -201,11 +206,11 @@ namespace BDArmory.Weapons.Missiles
 
         public DetonationDistanceStates DetonationDistanceState { get; set; } = DetonationDistanceStates.NotSafe;
 
-        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW, Drone }
+        public enum GuidanceModes { None, AAMLead, AAMPure, AGM, AGMBallistic, Cruise, STS, Bomb, RCS, BeamRiding, SLW, PN, APN, Drone }
 
         public GuidanceModes GuidanceMode;
 
-        public enum WarheadTypes { Standard, ContinuousRod, EMP, Nuke}
+        public enum WarheadTypes { Standard, ContinuousRod, EMP, Nuke }
 
         public WarheadTypes warheadType;
         public bool HasFired { get; set; } = false;
@@ -319,10 +324,25 @@ namespace BDArmory.Weapons.Missiles
         public StringBuilder debugString = new StringBuilder();
 
         private float _throttle = 1f;
-        Vector3 previousPos;
 
         public string Sublabel;
         public int missilecount = 0; //#191
+
+        /// <summary>
+        /// Make corrections for floating origin and Krakensbane adjustments.
+        /// This can't simply be in OnFixedUpdate as it needs to be called differently for MissileLauncher (which uses OnFixedUpdate) and BDModularGuidance (which uses FlyByWire which triggers before OnFixedUpdate).
+        /// </summary>
+        public void FloatingOriginCorrection()
+        {
+            if (HasFired && !HasExploded)
+            {
+                if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
+                {
+                    // Debug.Log($"DEBUG {Time.time} Correcting for floating origin shift of {(Vector3)FloatingOrigin.Offset:G3} ({(Vector3)FloatingOrigin.OffsetNonKrakensbane:G3}) for {vessel.vesselName} ({SourceVessel})");
+                    TargetPosition -= FloatingOrigin.OffsetNonKrakensbane;
+                }
+            }
+        }
 
         public void GetMissileCount() // could stick this in GetSublabel, but that gets called every frame by BDArmorySetup?
         {
@@ -490,7 +510,7 @@ namespace BDArmory.Weapons.Missiles
                 DrawDebugLine(lookRay.origin, lookRay.origin + lookRay.direction * 10000, Color.magenta);
 
                 // Update heat target
-                heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, allAspect, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()));
+                heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, uncagedLock, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()));
 
                 if (heatTarget.exists)
                 {
@@ -628,7 +648,7 @@ namespace BDArmory.Weapons.Missiles
                                 TargetPosition = radarTarget.predictedPosition;
                             }
                             else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor;
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;
                             _radarFailTimer = 0;
@@ -657,7 +677,7 @@ namespace BDArmory.Weapons.Missiles
                                     TargetPosition = radarTarget.predictedPosition;
                                 }
                                 else
-                                    TargetPosition = radarTarget.predictedPositionWithChaffFactor;
+                                    TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity);
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = Vector3.zero;
                                 TargetAcquired = true;
@@ -727,7 +747,7 @@ namespace BDArmory.Weapons.Missiles
                                             TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                                         }
                                         else
-                                            TargetPosition = radarTarget.predictedPositionWithChaffFactor + (radarTarget.velocity * Time.fixedDeltaTime);
+                                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
 
                                         TargetVelocity = radarTarget.velocity;
                                         TargetAcceleration = radarTarget.acceleration;
@@ -769,7 +789,7 @@ namespace BDArmory.Weapons.Missiles
                                 TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                             }
                             else
-                                TargetPosition = radarTarget.predictedPositionWithChaffFactor + (radarTarget.velocity * Time.fixedDeltaTime);
+                                TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
 
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = Vector3.zero;
@@ -845,7 +865,7 @@ namespace BDArmory.Weapons.Missiles
                         TargetPosition = radarTarget.predictedPosition + (radarTarget.velocity * Time.fixedDeltaTime);
                     }
                     else
-                        TargetPosition = radarTarget.predictedPositionWithChaffFactor + (radarTarget.velocity * Time.fixedDeltaTime);
+                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity) + (radarTarget.velocity * Time.fixedDeltaTime);
                     TargetVelocity = radarTarget.velocity;
                     TargetAcceleration = radarTarget.acceleration;
 
@@ -915,30 +935,20 @@ namespace BDArmory.Weapons.Missiles
 
         protected void UpdateAntiRadiationTarget()
         {
-            if (!TargetAcquired)
-            {
-                guidanceActive = false;
-                return;
-            }
-
-            if (FlightGlobals.ready)
+            if (FlightGlobals.ready && TargetAcquired)
             {
                 if (lockFailTimer < 0)
                 {
                     lockFailTimer = 0;
                 }
                 lockFailTimer += Time.fixedDeltaTime;
+                if (lockFailTimer > 8)
+                {
+                    TargetAcquired = false;
+                }
             }
-
-            if (lockFailTimer > 8)
-            {
-                guidanceActive = false;
-                TargetAcquired = false;
-            }
-            else
-            {
+            if (targetGPSCoords != Vector3d.zero)
                 TargetPosition = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody);
-            }
         }
 
         public void DrawDebugLine(Vector3 start, Vector3 end, Color color = default(Color))
@@ -986,10 +996,6 @@ namespace BDArmory.Weapons.Missiles
 
             return _guidance.GetDirection(this, targetPosition, Vector3.zero);
         }
-
-
-
-
 
         protected void drawLabels()
         {
@@ -1111,8 +1117,6 @@ namespace BDArmory.Weapons.Missiles
                                 }
                             }
                         }
-
-                        previousPos = part.transform.position;
                     }
                     else
                     {
@@ -1167,7 +1171,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (this.DetonationDistance == -1)
             {
-                if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure)
+                if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure || GuidanceMode == GuidanceModes.PN || GuidanceMode == GuidanceModes.APN)
                 {
                     DetonationDistance = GetBlastRadius() * 0.25f;
                 }

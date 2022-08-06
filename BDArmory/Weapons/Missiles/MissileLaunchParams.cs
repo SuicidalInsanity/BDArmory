@@ -3,6 +3,7 @@
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Settings;
+using BDArmory.Utils;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -64,7 +65,7 @@ namespace BDArmory.Weapons.Missiles
                 MissileLauncher ml = missile.GetComponent<MissileLauncher>();
                 float maxMissileAccel = ml.thrust / missile.part.mass;
                 float blastRadius = Mathf.Min(missile.GetBlastRadius(), 150f); // Allow missiles with absurd blast ranges to still be launched if desired
-                missileActiveTime = Mathf.Min((missile.vessel.LandedOrSplashed ? 0f : missile.dropTime) + Mathf.Sqrt(2 * blastRadius / maxMissileAccel), 2f); // Clamp at 2s for now
+                missileActiveTime = Mathf.Min((missile.vessel.LandedOrSplashed ? 0f : missile.dropTime) + BDAMath.Sqrt(2 * blastRadius / maxMissileAccel), 2f); // Clamp at 2s for now
 
                 if ((Vector3.Dot(vectorToTarget, missile.GetForwardTransform()) < 0.965f) || ((!missile.vessel.LandedOrSplashed) && (missile.GetWeaponClass() != WeaponClasses.SLW) && (ml.guidanceActive))) // Only evaluate missile turning ability if the target is outside ~15 deg cone, or isn't a torpedo and has guidance
                 {

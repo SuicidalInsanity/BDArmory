@@ -199,16 +199,14 @@ namespace BDArmory.UI
                     while (v.MoveNext())
                     {
                         if (v.Current == null) continue;
-                        if (!v.Current.loaded || v.Current.packed || v.Current.isActiveVessel) continue;
-                        if (VesselModuleRegistry.ignoredVesselTypes.Contains(v.Current.vesselType)) continue;
-
                         if (BDTISettings.MISSILES)
                         {
                             using (var ml = VesselModuleRegistry.GetModules<MissileBase>(v.Current).GetEnumerator())
                                 while (ml.MoveNext())
                                 {
                                     if (ml.Current == null) continue;
-                                    if (ml.Current.MissileState != MissileBase.MissileStates.Idle && ml.Current.MissileState != MissileBase.MissileStates.Drop)
+                                    //if (ml.Current.MissileState != MissileBase.MissileStates.Idle && ml.Current.MissileState != MissileBase.MissileStates.Drop)
+                                    if (ml.Current.HasFired && !ml.Current.HasMissed && !ml.Current.HasExploded) //culling post-thrust missiles makes AGMs get cleared almost immediately after launch
                                     {
                                         Vector3 sPos = FlightGlobals.ActiveVessel.vesselTransform.position;
                                         Vector3 tPos = v.Current.vesselTransform.position;
@@ -234,23 +232,35 @@ namespace BDArmory.UI
                                                 Rect distRect = new Rect((guiPos.x - 12), (guiPos.y + 10), 100, 32);
                                                 GUI.Label(distRect, UIdist + UoM, mIStyle);
                                             }
-
+                                            if (BDTISettings.VESSELNAMES)
+                                            {
+                                                if (GUIUtils.WorldToGUIPos(ml.Current.vessel.CoM, out guiPos))
+                                                {
+                                                    IconUIStyle.normal.textColor = BDTISetup.Instance.ColorAssignments[ml.Current.Team.Name];
+                                                    Rect nameRect = new Rect((guiPos.x + (24 * BDTISettings.ICONSCALE)), guiPos.y - 4, 100, 32);
+                                                    Rect shadowRect = new Rect((nameRect.x + 1), nameRect.y + 1, 100, 32);
+                                                    GUI.Label(shadowRect, ml.Current.vessel.vesselName, DropshadowStyle);
+                                                    GUI.Label(nameRect, ml.Current.vessel.vesselName, IconUIStyle);
+                                                }
+                                            }
                                         }
                                     }
                                 }
                         }
+
+                        if (!v.Current.loaded || v.Current.packed || v.Current.isActiveVessel) continue;
                         if (BDTISettings.DEBRIS)
                         {
-                            if (v.Current.vesselType != VesselType.Debris && !v.Current.isActiveVessel) continue;
+                            if (v.Current == null) continue;
+                            if (v.Current.vesselType != VesselType.Debris) continue;
                             if (v.Current.LandedOrSplashed) continue;
+
+                            Vector3 sPos = FlightGlobals.ActiveVessel.vesselTransform.position;
+                            Vector3 tPos = v.Current.vesselTransform.position;
+                            Vector3 Dist = (tPos - sPos);
+                            if (Dist.magnitude > BDTISettings.DISTANCE_THRESHOLD)
                             {
-                                Vector3 sPos = FlightGlobals.ActiveVessel.vesselTransform.position;
-                                Vector3 tPos = v.Current.vesselTransform.position;
-                                Vector3 Dist = (tPos - sPos);
-                                if (Dist.magnitude > BDTISettings.DISTANCE_THRESHOLD)
-                                {
-                                    GUIUtils.DrawTextureOnWorldPos(v.Current.CoM, BDTISetup.Instance.TextureIconDebris, new Vector2(20, 20), 0);
-                                }
+                                GUIUtils.DrawTextureOnWorldPos(v.Current.CoM, BDTISetup.Instance.TextureIconDebris, new Vector2(20, 20), 0);
                             }
                         }
                     }

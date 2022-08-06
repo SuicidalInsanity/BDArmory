@@ -55,6 +55,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DEBUG_RADAR = false;                 //FLIR/Radar and RCS debugging
         [BDAPersistentSettingsField] public static bool DEBUG_TELEMETRY = false;             //AI/WM UI debug telemetry display
         [BDAPersistentSettingsField] public static bool DEBUG_SPAWNING = false;              //Spawning debugging
+        [BDAPersistentSettingsField] public static bool DEBUG_COMPETITION = false;           //Competition debugging
 
         [BDAPersistentSettingsField] public static bool REMOTE_SHOOTING = false;
         [BDAPersistentSettingsField] public static bool BOMB_CLEARANCE_CHECK = false;
@@ -78,6 +79,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DRAW_VESSEL_TRAILS = true;                // Draw a trail to visualize vessel path during the heat
         [BDAPersistentSettingsField] public static int VESSEL_TRAIL_LENGTH = 300;                   //Max length of trails, in seconds. Defaults to competition length
         [BDAPersistentSettingsField] public static bool DUMB_IR_SEEKERS = false;                  // IR missiles will go after hottest thing they can see
+        [BDAPersistentSettingsField] public static bool ASPECTED_IR_SEEKERS = false;                //IR Missiles will be subject to thermal occlusion mechanic
         [BDAPersistentSettingsField] public static bool AUTOCATEGORIZE_PARTS = true;
         [BDAPersistentSettingsField] public static bool SHOW_CATEGORIES = true;
         [BDAPersistentSettingsField] public static bool IGNORE_TERRAIN_CHECK = false;
@@ -126,7 +128,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float FIRE_RATE_OVERRIDE_SPREAD = 5f;
         [BDAPersistentSettingsField] public static float FIRE_RATE_OVERRIDE_BIAS = 0.16f;
         [BDAPersistentSettingsField] public static float FIRE_RATE_OVERRIDE_HIT_MULTIPLIER = 2f;
-
+        [BDAPersistentSettingsField] public static float MAX_PWING_HP = 2500f;
         // Physics constants
         [BDAPersistentSettingsField] public static float GLOBAL_LIFT_MULTIPLIER = 0.25f;
         [BDAPersistentSettingsField] public static float GLOBAL_DRAG_MULTIPLIER = 6f;
@@ -258,6 +260,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool SHOW_SPAWN_LOCATIONS = false;              // Show the interesting spawn locations.
         [BDAPersistentSettingsField] public static int VESSEL_SPAWN_NUMBER_OF_TEAMS = 0;           // Number of Teams: 0 - FFA, 1 - Folders, 2-10 specified directly
         [BDAPersistentSettingsField] public static string VESSEL_SPAWN_FILES_LOCATION = "";        // Spawn files location (under AutoSpawn).
+        [BDAPersistentSettingsField] public static string VESSEL_SPAWN_GAUNTLET_OPPONENTS_FILES_LOCATION = "";        // Gauntlet opponents spawn files location (under AutoSpawn).
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_RANDOM_ORDER = true;          // Shuffle vessels before spawning them.
         [BDAPersistentSettingsField] public static bool SHOW_WAYPOINTS_OPTIONS = true;             // Waypoint section of Vessel Spawner Window.
 
@@ -308,7 +311,9 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_HEAT = 8;            // Vessels Per Heat
         [BDAPersistentSettingsField] public static Vector2Int TOURNAMENT_AUTO_VESSELS_PER_HEAT_RANGE = new Vector2Int(6, 8); // Automatic vessels per heat selection (inclusive range).
         [BDAPersistentSettingsField] public static int TOURNAMENT_TEAMS_PER_HEAT = 2;              // Teams Per Heat
+        [BDAPersistentSettingsField] public static int TOURNAMENT_OPPONENT_TEAMS_PER_HEAT = 1;     // Opponent Teams Per Heat (for gauntlets)
         [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_TEAM = 2;            // Vessels Per Team
+        [BDAPersistentSettingsField] public static int TOURNAMENT_OPPONENT_VESSELS_PER_TEAM = 2;   // Opponent Vessels Per Team
         [BDAPersistentSettingsField] public static bool TOURNAMENT_FULL_TEAMS = true;              // Full Teams
         [BDAPersistentSettingsField] public static float TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS = 0;   // Timewarp between rounds in minutes.
         [BDAPersistentSettingsField] public static bool AUTO_RESUME_TOURNAMENT = false;            // Automatically load the game the last incomplete tournament was running in and continue the tournament.
@@ -320,6 +325,7 @@ namespace BDArmory.Settings
         // Time override settings
         [BDAPersistentSettingsField] public static bool TIME_OVERRIDE = false;                     // Enable the time control slider.
         [BDAPersistentSettingsField] public static float TIME_SCALE = 1f;                          // Time scale factor (higher speeds up the game rate without adjusting the physics time-step).
+        [BDAPersistentSettingsField] public static float TIME_SCALE_MAX = 10f;                     // Max time scale factor (to allow users to set custom max values).
 
         // Scoring categories
         [BDAPersistentSettingsField] public static float SCORING_HEADSHOT = 3;                     // Head-Shot Time Limit

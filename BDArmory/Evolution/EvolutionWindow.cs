@@ -116,7 +116,7 @@ namespace BDArmory.Evolution
             float offset = _titleHeight + _margin;
 
             GUI.DragWindow(new Rect(0, 0, BDArmorySettings.EVOLUTION_WINDOW_WIDTH - _titleHeight / 2 - 2, _titleHeight));
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
             {
                 BDArmorySettings.SHOW_EVOLUTION_OPTIONS = !BDArmorySettings.SHOW_EVOLUTION_OPTIONS;
             }

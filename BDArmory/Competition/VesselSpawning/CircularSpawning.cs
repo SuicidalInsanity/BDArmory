@@ -191,12 +191,12 @@ namespace BDArmory.Competition.VesselSpawning
             }
             else
             {
-                var currentTeamNames = new List<string>();
+                if (BDArmorySettings.VESSEL_SPAWN_RANDOM_ORDER) spawnConfig.teamsSpecific.Shuffle(); // Randomise the team spawn order.
                 int spawnedTeamCount = 0;
                 Vector3 teamSpawnPosition;
                 foreach (var team in spawnConfig.teamsSpecific)
                 {
-                    currentTeamNames.Clear();
+                    if (BDArmorySettings.VESSEL_SPAWN_RANDOM_ORDER) team.Shuffle(); // Randomise the spawn order within the team.
                     var teamHeading = 360f * spawnedTeamCount / spawnConfig.teamsSpecific.Count;
                     var teamDirection = Vector3.ProjectOnPlane(Quaternion.AngleAxis(teamHeading, radialUnitVector) * refDirection, radialUnitVector).normalized;
                     teamSpawnPosition = spawnPoint + spawnDistance * teamDirection;
@@ -261,7 +261,7 @@ namespace BDArmory.Competition.VesselSpawning
             SpawnUtils.RevertSpawnLocationCamera(true);
             if ((FlightGlobals.ActiveVessel == null || FlightGlobals.ActiveVessel.state == Vessel.State.DEAD) && spawnedVessels.Count > 0)
             {
-                LoadedVesselSwitcher.Instance.ForceSwitchVessel(spawnedVessels.Last().Value); // Update the camera.
+                LoadedVesselSwitcher.Instance.ForceSwitchVessel(spawnedVessels.Take(UnityEngine.Random.Range(1, spawnedVessels.Count)).Last().Value); // Update the camera.
             }
             FlightCamera.fetch.SetDistance(50);
 

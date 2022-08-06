@@ -245,7 +245,7 @@ namespace BDArmory.UI
             float line = 0.25f;
             var rects = new List<Rect>();
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_SPAWN_OPTIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_SpawnOptions"), BDArmorySettings.SHOW_SPAWN_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide spawn options
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_SPAWN_OPTIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_SpawnOptions"), BDArmorySettings.SHOW_SPAWN_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide spawn options
             {
                 BDArmorySettings.SHOW_SPAWN_OPTIONS = !BDArmorySettings.SHOW_SPAWN_OPTIONS;
             }
@@ -440,7 +440,7 @@ namespace BDArmory.UI
                 line += 0.3f;
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_SPAWN_LOCATIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_SpawnLocations"), BDArmorySettings.SHOW_SPAWN_LOCATIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide spawn locations
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_SPAWN_LOCATIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_SpawnLocations"), BDArmorySettings.SHOW_SPAWN_LOCATIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide spawn locations
             {
                 BDArmorySettings.SHOW_SPAWN_LOCATIONS = !BDArmorySettings.SHOW_SPAWN_LOCATIONS;
             }
@@ -510,7 +510,7 @@ namespace BDArmory.UI
 
             if (BDArmorySettings.WAYPOINTS_MODE || (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 50)) // S4R10
             {
-                if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_WAYPOINTS_OPTIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_WaypointsOptions"), BDArmorySettings.SHOW_WAYPOINTS_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide waypoints section
+                if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_WAYPOINTS_OPTIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_WaypointsOptions"), BDArmorySettings.SHOW_WAYPOINTS_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide waypoints section
                 {
                     BDArmorySettings.SHOW_WAYPOINTS_OPTIONS = !BDArmorySettings.SHOW_WAYPOINTS_OPTIONS;
                 }
@@ -562,7 +562,7 @@ namespace BDArmory.UI
                 }
             }
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? "Hide " : "Show ") + Localizer.Format("#LOC_BDArmory_Settings_TournamentOptions"), BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide tournament options
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Settings_TournamentOptions"), BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide tournament options
             {
                 BDArmorySettings.SHOW_TOURNAMENT_OPTIONS = !BDArmorySettings.SHOW_TOURNAMENT_OPTIONS;
             }
@@ -582,9 +582,12 @@ namespace BDArmory.UI
                     case 1:
                         tournamentStyle = "N-choose-K";
                         break;
+                    case 2:
+                        tournamentStyle = "Gauntlet";
+                        break;
                 }
                 GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentStyle")}: ({tournamentStyle})", leftLabel); // Tournament Style
-                BDArmorySettings.TOURNAMENT_STYLE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_STYLE, 0f, 1f));
+                BDArmorySettings.TOURNAMENT_STYLE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_STYLE, 0f, 2f));
 
                 var value = BDArmorySettings.TOURNAMENT_ROUNDS <= 20 ? BDArmorySettings.TOURNAMENT_ROUNDS : BDArmorySettings.TOURNAMENT_ROUNDS <= 100 ? (16 + BDArmorySettings.TOURNAMENT_ROUNDS / 5) : 37;
                 GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentRounds")}:  ({BDArmorySettings.TOURNAMENT_ROUNDS})", leftLabel); // Rounds
@@ -598,14 +601,27 @@ namespace BDArmory.UI
                 }
                 else // Teams
                 {
-                    GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentTeamsPerHeat")}:  ({(BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT > 1 ? BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT.ToString() : (BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT == 0 ? "Auto" : "Inf"))})", leftLabel); // Teams Per Heat
-                    BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT, 2f, 8f));
+                    GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentTeamsPerHeat")}:  ({BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT})", leftLabel); // Teams Per Heat
+                    BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT, BDArmorySettings.TOURNAMENT_STYLE == 2 ? 1f : 2f, 8f));
 
                     GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentVesselsPerTeam")}:  ({BDArmorySettings.TOURNAMENT_VESSELS_PER_TEAM.ToString()})", leftLabel); // Vessels Per Team
                     BDArmorySettings.TOURNAMENT_VESSELS_PER_TEAM = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_VESSELS_PER_TEAM, 1f, 8f));
 
                     BDArmorySettings.TOURNAMENT_FULL_TEAMS = GUI.Toggle(SLeftRect(++line), BDArmorySettings.TOURNAMENT_FULL_TEAMS, Localizer.Format("#LOC_BDArmory_Settings_TournamentFullTeams"));  // Re-use craft to fill teams
                 }
+
+                if (BDArmorySettings.TOURNAMENT_STYLE == 2) // Gauntlet settings
+                {
+                    GUI.Label(SLeftRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_GauntletOpponentsFilesLocation")} (AutoSpawn{Path.DirectorySeparatorChar}): ", leftLabel); // Gauntlet opponent craft files location
+                    BDArmorySettings.VESSEL_SPAWN_GAUNTLET_OPPONENTS_FILES_LOCATION = GUI.TextField(SRightRect(line), BDArmorySettings.VESSEL_SPAWN_GAUNTLET_OPPONENTS_FILES_LOCATION);
+
+                    GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentOpponentTeamsPerHeat")}:  ({BDArmorySettings.TOURNAMENT_OPPONENT_TEAMS_PER_HEAT})", leftLabel); // Opponent Teams Per Heat
+                    BDArmorySettings.TOURNAMENT_OPPONENT_TEAMS_PER_HEAT = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_OPPONENT_TEAMS_PER_HEAT, 1f, 8f));
+
+                    GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Settings_TournamentOpponentVesselsPerTeam")}:  ({BDArmorySettings.TOURNAMENT_OPPONENT_VESSELS_PER_TEAM})", leftLabel); // Opponent Vessels Per Team
+                    BDArmorySettings.TOURNAMENT_OPPONENT_VESSELS_PER_TEAM = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_OPPONENT_VESSELS_PER_TEAM, 1f, 8f));
+                }
+                else { BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT = Math.Max(2, BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT); }
 
                 // Tournament status
                 if (BDATournament.Instance.tournamentType == TournamentType.FFA)
@@ -739,7 +755,7 @@ namespace BDArmory.UI
                                 BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED,
                                 true,
                                 BDArmorySettings.VESSEL_SPAWN_REASSIGN_TEAMS,
-                                BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS,
+                                0, // This should always be 0 (FFA) to avoid the logic for spawning teams in one-at-a-time mode.
                                 null,
                                 null,
                                 null,

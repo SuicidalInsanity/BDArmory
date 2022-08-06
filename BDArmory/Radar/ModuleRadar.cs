@@ -330,6 +330,11 @@ namespace BDArmory.Radar
                 vrd.Current.UnlinkDisabledRadar(this);
             }
             vrd.Dispose();
+            using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
+                while (loadedvessels.MoveNext())
+                {
+                    BDATargetManager.ClearRadarReport(loadedvessels.Current, weaponManager); //reset radar contact status
+                }
         }
 
         void OnDestroy()

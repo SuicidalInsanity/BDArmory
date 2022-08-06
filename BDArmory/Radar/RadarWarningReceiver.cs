@@ -258,7 +258,7 @@ namespace BDArmory.Radar
                 {
                     if (weaponManager && weaponManager.guardMode)
                     {
-                        weaponManager.FireChaff();
+                        weaponManager.FireChaff(); //what if it's a heater instead of a radar missile?
                         // TODO: if torpedo inbound, also fire accoustic decoys (not yet implemented...)
                     }
                 }
@@ -288,6 +288,10 @@ namespace BDArmory.Radar
                         RadarUtils.WorldToRadar(source, referenceTransform, RwrDisplayRect, rwrDisplayRange), Vector3.zero,
                         true, (float)type);    // HACK! Evil misuse of signalstrength for the threat type!
                     pingWorldPositions[openIndex] = source; //FIXME source is improperly defined
+                    if (weaponManager.hasAntiRadiationOrdinance)
+                    {
+                        BDATargetManager.ReportVessel(AIUtils.VesselClosestTo(source), weaponManager); // Report RWR ping as target for anti-rads
+                    } //MissileFire RWR-vessel checks are all (RWR ping position - guardtarget.CoM).Magnitude < 20*20?, could we simplify the more complex vessel aquistion function used here?
                     StartCoroutine(PingLifeRoutine(openIndex, persistTime));
 
                     PlayWarningSound(type, (source - vessel.transform.position).sqrMagnitude);

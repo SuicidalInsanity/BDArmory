@@ -59,11 +59,11 @@ namespace BDArmory.Guidances
             float height = FlightGlobals.getAltitudeAtPos(targetPosition) -
                            FlightGlobals.getAltitudeAtPos(missileVessel.transform.position);
             float sqrRange = forward.sqrMagnitude;
-            float range = Mathf.Sqrt(sqrRange);
+            float range = BDAMath.Sqrt(sqrRange);
 
             float plusOrMinus = direct ? -1 : 1;
 
-            float top = sqrSpeed + (plusOrMinus * Mathf.Sqrt(sqrSpeedSqr - (g * ((g * sqrRange + (2 * height * sqrSpeed))))));
+            float top = sqrSpeed + (plusOrMinus * BDAMath.Sqrt(sqrSpeedSqr - (g * ((g * sqrRange + (2 * height * sqrSpeed))))));
             float bottom = g * range;
             float theta = Mathf.Atan(top / bottom);
 
@@ -92,11 +92,11 @@ namespace BDArmory.Guidances
             float height = FlightGlobals.getAltitudeAtPos(targetPosition) -
                            FlightGlobals.getAltitudeAtPos(missilePosition);
             float sqrRange = forward.sqrMagnitude;
-            float range = Mathf.Sqrt(sqrRange);
+            float range = BDAMath.Sqrt(sqrRange);
 
             float plusOrMinus = direct ? -1 : 1;
 
-            float top = sqrSpeed + (plusOrMinus * Mathf.Sqrt(sqrSpeedSqr - (g * ((g * sqrRange + (2 * height * sqrSpeed))))));
+            float top = sqrSpeed + (plusOrMinus * BDAMath.Sqrt(sqrSpeedSqr - (g * ((g * sqrRange + (2 * height * sqrSpeed))))));
             float bottom = g * range;
             float theta = Mathf.Atan(top / bottom);
 
@@ -162,6 +162,43 @@ namespace BDArmory.Guidances
             float easeAccel = Mathf.Clamp01(1.1f / (1f + Mathf.Exp((timeToCPA - 5f))) - 0.05f);
             float easeVel = Mathf.Clamp01(2f - timeToCPA / 8f);
             return AIUtils.PredictPosition(targetPosition, targetVelocity * easeVel, targetAcceleration * easeAccel, timeToCPA + TimeWarp.fixedDeltaTime); // Compensate for the off-by-one frame issue.
+        }
+
+        public static Vector3 GetPNTarget(Vector3 targetPosition, Vector3 targetVelocity, Vessel missileVessel, float N, out float timeToGo)
+        {
+            Vector3 missileVel = (float)missileVessel.srfSpeed * missileVessel.Velocity().normalized;
+            Vector3 relVelocity = targetVelocity - missileVel;
+            Vector3 relRange = targetPosition - missileVessel.CoM;
+            Vector3 RotVector = Vector3.Cross(relRange, relVelocity) / Vector3.Dot(relRange, relRange);
+            Vector3 RefVector = missileVel.normalized;
+            Vector3 normalAccel = -N * relVelocity.magnitude * Vector3.Cross(RefVector, RotVector);
+            timeToGo = missileVessel.ClosestTimeToCPA(targetPosition, targetVelocity, Vector3.zero, 120f);
+            return missileVessel.CoM + missileVel * timeToGo + normalAccel * timeToGo * timeToGo;
+        }
+
+        public static Vector3 GetAPNTarget(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, Vessel missileVessel, float N, out float timeToGo)
+        {
+            Vector3 missileVel = (float)missileVessel.srfSpeed * missileVessel.Velocity().normalized;
+            Vector3 relVelocity = targetVelocity - missileVel;
+            Vector3 relRange = targetPosition - missileVessel.CoM;
+            Vector3 RotVector = Vector3.Cross(relRange, relVelocity) / Vector3.Dot(relRange, relRange);
+            Vector3 RefVector = missileVel.normalized;
+            Vector3 normalAccel = -N * relVelocity.magnitude * Vector3.Cross(RefVector, RotVector);
+            // float tgo = relRange.magnitude / relVelocity.magnitude;
+            Vector3 accelBias = Vector3.Cross(relRange.normalized, targetAcceleration);
+            accelBias = Vector3.Cross(RefVector, accelBias);
+            normalAccel -= 0.5f * N * accelBias;
+            timeToGo = missileVessel.ClosestTimeToCPA(targetPosition, targetVelocity, targetAcceleration, 120f);
+            return missileVessel.CoM + missileVel * timeToGo + normalAccel * timeToGo * timeToGo;
+        }
+        public static float GetLOSRate(Vector3 targetPosition, Vector3 targetVelocity, Vessel missileVessel)
+        {
+            Vector3 missileVel = (float)missileVessel.srfSpeed * missileVessel.Velocity().normalized;
+            Vector3 relVelocity = targetVelocity - missileVel;
+            Vector3 relRange = targetPosition - missileVessel.CoM;
+            Vector3 RotVector = Vector3.Cross(relRange, relVelocity) / Vector3.Dot(relRange, relRange);
+            Vector3 LOSRate = Mathf.Rad2Deg * RotVector;
+            return LOSRate.magnitude;
         }
 
         /// <summary>

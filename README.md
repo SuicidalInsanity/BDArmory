@@ -1,5 +1,5 @@
-BDArmory
-========
+BDArmory Plus
+=============
 
 Gun turrets and other weapon systems for KSP
 
@@ -13,15 +13,19 @@ Current Maintainers:
 - [DocNappers](https://github.com/BrettRyland)
 - [Josue](https://github.com/josuenos)
 - [SuicidalInsanity](https://github.com/SuicidalInsanity)
-- [Aubranium](https://github.com/agoodman) (Remote Orchestration)
 
 Contributors:
+- [Aubranium](https://github.com/agoodman) (Remote Orchestration)
 - [Scott Manley](https://github.com/illectro)
 - [Stardust](https://github.com/Stardust-Rapture)
 - [Kurgan](https://github.com/TheKurgan)
+- [Kaz]()
 - [CeruleanEyes]()
 - [Fluffy]()
 - [Cl0by](https://github.com/Cl0by)
+- [Concodroid]()
+- [BillNyeTheIE]()
+- [EzBro]()
 - And all the previous maintainers.
 
 Previous Maintainers:
