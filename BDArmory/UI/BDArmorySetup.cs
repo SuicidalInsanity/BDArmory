@@ -997,7 +997,7 @@ namespace BDArmory.UI
             GUI.Label(new Rect(_windowMargin + _buttonSize, _windowMargin, columnWidth - 2 * _windowMargin - numberOfButtons * _buttonSize, _windowMargin + _buttonSize), StringUtils.Localize("#LOC_BDArmory_WMWindow_title") + "          ", kspTitleLabel);
 
             // Version.
-            GUI.Label(new Rect(columnWidth - _windowMargin - (numberOfButtons - 1) * _buttonSize - 100, 23, 57, 10), Version, waterMarkStyle);
+            GUI.Label(new Rect(columnWidth - _windowMargin - (numberOfButtons - 1) * _buttonSize - 100, 23, 57, 10), "SIDev4/23", waterMarkStyle);
 
             //SETTINGS BUTTON
             if (!BDKeyBinder.current &&
@@ -3174,8 +3174,10 @@ namespace BDArmory.UI
                     GUI.Label(SLeftSliderRect(++line, 1), $"{StringUtils.Localize("#LOC_BDArmory_Settings_CMStealRation")}:  ({BDArmorySettings.RESOURCE_STEAL_CM_RATION})", leftLabel);//CM Steal Ration
                     BDArmorySettings.RESOURCE_STEAL_CM_RATION = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.RESOURCE_STEAL_CM_RATION, 0f, 1f) * 100f) / 100f;
                 }
+                BDArmorySettings.ARCADE_MODE = GUI.Toggle(SRightRect(++line), BDArmorySettings.ARCADE_MODE, StringUtils.Localize("#LOC_BDArmory_Settings_ArcadeMode"));
+
                 bool oldSpaceHacks = BDArmorySettings.SPACE_HACKS;
-                BDArmorySettings.SPACE_HACKS = GUI.Toggle(SLeftRect(++line), BDArmorySettings.SPACE_HACKS, StringUtils.Localize("#LOC_BDArmory_Settings_SpaceHacks"));//Space Tools
+                BDArmorySettings.SPACE_HACKS = GUI.Toggle(SLeftRect(line), BDArmorySettings.SPACE_HACKS, StringUtils.Localize("#LOC_BDArmory_Settings_SpaceHacks"));//Space Tools
                 if (BDArmorySettings.SPACE_HACKS)
                 {
                     if (HighLogic.LoadedSceneIsFlight)

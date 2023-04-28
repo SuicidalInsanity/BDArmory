@@ -7,6 +7,7 @@ using BDArmory.Competition;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
+using BDArmory.Extensions;
 
 namespace BDArmory.UI
 {
@@ -395,7 +396,8 @@ namespace BDArmory.UI
                                             {
 
                                                 double hpPercent = 1;
-                                                hpPercent = Mathf.Clamp(wm.Current.currentHP / wm.Current.totalHP, 0, 1);
+												hpPercent = Mathf.Clamp(wm.Current.currentHP / wm.Current.totalHP, 0, 1);
+                                                if (BDArmorySettings.ARCADE_MODE) hpPercent = wm.Current.vessel.rootPart.GetDamagePercentage();
                                                 if (hpPercent > 0)
                                                 {
                                                     Rect barRect = new Rect((guiPos.x - (32 * BDTISettings.ICONSCALE)), (guiPos.y + (30 * BDTISettings.ICONSCALE)), (64 * BDTISettings.ICONSCALE), 12);

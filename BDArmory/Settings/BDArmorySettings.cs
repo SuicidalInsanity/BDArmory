@@ -203,8 +203,9 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool ASTEROID_RAIN_FOLLOWS_CENTROID = true;
         [BDAPersistentSettingsField] public static bool ASTEROID_RAIN_FOLLOWS_SPREAD = true;
         [BDAPersistentSettingsField] public static bool MUTATOR_MODE = false;
-        [BDAPersistentSettingsField] public static bool ZOMBIE_MODE = false;
-        [BDAPersistentSettingsField] public static bool DISCO_MODE = false;
+        [BDAPersistentSettingsField] public static bool ZOMBIE_MODE = false;            //Only root part takes full damage, all other parts take reduced damage
+        [BDAPersistentSettingsField] public static bool ARCADE_MODE = false;            //Everything uses a shared HP pool, set by the root part
+        [BDAPersistentSettingsField] public static bool DISCO_MODE = false;             //All lasers are now groovy
         [BDAPersistentSettingsField] public static bool NO_ENGINES = false;
         [BDAPersistentSettingsField] public static bool WAYPOINTS_MODE = false;         // Waypoint section of Vessel Spawner Window.
         [BDAPersistentSettingsField] public static string PINATA_NAME = "Pinata";

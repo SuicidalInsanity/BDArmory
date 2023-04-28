@@ -14,30 +14,43 @@ namespace BDArmory.Extensions
         {
             if (BDArmorySettings.PAINTBALL_MODE) return; // Don't add damage when paintball mode is enabled
             damage *= (BDArmorySettings.DMG_MULTIPLIER / 100);
-            if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
-            {
-                if (p.vessel.rootPart != null)
-                {
-                    if (p != p.vessel.rootPart)
-                    {
-                        damage *= BDArmorySettings.ZOMBIE_DMG_MULT;
-                    }
-                }
-            }
-            //////////////////////////////////////////////////////////
-            // Basic Add Hitpoints for compatibility (only used by lasers & fires)
-            //////////////////////////////////////////////////////////
-
             if (p.GetComponent<KerbalEVA>() != null)
             {
                 ApplyHitPoints(p.GetComponent<KerbalEVA>(), damage);
             }
-            else
+            else 
             {
-                Dependencies.Get<DamageService>().AddDamageToPart_svc(p, damage);
-                if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
-                    Debug.Log($"[BDArmory.PartExtensions]: Standard Hitpoints Applied to {p.name}" + (p.vessel != null ? $" on {p.vessel.vesselName}" : "") + $" : {damage}");
+                if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
+                {
+                    if (p.vessel.rootPart != null)
+                    {
+                        if (p != p.vessel.rootPart)
+                        {
+                            damage *= BDArmorySettings.ZOMBIE_DMG_MULT;
+                        }
+                    }
+                }
+                if (BDArmorySettings.ARCADE_MODE)
+                {
+                    if (p.vessel.rootPart != null)
+                    {
+                        if (p != p.vessel.rootPart)
+                        {
+                            p.vessel.rootPart.AddDamage(damage);
+                        }
+                    }
+                }
+                //////////////////////////////////////////////////////////
+                // Basic Add Hitpoints for compatibility (only used by lasers & fires)
+                //////////////////////////////////////////////////////////
+                else
+                {
+                    Dependencies.Get<DamageService>().AddDamageToPart_svc(p, damage);
+                    if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
+                        Debug.Log($"[BDArmory.PartExtensions]: Standard Hitpoints Applied to {p.name}" + (p.vessel != null ? $" on {p.vessel.vesselName}" : "") + $" : {damage}");
+                }
             }
+
         }
 
         public static void AddInstagibDamage(this Part p)
@@ -61,7 +74,7 @@ namespace BDArmory.Extensions
                                                float explosiveDamage,
                                                float caliber,
                                                ExplosionSourceType sourceType,
-                                               float multiplier = 1)
+                                               float multiplier = 1) //, int partsHit = 1)
         {
             if (BDArmorySettings.PAINTBALL_MODE) return 0f; // Don't add damage when paintball mode is enabled
             /*
@@ -131,7 +144,15 @@ namespace BDArmory.Extensions
                         }
                     }
                 }
-                ApplyHitPoints(p, damage_);
+                if (BDArmorySettings.ARCADE_MODE)
+                {
+                    if (p.vessel.rootPart != null)
+                    {
+                        //ApplyHitPoints(p.vessel.rootPart, (damage_ / partsHit)*1.4f);
+                        ApplyHitPoints(p.vessel.rootPart, damage_);
+                    }
+                }
+                else ApplyHitPoints(p, damage_);
             }
             return damage_;
         }
@@ -220,7 +241,17 @@ namespace BDArmory.Extensions
                         }
                     }
                 }
-                ApplyHitPoints(p, damage_, caliber, mass, multiplier, impactVelocity, penetrationfactor);
+                if (BDArmorySettings.ARCADE_MODE)
+                {
+                    if (p.vessel.rootPart != null)
+                    {
+                        if (p != p.vessel.rootPart)
+                        {
+                            p.vessel.rootPart.AddDamage(damage_);
+                        }
+                    }
+                }
+                else ApplyHitPoints(p, damage_, caliber, mass, multiplier, impactVelocity, penetrationfactor);
             }
             return damage_;
         }
