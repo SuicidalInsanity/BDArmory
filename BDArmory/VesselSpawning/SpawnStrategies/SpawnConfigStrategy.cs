@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
+namespace BDArmory.VesselSpawning.SpawnStrategies
 {
     /// <summary>
     /// A simple pass-through strategy to be able to use the current spawning functions properly.

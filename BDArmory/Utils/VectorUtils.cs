@@ -239,12 +239,38 @@ namespace BDArmory.Utils
             return pivotPoint + line;
         }
 
+        // public static Vector3 GetNorthVector(Vector3 position, CelestialBody body)
+        // {
+        //     Vector3 geoPosA = WorldPositionToGeoCoords(position, body);
+        //     Vector3 geoPosB = new Vector3(geoPosA.x + 1, geoPosA.y, geoPosA.z); // This breaks when above 89°
+        //     Vector3 north = GetWorldSurfacePostion(geoPosB, body) - GetWorldSurfacePostion(geoPosA, body);
+        //     return Vector3.ProjectOnPlane(north, body.GetSurfaceNVector(geoPosA.x, geoPosA.y)).normalized;
+        // }
+
         public static Vector3 GetNorthVector(Vector3 position, CelestialBody body)
         {
-            Vector3 geoPosA = WorldPositionToGeoCoords(position, body);
-            Vector3 geoPosB = new Vector3(geoPosA.x + 1, geoPosA.y, geoPosA.z);
-            Vector3 north = GetWorldSurfacePostion(geoPosB, body) - GetWorldSurfacePostion(geoPosA, body);
-            return Vector3.ProjectOnPlane(north, body.GetSurfaceNVector(geoPosA.x, geoPosA.y)).normalized;
+            var latlon = body.GetLatitudeAndLongitude(position);
+            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
+            var up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
+            var north = Vector3.ProjectOnPlane(-Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint), up).normalized;
+            return north;
+        }
+
+        /// <summary>
+        /// Efficiently calculate up, north and right at a given worldspace position on a body.
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="position"></param>
+        /// <param name="up"></param>
+        /// <param name="north"></param>
+        /// <param name="right"></param>
+        public static void GetWorldCoordinateFrame(CelestialBody body, Vector3 position, out Vector3 up, out Vector3 north, out Vector3 right)
+        {
+            var latlon = body.GetLatitudeAndLongitude(position);
+            var surfacePoint = body.GetWorldSurfacePosition(latlon.x, latlon.y, 0);
+            up = (body.GetWorldSurfacePosition(latlon.x, latlon.y, 1000) - surfacePoint).normalized;
+            north = Vector3.ProjectOnPlane(-Math.Sign(latlon.x) * (body.GetWorldSurfacePosition(latlon.x - Math.Sign(latlon.x), latlon.y, 0) - surfacePoint), up).normalized;
+            right = Vector3.Cross(up, north);
         }
 
         public static Vector3 GetWorldSurfacePostion(Vector3d geoPosition, CelestialBody body)
@@ -271,7 +297,8 @@ namespace BDArmory.Utils
 
             double d;
 
-            d = -(Vector3.Dot(l, o - c) + Math.Sqrt(Mathf.Pow(Vector3.Dot(l, o - c), 2) - (o - c).sqrMagnitude + (r * r)));
+            var dotLOC = Vector3.Dot(l, o - c);
+            d = -(Vector3.Dot(l, o - c) + Math.Sqrt(dotLOC * dotLOC - (o - c).sqrMagnitude + (r * r)));
 
             if (double.IsNaN(d))
             {

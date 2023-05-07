@@ -140,6 +140,7 @@
     <Compile Include="Ammo\RocketInfo.cs" />
     <Compile Include="Armor\ArmorInfo.cs" />
     <Compile Include="Armor\BDAdjustableArmor.cs" />
+    <Compile Include="Armor\HullInfo.cs" />
     <Compile Include="Armor\ModuleReactiveArmor.cs" />
     <Compile Include="Competition\BDACompetitionMode.cs" />
     <Compile Include="Competition\BDATournament.cs" />
@@ -154,19 +155,6 @@
     <Compile Include="Competition\RemoteTournamentCoordinator.cs" />
     <Compile Include="Competition\Scoring.cs" />
     <Compile Include="Competition\TournamentCoordinator.cs" />
-    <Compile Include="Competition\VesselSpawning\CircularSpawning.cs" />
-    <Compile Include="Competition\VesselSpawning\ContinuousSpawning.cs" />
-    <Compile Include="Competition\VesselSpawning\SingleVesselSpawning.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnConfig.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnLocations.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnStrategies\CircularSpawnStrategy.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnStrategies\ListSpawnStrategy.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnStrategies\PointSpawnStrategy.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnStrategies\SpawnConfigStrategy.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnStrategies\SpawnStrategy.cs" />
-    <Compile Include="Competition\VesselSpawning\SpawnUtils.cs" />
-    <Compile Include="Competition\VesselSpawning\VesselSpawner.cs" />
-    <Compile Include="Competition\VesselSpawning\VesselSpawnerBase.cs" />
     <Compile Include="Control\BDAirspeedControl.cs" />
     <Compile Include="Control\BDGenericAIBase.cs" />
     <Compile Include="Control\BDModulePilotAI.cs" />
@@ -235,6 +223,8 @@
     <Compile Include="Initialization\Bootstrapper.cs" />
     <Compile Include="Initialization\Cleanup.cs" />
     <Compile Include="Initialization\Dependencies.cs" />
+    <Compile Include="ModIntegration\MouseAimFlight.cs" />
+    <Compile Include="ModIntegration\ReflectionUtils.cs" />
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
     <Compile Include="Modules\ModuleMovingPart.cs" />
@@ -252,8 +242,8 @@
     <Compile Include="Services\INotificableService.cs" />
     <Compile Include="Services\NotificableService.cs" />
     <Compile Include="Settings\BDAPersistentSettingsField.cs" />
-    <Compile Include="Settings\BDArmorySettings.cs" />
     <Compile Include="Settings\BDAWindowSettingsField.cs" />
+    <Compile Include="Settings\BDArmorySettings.cs" />
     <Compile Include="Settings\BDInputSettingsFields.cs" />
     <Compile Include="Settings\BDTISettings.cs" />
     <Compile Include="Settings\BDTISettingsFields.cs" />
@@ -303,17 +293,37 @@
     <Compile Include="Utils\FireSpitterUtils.cs" />
     <Compile Include="Utils\GUIUtils.cs" />
     <Compile Include="Utils\KSPForceApplier.cs" />
+    <Compile Include="Utils\KrakensbaneUtils.cs" />
     <Compile Include="Utils\LayerMask.cs" />
     <Compile Include="Utils\ObjectPool.cs" />
+    <Compile Include="Utils\ObjectPoolNonUnity.cs" />
     <Compile Include="Utils\OtherUtils.cs" />
     <Compile Include="Utils\PartExploderSystem.cs" />
     <Compile Include="Utils\ProjectileUtils.cs" />
     <Compile Include="Utils\ResourceUtils.cs" />
+    <Compile Include="Utils\SmoothingUtils.cs" />
+    <Compile Include="Utils\SoundUtils.cs" />
     <Compile Include="Utils\SplineUtils.cs" />
+    <Compile Include="Utils\StringUtils.cs" />
     <Compile Include="Utils\UIControlUtils.cs" />
     <Compile Include="Utils\VectorUtils.cs" />
     <Compile Include="Utils\VesselModuleRegistry.cs" />
     <Compile Include="Utils\VesselUtils.cs" />
+    <Compile Include="VesselSpawning\CircularSpawning.cs" />
+    <Compile Include="VesselSpawning\ContinuousSpawning.cs" />
+    <Compile Include="VesselSpawning\CustomSpawnTemplate.cs" />
+    <Compile Include="VesselSpawning\SingleVesselSpawning.cs" />
+    <Compile Include="VesselSpawning\SpawnConfig.cs" />
+    <Compile Include="VesselSpawning\SpawnLocations.cs" />
+    <Compile Include="VesselSpawning\SpawnStrategies\CircularSpawnStrategy.cs" />
+    <Compile Include="VesselSpawning\SpawnStrategies\ListSpawnStrategy.cs" />
+    <Compile Include="VesselSpawning\SpawnStrategies\PointSpawnStrategy.cs" />
+    <Compile Include="VesselSpawning\SpawnStrategies\SpawnConfigStrategy.cs" />
+    <Compile Include="VesselSpawning\SpawnStrategies\SpawnStrategy.cs" />
+    <Compile Include="VesselSpawning\SpawnUtils.cs" />
+    <Compile Include="VesselSpawning\VesselMover.cs" />
+    <Compile Include="VesselSpawning\VesselSpawner.cs" />
+    <Compile Include="VesselSpawning\VesselSpawnerBase.cs" />
     <Compile Include="WeaponMounts\BDAdjustableRail.cs" />
     <Compile Include="WeaponMounts\BDDeployableRail.cs" />
     <Compile Include="WeaponMounts\BDRotaryRail.cs" />
@@ -328,10 +338,12 @@
     <Compile Include="Weapons\Missiles\BDMMLauncher.cs" />
     <Compile Include="Weapons\Missiles\BDModularGuidance.cs" />
     <Compile Include="Weapons\Missiles\MissileBase.cs" />
+    <Compile Include="Weapons\Missiles\MissileDummy.cs" />
     <Compile Include="Weapons\Missiles\MissileLaunchParams.cs" />
     <Compile Include="Weapons\Missiles\MissileLauncher.cs" />
     <Compile Include="Weapons\Missiles\ModuleMissileRearm.cs" />
     <Compile Include="Weapons\ModuleDrone.cs" />
+    <Compile Include="Weapons\Missiles\MultiMissileLauncher.cs" />
     <Compile Include="Weapons\ModuleEMP.cs" />
     <Compile Include="Weapons\ModuleWeapon.cs" />
     <Compile Include="Weapons\RippleOption.cs" />
@@ -352,6 +364,7 @@
     <None Include="Distribution\GameData\BDArmory\BDArmory.version" />
     <None Include="Distribution\GameData\BDArmory\BulletDefs\BD_Armors.cfg" />
     <None Include="Distribution\GameData\BDArmory\BulletDefs\BD_Bullets.cfg" />
+    <None Include="Distribution\GameData\BDArmory\BulletDefs\BD_Materials.cfg" />
     <None Include="Distribution\GameData\BDArmory\BulletDefs\BD_Mutators.cfg" />
     <None Include="Distribution\GameData\BDArmory\BulletDefs\BD_Rockets.cfg" />
     <None Include="Distribution\GameData\BDArmory\craft\BDA - Test Plane - AA.craft" />
@@ -384,10 +397,12 @@
     <None Include="Distribution\GameData\BDArmory\MMPatches\000000_HitpointModule_PartFixes.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\10_bdac_stealth.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\Armor_CVE.cfg" />
+    <None Include="Distribution\GameData\BDArmory\MMPatches\BDA_battledamage.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\BDA_GroundRadar.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\BDA_TweakScale.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\bdmk22_cockpit.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\Explode_Mode_Squad_Tanks.cfg" />
+    <None Include="Distribution\GameData\BDArmory\MMPatches\StructPWing.cfg" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal1.mu" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal2.mu" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal2b.mu" />
@@ -478,7 +493,7 @@
     <None Include="Distribution\GameData\BDArmory\Parts\bammGuidance\part.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\browninganm2\browninganm2.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\browninganm2\model.mu" />
-    <None Include="Distribution\GameData\BDArmory\Parts\browninganm2\Sounds\fire.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\browninganm2\sounds\fire.ogg" />
     <None Include="Distribution\GameData\BDArmory\Parts\clusterBomb\clusterBomb.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\clusterBomb\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\cmDropper\chaffDispenser.cfg" />
@@ -533,9 +548,9 @@
     <None Include="Distribution\GameData\BDArmory\Parts\m1Abrams\sounds\shot.ogg" />
     <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\m230.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\model.mu" />
-    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\Sounds\m230loop.ogg" />
-    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\Sounds\m230loopEnd.ogg" />
-    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\Sounds\m230shot.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\sounds\m230loop.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\sounds\m230loopEnd.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\m230ChainGun\sounds\m230shot.ogg" />
     <None Include="Distribution\GameData\BDArmory\Parts\maverick\maverickMissile.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\maverick\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\MissileBay\BombBay.cfg" />
@@ -551,8 +566,8 @@
     <None Include="Distribution\GameData\BDArmory\Parts\mk82Bomb\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\oMillennium.cfg" />
-    <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\Sounds\oFireEnd.ogg" />
-    <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\Sounds\oFiring.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\sounds\oFireEnd.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Parts\oMillennium\sounds\oFiring.ogg" />
     <None Include="Distribution\GameData\BDArmory\Parts\pac-3\model.mu" />
     <None Include="Distribution\GameData\BDArmory\Parts\pac-3\pac3.cfg" />
     <None Include="Distribution\GameData\BDArmory\Parts\patriotLauncher\model.mu" />
@@ -616,7 +631,7 @@
     <None Include="Distribution\GameData\BDArmory\Sounds\flareSound.ogg" />
     <None Include="Distribution\GameData\BDArmory\Sounds\heatGrowl.ogg" />
     <None Include="Distribution\GameData\BDArmory\Sounds\hydraulicLoop.ogg" />
-    <None Include="Distribution\GameData\BDArmory\Sounds\Jet.ogg" />
+    <None Include="Distribution\GameData\BDArmory\Sounds\jet.ogg" />
     <None Include="Distribution\GameData\BDArmory\Sounds\launch.ogg" />
     <None Include="Distribution\GameData\BDArmory\Sounds\missileFlyby.ogg" />
     <None Include="Distribution\GameData\BDArmory\Sounds\mLaunchWarning.ogg" />
@@ -901,10 +916,13 @@
       echo packaging new build...
       7za  a -tzip -r  "$(ProjectDir)Distribution/${ModName}.@(VersionNumber)_`date -u -Iseconds`.zip" "$(ProjectDir)Distribution/*.*"
 
-      export KSP_DIR="`cat $(ProjectDir)../../_LocalDev/ksp_dir.txt`"
-      echo Deploy $(ProjectDir) Distribution files to test env:  "${KSP_DIR}/GameData"...
-      echo copying:"$(ProjectDir)Distribution/GameData" to "${KSP_DIR}/GameData" 
-      cp -a "$(ProjectDir)Distribution/GameData/${ModName}" "${KSP_DIR}/GameData"
+      <!-- Deploy to all KSP folders in ksp_dir.txt -->
+      bash -c 'cat $(ProjectDir)../../_LocalDev/ksp_dir.txt | while read KSP_DIR; do
+        if [[ "${KSP_DIR:0:1}" == "#" ]]; then continue; fi
+        echo Deploy $(ProjectDir) Distribution files to test env:  "${KSP_DIR}/GameData"...
+        echo copying:"$(ProjectDir)Distribution/GameData" to "${KSP_DIR}/GameData" 
+        cp -a "$(ProjectDir)Distribution/GameData/${ModName}" "${KSP_DIR}/GameData"
+      done'
 
       echo Build/deploy complete!
     </PostBuildEvent>

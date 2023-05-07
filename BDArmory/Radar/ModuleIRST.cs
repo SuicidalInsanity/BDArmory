@@ -56,6 +56,9 @@ namespace BDArmory.Radar
         public bool canScan = true;                 //irst has detection capabilities
 
         [KSPField]
+        public bool irstRanging = false;            //irst can get ranging info for target distance
+
+        [KSPField]
         public FloatCurve DetectionCurve = new FloatCurve();		//FloatCurve setting default ranging capabilities of the IRST
 
         [KSPField]
@@ -174,7 +177,7 @@ namespace BDArmory.Radar
 
         void UpdateToggleGuiName()
         {
-            Events["Toggle"].guiName = irstEnabled ? Localizer.Format("#autoLOC_bda_1000036") : Localizer.Format("#autoLOC_bda_1000037");		// fixme - fix localizations
+            Events["Toggle"].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
         }
 
         public void EnsureVesselRadarData() 
@@ -207,12 +210,27 @@ namespace BDArmory.Radar
             irstEnabled = false;
             UpdateToggleGuiName();
 
+            if (vesselRadarData)
+            {
+                vesselRadarData.RemoveIRST(this);
+            }
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
                 {
                     BDATargetManager.ClearRadarReport(loadedvessels.Current, weaponManager); //reset radar contact status
                 }
-            vesselRadarData.AddIRST(this);
+        }
+
+        void OnDestroy()
+        {
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                if (vesselRadarData)
+                {
+                    vesselRadarData.RemoveIRST(this);
+                    vesselRadarData.RemoveDataFromIRST(this);
+                }
+            }
         }
 
         public override void OnStart(StartState state)
@@ -284,39 +302,14 @@ namespace BDArmory.Radar
         {
             if (BDArmorySettings.DEBUG_RADAR)
                 Debug.Log("[BDArmory.ModuleIRST]: StartupRoutine: " + IRSTName + " enabled: " + irstEnabled);
-            while (!FlightGlobals.ready || vessel.packed)
-            {
-                yield return null;
-            }
-
+            yield return new WaitWhile(() => !FlightGlobals.ready || (vessel is not null && (vessel.packed || !vessel.loaded)));
             yield return new WaitForFixedUpdate();
-
-            yield return null;
-
             UpdateToggleGuiName();
             startupComplete = true;
         }
 
         void Update()
         {
-            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && irstEnabled)
-            {
-                if (omnidirectional)
-                {
-                    referenceTransform.position = part.transform.position;
-                    referenceTransform.rotation =
-                        Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
-                            VectorUtils.GetUpDirection(transform.position));
-                }
-                else
-                {
-                    referenceTransform.position = part.transform.position;
-                    referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
-                        VectorUtils.GetUpDirection(referenceTransform.position));
-                }
-                //UpdateInputs();
-            }
-
             drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && irstEnabled &&
                        vessel.isActiveVessel && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled);
         }
@@ -342,6 +335,24 @@ namespace BDArmory.Radar
                     {
                         Scan();
                     }
+                }
+
+                if (!vessel.packed && irstEnabled)
+                {
+                    if (omnidirectional)
+                    {
+                        referenceTransform.position = part.transform.position;
+                        referenceTransform.rotation =
+                            Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
+                                VectorUtils.GetUpDirection(transform.position));
+                    }
+                    else
+                    {
+                        referenceTransform.position = part.transform.position;
+                        referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
+                            VectorUtils.GetUpDirection(referenceTransform.position));
+                    }
+                    //UpdateInputs();
                 }
             }
         }
@@ -437,26 +448,26 @@ namespace BDArmory.Radar
         {
             StringBuilder output = new StringBuilder();
             output.Append(Environment.NewLine);
-            output.AppendLine(Localizer.Format("#autoLOC_bda_1000008", omnidirectional ? Localizer.Format("#autoLOC_bda_1000019") : Localizer.Format("#autoLOC_bda_1000020")));
+            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000008", omnidirectional ? StringUtils.Localize("#autoLOC_bda_1000019") : StringUtils.Localize("#autoLOC_bda_1000020")));
 
-            output.AppendLine(Localizer.Format("#autoLOC_bda_1000021", resourceDrain)); //Ec/sec
+            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000021", resourceDrain)); //Ec/sec
 
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000022", directionalFieldOfView)); //Field of View
-
-                output.Append(Environment.NewLine);
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000024")); //Capabilities
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000025", canScan)); //-Scanning
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000022", directionalFieldOfView)); //Field of View
 
                 output.Append(Environment.NewLine);
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000030")); //Performance
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024")); //Capabilities
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", canScan)); //-Scanning
+
+                output.Append(Environment.NewLine);
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000030")); //Performance
 
                 if (canScan)
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000031", DetectionCurve.Evaluate(irstMaxDistanceDetect)-273, irstMaxDistanceDetect)); //Detection x.xx deg C @ n km
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000031", DetectionCurve.Evaluate(irstMaxDistanceDetect)-273, irstMaxDistanceDetect)); //Detection x.xx deg C @ n km
                 else
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000032"));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000032"));
 
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000034"));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000035", GroundClutterFactor));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000034"));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000035", GroundClutterFactor));
 
 
             return output.ToString();
@@ -473,7 +484,7 @@ namespace BDArmory.Radar
             double chargeAvailable = part.RequestResource("ElectricCharge", drainAmount, ResourceFlowMode.ALL_VESSEL);
             if (chargeAvailable < drainAmount * 0.95f)
             {
-                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_bda_1000016"), 5.0f, ScreenMessageStyle.UPPER_CENTER);		// #autoLOC_bda_1000016 = Radar Requires EC
+                ScreenMessages.PostScreenMessage(StringUtils.Localize("#autoLOC_bda_1000016"), 5.0f, ScreenMessageStyle.UPPER_CENTER);		// #autoLOC_bda_1000016 = Radar Requires EC
                 DisableIRST();
             }
         }

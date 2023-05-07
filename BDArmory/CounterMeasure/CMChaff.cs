@@ -52,18 +52,21 @@ namespace BDArmory.CounterMeasure
             pe.EmitParticle();
 
             float startTime = Time.time;
+            var wait = new WaitForFixedUpdate();
+            Vector3 position; // Optimisation: avoid getting/setting transform.position more than necessary.
             while (Time.time - startTime < pe.maxEnergy)
             {
-                transform.position = body.GetWorldSurfacePosition(geoPos.x, geoPos.y, geoPos.z);
-                velocity += FlightGlobals.getGeeForceAtPosition(transform.position) * Time.fixedDeltaTime;
+                position = body.GetWorldSurfacePosition(geoPos.x, geoPos.y, geoPos.z);
+                velocity += FlightGlobals.getGeeForceAtPosition(position) * Time.fixedDeltaTime;
                 Vector3 dragForce = (0.008f) * drag * 0.5f * velocity.sqrMagnitude *
                                     (float)
-                                    FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(transform.position),
+                                    FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position),
                                         FlightGlobals.getExternalTemperature(), body) * velocity.normalized;
                 velocity -= (dragForce) * Time.fixedDeltaTime;
-                transform.position += velocity * Time.fixedDeltaTime;
-                geoPos = VectorUtils.WorldPositionToGeoCoords(transform.position, body);
-                yield return new WaitForFixedUpdate();
+                position += velocity * Time.fixedDeltaTime;
+                transform.position = position;
+                geoPos = VectorUtils.WorldPositionToGeoCoords(position, body);
+                yield return wait;
             }
 
             gameObject.SetActive(false);

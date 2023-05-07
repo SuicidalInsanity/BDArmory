@@ -340,7 +340,7 @@ namespace BDArmory.Control
             targetAltitude = defaultAltitude;
             aimingMode = false;
             upDir = VectorUtils.GetUpDirection(vesselTransform.position);
-            DebugLine("");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine("");
 
             if (initialTakeOff)
             {
@@ -427,7 +427,7 @@ namespace BDArmory.Control
                     targetDirection = Vector3.LerpUnclamped(vecToTarget.normalized, sideVector.normalized, sidestep); // interpolate between the side vector and target direction vector based on sidestep
                     targetVelocity = MaxSpeed;
                     targetAltitude = CombatAltitude;
-                    DebugLine($"Broadside attack angle {sidestep}");
+                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Broadside attack angle {sidestep}");
                 }
                 else // just point at target and go
                 {
@@ -463,7 +463,7 @@ namespace BDArmory.Control
                                         MissileBase missile = weaponManager.CurrentMissile;
                                         if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget.exists)
                                         {
-                                            DebugLine($"Attempting heat lock");
+                                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Attempting heat lock");
                                             aimingMode = true;
                                             targetDirection = MissileGuidance.GetAirToAirFireSolution(missile, targetVessel);
                                         }
@@ -574,7 +574,7 @@ namespace BDArmory.Control
             {
                 weaveAdjustment = 0;
             }
-            DebugLine($"underFire {weaponManager.underFire}, aimingMode {aimingMode}, weaveAdjustment {weaveAdjustment}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"underFire {weaponManager.underFire}, aimingMode {aimingMode}, weaveAdjustment {weaveAdjustment}");
         }
 
         void AdjustThrottle(float targetSpeed)
@@ -593,7 +593,7 @@ namespace BDArmory.Control
             Vector3 yawTarget = Vector3.ProjectOnPlane(targetDirection, vesselTransform.forward);
 
             float yawError = VectorUtils.SignedAngle(vesselTransform.up, yawTarget, vesselTransform.right) + (aimingMode ? 0 : weaveAdjustment);
-            DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
 
             float forwardVel = Vector3.Dot(vessel.Velocity(), Vector3.ProjectOnPlane(vesselTransform.up, upDir).normalized);
             float forwardAccel = Vector3.Dot(vessel.acceleration_immediate, Vector3.ProjectOnPlane(vesselTransform.up, upDir).normalized);
@@ -611,7 +611,7 @@ namespace BDArmory.Control
             float pitch = 90 - Vector3.Angle(vesselTransform.up, upDir);
 
             float pitchError = pitchAngle - pitch;
-            DebugLine($"target vel: {targetVelocity}, forward vel: {forwardVel}, vel error: {velError}, target pitch: {pitchAngle}, pitch: {pitch}, pitch error: {pitchError}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target vel: {targetVelocity}, forward vel: {forwardVel}, vel error: {velError}, target pitch: {pitchAngle}, pitch: {pitch}, pitch error: {pitchError}");
 
             float bank = VectorUtils.SignedAngle(-vesselTransform.forward, upDir, -vesselTransform.right);
             float latVel = Vector3.Dot(vessel.Velocity(), Vector3.ProjectOnPlane(vesselTransform.right, upDir).normalized);
@@ -633,7 +633,7 @@ namespace BDArmory.Control
                 rollTarget = Vector3.RotateTowards(upDir, -vesselTransform.right, targetRoll * Mathf.PI / 180f, 0f);
 
             float rollError = targetRoll - bank;
-            DebugLine($"target lat vel: {targetLatVelocity}, lateral vel: {latVel}, lat vel error: {latError}, target roll: {targetRoll}, bank: {bank}, roll error: {rollError}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target lat vel: {targetLatVelocity}, lateral vel: {latVel}, lat vel error: {latError}, target roll: {targetRoll}, bank: {bank}, roll error: {rollError}");
 
             Vector3 localAngVel = vessel.angularVelocity;
             #region PID calculations
@@ -653,9 +653,11 @@ namespace BDArmory.Control
             yawIntegral = 0.33f * steerKiAdjust * Vector3.Dot(directionIntegral, vesselTransform.right);
             rollIntegral = 0.1f * steerKiAdjust * Mathf.Clamp(rollIntegral + rollError * Time.deltaTime, -1f, 1f);
 
-            s.pitch = pitchProportional + pitchIntegral - pitchDamping;
-            s.yaw = yawProportional + yawIntegral - yawDamping;
-            s.roll = rollProportional + rollIntegral - rollDamping;
+            SetFlightControlState(s,
+                s.pitch = pitchProportional + pitchIntegral - pitchDamping,
+                s.yaw = yawProportional + yawIntegral - yawDamping,
+                s.roll = rollProportional + rollIntegral - rollDamping
+            );
             #endregion
 
             if (ManeuverRCS && (Mathf.Abs(s.roll) >= 1 || Mathf.Abs(s.pitch) >= 1 || Mathf.Abs(s.yaw) >= 1))

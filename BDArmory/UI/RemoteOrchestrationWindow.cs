@@ -15,7 +15,7 @@ namespace BDArmory.UI
         private BDAScoreService service;
         private BDAScoreClient client;
 
-        private int _guiCheckIndex;
+        private static int _guiCheckIndex = -1;
 
         private readonly float _titleHeight = 30;
         private readonly float _margin = 5;
@@ -65,7 +65,7 @@ namespace BDArmory.UI
                 80085,
                 BDArmorySetup.WindowRectRemoteOrchestration,
                 WindowRemoteOrchestration,
-                Localizer.Format("#LOC_BDArmory_BDARemoteOrchestration_Title"),//"BDA Remote Orchestration"
+                StringUtils.Localize("#LOC_BDArmory_BDARemoteOrchestration_Title"),//"BDA Remote Orchestration"
                 BDArmorySetup.BDGuiSkin.window
             );
             BDArmorySetup.SetGUIOpacity(false);
@@ -90,19 +90,22 @@ namespace BDArmory.UI
         {
             if (!ready)
                 StartCoroutine(WaitForSetup());
-            showWindow = true;
+            SetVisible(true);
+        }
+
+        void SetVisible(bool visible)
+        {
+            showWindow = visible;
+            GUIUtils.SetGUIRectVisible(_guiCheckIndex, visible);
         }
 
         private IEnumerator WaitForSetup()
         {
-            while (BDArmorySetup.Instance == null || BDAScoreService.Instance == null || BDAScoreService.Instance.client == null)
-            {
-                yield return null;
-            }
+            yield return new WaitWhile(() => BDArmorySetup.Instance == null || BDAScoreService.Instance == null || BDAScoreService.Instance.client == null);
             service = BDAScoreService.Instance;
             UpdateClientStatus();
             ready = true;
-            _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+            if (_guiCheckIndex < 0) _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
         }
 
         private void WindowRemoteOrchestration(int id)
@@ -110,7 +113,7 @@ namespace BDArmory.UI
             GUI.DragWindow(new Rect(0, 0, BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, _titleHeight));
             if (GUI.Button(new Rect(BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, 2, _titleHeight / 2, _titleHeight / 2), "X", BDArmorySetup.BDGuiSkin.button))
             {
-                showWindow = false;
+                SetVisible(false);
             }
 
             float offset = _titleHeight + _margin;

@@ -3,15 +3,12 @@ using KSP.UI.Screens;
 using UnityEngine;
 
 using BDArmory.Settings;
+using BDArmory.Utils;
 
 namespace BDArmory.UI
 {
     public class BDStagingAreaGauge : PartModule
     {
-        public AudioSource AudioSource;
-        public AudioClip ReloadAudioClip = null;
-        public AudioClip ReloadCompleteAudioClip = null;
-
         public string AmmoName = "";
 
         //UI gauges(next to staging icon)
@@ -102,20 +99,12 @@ namespace BDArmory.UI
                 if (reloadBar == null)
                 {
                     reloadBar = InitReloadBar();
-                    if (ReloadAudioClip)
-                    {
-                        AudioSource.PlayOneShot(ReloadAudioClip);
-                    }
                 }
                 reloadBar?.SetValue(reloadRemaining, 0, 1);
             }
             else if (reloadBar != null)
             {
                 ForceRedraw();
-                if (ReloadCompleteAudioClip)
-                {
-                    AudioSource.PlayOneShot(ReloadCompleteAudioClip);
-                }
             }
         }
 
@@ -150,7 +139,7 @@ namespace BDArmory.UI
                 return v;
             v.SetMsgBgColor(XKCDColors.DarkGrey);
             v.SetMsgTextColor(XKCDColors.White);
-            v.SetMessage(Localizer.Format("#LOC_BDArmory_ProtoStageIconInfo_Reloading"));//"Reloading"
+            v.SetMessage(StringUtils.Localize("#LOC_BDArmory_ProtoStageIconInfo_Reloading"));//"Reloading"
             v.SetProgressBarBgColor(XKCDColors.DarkGrey);
             v.SetProgressBarColor(XKCDColors.Silver);
 
@@ -167,7 +156,7 @@ namespace BDArmory.UI
             {
                 v.SetMsgBgColor(XKCDColors.DarkRed);
                 v.SetMsgTextColor(XKCDColors.Orange);
-                v.SetMessage(Localizer.Format("#LOC_BDArmory_ProtoStageIconInfo_Overheat"));//"Overheat"
+                v.SetMessage(StringUtils.Localize("#LOC_BDArmory_ProtoStageIconInfo_Overheat"));//"Overheat"
                 v.SetProgressBarBgColor(XKCDColors.DarkRed);
                 v.SetProgressBarColor(XKCDColors.Orange);
             }
@@ -200,7 +189,7 @@ namespace BDArmory.UI
             {
                 g.SetMsgBgColor(XKCDColors.AlmostBlack);
                 g.SetMsgTextColor(XKCDColors.Yellow);
-                g.SetMessage(Localizer.Format("#LOC_BDArmory_ProtoStageIconInfo_AmmoOut"));//"Ammo Depleted"
+                g.SetMessage(StringUtils.Localize("#LOC_BDArmory_ProtoStageIconInfo_AmmoOut"));//"Ammo Depleted"
                 g.SetProgressBarBgColor(XKCDColors.Yellow);
                 g.SetProgressBarColor(XKCDColors.Black);
             }

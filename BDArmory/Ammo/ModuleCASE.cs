@@ -5,11 +5,11 @@ using UniLinq;
 using UnityEngine;
 
 using BDArmory.Competition;
-using BDArmory.Competition.VesselSpawning;
 using BDArmory.Extensions;
 using BDArmory.FX;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.VesselSpawning;
 using BDArmory.Weapons;
 
 namespace BDArmory.Ammo
@@ -34,7 +34,7 @@ namespace BDArmory.Ammo
         public string SourceVessel = "";
         public bool hasDetonated = false;
         private float blastRadius = 0;
-        int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23);
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
 
         public bool externallyCalled = false;
 
@@ -62,6 +62,9 @@ namespace BDArmory.Ammo
         public bool Case2 = false;
 
         private List<double> resourceAmount = new List<double>();
+
+        static RaycastHit[] raycastHitBuffer = new RaycastHit[10]; // This gets enlarged as needed and is shared amongst all ModuleCASE instances.
+
         public void Start()
         {
             if (HighLogic.LoadedSceneIsEditor)
@@ -248,10 +251,16 @@ namespace BDArmory.Ammo
                 ExplosionFx.CreateExplosion(part.transform.position, (float)ammoExplosionYield / 4f, shuntExploModelPath, explSoundPath, ExplosionSourceType.BattleDamage, 30, part, SourceVessel, "Ammunition (CASE-II)", direction, -1, true);
                 if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.ModuleCASE]: CASE II explosion, tntMassEquivilent: " + ammoExplosionYield);
                 Ray BlastRay = new Ray(part.transform.position, part.transform.up);
-                var hits = Physics.RaycastAll(BlastRay, blastRadius, explosionLayerMask);
-                if (hits.Length > 0)
+                var hitCount = Physics.RaycastNonAlloc(BlastRay, raycastHitBuffer, blastRadius, explosionLayerMask);
+                if (hitCount == raycastHitBuffer.Length) // If there's a whole bunch of stuff in the way (unlikely), then we need to increase the size of our hits buffer.
                 {
-                    var orderedHits = hits.OrderBy(x => x.distance);
+                    raycastHitBuffer = Physics.RaycastAll(BlastRay, blastRadius, explosionLayerMask);
+                    hitCount = raycastHitBuffer.Length;
+                    if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ModuleCASE]: Enlarging hit raycast buffer size to {hitCount}.");
+                }
+                if (hitCount > 0)
+                {
+                    var orderedHits = raycastHitBuffer.Take(hitCount).OrderBy(x => x.distance);
                     using (var hitsEnu = orderedHits.GetEnumerator())
                     {
                         while (hitsEnu.MoveNext())
@@ -287,11 +296,11 @@ namespace BDArmory.Ammo
 
                                 if (hitPart.vessel != part.vessel)
                                 {
-                                    Vector3 dist = part.transform.position - hitPart.transform.position;
+                                    float dist = (part.transform.position - hitPart.transform.position).magnitude;
 
                                     Ray LoSRay = new Ray(part.transform.position, hitPart.transform.position - part.transform.position);
                                     RaycastHit LOShit;
-                                    if (Physics.Raycast(LoSRay, out LOShit, dist.magnitude, explosionLayerMask))
+                                    if (Physics.Raycast(LoSRay, out LOShit, dist, explosionLayerMask))
                                     {
                                         if (FlightGlobals.currentMainBody == null || LOShit.collider.gameObject != FlightGlobals.currentMainBody.gameObject)
                                         {
@@ -299,7 +308,7 @@ namespace BDArmory.Ammo
                                             Part p = eva ? eva.part : LOShit.collider.gameObject.GetComponentInParent<Part>();
                                             if (p == hitPart)
                                             {
-                                                ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, 200, (float)ammoExplosionYield, dist.magnitude, this.part.vessel.GetName(), ExplosionSourceType.BattleDamage, part.mass);
+                                                ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, 200, (float)ammoExplosionYield, dist, this.part.vessel.GetName(), ExplosionSourceType.BattleDamage, part.mass);
                                             }
                                         }
                                     }
@@ -367,12 +376,13 @@ namespace BDArmory.Ammo
 
             return output.ToString();
         }
-        void Update()
+        void FixedUpdate()
         {
             if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed)
             {
                 if (BDArmorySettings.BD_FIRES_ENABLED && BDArmorySettings.BD_FIRE_HEATDMG)
                 {
+                    if (hasDetonated) return;
                     if (this.part.temperature > 900) //ammo cooks off, part is too hot
                     {
                         if (!hasDetonated) DetonateIfPossible();

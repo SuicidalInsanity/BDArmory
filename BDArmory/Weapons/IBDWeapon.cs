@@ -8,7 +8,11 @@ namespace BDArmory.Weapons
 
         string GetSubLabel();
 
+        float GetEngageRange();
+
         string GetMissileType();
+
+        string GetPartName();
 
         Part GetPart();
 

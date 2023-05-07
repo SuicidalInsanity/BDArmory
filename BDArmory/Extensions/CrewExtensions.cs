@@ -8,6 +8,7 @@ namespace BDArmory.Extensions
         /// <param name="crew">The crew member</param>
         public static void ResetInventory(this ProtoCrewMember crew, bool withJetpack = false)
         {
+            if (crew == null) return;
             if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // Introduced in 1.11
             {
                 crew.ResetInventory_1_11(withJetpack);

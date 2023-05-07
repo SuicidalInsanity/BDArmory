@@ -5,9 +5,11 @@ Gun turrets and other weapon systems for KSP
 
 Original Author [BahamutoD](https://github.com/BahamutoD)
 
-Original [Forum link](http://forum.kerbalspaceprogram.com/threads/85209-BDArmory)
+Current [Forum link](https://forum.kerbalspaceprogram.com/index.php?/topic/209092-19x-112x-bdarmory-plus-bda-2022-07-23/)
 
-Current [Forum link](https://forum.kerbalspaceprogram.com/index.php?/topic/184167-17x-bdarmory-continued-v130-05012019/)
+BDAc [Forum link](https://forum.kerbalspaceprogram.com/index.php?/topic/184167-17x-bdarmory-continued-v130-05012019/)
+
+Original [Forum link](http://forum.kerbalspaceprogram.com/threads/85209-BDArmory)
 
 Current Maintainers:
 - [DocNappers](https://github.com/BrettRyland)
@@ -17,6 +19,7 @@ Current Maintainers:
 Contributors:
 - [Aubranium](https://github.com/agoodman) (Remote Orchestration)
 - [Scott Manley](https://github.com/illectro)
+- [Bill Nye](https://github.com/BillNyeTheIE)
 - [Stardust](https://github.com/Stardust-Rapture)
 - [Kurgan](https://github.com/TheKurgan)
 - [Kaz]()
@@ -24,7 +27,6 @@ Contributors:
 - [Fluffy]()
 - [Cl0by](https://github.com/Cl0by)
 - [Concodroid]()
-- [BillNyeTheIE]()
 - [EzBro]()
 - And all the previous maintainers.
 

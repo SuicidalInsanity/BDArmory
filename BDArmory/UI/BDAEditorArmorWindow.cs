@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using KSP.Localization;
+using System.Linq;
 using KSP.UI.Screens;
 using UnityEngine;
 
@@ -19,8 +19,7 @@ namespace BDArmory.UI
         private ApplicationLauncherButton toolbarButton = null;
 
         private bool showArmorWindow = false;
-        private bool showHullMenu = false;
-        private string windowTitle = Localizer.Format("#LOC_BDArmory_ArmorTool");
+        private string windowTitle = StringUtils.Localize("#LOC_BDArmory_ArmorTool");
         private Rect windowRect = new Rect(300, 150, 300, 350);
         private float lineHeight = 20;
         private float height = 20;
@@ -29,10 +28,21 @@ namespace BDArmory.UI
         private BDGUIComboBox armorBox;
         private int previous_index = -1;
 
+        private GUIContent[] hullGUI;
+        private GUIContent hullBoxText;
+        private BDGUIComboBox hullBox;
+        private int previous_mat = -1;
+        private float oldLines = -1;
+
+        GUIStyle listStyle;
+
         private float totalArmorMass;
         private float totalArmorCost;
         private float totalLift;
+        private float totalLiftArea;
+        private float totalLiftStackRatio;
         private float wingLoading;
+        private float WLRatio;
         private bool CalcArmor = false;
         private bool shipModifiedfromCalcArmor = false;
         private bool SetType = false;
@@ -45,8 +55,14 @@ namespace BDArmory.UI
         private float ArmorDuctility = 0.6f;
         private float ArmorDiffusivity = 237;
         private float ArmorMaxTemp = 993;
+        private float ArmorVfactor = 8.45001135e-07f;
+        private float ArmorMu1 = 0.656060636f;
+        private float ArmorMu2 = 1.20190930f;
+        private float ArmorMu3 = 1.77791929f;
         private float ArmorCost = 0;
+
         private bool armorslist = false;
+        private bool hullslist = false;
         private float Thickness = 10;
         private bool useNumField = false;
         private float oldThickness = 10;
@@ -63,10 +79,7 @@ namespace BDArmory.UI
         private bool refreshHPvisualizer = false;
         private bool refreshHullvisualizer = true;
         private bool refreshLiftvisualizer = false;
-        private bool isWood = false;
-        private bool isSteel = false;
-        private bool isAluminium = true;
-        private int hullmat = 2;
+        private string hullmat = "Aluminium";
 
         private float steelValue = 1;
         private float armorValue = 1;
@@ -100,6 +113,8 @@ namespace BDArmory.UI
             //steelValue = ProjectileUtils.CalculatePenetration(30, newCaliber, 0.388f, 1109, 0.15f, 7850, 940, 30, 0.8f, false);
             steelValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f, 940, 8.45001135e-07f, 0.656060636f, 1.20190930f, 1.77791929f);
             exploValue = 940 * 1.15f * 7.85f;
+            listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
+            listStyle.fixedHeight = 18; //make list contents slightly smaller
         }
 
         private void FillArmorList()
@@ -110,28 +125,62 @@ namespace BDArmory.UI
                 GUIContent gui = new GUIContent(ArmorInfo.armors[i].name);
                 armorGUI[i] = gui;
             }
-
             armorBoxText = new GUIContent();
-            armorBoxText.text = Localizer.Format("#LOC_BDArmory_ArmorSelect");
+            armorBoxText.text = StringUtils.Localize("#LOC_BDArmory_ArmorSelect");
         }
+        private void FillHullList()
+        {
+            hullGUI = new GUIContent[HullInfo.materials.Count];
+            for (int i = 0; i < HullInfo.materials.Count; i++)
+            {
+                GUIContent gui = new GUIContent(HullInfo.materials[i].name);
+                hullGUI[i] = gui;
+            }
 
+            hullBoxText = new GUIContent();
+            hullBoxText.text = StringUtils.Localize("#LOC_BDArmory_Armor_HullType");
+        }
         private void OnEditorShipModifiedEvent(ShipConstruct data)
         {
+            if (data is null) return;
             delayedRefreshVisuals = true;
             if (!delayedRefreshVisualsInProgress)
-                StartCoroutine(DelayedRefreshVisuals());
+                StartCoroutine(DelayedRefreshVisuals(data));
         }
 
         private bool delayedRefreshVisuals = false;
         private bool delayedRefreshVisualsInProgress = false;
-        IEnumerator DelayedRefreshVisuals()
+        IEnumerator DelayedRefreshVisuals(ShipConstruct ship)
         {
             delayedRefreshVisualsInProgress = true;
-            while (delayedRefreshVisuals) // Wait until ship modified events stop coming.
+            var wait = new WaitForFixedUpdate();
+            int count = 0, countLimit = 50;
+            while (delayedRefreshVisuals && ++count < countLimit) // Wait until ship modified events stop coming, or countLimit ticks.
             {
                 delayedRefreshVisuals = false;
-                yield return null;
-                yield return null; // Two yield nulls to wait for HP changes to delayed ship modified events in HitpointTracker
+                yield return wait;
+            }
+            if (count == countLimit) Debug.LogWarning($"[BDArmory.BDAEditorArmorWindow]: Continuous stream of OnEditorShipModifiedEvents for over {countLimit} frames.");
+            count = 0;
+            yield return new WaitUntilFixed(() => ++count == countLimit ||
+               ship == null || ship.Parts == null || ship.Parts.TrueForAll(p =>
+               {
+                   if (p == null) return true;
+                   var hp = p.GetComponent<Damage.HitpointTracker>();
+                   return hp == null || hp.Ready;
+               })); // Wait for HP changes to delayed ship modified events in HitpointTracker
+            if (count == countLimit)
+            {
+                string reason = "";
+                if (ship != null && ship.Parts != null)
+                    reason = string.Join("; ", ship.Parts.Select(p =>
+                    {
+                        if (p == null) return null;
+                        var hp = p.GetComponent<Damage.HitpointTracker>();
+                        if (hp == null || hp.Ready) return null;
+                        return hp;
+                    }).Where(hp => hp != null).Select(hp => $"{hp.part.name}: {hp.Why}"));
+                //Debug.LogWarning($"[BDArmory.BDAEditorArmorWindow]: Ship HP failed to settle within {countLimit} frames.{(string.IsNullOrEmpty(reason) ? "" : $" {reason}")}");
             }
             delayedRefreshVisualsInProgress = false;
 
@@ -149,13 +198,16 @@ namespace BDArmory.UI
                     refreshLiftvisualizer = true;
                 }
                 shipModifiedfromCalcArmor = false;
+                CalculateArmorMass();
+                if (!FerramAerospace.hasFAR)
+                    CalculateTotalLift(); // Re-calculate lift and wing loading on armor change
+                //Debug.Log("[ArmorTool] Recalculating mass/lift");
             }
         }
 
         private void OnDestroy()
         {
             GameEvents.onEditorShipModified.Remove(OnEditorShipModifiedEvent);
-
             if (toolbarButton)
             {
                 ApplicationLauncher.Instance.RemoveModApplication(toolbarButton);
@@ -166,10 +218,7 @@ namespace BDArmory.UI
         IEnumerator ToolbarButtonRoutine()
         {
             if (toolbarButton || (!HighLogic.LoadedSceneIsEditor)) yield break;
-            while (!ApplicationLauncher.Ready)
-            {
-                yield return null;
-            }
+            yield return new WaitUntil(() => ApplicationLauncher.Ready && BDArmorySetup.toolbarButtonAdded); // Wait until after the main BDA toolbar button.
 
             AddToolbarButton();
         }
@@ -210,7 +259,7 @@ namespace BDArmory.UI
         {
             if (showArmorWindow)
             {
-                windowRect = GUI.Window(this.GetInstanceID(), windowRect, WindowArmor, windowTitle, BDArmorySetup.BDGuiSkin.window);
+                windowRect = GUI.Window(GUIUtility.GetControlID(FocusType.Passive), windowRect, WindowArmor, windowTitle, BDArmorySetup.BDGuiSkin.window);
             }
             PreventClickThrough();
         }
@@ -236,7 +285,7 @@ namespace BDArmory.UI
 
             style.fontStyle = FontStyle.Normal;
 
-            if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorHPVisualizer"), HPvisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHPVisualizer"), HPvisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
             {
                 HPvisualizer = !HPvisualizer;
                 if (HPvisualizer)
@@ -251,7 +300,7 @@ namespace BDArmory.UI
 
             if (!BDArmorySettings.RESET_ARMOUR)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorVisualizer"), Visualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorVisualizer"), Visualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
                 {
                     Visualizer = !Visualizer;
                     if (Visualizer)
@@ -266,7 +315,7 @@ namespace BDArmory.UI
 
             if (!BDArmorySettings.RESET_HULL)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorHullVisualizer"), HullVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHullVisualizer"), HullVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
                 {
                     HullVisualizer = !HullVisualizer;
                     if (HullVisualizer)
@@ -281,7 +330,7 @@ namespace BDArmory.UI
 
             if (!FerramAerospace.hasFAR)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorLiftVisualizer"), LiftVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorLiftVisualizer"), LiftVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
                 {
                     LiftVisualizer = !LiftVisualizer;
                     if (LiftVisualizer)
@@ -303,7 +352,7 @@ namespace BDArmory.UI
 
             if (!BDArmorySettings.RESET_ARMOUR)
             {
-                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorThickness") + ": " + Thickness + "mm", style);
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorThickness")}: {Thickness} mm", style);
                 line++;
                 if (!useNumField)
                 {
@@ -320,22 +369,42 @@ namespace BDArmory.UI
                     line++;
                 }
                 line += 0.75f;
-                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorTotalMass") + ": " + totalArmorMass.ToString("0.00"), style);
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorTotalMass")}: {totalArmorMass:0.00}", style);
                 line++;
-                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorTotalCost") + ": " + Mathf.Round(totalArmorCost), style);
-                if (!FerramAerospace.hasFAR)
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorTotalCost")}: {Mathf.Round(totalArmorCost)}", style);
+                line++;
+            }
+            if (!FerramAerospace.hasFAR)
+            {
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorTotalLift")}: {totalLift:0.00} ({totalLiftArea:F3} m2)", style);
+                line++;
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorWingLoading")}: {wingLoading:0.0} ({WLRatio:F3} kg/m2)", style);
+                line++;
+                GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorLiftStacking")}: {totalLiftStackRatio:0%}", style);
+                line++;
+#if DEBUG
+                if (GUI.Button(new Rect(10, line++ * lineHeight, 280, lineHeight), "Find Wings", BDArmorySetup.ButtonStyle))
                 {
-                    line++;
-                    GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorTotalLift") + ": " + totalLift.ToString("0.00"), style);
-                    line++;
-                    GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorWingLoading") + ": " + wingLoading.ToString("0.00"), style);
+                    var wings = FindWings();
+                    foreach (var wing in wings)
+                    {
+                        Debug.Log($"DEBUG Wing: {string.Join(", ", wing.Select(w => $"{w.name}:{w.persistentId}"))}");
+                    }
+                    // Total lift stacking is the combination of inter- and intra-wing lift stacking.
+                    // Calculate inter-wing lift stacking by calculating stacking between wings.
+                    var liftStacking = CalculateInterWingLiftStacking(wings);
+                    // Calculate intra-wing lift stacking by descending down wing hierarchies and calculating the stacking between children of each node.
+                    foreach (var wing in wings)
+                        liftStacking += CalculateIntraWingLiftStacking(wing);
+                    Debug.Log($"DEBUG Lift stacking: {liftStacking}");
                 }
-                line += 1.5f;
+#endif
             }
             float StatLines = 0;
             float armorLines = 0;
             if (!BDArmorySettings.RESET_ARMOUR)
             {
+                line += 0.5f;
                 if (Thickness != oldThickness)
                 {
                     oldThickness = Thickness;
@@ -344,22 +413,19 @@ namespace BDArmory.UI
                     thicknessField["Thickness"].maxValue = maxThickness;
                     CalculateArmorMass();
                 }
-                GUI.Label(new Rect(40, line * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorSelect"), style);
-                line++;
+                //GUI.Label(new Rect(40, line * lineHeight, 300, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorSelect"), style);
                 if (!armorslist)
                 {
                     FillArmorList();
-                    GUIStyle listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-                    listStyle.fixedHeight = 18; //make list contents slightly smaller
                     armorBox = new BDGUIComboBox(new Rect(10, line * lineHeight, 280, lineHeight), new Rect(10, line * lineHeight, 280, lineHeight), armorBoxText, armorGUI, 120, listStyle);
                     armorslist = true;
                 }
-
+                armorBox.UpdateRect(new Rect(10, line * lineHeight, 280, lineHeight));
                 int selected_index = armorBox.Show();
                 armorLines++;
-                if (armorBox.isOpen)
+                if (armorBox.IsOpen)
                 {
-                    armorLines += 6;
+                    armorLines += armorBox.Height / lineHeight;
                 }
                 if (selected_index != previous_index)
                 {
@@ -376,44 +442,44 @@ namespace BDArmory.UI
                 line += 0.5f;
                 if (GameSettings.ADVANCED_TWEAKABLES)
                 {
-                    ArmorStats = GUI.Toggle(new Rect(10, (line + armorLines) * lineHeight, 280, lineHeight), ArmorStats, Localizer.Format("#LOC_BDArmory_ArmorStats"), ArmorStats ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                    ArmorStats = GUI.Toggle(new Rect(10, (line + armorLines) * lineHeight, 280, lineHeight), ArmorStats, StringUtils.Localize("#LOC_BDArmory_ArmorStats"), ArmorStats ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
                     StatLines++;
                     if (ArmorStats)
                     {
                         if (selectedArmor != "None")
                         {
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorStrength") + " " + ArmorStrength, style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorStrength")}: {ArmorStrength}", style);
                             //StatLines++;
-                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorHardness") + " " + ArmorHardness, style);
+                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorHardness")}: {ArmorHardness} ", style);
                             StatLines++;
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorDuctility") + " " + ArmorDuctility, style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorDuctility")}: {ArmorDuctility}", style);
                             //StatLines++;
-                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorDiffusivity") + " " + ArmorDiffusivity, style);
+                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorDiffusivity")}: {ArmorDiffusivity}", style);
                             StatLines++;
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorMaxTemp") + " " + ArmorMaxTemp + " K", style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorMaxTemp")}: {ArmorMaxTemp} K", style);
                             //StatLines++;
-                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorDensity") + " " + ArmorDensity + " kg/m3", style);
+                            GUI.Label(new Rect(135, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorDensity")}: {ArmorDensity} kg/m3", style);
                             StatLines++;
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorCost") + " " + ArmorCost + "/m3", style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 120, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorCost")}: {ArmorCost} /m3", style);
                             StatLines++;
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_BulletResist") + ": " + (relValue < 1.2 ? (relValue < 0.5 ? "* * * * *" : "* * * *") : (relValue > 2.8 ? (relValue > 4 ? "*" : "* *") : "* * *")), style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_BulletResist")}:{(relValue < 1.2 ? (relValue < 0.5 ? "* * * * *" : "* * * *") : (relValue > 2.8 ? (relValue > 4 ? "*" : "* *") : "* * *"))}", style);
                             StatLines++;
 
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_ExplosionResist") + ": " + ((ArmorDuctility < 0.05f && ArmorHardness < 500) ? "* *" : (exploValue > 8000 ? (exploValue > 20000 ? "* * * * *" : "* * * *") : (exploValue < 4000 ? (exploValue < 2000 ? "*" : "* *") : "* * *"))), style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ExplosionResist")}: {((ArmorDuctility < 0.05f && ArmorHardness < 500) ? "* *" : (exploValue > 8000 ? (exploValue > 20000 ? "* * * * *" : "* * * *") : (exploValue < 4000 ? (exploValue < 2000 ? "*" : "* *") : "* * *")))}", style);
                             StatLines++;
 
-                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_LaserResist") + ": " + (ArmorDiffusivity > 150 ? (ArmorDiffusivity > 199 ? "* * * * *" : "* * * *") : (ArmorDiffusivity < 50 ? (ArmorDiffusivity < 10 ? "*" : "* *") : "* * *")), style);
+                            GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_LaserResist")}: {(ArmorDiffusivity > 150 ? (ArmorDiffusivity > 199 ? "* * * * *" : "* * * *") : (ArmorDiffusivity < 50 ? (ArmorDiffusivity < 10 ? "*" : "* *") : "* * *"))}", style);
                             StatLines++;
 
                             if (ArmorDuctility < 0.05)
                             {
-                                if (ArmorHardness > 500) GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), Localizer.Format("#LOC_BDArmory_ArmorShatterWarning"), style);
+                                if (ArmorHardness > 500) GUI.Label(new Rect(15, (line + armorLines + StatLines) * lineHeight, 260, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorShatterWarning"), style);
                                 StatLines++;
                             }
                         }
                         if (selectedArmor != "Mild Steel" && selectedArmor != "None")
                         {
-                            GUI.Label(new Rect(10, (line + armorLines + StatLines) * lineHeight, 300, lineHeight), Localizer.Format("#LOC_BDArmory_EquivalentThickness") + ": " + relValue * Thickness + "mm", style);
+                            GUI.Label(new Rect(10, (line + armorLines + StatLines) * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_EquivalentThickness")}: {relValue * Thickness} mm", style);
                             line++;
                         }
                     }
@@ -423,51 +489,31 @@ namespace BDArmory.UI
             if (!BDArmorySettings.RESET_HULL)
             {
                 line += 0.5f;
-                showHullMenu = GUI.Toggle(new Rect(10, (line + armorLines + StatLines) * lineHeight, 280, lineHeight),
-                    showHullMenu, Localizer.Format("#LOC_BDArmory_Armor_HullMat"), showHullMenu ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
-                HullLines += 1.15f;
-
-                if (showHullMenu)
+                if (!hullslist)
                 {
-                    if (isSteel != (isSteel = GUI.Toggle(new Rect(10, (line + armorLines + StatLines + HullLines) * lineHeight, 280, lineHeight), isSteel, Localizer.Format("#LOC_BDArmory_Steel"), isSteel ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                    FillHullList();
+                    hullBox = new BDGUIComboBox(new Rect(10, (line + armorLines + StatLines) * lineHeight, 280, lineHeight), new Rect(10, (line + armorLines + StatLines) * lineHeight, 280, lineHeight), hullBoxText, hullGUI, 120, listStyle);
+                    hullslist = true;
+                }
+                hullBox.UpdateRect(new Rect(10, (line + armorLines + StatLines) * lineHeight, 280, lineHeight));
+                if (armorLines + StatLines != oldLines)
+                {
+                    oldLines = armorLines + StatLines;
+                }
+                int selected_mat = hullBox.Show();
+                HullLines++;
+                if (hullBox.IsOpen)
+                {
+                    HullLines += hullBox.Height / lineHeight;
+                }
+                if (selected_mat != previous_mat)
+                {
+                    if (selected_mat != -1)
                     {
-                        if (isSteel)
-                        {
-                            isWood = false;
-                            isAluminium = false;
-                            hullmat = 3;
-                            CalculateArmorMass(true);
-                        }
-                    }
-                    HullLines += 1.15f;
-                    if (isWood != (isWood = GUI.Toggle(new Rect(10, (line + armorLines + StatLines + HullLines) * lineHeight, 280, lineHeight), isWood, Localizer.Format("#LOC_BDArmory_Wood"), isWood ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
-                    {
-                        if (isWood)
-                        {
-                            isAluminium = false;
-                            isSteel = false;
-                            hullmat = 1;
-                            CalculateArmorMass(true);
-                        }
-                    }
-                    HullLines += 1.15f;
-                    if (isAluminium != (isAluminium = GUI.Toggle(new Rect(10, (line + armorLines + StatLines + HullLines) * lineHeight, 280, lineHeight), isAluminium, Localizer.Format("#LOC_BDArmory_Aluminium"), isAluminium ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
-                    {
-                        if (isAluminium)
-                        {
-                            isWood = false;
-                            isSteel = false;
-                            hullmat = 2;
-                            CalculateArmorMass(true);
-                        }
-                    }
-                    HullLines += 1.15f;
-                    if (!isSteel && !isWood && !isAluminium)
-                    {
-                        isAluminium = true;
-                        hullmat = 2;
+                        hullmat = HullInfo.materials[selected_mat].name;
                         CalculateArmorMass(true);
                     }
+                    previous_mat = selected_mat;
                 }
             }
             line += 0.5f;
@@ -483,8 +529,6 @@ namespace BDArmory.UI
                 return;
 
             bool modified = false;
-            totalArmorMass = 0;
-            totalArmorCost = 0;
             var selectedArmorIndex = ArmorInfo.armors.FindIndex(t => t.name == selectedArmor);
             if (selectedArmorIndex < 0)
                 return;
@@ -530,12 +574,13 @@ namespace BDArmory.UI
                                 armor.ArmorModified(null, null);
                                 modified = true;
                             }
-                            totalArmorMass += armor.armorMass;
-                            totalArmorCost += armor.armorCost;
+                            StartCoroutine(calcArmorMassAndCost());
+                            //totalArmorMass += armor.armorMass; //these aren't updating due to ArmorModified getting called next Update tick, so armorMass/Cost hasn't updated yet for grabbing the new value
+                            //totalArmorCost += armor.armorCost;
                         }
                         else
                         {
-                            armor.HullTypeNum = hullmat;
+                            armor.HullTypeNum = HullInfo.materials.FindIndex(t => t.name == hullmat) + 1;
                             armor.HullModified(null, null);
                             modified = true;
                         }
@@ -556,6 +601,10 @@ namespace BDArmory.UI
             ArmorHardness = ArmorInfo.armors[selectedArmorIndex].Hardness;
             ArmorMaxTemp = ArmorInfo.armors[selectedArmorIndex].SafeUseTemp;
             ArmorStrength = ArmorInfo.armors[selectedArmorIndex].Strength;
+            ArmorVfactor = ArmorInfo.armors[selectedArmorIndex].vFactor;
+            ArmorMu1 = ArmorInfo.armors[selectedArmorIndex].muParam1;
+            ArmorMu2 = ArmorInfo.armors[selectedArmorIndex].muParam2;
+            ArmorMu3 = ArmorInfo.armors[selectedArmorIndex].muParam3;
 
             if (modified)
             {
@@ -583,7 +632,204 @@ namespace BDArmory.UI
                         totalLift += wing.deflectionLiftCoeff * Vector3.Project(wing.transform.forward, Vector3.up).sqrMagnitude; // Only return vertically oriented lift components
                     }
                 }
-            wingLoading = totalLift / EditorLogic.fetch.ship.GetTotalMass();
+            wingLoading = totalLift / EditorLogic.fetch.ship.GetTotalMass(); //convert to kg/m2. 1 LiftingArea is ~ 3.51m2, or ~285kg/m2
+            totalLiftArea = totalLift * 3.51f;
+            WLRatio = (EditorLogic.fetch.ship.GetTotalMass() * 1000) / totalLiftArea;
+
+            CalculateTotalLiftStacking();
+        }
+
+        void CalculateTotalLiftStacking()
+        {
+            if (EditorLogic.RootPart == null)
+                return;
+
+            float liftStackedAll = 0;
+            float liftStackedAllEval = 0;
+            List<Part> evaluatedParts = new List<Part>(); ;
+            totalLiftStackRatio = 0;
+            using (List<Part>.Enumerator parts1 = EditorLogic.fetch.ship.Parts.GetEnumerator())
+                while (parts1.MoveNext())
+                {
+                    if (parts1.Current.IsMissile()) continue;
+                    if (IsAeroBrake(parts1.Current)) continue;
+                    ModuleLiftingSurface wing1 = parts1.Current.GetComponent<ModuleLiftingSurface>();
+                    if (wing1 != null)
+                    {
+                        evaluatedParts.Add(parts1.Current);
+                        float lift1area = wing1.deflectionLiftCoeff * Vector3.Project(wing1.transform.forward, Vector3.up).sqrMagnitude; // Only return vertically oriented lift components
+                        float lift1rad = BDAMath.Sqrt(lift1area / Mathf.PI);
+                        Vector3 col1Pos = wing1.part.partTransform.TransformPoint(wing1.part.CoLOffset);
+                        Vector3 col1PosProj = Vector3.ProjectOnPlane(col1Pos, Vector3.up);
+                        liftStackedAllEval += lift1area; // Add up total lift areas
+
+                        using (List<Part>.Enumerator parts2 = EditorLogic.fetch.ship.Parts.GetEnumerator())
+                            while (parts2.MoveNext())
+                            {
+                                if (evaluatedParts.Contains(parts2.Current)) continue;
+                                if (parts1.Current == parts2.Current) continue;
+                                if (parts2.Current.IsMissile()) continue;
+                                if (IsAeroBrake(parts2.Current)) continue;
+                                ModuleLiftingSurface wing2 = parts2.Current.GetComponent<ModuleLiftingSurface>();
+                                if (wing2 != null)
+                                {
+                                    float lift2area = wing2.deflectionLiftCoeff * Vector3.Project(wing2.transform.forward, Vector3.up).sqrMagnitude; // Only return vertically oriented lift components
+                                    float lift2rad = BDAMath.Sqrt(lift2area / Mathf.PI);
+                                    Vector3 col2Pos = wing2.part.partTransform.TransformPoint(wing2.part.CoLOffset);
+                                    Vector3 col2PosProj = Vector3.ProjectOnPlane(col2Pos, Vector3.up);
+
+                                    float d = Vector3.Distance(col1PosProj, col2PosProj);
+                                    float R = lift1rad;
+                                    float r = lift2rad;
+
+                                    float a = 0;
+
+                                    // Calc overlapping area between two circles
+                                    if (d >= R + r) // Circles not overlapping
+                                        a = 0;
+                                    else if (R >= (d + r)) // Circle 2 inside Circle 1
+                                        a = Mathf.PI * r * r;
+                                    else if (r >= (d + R)) // Circle 1 inside Circle 2
+                                        a = Mathf.PI * R * R;
+                                    else if (d < R + r) // Circles overlapping
+                                        a = r * r * Mathf.Acos((d * d + r * r - R * R) / (2 * d * r)) + R * R * Mathf.Acos((d * d + R * R - r * r) / (2 * d * R)) -
+                                            0.5f * BDAMath.Sqrt((-d + r + R) * (d + r - R) * (d - r + R) * (d + r + R));
+
+                                    // Calculate vertical spacing factor (0 penalty if surfaces are spaced sqrt(2*lift) apart)
+                                    float v_dist = Vector3.Distance(Vector3.Project(col1Pos, Vector3.up), Vector3.Project(col2Pos, Vector3.up));
+                                    float l_spacing = Mathf.Round(Mathf.Max(lift1area, lift2area, 0.25f) * 100f) / 100f; // Round lift to nearest 0.01
+                                    float v_factor = Mathf.Pow(Mathf.Clamp01((BDAMath.Sqrt(2 * l_spacing) - v_dist) / (BDAMath.Sqrt(2 * l_spacing) - BDAMath.Sqrt(l_spacing))), 0.1f);
+
+                                    // Add overlapping area
+                                    liftStackedAll += a * v_factor;
+                                }
+                            }
+                    }
+                }
+            // Look at total overlapping lift area as a percentage of total lift area. Since overlapping lift area for multiple parts can potentially be greater than the total lift area, cap 
+            // the stacking at 100%. Also, multiply stacked lift by two for the edge case where only two parts are evaluated.
+            liftStackedAll *= (evaluatedParts.Count == 2) ? 2 : 1;
+            totalLiftStackRatio = Mathf.Clamp01(liftStackedAll / Mathf.Max(liftStackedAllEval, 0.01f));
+        }
+
+        /// <summary>
+        /// Get a list of all the logical wings (hierarchically connected) on a vessel beginning at (but not including) the given part.
+        /// </summary>
+        /// <param name="part">The part to start at or the root part if not specified.</param>
+        /// <param name="checkedParts"></param>
+        /// <param name="wings"></param>
+        /// <returns>A list of the logical wings where each wing is a hashset of parts with lifting surfaces.</returns>
+        List<HashSet<Part>> FindWings(Part part = null, HashSet<Part> checkedParts = null, List<HashSet<Part>> wings = null)
+        {
+            if (part == null) part = EditorLogic.RootPart;
+            if (wings == null) wings = new List<HashSet<Part>>();
+            if (part == null) return wings;
+            if (checkedParts == null) checkedParts = new HashSet<Part> { part };
+
+            foreach (var child in part.children)
+            {
+                if (child == null) continue;
+                if (child.IsMissile()) continue;
+                if (!checkedParts.Contains(child)) // If the part hasn't been checked, check it for being the start of a wing.
+                {
+                    var liftingSurface = child.GetComponent<ModuleLiftingSurface>();
+                    if (liftingSurface != null) // Start of a wing.
+                    {
+                        var wing = FindWingDescendants(child);
+                        wings.Add(wing);
+                        checkedParts.UnionWith(wing); // Mark all the wing segments as being checked already.
+                    }
+                }
+                checkedParts.Add(child);
+                FindWings(child, checkedParts, wings); // We still need to check all the children in case there's another wing lower in the hierarchy.
+            }
+
+            return wings;
+        }
+
+        /// <summary>
+        /// Find connected wing segments that are direct descendants of a part.
+        /// </summary>
+        /// <param name="wing"></param>
+        /// <returns>The parts that form the segments of the wing.</returns>
+        HashSet<Part> FindWingDescendants(Part wing)
+        {
+            HashSet<Part> segments = new HashSet<Part> { wing };
+            foreach (var child in wing.children)
+            {
+                if (child == null) continue;
+                if (child.IsMissile()) continue;
+                var liftingSurface = child.GetComponent<ModuleLiftingSurface>();
+                if (liftingSurface != null) // If the child is a lifting surface, add it and its descendants.
+                {
+                    segments.Add(child);
+                    segments.UnionWith(FindWingDescendants(child));
+                }
+            }
+            return segments;
+        }
+
+        /// <summary>
+        /// Calculate the amount of lift stacking between the wings.
+        /// </summary>
+        /// <param name="wings">The wings, each consisting of a hashset of parts.</param>
+        /// <param name="baseWing">The base part of the wing (leave as null if the base isn't a wing).</param>
+        /// <returns>The amount of stacking between the wings.</returns>
+        float CalculateInterWingLiftStacking(List<HashSet<Part>> wings, Part baseWing = null)
+        {
+            if (wings.Count < (baseWing == null ? 2 : 1)) return 0; // Not enough segments for an overlap.
+            var wingRoots = wings.Select(wing => wing.Where(p => p.parent == null || !wing.Contains(p.parent)).FirstOrDefault()).Where(p => p != null).ToList();
+            Debug.Log($"DEBUG Checking lift stacking between wings with{(baseWing != null ? $" base {baseWing.name}:{baseWing.persistentId} and" : "")} roots: {string.Join(", ", wingRoots.Select(w => $"{w.name}:{w.persistentId}"))}");
+            return 0; // FIXME Compute the lift of the base and each wing and the amount they overlap. This could potentially include non-vertical lift too.
+        }
+
+        /// <summary>
+        /// Calculate the amount of lift stacking between segments of a wing.
+        /// </summary>
+        /// <param name="wing">The parts in the wing.</param>
+        /// <returns>The amount of stacking within the wing.</returns>
+        float CalculateIntraWingLiftStacking(HashSet<Part> wing)
+        {
+            var wingRoot = wing.Where(p => p.parent == null || !wing.Contains(p.parent)).FirstOrDefault(); // The root of the wing either has no parent or the parent isn't part of the wing.
+            if (wingRoot == null) return 0;
+            var subWings = FindWings(wingRoot);
+            float liftStacking = CalculateInterWingLiftStacking(subWings, wingRoot); // Include the lift stacking between this wing segment and its sub-wings.
+            foreach (var subWing in subWings) liftStacking += CalculateIntraWingLiftStacking(subWing); // Then go deeper in the tree.
+            return liftStacking;
+        }
+
+        bool IsAeroBrake(Part part)
+        {
+            if (part.GetComponent<ModuleLiftingSurface>() is not null)
+            {
+                if (part.GetComponent<ModuleAeroSurface>() is not null)
+                    return true;
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+
+        IEnumerator calcArmorMassAndCost()
+        {
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+            totalArmorMass = 0;
+            totalArmorCost = 0;
+            using (List<Part>.Enumerator parts = EditorLogic.fetch.ship.Parts.GetEnumerator())
+                while (parts.MoveNext())
+                {
+                    if (parts.Current.IsMissile()) continue;
+                    HitpointTracker armor = parts.Current.GetComponent<HitpointTracker>();
+                    if (armor != null)
+                    {
+                        if (armor.ArmorTypeNum == 1 && !armor.ArmorPanel) continue;
+
+                        totalArmorMass += armor.armorMass;
+                        totalArmorCost += armor.armorCost;
+                    }
+                }
         }
 
         void Visualize()
@@ -606,15 +852,15 @@ namespace BDArmory.UI
                             }
                             if (HullVisualizer)
                             {
-                                VisualizerColor = Color.HSVToRGB(a.HullTypeNum / 3, 1, 1f);
+                                VisualizerColor = Color.HSVToRGB(a.HullTypeNum / (HullInfo.materials.Count + 1), 1, 1f);
                             }
                             if (LiftVisualizer)
                             {
                                 ModuleLiftingSurface wing = parts.Current.GetComponent<ModuleLiftingSurface>();
-                                if (wing != null)
+                                if (wing != null && wing.deflectionLiftCoeff > 0f)
                                     VisualizerColor = Color.HSVToRGB(Mathf.Clamp01(Mathf.Log10(wing.deflectionLiftCoeff + 1f)) / 3, 1, 1);
                                 else
-                                    VisualizerColor = Color.HSVToRGB(0, 1, 1);
+                                    VisualizerColor = Color.HSVToRGB(0, 0, 0.5f);
                             }
                             var r = parts.Current.GetComponentsInChildren<Renderer>();
                             {
@@ -787,7 +1033,7 @@ namespace BDArmory.UI
                 float newCaliber = ProjectileUtils.CalculateDeformation(yieldStrength, bulletEnergy, 30, 1109, 1176, 7850, 0.19f, 0.8f, false);
                 */
                 //armorValue = ProjectileUtils.CalculatePenetration(30, newCaliber, 0.388f, 1109, ArmorDuctility, ArmorDensity, ArmorStrength, 30, 0.8f, false);
-                armorValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f, 940, 8.45001135e-07f, 0.656060636f, 1.20190930f, 1.77791929f);
+                armorValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f, ArmorStrength, ArmorVfactor, ArmorMu1, ArmorMu2, ArmorMu3); //why is this hardcoded? it needs to be the selected armor mat's vars
                 relValue = Mathf.Round(armorValue / steelValue * 10) / 10;
                 exploValue = ArmorStrength * (1 + ArmorDuctility) * (ArmorDensity / 1000);
             }

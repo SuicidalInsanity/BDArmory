@@ -187,6 +187,7 @@ namespace BDArmory.Control
         {
             base.OnStart(state);
             SetChooseOptions();
+            ChooseOptionsUpdated(null, null);
         }
 
         public override void ActivatePilot()
@@ -235,6 +236,28 @@ namespace BDArmory.Control
 
         public void ChooseOptionsUpdated(BaseField field, object obj)
         {
+            // Hide/display the AI fields
+            var fieldEnabled = SurfaceType != AIUtils.VehicleMovementType.Stationary;
+            foreach (var fieldName in new List<string>{
+                    "MaxSlopeAngle",
+                    "CruiseSpeed",
+                    "MaxSpeed",
+                    "MaxDrift",
+                    "TargetPitch",
+                    "BankAngle",
+                    // "steerMult",
+                    // "steerDamping",
+                    "BroadsideAttack",
+                    // "MinEngagementRange",
+                    // "MaxEngagementRange",
+                    // "ManeuverRCS",
+                    "AvoidMass",
+                    "OrbitDirectionName"
+                })
+            {
+                Fields[fieldName].guiActive = fieldEnabled;
+                Fields[fieldName].guiActiveEditor = fieldEnabled;
+            }
             this.part.RefreshAssociatedWindows();
             if (BDArmoryAIGUI.Instance != null)
             {
@@ -293,7 +316,8 @@ namespace BDArmory.Control
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + targetDirection * 10f, 2, Color.blue);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position + (0.05f * vesselTransform.right), vesselTransform.position + (0.05f * vesselTransform.right), 2, Color.green);
 
-            pathingMatrix.DrawDebug(vessel.CoM, pathingWaypoints);
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary)
+                pathingMatrix.DrawDebug(vessel.CoM, pathingWaypoints);
         }
 
         #endregion events
@@ -309,10 +333,10 @@ namespace BDArmory.Control
             targetDirection = vesselTransform.up;
             aimingMode = false;
             upDir = VectorUtils.GetUpDirection(vesselTransform.position);
-            DebugLine("");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine("");
 
             // check if we should be panicking
-            if (!PanicModes())
+            if (SurfaceType == AIUtils.VehicleMovementType.Stationary || !PanicModes()) // Stationary vehicles don't panic (so, free-fall stationary turrets are a possibility).
             {
                 // pilot logic figures out what we're supposed to be doing, and sets the base state
                 PilotLogic();
@@ -326,40 +350,44 @@ namespace BDArmory.Control
 
         void PilotLogic()
         {
-            // check for collisions, but not every frame
-            if (collisionDetectionTicker == 0)
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary)
             {
-                collisionDetectionTicker = 20;
-                float predictMult = Mathf.Clamp(10 / MaxDrift, 1, 10);
+                // check for collisions, but not every frame
+                if (collisionDetectionTicker == 0)
+                {
+                    collisionDetectionTicker = 20;
+                    float predictMult = Mathf.Clamp(10 / MaxDrift, 1, 10);
 
-                dodgeVector = null;
+                    dodgeVector = null;
 
-                using (var vs = BDATargetManager.LoadedVessels.GetEnumerator())
-                    while (vs.MoveNext())
-                    {
-                        if (vs.Current == null || vs.Current == vessel || vs.Current.GetTotalMass() < AvoidMass) continue;
-                        if (!VesselModuleRegistry.ignoredVesselTypes.Contains(vs.Current.vesselType))
+                    using (var vs = BDATargetManager.LoadedVessels.GetEnumerator())
+                        while (vs.MoveNext())
                         {
-                            var ibdaiControl = VesselModuleRegistry.GetModule<IBDAIControl>(vs.Current);
-                            if (!vs.Current.LandedOrSplashed || (ibdaiControl != null && ibdaiControl.commandLeader != null && ibdaiControl.commandLeader.vessel == vessel))
-                                continue;
+                            if (vs.Current == null || vs.Current == vessel || vs.Current.GetTotalMass() < AvoidMass) continue;
+                            if (!VesselModuleRegistry.ignoredVesselTypes.Contains(vs.Current.vesselType))
+                            {
+                                var ibdaiControl = VesselModuleRegistry.GetModule<IBDAIControl>(vs.Current);
+                                if (!vs.Current.LandedOrSplashed || (ibdaiControl != null && ibdaiControl.commandLeader != null && ibdaiControl.commandLeader.vessel == vessel))
+                                    continue;
+                            }
+                            dodgeVector = PredictCollisionWithVessel(vs.Current, 5f * predictMult, 0.5f);
+                            if (dodgeVector != null) break;
                         }
-                        dodgeVector = PredictCollisionWithVessel(vs.Current, 5f * predictMult, 0.5f);
-                        if (dodgeVector != null) break;
-                    }
-            }
-            else
-                collisionDetectionTicker--;
+                }
+                else
+                    collisionDetectionTicker--;
 
-            // avoid collisions if any are found
-            if (dodgeVector != null)
-            {
-                targetVelocity = PoweredSteering ? MaxSpeed : CruiseSpeed;
-                targetDirection = (Vector3)dodgeVector;
-                SetStatus($"Avoiding Collision");
-                leftPath = true;
-                return;
+                // avoid collisions if any are found
+                if (dodgeVector != null)
+                {
+                    targetVelocity = PoweredSteering ? MaxSpeed : CruiseSpeed;
+                    targetDirection = (Vector3)dodgeVector;
+                    SetStatus($"Avoiding Collision");
+                    leftPath = true;
+                    return;
+                }
             }
+            else { collisionDetectionTicker = 0; }
 
             // if bypass target is no longer relevant, remove it
             if (bypassTarget != null && ((bypassTarget != targetVessel && bypassTarget != (commandLeader != null ? commandLeader.vessel : null))
@@ -384,9 +412,23 @@ namespace BDArmory.Control
                     float shotSpeed = 1000f;
                     if ((weaponManager != null ? weaponManager.selectedWeapon : null) is ModuleWeapon wep)
                         shotSpeed = wep.bulletVelocity;
-                    vecToTarget = targetVessel.PredictPosition(distance / shotSpeed) - vessel.CoM;
+                    var timeToCPA = targetVessel.ClosestTimeToCPA(vessel.CoM, vessel.Velocity() + vesselTransform.up * shotSpeed, FlightGlobals.getGeeForceAtPosition(vessel.CoM), MaxEngagementRange / shotSpeed);
+                    vecToTarget = targetVessel.PredictPosition(timeToCPA) - vessel.CoM;
 
-                    if (BroadsideAttack)
+                    if (SurfaceType == AIUtils.VehicleMovementType.Stationary)
+                    {
+                        if (distance >= MinEngagementRange && distance <= MaxEngagementRange)
+                        {
+                            targetDirection = vecToTarget;
+                            aimingMode = true;
+                        }
+                        else
+                        {
+                            SetStatus("On Alert");
+                            return;
+                        }
+                    }
+                    else if (BroadsideAttack)
                     {
                         Vector3 sideVector = Vector3.Cross(vecToTarget, upDir); //find a vector perpendicular to direction to target
                         if (collisionDetectionTicker == 10
@@ -402,7 +444,7 @@ namespace BDArmory.Control
                             (MaxEngagementRange - distance) / (MaxEngagementRange - MinEngagementRange) * (1 - AttackAngleAtMaxRange / 90) + AttackAngleAtMaxRange / 90); // attackAngle to 90 degrees from maxrange to minrange
                         targetDirection = Vector3.LerpUnclamped(vecToTarget.normalized, sideVector.normalized, sidestep); // interpolate between the side vector and target direction vector based on sidestep
                         targetVelocity = MaxSpeed;
-                        DebugLine($"Broadside attack angle {sidestep}");
+                        if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Broadside attack angle {sidestep}");
                     }
                     else // just point at target and go
                     {
@@ -436,7 +478,7 @@ namespace BDArmory.Control
                                         case WeaponClasses.Rocket:
                                         case WeaponClasses.DefenseLaser:
                                             var gun = (ModuleWeapon)weaponManager.selectedWeapon;
-                                            if ((gun.yawRange == 0 || gun.maxPitch == gun.minPitch) && gun.FiringSolutionVector != null)
+                                            if (gun != null && (gun.yawRange == 0 || gun.maxPitch == gun.minPitch) && gun.FiringSolutionVector != null)
                                             {
                                                 aimingMode = true;
                                                 if (Vector3.Angle((Vector3)gun.FiringSolutionVector, vessel.transform.up) < 20)
@@ -454,7 +496,7 @@ namespace BDArmory.Control
                 }
 
                 // follow
-                if (command == PilotCommands.Follow)
+                if (command == PilotCommands.Follow && SurfaceType != AIUtils.VehicleMovementType.Stationary)
                 {
                     leftPath = true;
                     if (collisionDetectionTicker == 5)
@@ -479,32 +521,35 @@ namespace BDArmory.Control
                 }
             }
 
-            // goto
-            if (leftPath && bypassTarget == null)
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary)
             {
-                Pathfind(finalPositionGeo);
-                leftPath = false;
+                // goto
+                if (leftPath && bypassTarget == null)
+                {
+                    Pathfind(finalPositionGeo);
+                    leftPath = false;
+                }
+
+                const float targetRadius = 250f;
+                targetDirection = Vector3.ProjectOnPlane(assignedPositionWorld - vesselTransform.position, upDir);
+
+                if (targetDirection.sqrMagnitude > targetRadius * targetRadius)
+                {
+                    if (bypassTarget != null)
+                        targetVelocity = MaxSpeed;
+                    else if (pathingWaypoints.Count > 1)
+                        targetVelocity = command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed;
+                    else
+                        targetVelocity = Mathf.Clamp((targetDirection.magnitude - targetRadius / 2) / 5f,
+                        0, command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed);
+
+                    if (Vector3.Dot(targetDirection, vesselTransform.up) < 0 && !PoweredSteering) targetVelocity = 0;
+                    SetStatus(bypassTarget ? "Repositioning" : "Moving");
+                    return;
+                }
+
+                cycleWaypoint();
             }
-
-            const float targetRadius = 250f;
-            targetDirection = Vector3.ProjectOnPlane(assignedPositionWorld - vesselTransform.position, upDir);
-
-            if (targetDirection.sqrMagnitude > targetRadius * targetRadius)
-            {
-                if (bypassTarget != null)
-                    targetVelocity = MaxSpeed;
-                else if (pathingWaypoints.Count > 1)
-                    targetVelocity = command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed;
-                else
-                    targetVelocity = Mathf.Clamp((targetDirection.magnitude - targetRadius / 2) / 5f,
-                    0, command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed);
-
-                if (Vector3.Dot(targetDirection, vesselTransform.up) < 0 && !PoweredSteering) targetVelocity = 0;
-                SetStatus(bypassTarget ? "Repositioning" : "Moving");
-                return;
-            }
-
-            cycleWaypoint();
 
             SetStatus($"Not doing anything in particular");
             targetDirection = vesselTransform.up;
@@ -518,7 +563,7 @@ namespace BDArmory.Control
                 || weaponManager.underFire || weaponManager.missileIsIncoming);
 
             // if weaponManager thinks we're under fire, do the evasive dance
-            if (weaponManager.underFire || weaponManager.missileIsIncoming)
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary && (weaponManager.underFire || weaponManager.missileIsIncoming))
             {
                 targetVelocity = MaxSpeed;
                 if (weaponManager.underFire || weaponManager.incomingMissileDistance < 2500)
@@ -535,7 +580,7 @@ namespace BDArmory.Control
             {
                 weaveAdjustment = 0;
             }
-            DebugLine($"underFire {weaponManager.underFire}, weaveAdjustment {weaveAdjustment}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"underFire {weaponManager.underFire}, weaveAdjustment {weaveAdjustment}");
         }
 
         bool PanicModes()
@@ -571,11 +616,13 @@ namespace BDArmory.Control
             if (float.IsNaN(targetSpeed)) //because yeah, I might have left division by zero in there somewhere
             {
                 targetSpeed = CruiseSpeed;
-                DebugLine("Target velocity NaN, set to CruiseSpeed.");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine("Target velocity NaN, set to CruiseSpeed.");
             }
             else
-                DebugLine($"Target velocity: {targetVelocity}");
-            DebugLine($"engine thrust: {speedController.debugThrust}, motor zero: {motorControl.zeroPoint}");
+            {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Target velocity: {targetVelocity}");
+            }
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"engine thrust: {speedController.debugThrust}, motor zero: {motorControl.zeroPoint}");
 
             speedController.targetSpeed = motorControl.targetSpeed = targetSpeed;
             speedController.useBrakes = motorControl.preventNegativeZeroPoint = speedController.debugThrust > 0;
@@ -589,66 +636,110 @@ namespace BDArmory.Control
 
             // limit "aoa" if we're moving
             float driftMult = 1;
-            if (vessel.horizontalSrfSpeed * 10 > CruiseSpeed)
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary && vessel.horizontalSrfSpeed * 10 > CruiseSpeed)
             {
                 driftMult = Mathf.Max(Vector3.Angle(vessel.srf_velocity, yawTarget) / MaxDrift, 1);
                 yawTarget = Vector3.RotateTowards(vessel.srf_velocity, yawTarget, MaxDrift * Mathf.Deg2Rad, 0);
             }
 
             float yawError = VectorUtils.SignedAngle(vesselTransform.up, yawTarget, vesselTransform.right) + (aimingMode ? 0 : weaveAdjustment);
-            DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
-            DebugLine($"drift multiplier: {driftMult}");
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
+            {
+                DebugLine($"yaw target: {yawTarget}, yaw error: {yawError}");
+                DebugLine($"drift multiplier: {driftMult}");
+            }
 
-            Vector3 baseForward = vessel.transform.up * terrainOffset;
-            float basePitch = Mathf.Atan2(
-                AIUtils.GetTerrainAltitude(vessel.CoM + baseForward, vessel.mainBody, false)
-                - AIUtils.GetTerrainAltitude(vessel.CoM - baseForward, vessel.mainBody, false),
-                terrainOffset * 2) * Mathf.Rad2Deg;
-            float pitchAngle = basePitch + TargetPitch * Mathf.Clamp01((float)vessel.horizontalSrfSpeed / CruiseSpeed);
-            if (aimingMode)
-                pitchAngle = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(targetDirection, vesselTransform.right), -vesselTransform.forward);
-            DebugLine($"terrain fw slope: {basePitch}, target pitch: {pitchAngle}");
+            float pitchError = 0;
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary)
+            {
+                Vector3 baseForward = vessel.transform.up * terrainOffset;
+                float basePitch = Mathf.Atan2(
+                    AIUtils.GetTerrainAltitude(vessel.CoM + baseForward, vessel.mainBody, false)
+                    - AIUtils.GetTerrainAltitude(vessel.CoM - baseForward, vessel.mainBody, false),
+                    terrainOffset * 2) * Mathf.Rad2Deg;
+                float pitchAngle = basePitch + TargetPitch * Mathf.Clamp01((float)vessel.horizontalSrfSpeed / CruiseSpeed);
+                if (aimingMode)
+                    pitchAngle = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(targetDirection, vesselTransform.right), -vesselTransform.forward);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"terrain fw slope: {basePitch}, target pitch: {pitchAngle}");
+                float pitch = 90 - Vector3.Angle(vesselTransform.up, upDir);
+                pitchError = pitchAngle - pitch;
+            }
+            else
+            {
+                pitchError = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(targetDirection, vesselTransform.right), -vesselTransform.forward);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"pitch error: {pitchError}");
+            }
 
-            float pitch = 90 - Vector3.Angle(vesselTransform.up, upDir);
-            float pitchError = pitchAngle - pitch;
 
-            Vector3 baseLateral = vessel.transform.right * terrainOffset;
-            float baseRoll = Mathf.Atan2(
-                AIUtils.GetTerrainAltitude(vessel.CoM + baseLateral, vessel.mainBody, false)
-                - AIUtils.GetTerrainAltitude(vessel.CoM - baseLateral, vessel.mainBody, false),
-                terrainOffset * 2) * Mathf.Rad2Deg;
-            float drift = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(vessel.GetSrfVelocity(), upDir), vesselTransform.right);
-            float bank = VectorUtils.SignedAngle(-vesselTransform.forward, upDir, -vesselTransform.right);
-            float targetRoll = baseRoll + BankAngle * Mathf.Clamp01(drift / MaxDrift) * Mathf.Clamp01((float)vessel.srfSpeed / CruiseSpeed);
-            float rollError = targetRoll - bank;
-            DebugLine($"terrain sideways slope: {baseRoll}, target roll: {targetRoll}");
+            float rollError = 0;
+            if (SurfaceType != AIUtils.VehicleMovementType.Stationary)
+            {
+                Vector3 baseLateral = vessel.transform.right * terrainOffset;
+                float baseRoll = Mathf.Atan2(
+                    AIUtils.GetTerrainAltitude(vessel.CoM + baseLateral, vessel.mainBody, false)
+                    - AIUtils.GetTerrainAltitude(vessel.CoM - baseLateral, vessel.mainBody, false),
+                    terrainOffset * 2) * Mathf.Rad2Deg;
+                float drift = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(vessel.GetSrfVelocity(), upDir), vesselTransform.right);
+                float bank = VectorUtils.SignedAngle(-vesselTransform.forward, upDir, -vesselTransform.right);
+                float targetRoll = baseRoll + BankAngle * Mathf.Clamp01(drift / MaxDrift) * Mathf.Clamp01((float)vessel.srfSpeed / CruiseSpeed);
+                rollError = targetRoll - bank;
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"terrain sideways slope: {baseRoll}, target roll: {targetRoll}");
+            }
+            else
+            {
+                rollError = VectorUtils.SignedAngle(-vesselTransform.forward, upDir, vesselTransform.right);
+            }
 
             Vector3 localAngVel = vessel.angularVelocity;
-            s.roll = steerMult * 0.006f * rollError - 0.4f * steerDamping * -localAngVel.y;
-            s.pitch = ((aimingMode ? 0.02f : 0.015f) * steerMult * pitchError) - (steerDamping * -localAngVel.x);
-            s.yaw = (((aimingMode ? 0.007f : 0.005f) * steerMult * yawError) - (steerDamping * 0.2f * -localAngVel.z)) * driftMult;
-            s.wheelSteer = -(((aimingMode ? 0.005f : 0.003f) * steerMult * yawError) - (steerDamping * 0.1f * -localAngVel.z));
+            SetFlightControlState(s,
+                ((aimingMode ? 0.02f : 0.015f) * steerMult * pitchError) - (steerDamping * -localAngVel.x), // pitch
+                (((aimingMode ? 0.007f : 0.005f) * steerMult * yawError) - (steerDamping * 0.2f * -localAngVel.z)) * driftMult, // yaw
+                steerMult * 0.006f * rollError - 0.4f * steerDamping * -localAngVel.y, // roll
+                -(((aimingMode ? 0.005f : 0.003f) * steerMult * yawError) - (steerDamping * 0.1f * -localAngVel.z)) // wheel steer
+            );
 
             if (ManeuverRCS && (Mathf.Abs(s.roll) >= 1 || Mathf.Abs(s.pitch) >= 1 || Mathf.Abs(s.yaw) >= 1))
                 vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, true);
         }
 
+        protected void SetFlightControlState(FlightCtrlState s, float pitch, float yaw, float roll, float wheelSteer)
+        {
+            base.SetFlightControlState(s, pitch, yaw, roll);
+            s.wheelSteer = wheelSteer;
+            if (hasAxisGroupsModule)
+            {
+                axisGroupsModule.UpdateAxisGroup(KSPAxisGroup.WheelSteer, wheelSteer);
+            }
+
+        }
         #endregion Actual AI Pilot
 
         #region Autopilot helper functions
 
         public override bool CanEngage()
         {
-            if (vessel.Splashed && (SurfaceType & AIUtils.VehicleMovementType.Water) == 0)
-                DebugLine(vessel.vesselName + " cannot engage: boat not in water");
+            if (SurfaceType == AIUtils.VehicleMovementType.Stationary) // Stationary can shoot at whatever it can see without moving.
+            {
+                return true;
+            }
+            else if (vessel.Splashed && (SurfaceType & AIUtils.VehicleMovementType.Water) == 0)
+            {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine(vessel.vesselName + " cannot engage: boat not in water");
+            }
             else if (vessel.Landed && (SurfaceType & AIUtils.VehicleMovementType.Land) == 0)
-                DebugLine(vessel.vesselName + " cannot engage: vehicle not on land");
+            {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine(vessel.vesselName + " cannot engage: vehicle not on land");
+            }
             else if (!vessel.LandedOrSplashed)
-                DebugLine(vessel.vesselName + " cannot engage: vessel not on surface");
+            {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine(vessel.vesselName + " cannot engage: vessel not on surface");
+            }
             // the motorControl part fails sometimes, and guard mode then decides not to select a weapon
             // figure out what is wrong with motor control before uncommenting :D
-            //else if (speedController.debugThrust + (motorControl?.MaxAccel ?? 0) <= 0)
-            //    DebugLine(vessel.vesselName + " cannot engage: no engine power");
+            // else if (speedController.debugThrust + (motorControl?.MaxAccel ?? 0) <= 0)
+            // {
+            //     if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine(vessel.vesselName + " cannot engage: no engine power");
+            // }
             else
                 return true;
             return false;

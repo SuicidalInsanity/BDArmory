@@ -57,6 +57,7 @@ namespace BDArmory.Utils
                     " clampedMinDistanceToHit: {" + clampedMinDistanceToHit + "}," +
                     " minPressureDistance: {" + minPressureDistance + "}," +
                     " minScaledDistance: {" + minScaledDistance + "}," +
+                    " maxScaledDistance: {" + maxScaledDistance + "}," +
                     " minPressurePerMs: {" + minPressurePerMs + "}," +
                     " maxPressurePerMs: {" + maxPressurePerMs + "}," +
                     " minDistPositivePhase: {" + minDistPositivePhase + "}," +
@@ -95,21 +96,30 @@ namespace BDArmory.Utils
             if (scaledDistance <= 0.955)
             { //NATO version
                 double U = 2.06761908721 + 3.0760329666 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
                 ii = 2.52455620925 - 0.502992763686 * U +
-                     0.171335645235 * Math.Pow(U, 2) +
-                     0.0450176963051 * Math.Pow(U, 3) -
-                     0.0118964626402 * Math.Pow(U, 4);
+                     0.171335645235 * U2 +
+                     0.0450176963051 * U3 -
+                     0.0118964626402 * U4;
             }
             else if (scaledDistance > 0.955)
             { //version from ???
                 var U = -1.94708846747 + 2.40697745406 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
+                var U5 = U4 * U;
+                var U6 = U5 * U;
+                var U7 = U6 * U;
                 ii = 1.67281645863 - 0.384519026965 * U -
-                     0.0260816706301 * Math.Pow(U, 2) +
-                     0.00595798753822 * Math.Pow(U, 3) +
-                     0.014544526107 * Math.Pow(U, 4) -
-                     0.00663289334734 * Math.Pow(U, 5) -
-                     0.00284189327204 * Math.Pow(U, 6) +
-                     0.0013644816227 * Math.Pow(U, 7);
+                     0.0260816706301 * U2 +
+                     0.00595798753822 * U3 +
+                     0.014544526107 * U4 -
+                     0.00663289334734 * U5 -
+                     0.00284189327204 * U6 +
+                     0.0013644816227 * U7;
             }
 
             ii = Math.Pow(10, ii);
@@ -128,32 +138,47 @@ namespace BDArmory.Utils
             if (scaledDistance <= 1.01)
             {
                 double U = 1.92946154068 + 5.25099193925 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
+                var U5 = U4 * U;
                 ii = -0.614227603559 + 0.130143717675 * U +
-                    0.134872511954 * Math.Pow(U, 2) +
-                    0.0391574276906 * Math.Pow(U, 3) -
-                    0.00475933664702 * Math.Pow(U, 4) -
-                    0.00428144598008 * Math.Pow(U, 5);
+                    0.134872511954 * U2 +
+                    0.0391574276906 * U3 -
+                    0.00475933664702 * U4 -
+                    0.00428144598008 * U5;
             }
             else if (scaledDistance <= 2.78)
             {
                 double U = -2.12492525216 + 9.2996288611 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
+                var U5 = U4 * U;
+                var U6 = U5 * U;
+                var U7 = U6 * U;
+                var U8 = U7 * U;
                 ii = 0.315409245784 - 0.0297944268976 * U +
-                    0.030632954288 * Math.Pow(U, 2) +
-                    0.0183405574086 * Math.Pow(U, 3) -
-                    0.0173964666211 * Math.Pow(U, 4) -
-                    0.00106321963633 * Math.Pow(U, 5) +
-                    0.00562060030977 * Math.Pow(U, 6) +
-                    0.0001618217499 * Math.Pow(U, 7) -
-                    0.0006860188944 * Math.Pow(U, 8);
+                    0.030632954288 * U2 +
+                    0.0183405574086 * U3 -
+                    0.0173964666211 * U4 -
+                    0.00106321963633 * U5 +
+                    0.00562060030977 * U6 +
+                    0.0001618217499 * U7 -
+                    0.0006860188944 * U8;
             }
             else // scaledDistance > 2.78
             {
                 double U = -3.53626218091 + 3.46349745571 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
+                var U5 = U4 * U;
                 ii = 0.686906642409 + 0.0933035304009 * U -
-                    0.0005849420883 * Math.Pow(U, 2) -
-                    0.00226884995013 * Math.Pow(U, 3) -
-                    0.00295908591505 * Math.Pow(U, 4) +
-                    0.00148029868929 * Math.Pow(U, 5);
+                    0.0005849420883 * U2 -
+                    0.00226884995013 * U3 -
+                    0.00295908591505 * U4 +
+                    0.00148029868929 * U5;
             }
 
             ii = Math.Pow(10, ii);
@@ -173,15 +198,23 @@ namespace BDArmory.Utils
             double ii = 0;
 
             double U = -0.202425716178 + 1.37784223635 * t;
+                var U2 = U * U;
+                var U3 = U2 * U;
+                var U4 = U3 * U;
+                var U5 = U4 * U;
+                var U6 = U5 * U;
+                var U7 = U6 * U;
+                var U8 = U7 * U;
+                var U9 = U8 * U;
             ii = -0.0591634288046 + 1.35706496258 * U +
-                0.052492798645 * Math.Pow(U, 2) -
-                0.196563954086 * Math.Pow(U, 3) -
-                0.0601770052288 * Math.Pow(U, 4) +
-                0.0696360270981 * Math.Pow(U, 5) +
-                0.0215297490092 * Math.Pow(U, 6) -
-                0.0161658930785 * Math.Pow(U, 7) -
-                0.00232531970294 * Math.Pow(U, 8) +
-                0.00147752067524 * Math.Pow(U, 9);
+                0.052492798645 * U2 -
+                0.196563954086 * U3 -
+                0.0601770052288 * U4 +
+                0.0696360270981 * U5 +
+                0.0215297490092 * U6 -
+                0.0161658930785 * U7 -
+                0.00232531970294 * U8 +
+                0.00147752067524 * U9;
 
             ii = Math.Pow(10, ii);
             ii = ii * cubeRootOfChargeWeight / 1000f;
@@ -218,7 +251,8 @@ namespace BDArmory.Utils
         /// <returns>explosive range in meters </returns>
         public static float CalculateExplosiveMass(float range)
         {
-            return (float)Math.Pow((range / 14.8f), 3);
+            var scaledRange = range / 14.8f;
+            return (float)(scaledRange * scaledRange * scaledRange);
         }
     }
 

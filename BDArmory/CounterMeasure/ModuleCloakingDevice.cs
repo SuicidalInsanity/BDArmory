@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using BDArmory.UI;
+using System.Collections;
 using System.Text;
 using UnityEngine;
 
@@ -19,9 +20,13 @@ namespace BDArmory.CounterMeasure
 
         [KSPField] public double resourceDrain = 5;
 
+        [KSPField] public string resourceName = "ElectricCharge";
+
         [KSPField] public float CloakTime = 1;
 
         [KSPField] public bool alwaysOn = false;
+
+        [KSPField] public float cooldownInterval = -1;
 
         [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_Enabled")]//Enabled 
         public bool cloakEnabled = false;
@@ -31,6 +36,12 @@ namespace BDArmory.CounterMeasure
         bool disabling = false;
 
         float cloakTimer = 0;
+
+        float cooldownTimer = 0;
+
+        private BDStagingAreaGauge gauge;
+
+        private int resourceID;
 
         //part anim support?
 
@@ -72,13 +83,17 @@ namespace BDArmory.CounterMeasure
                 EnableCloak();
             }
         }
-
+        void Start()
+        {
+            resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
+        }
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
             if (!HighLogic.LoadedSceneIsFlight) return;
             part.force_activate();
 
+            gauge = (BDStagingAreaGauge)part.AddModule("BDStagingAreaGauge");
             GameEvents.onVesselCreate.Add(OnVesselCreate);
             EnsureVesselCloak();
         }
@@ -104,9 +119,8 @@ namespace BDArmory.CounterMeasure
         public void EnableCloak()
         {
             if (enabling || cloakEnabled) return;
+            if (cooldownTimer > 0) return;
             EnsureVesselCloak();
-            vesselCloak.AddCloak(this);
-            cloakEnabled = true;
 
             StopCloakDecloakRoutines();
             cloakTimer = 0;
@@ -180,7 +194,7 @@ namespace BDArmory.CounterMeasure
             }
 
             double drainAmount = resourceDrain * TimeWarp.fixedDeltaTime;
-            double chargeAvailable = part.RequestResource("ElectricCharge", drainAmount, ResourceFlowMode.ALL_VESSEL);
+            double chargeAvailable = part.RequestResource(resourceID, drainAmount, ResourceFlowMode.ALL_VESSEL);
             if (chargeAvailable < drainAmount * 0.95f)
             {
                 DisableCloak();
@@ -190,27 +204,34 @@ namespace BDArmory.CounterMeasure
 
         IEnumerator CloakRoutine()
         {
+            var wait = new WaitForFixedUpdate();
             enabling = true;
             while (cloakTimer < CloakTime)
             {
-                yield return null;
+                yield return wait;
             }
             enabling = false;
+            vesselCloak.AddCloak(this);
+            cloakEnabled = true;
         }
 
         IEnumerator DecloakRoutine()
         {
+            var wait = new WaitForFixedUpdate();
             disabling = true;
             while (cloakTimer > 0)
             {
-                yield return null;
+                yield return wait;
             }
             disabling = false;
+            cooldownTimer = cooldownInterval;
         }
 
-        void Update()
+        void FixedUpdate()
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
+            if (BDArmorySetup.GameIsPaused) return;
+
             if (enabling || disabling)
             {
                 if (opticalReductionFactor < 1)
@@ -231,6 +252,14 @@ namespace BDArmory.CounterMeasure
                     }
                 }
                 //Debug.Log("[CloakingDevice] " + (enabling ? "cloaking" : "decloaking") + ": cloakTimer: " + cloakTimer);
+            }
+            if (cooldownTimer > 0)
+            {
+                cooldownTimer -= TimeWarp.fixedDeltaTime;
+                if (vessel.isActiveVessel)
+                {
+                    gauge.UpdateHeatMeter(cooldownTimer / cooldownInterval);
+                }
             }
         }
 

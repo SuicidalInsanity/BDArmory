@@ -5,11 +5,11 @@ using System;
 using UnityEngine;
 
 using BDArmory.Competition.RemoteOrchestration;
-using BDArmory.Competition.VesselSpawning;
 using BDArmory.Control;
 using BDArmory.GameModes.Waypoints;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.VesselSpawning;
 
 namespace BDArmory.Competition
 {
@@ -115,8 +115,7 @@ namespace BDArmory.Competition
 
             // Attacker stats.
             ++ScoreData[attacker].hits;
-            if (victim == "pinata") ++ScoreData[attacker].PinataHits;
-
+            if (victim == BDArmorySettings.PINATA_NAME) ++ScoreData[attacker].PinataHits; //not registering hits? Try switching to victim.Contains(BDArmorySettings.PINATA_NAME)?
             // Victim stats.
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
@@ -240,6 +239,7 @@ namespace BDArmory.Competition
             // Attacker stats.
             ScoreData[attacker].totalDamagedPartsDueToRockets += partsHit;
 
+            if (victim == BDArmorySettings.PINATA_NAME) ++ScoreData[attacker].PinataHits;
             // Victim stats.
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
@@ -328,7 +328,7 @@ namespace BDArmory.Competition
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
                 ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
-            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && ScoreData[victim].previousPersonWheDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
+            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && !string.IsNullOrEmpty(ScoreData[victim].previousPersonWheDamagedMe) && ScoreData[victim].previousPersonWheDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
             {
                 ScoreData[victim].previousLastDamageTime = timeOfCollision;
                 ScoreData[victim].previousPersonWheDamagedMe = attacker;
@@ -568,13 +568,15 @@ namespace BDArmory.Competition
         #endregion
 
         #region Waypoints
-        public bool RegisterWaypointReached(string vesselName, int waypointIndex, int lapNumber, float distance)
+        public bool RegisterWaypointReached(string vesselName, int waypointCourseIndex, int waypointIndex, int lapNumber, int lapLimit, float distance)
         {
             if (!BDACompetitionMode.Instance.competitionIsActive) return false;
             if (vesselName == null || !ScoreData.ContainsKey(vesselName)) return false;
 
             ScoreData[vesselName].waypointsReached.Add(new ScoringData.WaypointReached(waypointIndex, distance, Planetarium.GetUniversalTime() - BDACompetitionMode.Instance.competitionStartTime));
-            BDACompetitionMode.Instance.competitionStatus.Add($"{vesselName}: {WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[waypointIndex].name} ({waypointIndex}{(BDArmorySettings.WAYPOINT_LOOP_INDEX > 1 ? $", lap {lapNumber}" : "")}) reached: Time: {ScoreData[vesselName].waypointsReached.Last().timestamp - ScoreData[vesselName].waypointsReached.First().timestamp:F2}s, Deviation: {distance:F1}m");
+            BDACompetitionMode.Instance.competitionStatus.Add($"{vesselName}: {WaypointCourses.CourseLocations[waypointCourseIndex].waypoints[waypointIndex].name} ({waypointIndex}{(lapLimit > 1 ? $", lap {lapNumber}" : "")}) reached: Time: {ScoreData[vesselName].waypointsReached.Last().timestamp - ScoreData[vesselName].waypointsReached.First().timestamp:F2}s, Deviation: {distance:F1}m");
+            ScoreData[vesselName].totalWPTime = (float)(ScoreData[vesselName].waypointsReached.Last().timestamp - ScoreData[vesselName].waypointsReached.First().timestamp);
+            ScoreData[vesselName].totalWPDeviation += distance;
 
             return true;
         }
@@ -894,6 +896,7 @@ namespace BDArmory.Competition
         public bool landedState; // Whether the vessel is landed or not.
         public double lastLandedTime; // Time that this vessel was landed last.
         public double landedKillTimer; // Counter tracking time this vessel is landed (for the kill timer).
+        public double AltitudeKillTimer; // Counter tracking time this vessel is outside GM altitude restrictions (for kill timer).
         public double AverageSpeed; // Average speed of this vessel recently (for the killer GM).
         public double AverageAltitude; // Average altitude of this vessel recently (for the killer GM).
         public int averageCount; // Count for the averaging stats.
@@ -918,6 +921,8 @@ namespace BDArmory.Competition
             public double timestamp; // Timestamp of reaching waypoint.
         }
         public List<WaypointReached> waypointsReached = new List<WaypointReached>();
+        public float totalWPDeviation = 0; // Convenience tracker for the Vessel Switcher
+        public float totalWPTime = 0; // Convenience tracker for the Vessel Switcher
         #endregion
 
         #region Misc

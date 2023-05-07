@@ -14,7 +14,7 @@ namespace BDArmory.Evolution
         public static EvolutionWindow Instance;
         private BDAModuleEvolution evolution;
 
-        private int _guiCheckIndex;
+        private static int _guiCheckIndex = -1;
         private static readonly float _buttonSize = 20;
         private static readonly float _margin = 5;
         private static readonly float _lineHeight = _buttonSize;
@@ -85,7 +85,7 @@ namespace BDArmory.Evolution
                 8008135,
                 BDArmorySetup.WindowRectEvolution,
                 WindowEvolution,
-                Localizer.Format("#LOC_BDArmory_Evolution_Title"),//"BDA Evolution"
+                StringUtils.Localize("#LOC_BDArmory_Evolution_Title"),//"BDA Evolution"
                 BDArmorySetup.BDGuiSkin.window
             );
             BDArmorySetup.SetGUIOpacity(false);
@@ -95,6 +95,12 @@ namespace BDArmory.Evolution
         private void SetNewHeight(float windowHeight)
         {
             BDArmorySetup.WindowRectEvolution.height = windowHeight;
+        }
+
+        public void SetVisible(bool visible)
+        {
+            BDArmorySetup.Instance.showEvolutionGUI = visible;
+            GUIUtils.SetGUIRectVisible(_guiCheckIndex, visible);
         }
 
         private IEnumerator WaitForSetup()
@@ -107,7 +113,7 @@ namespace BDArmory.Evolution
 
             BDArmorySetup.Instance.hasEvolution = true;
             ready = true;
-            _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+            if (_guiCheckIndex < 0) _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
         }
 
         private void WindowEvolution(int id)
@@ -116,7 +122,7 @@ namespace BDArmory.Evolution
             float offset = _titleHeight + _margin;
 
             GUI.DragWindow(new Rect(0, 0, BDArmorySettings.EVOLUTION_WINDOW_WIDTH - _titleHeight / 2 - 2, _titleHeight));
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? Localizer.Format("#LOC_BDArmory_Generic_Hide") : Localizer.Format("#LOC_BDArmory_Generic_Show")) + " " + Localizer.Format("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show")) + " " + StringUtils.Localize("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
             {
                 BDArmorySettings.SHOW_EVOLUTION_OPTIONS = !BDArmorySettings.SHOW_EVOLUTION_OPTIONS;
             }
@@ -124,19 +130,19 @@ namespace BDArmory.Evolution
             {
                 int mutationsPerHeat = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT;
                 var mphDisplayValue = BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT.ToString("0");
-                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Evolution_MutationsPerHeat")}:  ({mphDisplayValue})", leftLabel);//Mutations Per Heat
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_MutationsPerHeat")}:  ({mphDisplayValue})", leftLabel);//Mutations Per Heat
                 mutationsPerHeat = (int)GUI.HorizontalSlider(SRightSliderRect(line), mutationsPerHeat, 1, 10);
                 BDArmorySettings.EVOLUTION_MUTATIONS_PER_HEAT = mutationsPerHeat;
 
                 int adversariesPerHeat = BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT;
                 var aphDisplayValue = BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT.ToString("0");
-                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Evolution_AdversariesPerHeat")}:  ({aphDisplayValue})", leftLabel);//Adversaries Per Heat
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_AdversariesPerHeat")}:  ({aphDisplayValue})", leftLabel);//Adversaries Per Heat
                 adversariesPerHeat = (int)GUI.HorizontalSlider(SRightSliderRect(line), adversariesPerHeat, 0, 10);
                 BDArmorySettings.EVOLUTION_ANTAGONISTS_PER_HEAT = adversariesPerHeat;
 
                 int heatsPerGroup = BDArmorySettings.EVOLUTION_HEATS_PER_GROUP;
                 var hpgDisplayValue = BDArmorySettings.EVOLUTION_HEATS_PER_GROUP.ToString("0");
-                GUI.Label(SLeftSliderRect(++line), $"{Localizer.Format("#LOC_BDArmory_Evolution_HeatsPerGroup")}:  ({hpgDisplayValue})", leftLabel);//Heats Per Group
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_HeatsPerGroup")}:  ({hpgDisplayValue})", leftLabel);//Heats Per Group
                 heatsPerGroup = (int)GUI.HorizontalSlider(SRightSliderRect(line), heatsPerGroup, 1, 50);
                 BDArmorySettings.EVOLUTION_HEATS_PER_GROUP = heatsPerGroup;
 
@@ -145,10 +151,10 @@ namespace BDArmory.Evolution
 
             float fifth = _windowWidth / 5.0f;
             offset += 0.25f * _lineHeight;
-            GUI.Label(new Rect(_margin, offset, 2 * fifth, _lineHeight), $"{Localizer.Format("#LOC_BDArmory_Evolution_ID")}: ");
+            GUI.Label(new Rect(_margin, offset, 2 * fifth, _lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_ID")}: ");
             GUI.Label(new Rect(_margin + 2 * fifth, offset, 3 * fifth, _lineHeight), evolution.EvolutionId);
             offset += _lineHeight;
-            GUI.Label(new Rect(_margin, offset, 2 * fifth, _lineHeight), $"{Localizer.Format("#LOC_BDArmory_Evolution_Status")}: ");
+            GUI.Label(new Rect(_margin, offset, 2 * fifth, _lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_Status")}: ");
             string statusLine;
             switch (evolution.Status())
             {
@@ -158,9 +164,9 @@ namespace BDArmory.Evolution
             }
             GUI.Label(new Rect(_margin + 2 * fifth, offset, 3 * fifth, _lineHeight), statusLine);
             offset += _lineHeight;
-            GUI.Label(new Rect(_margin, offset, fifth, _lineHeight), $"{Localizer.Format("#LOC_BDArmory_Evolution_Group")}: ");
+            GUI.Label(new Rect(_margin, offset, fifth, _lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_Group")}: ");
             GUI.Label(new Rect(_margin + fifth, offset, fifth, _lineHeight), evolution.GroupId.ToString());
-            GUI.Label(new Rect(_margin + 2 * fifth, offset, fifth, _lineHeight), $"{Localizer.Format("#LOC_BDArmory_Evolution_Heat")}: ");
+            GUI.Label(new Rect(_margin + 2 * fifth, offset, fifth, _lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_Evolution_Heat")}: ");
             GUI.Label(new Rect(_margin + 3 * fifth, offset, fifth, _lineHeight), evolution.Heat.ToString());
             offset += _lineHeight;
             string buttonText;

@@ -17,7 +17,7 @@ namespace BDArmory.Radar
 
         public static event RadarPing OnRadarPing;
 
-        public delegate void MissileLaunchWarning(Vector3 source, Vector3 direction);
+        public delegate void MissileLaunchWarning(Vector3 source, Vector3 direction, bool radar);
 
         public static event MissileLaunchWarning OnMissileLaunch;
 
@@ -32,15 +32,18 @@ namespace BDArmory.Radar
             Detection = 5,
             Sonar = 6,
             Torpedo = 7,
-            TorpedoLock = 8
+            TorpedoLock = 8,
+            Jamming = 9
         }
 
-        string[] iconLabels = new string[] { "S", "F", "A", "M", "M", "D", "So", "T", "T" };
+        string[] iconLabels = new string[] { "S", "F", "A", "M", "M", "D", "So", "T", "T", "J" };
 
         public MissileFire weaponManager;
 
         // This field may not need to be persistent.  It was combining display with active RWR status.
         [KSPField(isPersistant = true)] public bool rwrEnabled;
+        //for if the RWR should detect everything, or only be able to detect radar sources
+        [KSPField(isPersistant = true)] public bool omniDetection = true;
 
         // This field was added to separate RWR active status from the display of the RWR.  the RWR should be running all the time...
         public bool displayRWR = false;
@@ -107,11 +110,11 @@ namespace BDArmory.Radar
 
         public override void OnAwake()
         {
-            radarPingSound = GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/rwrPing");
-            missileLockSound = GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/rwrMissileLock");
-            missileLaunchSound = GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/mLaunchWarning");
-            sonarPing = GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/rwr_sonarping");
-            torpedoPing = GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/rwr_torpedoping");
+            radarPingSound = SoundUtils.GetAudioClip("BDArmory/Sounds/rwrPing");
+            missileLockSound = SoundUtils.GetAudioClip("BDArmory/Sounds/rwrMissileLock");
+            missileLaunchSound = SoundUtils.GetAudioClip("BDArmory/Sounds/mLaunchWarning");
+            sonarPing = SoundUtils.GetAudioClip("BDArmory/Sounds/rwr_sonarping");
+            torpedoPing = SoundUtils.GetAudioClip("BDArmory/Sounds/rwr_torpedoping");
         }
 
         public override void OnStart(StartState state)
@@ -195,25 +198,26 @@ namespace BDArmory.Radar
 
         IEnumerator PingLifeRoutine(int index, float lifeTime)
         {
-            yield return new WaitForSeconds(Mathf.Clamp(lifeTime - 0.04f, minPingInterval, lifeTime));
+            yield return new WaitForSecondsFixed(Mathf.Clamp(lifeTime - 0.04f, minPingInterval, lifeTime));
             pingsData[index] = TargetSignatureData.noTarget;
         }
 
         IEnumerator LaunchWarningRoutine(TargetSignatureData data)
         {
             launchWarnings.Add(data);
-            yield return new WaitForSeconds(2);
+            yield return new WaitForSecondsFixed(2);
             launchWarnings.Remove(data);
         }
 
-        void ReceiveLaunchWarning(Vector3 source, Vector3 direction)
+        void ReceiveLaunchWarning(Vector3 source, Vector3 direction, bool radar)
         {
             if (referenceTransform == null) return;
             if (part == null || !part.isActiveAndEnabled) return;
             if (weaponManager == null) return;
+            if (!omniDetection && !radar) return;
 
             float sqrDist = (part.transform.position - source).sqrMagnitude;
-            if ((weaponManager && weaponManager.guardMode) && (sqrDist > (weaponManager.guardRange * weaponManager.guardRange))) return;
+            //if ((weaponManager && weaponManager.guardMode) && (sqrDist > (weaponManager.guardRange * weaponManager.guardRange))) return; //doesn't this clamp the RWR to visual view range, not radar/RWR range?
             if (sqrDist < BDArmorySettings.MAX_ENGAGEMENT_RANGE * BDArmorySettings.MAX_ENGAGEMENT_RANGE && sqrDist > 10000f && Vector3.Angle(direction, part.transform.position - source) < 15f)
             {
                 StartCoroutine(
@@ -224,15 +228,16 @@ namespace BDArmory.Radar
 
                 if (weaponManager && weaponManager.guardMode)
                 {
-                    weaponManager.FireAllCountermeasures(Random.Range(1, 2)); // Was 2-4, but we don't want to take too long doing this initial dump before other routines kick in
+                    //weaponManager.FireAllCountermeasures(Random.Range(1, 2)); // Was 2-4, but we don't want to take too long doing this initial dump before other routines kick in
                     weaponManager.incomingThreatPosition = source;
+                    weaponManager.missileIsIncoming = true;
                 }
             }
         }
 
         void ReceivePing(Vessel v, Vector3 source, RWRThreatTypes type, float persistTime)
         {
-            if (v == null) return;
+            if (v == null || v.packed || !v.loaded || !v.isActiveAndEnabled) return;
             if (referenceTransform == null) return;
             if (weaponManager == null) return;
 
@@ -258,7 +263,8 @@ namespace BDArmory.Radar
                 {
                     if (weaponManager && weaponManager.guardMode)
                     {
-                        weaponManager.FireChaff(); //what if it's a heater instead of a radar missile?
+                        weaponManager.FireChaff();
+                        weaponManager.missileIsIncoming = true;
                         // TODO: if torpedo inbound, also fire accoustic decoys (not yet implemented...)
                     }
                 }
@@ -473,9 +479,9 @@ namespace BDArmory.Radar
                 }
         }
 
-        public static void WarnMissileLaunch(Vector3 source, Vector3 direction)
+        public static void WarnMissileLaunch(Vector3 source, Vector3 direction, bool radarMissile)
         {
-            OnMissileLaunch?.Invoke(source, direction);
+            OnMissileLaunch?.Invoke(source, direction, radarMissile);
         }
     }
 }

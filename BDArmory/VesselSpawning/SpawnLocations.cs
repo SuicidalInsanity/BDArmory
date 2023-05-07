@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UniLinq;
 using UnityEngine;
 
-namespace BDArmory.Competition.VesselSpawning
+namespace BDArmory.VesselSpawning
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class SpawnLocations : MonoBehaviour

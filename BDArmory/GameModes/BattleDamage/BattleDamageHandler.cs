@@ -91,7 +91,7 @@ namespace BDArmory.GameModes
             var Armor = part.FindModuleImplementing<HitpointTracker>();
             if (Armor != null)
             {
-                if (Armor.HullTypeNum == 1) //wooden parts can potentially catch fire
+                if (Armor.ignitionTemp > 0) //wooden parts can potentially catch fire
                 {
                     if (incendiary)
                     {

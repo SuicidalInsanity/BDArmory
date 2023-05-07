@@ -1,17 +1,19 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 using BDArmory.Control;
+using BDArmory.Competition;
 using BDArmory.Extensions;
 using BDArmory.GameModes;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.UI;
 
-namespace BDArmory.Competition.VesselSpawning
+namespace BDArmory.VesselSpawning
 {
     /// <summary>
     /// Status for spawning.
@@ -90,7 +92,7 @@ namespace BDArmory.Competition.VesselSpawning
 
             // If we're on another planetary body, first switch to the proper one.
             if (spawnConfig.worldIndex != FlightGlobals.currentMainBody.flightGlobalsIndex)
-            { SpawnUtils.ShowSpawnPoint(spawnConfig.worldIndex, spawnConfig.latitude, spawnConfig.longitude, spawnConfig.altitude, 20); }
+            { SpawnUtils.ShowSpawnPoint(spawnConfig.worldIndex, spawnConfig.latitude, spawnConfig.longitude, spawnConfig.altitude); }
 
             if (spawnConfig.killEverythingFirst)
             {
@@ -236,24 +238,27 @@ namespace BDArmory.Competition.VesselSpawning
 
             Vessel vessel;
             Vector3d craftGeoCoords;
-            EditorFacility editorFacility = EditorFacility.SPH;
             var radialUnitVector = (vesselSpawnConfig.position - FlightGlobals.currentMainBody.transform.position).normalized;
             vesselSpawnConfig.position += 1000f * radialUnitVector; // Adjust the spawn point upwards by 1000m.
             FlightGlobals.currentMainBody.GetLatLonAlt(vesselSpawnConfig.position, out craftGeoCoords.x, out craftGeoCoords.y, out craftGeoCoords.z); // Convert spawn point (+1000m) to geo-coords for the actual spawning function.
             try
             {
                 // Spawn the craft with zero pitch, roll and yaw as the final rotation depends on the root transform, which takes some time to be populated.
-                vessel = VesselSpawner.SpawnVesselFromCraftFile(vesselSpawnConfig.craftURL, craftGeoCoords, 0f, 0f, 0f, out editorFacility); // SPAWN
+                vessel = VesselSpawner.SpawnVesselFromCraftFile(vesselSpawnConfig.craftURL, craftGeoCoords, 0f, 0f, 0f, out vesselSpawnConfig.editorFacility, vesselSpawnConfig.crew); // SPAWN
             }
-            catch { vessel = null; }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+                vessel = null;
+            }
             if (vessel == null)
             {
                 var craftName = Path.GetFileNameWithoutExtension(vesselSpawnConfig.craftURL);
                 LogMessage("Failed to spawn craft " + craftName);
                 yield break; // Note: this doesn't cancel spawning.
             }
+            else if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Initial spawn of {vessel.vesselName} succeeded.", false);
             vessel.Landed = false; // Tell KSP that it's not landed so KSP doesn't mess with its position.
-            vessel.ResumeStaging(); // Trigger staging to resume to get staging icons to work properly.
             if (vesselSpawnConfig.reuseURLVesselName && spawnedVesselURLs.ContainsValue(vesselSpawnConfig.craftURL))
             {
                 vessel.vesselName = spawnedVesselURLs.Where(kvp => kvp.Value == vesselSpawnConfig.craftURL).Select(kvp => kvp.Key).First();
@@ -264,8 +269,14 @@ namespace BDArmory.Competition.VesselSpawning
                 {
                     var count = 1;
                     var potentialName = vessel.vesselName + "_" + count;
-                    while (spawnedVesselURLs.ContainsKey(potentialName))
+                    while (spawnedVesselURLs.ContainsKey(potentialName) && count < 100)
                         potentialName = vessel.vesselName + "_" + (++count);
+                    if (count == 100)
+                    {
+                        LogMessage($"Unable to find a non-conflicting name for {vessel.vesselName}");
+                        spawnFailureReason = SpawnFailureReason.TimedOut;
+                        yield break;
+                    }
                     vessel.vesselName = potentialName;
                 }
                 spawnedVesselURLs.Add(vessel.vesselName, vesselSpawnConfig.craftURL);
@@ -276,16 +287,33 @@ namespace BDArmory.Competition.VesselSpawning
             var heightFromTerrain = vessel.GetHeightFromTerrain() - 35f; // The SpawnVesselFromCraftFile routine adds 35m for some reason.
 
             // Wait until the vessel's part list gets updated.
+            var tic = Time.time;
             do
             {
                 yield return waitForFixedUpdate;
                 if (vessel == null)
                 {
                     LogMessage(vesselName + " disappeared during spawning!");
-                    spawnFailureReason = SpawnFailureReason.VesselLostParts;
+                    if (!BDArmorySetup.Instance.CheckDependencies()) // Check for PRE not being enabled, which can cause this.
+                    {
+                        LogMessage($"PRE isn't enabled!", false);
+                        spawnFailureReason = SpawnFailureReason.DependencyIssues;
+                    }
+                    else spawnFailureReason = SpawnFailureReason.VesselLostParts;
                     yield break;
                 }
-            } while (vessel.parts.Count == 0);
+            } while (vessel.Parts.Count == 0 && Time.time - tic < 30f);
+            if (vessel.Parts.Count == 0)
+            {
+                LogMessage($"Parts list on {vessel.vesselName} failed to populate within 30s.");
+                if (!BDArmorySetup.Instance.CheckDependencies()) // Check for PRE not being enabled, which can cause this.
+                {
+                    LogMessage($"PRE isn't enabled!", false);
+                    spawnFailureReason = SpawnFailureReason.DependencyIssues;
+                }
+                else spawnFailureReason = SpawnFailureReason.VesselFailedToSpawn;
+                yield break;
+            }
             spawnedVesselPartCounts[vesselName] = SpawnUtils.PartCount(vessel); // Get the part-count without EVA kerbals.
 
             // Wait another update so that the reference transforms get updated.
@@ -320,9 +348,9 @@ namespace BDArmory.Competition.VesselSpawning
                 if (BDArmorySettings.DEBUG_SPAWNING && localTerrainAltitude > 0) LogMessage("Failed to find terrain for spawn adjustments", false);
             }
             // Rotation
-            vessel.SetRotation(Quaternion.FromToRotation(editorFacility == EditorFacility.SPH ? -vessel.ReferenceTransform.forward : vessel.ReferenceTransform.up, localSurfaceNormal) * vessel.transform.rotation); // Re-orient the vessel to the terrain normal (or radial unit vector).
-            vessel.SetRotation(Quaternion.AngleAxis(Vector3.SignedAngle(editorFacility == EditorFacility.SPH ? vessel.ReferenceTransform.up : -vessel.ReferenceTransform.forward, vesselSpawnConfig.direction, localSurfaceNormal), localSurfaceNormal) * vessel.transform.rotation); // Re-orient the vessel to the right direction.
-            if (vesselSpawnConfig.airborne && !BDArmorySettings.SF_GRAVITY)
+            vessel.SetRotation(Quaternion.FromToRotation(vesselSpawnConfig.editorFacility == EditorFacility.SPH ? -vessel.ReferenceTransform.forward : vessel.ReferenceTransform.up, localSurfaceNormal) * vessel.transform.rotation); // Re-orient the vessel to the terrain normal (or radial unit vector).
+            vessel.SetRotation(Quaternion.AngleAxis(Vector3.SignedAngle(vesselSpawnConfig.editorFacility == EditorFacility.SPH ? vessel.ReferenceTransform.up : -vessel.ReferenceTransform.forward, vesselSpawnConfig.direction, localSurfaceNormal), localSurfaceNormal) * vessel.transform.rotation); // Re-orient the vessel to the right direction.
+            if (vesselSpawnConfig.airborne && (!BDArmorySettings.SF_GRAVITY && !BDArmorySettings.SF_REPULSOR))
             { vessel.SetRotation(Quaternion.AngleAxis(-vesselSpawnConfig.pitch, vessel.ReferenceTransform.right) * vessel.transform.rotation); }
             // Position
             if (FlightGlobals.currentMainBody.hasSolidSurface)
@@ -341,6 +369,14 @@ namespace BDArmory.Competition.VesselSpawning
             finalSpawnPositions[vesselName] = vesselSpawnConfig.position;
             finalSpawnRotations[vesselName] = vessel.transform.rotation;
             vessel.altimeterDisplayState = AltimeterDisplayState.AGL;
+            // Fix staging (this seems to put them in the right stages, but some parts don't always work, e.g., parachutes)
+            vessel.currentStage = 0;
+            foreach (var part in vessel.parts)
+            {
+                if (part.inverseStage >= 0) part.originalStage = part.inverseStage;
+                vessel.currentStage = System.Math.Max(vessel.currentStage, part.originalStage + 1);
+            }
+            vessel.ResumeStaging(); // Trigger staging to resume to get staging icons to work properly.
 
             // Game mode adjustments.
             if (BDArmorySettings.SPACE_HACKS)
@@ -378,36 +414,56 @@ namespace BDArmory.Competition.VesselSpawning
         /// <param name="spawnConfig"></param>
         /// <param name="spawnAirborne"></param>
         /// <returns></returns>
-        protected IEnumerator PostSpawnMainSequence(SpawnConfig spawnConfig, bool spawnAirborne)
+        protected IEnumerator PostSpawnMainSequence(SpawnConfig spawnConfig, bool spawnAirborne, bool ignoreValidity = false)
         {
-            yield return CheckVesselValidity(spawnedVessels);
-            if (spawnFailureReason != SpawnFailureReason.None) yield break;
+            if (!ignoreValidity)
+            {
+                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Checking vessel validity", false);
+                yield return CheckVesselValidity(spawnedVessels);
+                if (spawnFailureReason != SpawnFailureReason.None) yield break;
 
-            yield return WaitForWeaponManagers(spawnedVessels, spawnedVesselPartCounts, spawnConfig.numberOfTeams != 1 && spawnConfig.numberOfTeams != -1);
-            if (spawnFailureReason != SpawnFailureReason.None) yield break;
+                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Waiting for weapon managers", false);
+                yield return WaitForWeaponManagers(spawnedVessels, spawnedVesselPartCounts, spawnConfig.numberOfTeams != 1 && spawnConfig.numberOfTeams != -1);
+                if (spawnFailureReason != SpawnFailureReason.None) yield break;
+            }
+            else
+            {
+                yield return waitForFixedUpdate; // We need to yield two frames for the spawned vessels' positions to be updated properly.
+                yield return waitForFixedUpdate;
+            }
 
             // Reset craft positions and rotations as sometimes KSP packs and unpacks vessels between frames and resets things! (Possibly due to kerbals in command seats?)
+            if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Resetting final spawn positions", false);
             ResetFinalSpawnPositionsAndRotations(spawnedVessels, finalSpawnPositions, finalSpawnRotations);
 
             // Lower vessels to the ground or activate them in the air.
             if (spawnConfig.altitude >= 0 && !spawnAirborne)
             {
-                foreach (var vessel in spawnedVessels.Values) // Turn on the brakes.
+                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Lowering vessels", false);
+                yield return PlaceSpawnedVessels(spawnedVessels.Values.ToList());
+                if (spawnFailureReason != SpawnFailureReason.None) yield break;
+
+                // Check that none of the vessels have lost parts.
+                if (spawnedVessels.Any(kvp => SpawnUtils.PartCount(kvp.Value) < spawnedVesselPartCounts[kvp.Key]))
                 {
-                    vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, false); // Disable them first to make sure they trigger on toggling.
-                    vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, true);
-                    if (BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED == 0) PlaceSpawnedVessel(vessel);
+                    var offendingVessels = spawnedVessels.Where(kvp => SpawnUtils.PartCount(kvp.Value) < spawnedVesselPartCounts[kvp.Key]);
+                    LogMessage("Part-count of some vessels changed after spawning: " + string.Join(", ", offendingVessels.Select(kvp => kvp.Value == null ? "null" : kvp.Value.vesselName + $" ({spawnedVesselPartCounts[kvp.Key] - SpawnUtils.PartCount(kvp.Value)})")));
+                    spawnFailureReason = SpawnFailureReason.VesselLostParts;
+                    yield break;
                 }
-                if (BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED > 0)
-                    yield return LowerVesselsToSurface(spawnedVessels, spawnedVesselPartCounts, spawnConfig.easeInSpeed, spawnConfig.altitude);
             }
-            else AirborneActivation(spawnedVessels);
+            else
+            {
+                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Activating vessels in the air", false);
+                AirborneActivation(spawnedVessels);
+            }
             if (spawnFailureReason != SpawnFailureReason.None) yield break;
 
             // One last check for renamed vessels (since we're not entirely sure when this occurs).
+            if (BDArmorySettings.DEBUG_SPAWNING) LogMessage("Checking for renamed vessels", false);
             SpawnUtils.CheckForRenamedVessels(spawnedVessels);
 
-            if (BDArmorySettings.RUNWAY_PROJECT)
+            if (BDArmorySettings.RUNWAY_PROJECT && !ignoreValidity)
             {
                 // Check AI/WM counts and placement for RWP.
                 foreach (var vesselName in spawnedVessels.Keys)
@@ -459,9 +515,9 @@ namespace BDArmory.Competition.VesselSpawning
                 SpawnUtils.CheckForRenamedVessels(vessels);
 
                 // Check that none of the vessels have lost parts.
-                if (vessels.Any(kvp => kvp.Value == null || SpawnUtils.PartCount(kvp.Value) != vesselPartCounts[kvp.Key]))
+                if (vessels.Any(kvp => kvp.Value == null || SpawnUtils.PartCount(kvp.Value) < vesselPartCounts[kvp.Key]))
                 {
-                    var offendingVessels = vessels.Where(kvp => kvp.Value == null || SpawnUtils.PartCount(kvp.Value) != vesselPartCounts[kvp.Key]);
+                    var offendingVessels = vessels.Where(kvp => kvp.Value == null || SpawnUtils.PartCount(kvp.Value) < vesselPartCounts[kvp.Key]);
                     LogMessage("Part-count of some vessels changed after spawning: " + string.Join(", ", offendingVessels.Select(kvp => kvp.Value == null ? "null" : kvp.Value.vesselName + $" ({vesselPartCounts[kvp.Key] - SpawnUtils.PartCount(kvp.Value)})")));
                     spawnFailureReason = SpawnFailureReason.VesselLostParts;
                     yield break;
@@ -501,6 +557,14 @@ namespace BDArmory.Competition.VesselSpawning
             }
         }
 
+        /// <summary>
+        /// [Deprecated] Use PlaceSpawnedVessels instead.
+        /// </summary>
+        /// <param name="vessels"></param>
+        /// <param name="partCounts"></param>
+        /// <param name="easeInSpeed"></param>
+        /// <param name="altitude"></param>
+        /// <returns></returns>
         protected IEnumerator LowerVesselsToSurface(Dictionary<string, Vessel> vessels, Dictionary<string, int> partCounts, float easeInSpeed, double altitude)
         {
             var radialUnitVectors = vessels.ToDictionary(v => v.Key, v => (v.Value.transform.position - FlightGlobals.currentMainBody.transform.position).normalized);
@@ -528,7 +592,7 @@ namespace BDArmory.Competition.VesselSpawning
                             vessel.Splashed = true; // Tell KSP that the vessel is splashed.
                     }
                     if (vesselsHaveLanded[vesselName] == 1 && vessel.srf_velocity.sqrMagnitude > easeInSpeed) // While the vessel hasn't landed, prevent it from moving too fast.
-                        vessel.SetWorldVelocity(0.99 * easeInSpeed * vessel.srf_velocity); // Move at VESSEL_SPAWN_EASE_IN_SPEED m/s at most.
+                        vessel.SetWorldVelocity(0.99 * easeInSpeed * vessel.srf_velocity); // Move at easeInSpeed m/s at most.
                 }
 
                 // Check that none of the vessels have lost parts.
@@ -541,7 +605,7 @@ namespace BDArmory.Competition.VesselSpawning
                 }
 
                 if (vesselsHaveLanded.Values.All(v => v == 2)) yield break;
-            } while (Time.time - landingStartTime < 15 + altitude / easeInSpeed); // Give the vessels up to (15 + altitude / VESSEL_SPAWN_EASE_IN_SPEED) seconds to land.
+            } while (Time.time - landingStartTime < 15 + altitude / easeInSpeed); // Give the vessels up to (15 + altitude / easeInSpeed) seconds to land.
             LogMessage("Timed out waiting for the vessels to land.", true, false);
             spawnFailureReason = SpawnFailureReason.TimedOut;
         }
@@ -625,15 +689,14 @@ namespace BDArmory.Competition.VesselSpawning
             {
                 vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, false); // Disable them first to make sure they trigger on toggling.
                 vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, true);
-                if (BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED == 0) PlaceSpawnedVessel(vessel);
-                else
+                var partCount = SpawnUtils.PartCount(vessel);
+                yield return PlaceSpawnedVessel(vessel);
+                if (SpawnUtils.PartCount(vessel) != partCount)
                 {
-                    yield return LowerVesselsToSurface(new Dictionary<string, Vessel> { { vesselName, vessel } }, new Dictionary<string, int> { { vesselName, SpawnUtils.PartCount(vessel) } }, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, vessel.radarAltitude);
-                    if (spawnFailureReason != SpawnFailureReason.None)
-                    {
-                        if (vessel != null) RemoveVessel(vessel);
-                        yield break;
-                    }
+                    LogMessage($"Part-count of {vesselName} changed after spawning: {partCount - SpawnUtils.PartCount(vessel)}");
+                    spawnFailureReason = SpawnFailureReason.VesselLostParts;
+                    if (vessel != null) RemoveVessel(vessel);
+                    yield break;
                 }
             }
             else AirborneActivation(vessel);
@@ -713,15 +776,21 @@ namespace BDArmory.Competition.VesselSpawning
         protected void AirborneActivation(Vessel vessel)
         {
             // Activate the vessel with AG10, or failing that, staging.
-            var weaponManager = VesselModuleRegistry.GetModule<MissileFire>(vessel);
             vessel.ActionGroups.ToggleGroup(BDACompetitionMode.KM_dictAG[10]); // Modular Missiles use lower AGs (1-3) for staging, use a high AG number to not affect them
-            weaponManager.AI.ActivatePilot();
-            weaponManager.AI.CommandTakeOff();
-            if (weaponManager.guardMode)
+            var weaponManager = VesselModuleRegistry.GetModule<MissileFire>(vessel);
+            if (weaponManager != null)
             {
-                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Disabling guardMode on {vessel.vesselName}.", false);
-                weaponManager.ToggleGuardMode(); // Disable guard mode (in case someone enabled it on AG10 or in the SPH).
-                weaponManager.SetTarget(null);
+                if (weaponManager.AI != null)
+                {
+                    weaponManager.AI.ActivatePilot();
+                    weaponManager.AI.CommandTakeOff();
+                }
+                if (weaponManager.guardMode)
+                {
+                    if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Disabling guardMode on {vessel.vesselName}.", false);
+                    weaponManager.ToggleGuardMode(); // Disable guard mode (in case someone enabled it on AG10 or in the SPH).
+                    weaponManager.SetTarget(null);
+                }
             }
 
             if (!BDArmorySettings.NO_ENGINES && SpawnUtils.CountActiveEngines(vessel) == 0) // If the vessel didn't activate their engines on AG10, then activate all their engines and hope for the best.
@@ -736,34 +805,86 @@ namespace BDArmory.Competition.VesselSpawning
         }
 
         /// <summary>
-        /// Place a spawned vessel on the ground/water surface in a single step.
+        /// [Deprecated] Place a spawned vessel on the ground/water surface in a single step.
         /// </summary>
         /// <param name="vessel"></param>
-        protected void PlaceSpawnedVessel(Vessel vessel)
+        /// <param name="offset">Vertical offset to place the vessel.</param>
+        /// <returns>The vertical distance to the lowest point on the vessel.</returns>
+        protected void PlaceSpawnedVessel_Old(Vessel vessel, float offset = 0, bool allowBelowWater = false)
         {
-            var down = FlightGlobals.getGeeForceAtPosition(vessel.CoM).normalized;
-            if (BodyUtils.GetTerrainAltitudeAtPos(vessel.CoM, true) < 0) // Over water.
+            if (!vessel.mainBody.hasSolidSurface) return; // Nowhere to place it!
+            var down = (vessel.mainBody.transform.position - vessel.CoM).normalized;
+            if (!allowBelowWater && BodyUtils.GetTerrainAltitudeAtPos(vessel.CoM, true) < 0) // Over water.
             {
-                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName} is {vessel.altitude:G3}m above water, lowering.", false);
-                vessel.SetPosition(vessel.transform.position + vessel.altitude * down);
+                if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName} is {vessel.altitude:G6}m above water, lowering.", false);
+                vessel.SetPosition(vessel.CoM + ((float)vessel.altitude - offset - 0.1f) * down);
                 return;
             }
             // Over land.
-            var radius = vessel.GetRadius();
-            var terrainHits = Physics.SphereCastAll(vessel.CoM - radius * down, radius, down, (float)vessel.altitude + radius, (int)LayerMasks.Scenery); // Start "radius" above the CoM so the minimum distance is the altitude of the CoM.
-            var minDistance = (float)vessel.altitude;
-            if (terrainHits.Length > 0) { minDistance = Mathf.Min(minDistance, radius + terrainHits.Min(h => h.distance)); }
-            foreach (var terrainHit in terrainHits)
+            var altitude = (float)(vessel.altitude - vessel.mainBody.TerrainAltitude(vessel.latitude, vessel.longitude, allowBelowWater));
+            var radius = vessel.GetRadius(down, vessel.GetBounds());
+            var belowHits = Physics.SphereCastAll(vessel.CoM - (radius + 100f) * down, radius, down, altitude + 2f * radius + 100f, (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.Wheels | LayerMasks.EVA)); // Start "radius" above the CoM so the minimum distance is the altitude of the CoM, +100m for safety when near other objects.
+            var minDistance = altitude + 2f * radius + 100f;
+            foreach (var belowHit in belowHits)
             {
-                if (Physics.BoxCast(terrainHit.point + 0.1f * down, new Vector3(radius, 0.1f, radius), -down, out RaycastHit hit, Quaternion.FromToRotation(Vector3.up, terrainHit.normal), terrainHit.distance + 1f, (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)))
+                var belowHitPart = belowHit.collider.gameObject.GetComponentInParent<Part>();
+                if (belowHitPart != null && belowHitPart.vessel == vessel) continue;
+                var hits = Physics.BoxCastAll(belowHit.point + 2.1f * down, new Vector3(radius, 0.1f, radius), -down, Quaternion.FromToRotation(Vector3.up, belowHit.normal), belowHit.distance + 3f, (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels)); // Start 2m below the hit to catch wheels protruding into the ground (the largest Squad wheel has radius 1m).
+                foreach (var hit in hits)
                 {
                     var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
-                    if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName}: Distance from {terrainHit.collider.name} to {hit.collider.name} ({hitPart.name}): {hit.distance:G3}m", false);
-                    minDistance = Mathf.Min(minDistance, hit.distance);
+                    if (hitPart == null || hitPart.vessel != vessel) continue;
+                    var distance = hit.distance - 2f; // Correct for the initial offset.
+                    if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName}: Distance from {belowHit.collider.name}{(belowHitPart != null ? belowHitPart.name : "")} to {hit.collider.name} ({hitPart.name}): {distance:G6}m", false);
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                    }
                 }
             }
-            if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName} is {minDistance:G3}m above land, lowering.", false);
-            vessel.SetPosition(vessel.transform.position + down * (minDistance - 0.1f));
+            if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"{vessel.vesselName} is {minDistance:G6}m above land, lowering.", false);
+            if (minDistance - offset > 0.1f)
+                vessel.SetPosition(vessel.transform.position + down * (minDistance - offset - 0.1f)); // Minor adjustment to prevent potential clipping.
+        }
+
+        /// <summary>
+        /// Lower the vessels to terrain.
+        /// This uses the VesselMover routines.
+        /// </summary>
+        /// <param name="vessels">The list of vessels to lower.</param>
+        protected IEnumerator PlaceSpawnedVessels(List<Vessel> vessels)
+        {
+            loweringVesselsCount = 0; // Reset the counter for good measure.
+            foreach (var vessel in vessels)
+                StartCoroutine(PlaceSpawnedVessel(vessel));
+            var tic = Time.time;
+            yield return new WaitWhileFixed(() => loweringVesselsCount > 0 && Time.time - tic < 30); // Wait up to 30s for lowering to complete (it shouldn't take anywhere near this long!).
+            if (loweringVesselsCount > 0)
+            {
+                LogMessage("Timed out waiting for the vessels to land.", true, false);
+                spawnFailureReason = SpawnFailureReason.TimedOut;
+            }
+        }
+
+        int loweringVesselsCount = 0;
+        /// <summary>
+        /// Lower the vessel to the terrain once it's finished loading in.
+        /// </summary>
+        /// <param name="vessel">The vessel to lower.</param>
+        protected IEnumerator PlaceSpawnedVessel(Vessel vessel)
+        {
+            ++loweringVesselsCount;
+            var tic = Time.time;
+            yield return new WaitWhile(() => vessel != null && !VesselMover.Instance.IsValid(vessel) && Time.time - tic < 10); // Wait up to 10s for the vessel to finish loading in.
+            if (!VesselMover.Instance.IsValid(vessel))
+            {
+                --loweringVesselsCount;
+                yield break;
+            }
+            if (BDArmorySettings.VESSEL_MOVER_ENABLE_SAS) vessel.ActionGroups.SetGroup(KSPActionGroup.SAS, false); // Disable SAS. These get re-enabled once the vessel is lowered.
+            if (BDArmorySettings.VESSEL_MOVER_ENABLE_BRAKES) vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, false); // Disable Brakes
+            yield return VesselMover.Instance.PlaceVessel(vessel, true);
+            --loweringVesselsCount;
         }
 
         public void AddToActiveCompetition(Vessel vessel, bool airborne)

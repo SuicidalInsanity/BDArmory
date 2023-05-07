@@ -73,42 +73,41 @@ namespace BDArmory.GameModes.Waypoints
     public class WaypointField : Attribute
     {
         public WaypointField() { }
-        //static Dictionary<String, SpawnLocation> defaultLocations = new Dictionary<string, SpawnLocation>{  // FIXME Is this line needed? Isn't the spawn location is part of the waypoint course?
         static List<WaypointCourse> defaultLocations = new List<WaypointCourse>{
             new WaypointCourse("Canyon", 1, new Vector2(27.97f, -39.35f), new List<Waypoint> {
-                        new Waypoint("Start", new Vector3(28.33f, -39.11f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Run-off Corner", new Vector3(28.83f, -38.06f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Careful River", new Vector3(29.54f, -38.68f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Lake of Mercy", new Vector3(30.15f, -38.6f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Danger Zone Narrows", new Vector3(30.83f, -38.87f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Chicane of Pain", new Vector3(30.73f, -39.6f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Bumpy Boi Lane", new Vector3(30.9f, -40.23f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Blaring Straights", new Vector3(30.83f, -41.26f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE)
+                        new Waypoint("Start", new Vector3(28.33f, -39.11f, 50), 200),
+                        new Waypoint("Run-off Corner", new Vector3(28.83f, -38.06f, 50), 200),
+                        new Waypoint("Careful River", new Vector3(29.54f, -38.68f, 50), 200),
+                        new Waypoint("Lake of Mercy", new Vector3(30.15f, -38.6f, 50), 200),
+                        new Waypoint("Danger Zone Narrows", new Vector3(30.83f, -38.87f, 50), 200),
+                        new Waypoint("Chicane of Pain", new Vector3(30.73f, -39.6f, 50), 200),
+                        new Waypoint("Bumpy Boi Lane", new Vector3(30.9f, -40.23f, 50), 200),
+                        new Waypoint("Blaring Straights", new Vector3(30.83f, -41.26f, 50), 200)
                     }),
             new WaypointCourse("Slalom", 1, new Vector2(-21.0158f, 72.2085f), new List<Waypoint> {
-                        new Waypoint("Waypoint 0", new Vector3(-21.0763f, 72.7194f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 1", new Vector3(-21.3509f, 73.7466f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 2", new Vector3(-20.8125f, 73.8125f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 3", new Vector3(-20.6478f, 74.8177f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 4", new Vector3(-20.2468f, 74.5046f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 5", new Vector3(-19.7469f, 75.1252f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 6", new Vector3(-19.2360f, 75.1363f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 7", new Vector3(-18.8954f, 74.6530f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE)
+                        new Waypoint("Waypoint 0", new Vector3(-21.0763f, 72.7194f, 100), 200),
+                        new Waypoint("Waypoint 1", new Vector3(-21.3509f, 73.7466f, 100), 200),
+                        new Waypoint("Waypoint 2", new Vector3(-20.8125f, 73.8125f, 100), 200),
+                        new Waypoint("Waypoint 3", new Vector3(-20.6478f, 74.8177f, 100), 200),
+                        new Waypoint("Waypoint 4", new Vector3(-20.2468f, 74.5046f, 100), 200),
+                        new Waypoint("Waypoint 5", new Vector3(-19.7469f, 75.1252f, 100), 200),
+                        new Waypoint("Waypoint 6", new Vector3(-19.2360f, 75.1363f, 100), 200),
+                        new Waypoint("Waypoint 7", new Vector3(-18.8954f, 74.6530f, 100), 200)
                     }),
             new WaypointCourse("Coast Circuit", 1, new Vector2(-7.7134f, -42.7633f), new List<Waypoint> {
-                        new Waypoint("Waypoint 0", new Vector3(-8.1628f, -42.7478f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 1", new Vector3(-8.6737f, -42.7423f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 2", new Vector3(-9.2230f, -42.5208f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 3", new Vector3(-9.6624f, -43.3355f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 4", new Vector3(-10.6732f, -43.3410f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 5", new Vector3(-11.3379f, -42.9236f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 6", new Vector3(-10.9415f, -42.3449f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 7", new Vector3(-10.8591f, -41.8670f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 8", new Vector3(-10.5515f, -41.6198f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 9", new Vector3(-10.4746f, -41.2133f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 10", new Vector3(-9.6945f, -41.2847f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 11", new Vector3(-9.5407f, -42.1911f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE),
-                        new Waypoint("Waypoint 12", new Vector3(-9.1342f, -42.0757f, BDArmorySettings.WAYPOINTS_ALTITUDE), BDArmorySettings.WAYPOINTS_SCALE)
+                        new Waypoint("Waypoint 0", new Vector3(-8.1628f, -42.7478f, 50), 200),
+                        new Waypoint("Waypoint 1", new Vector3(-8.6737f, -42.7423f, 50), 200),
+                        new Waypoint("Waypoint 2", new Vector3(-9.2230f, -42.5208f, 50), 200),
+                        new Waypoint("Waypoint 3", new Vector3(-9.6624f, -43.3355f, 50), 200),
+                        new Waypoint("Waypoint 4", new Vector3(-10.6732f, -43.3410f, 50), 200),
+                        new Waypoint("Waypoint 5", new Vector3(-11.3379f, -42.9236f, 50), 200),
+                        new Waypoint("Waypoint 6", new Vector3(-10.9415f, -42.3449f, 50), 200),
+                        new Waypoint("Waypoint 7", new Vector3(-10.8591f, -41.8670f, 50), 200),
+                        new Waypoint("Waypoint 8", new Vector3(-10.5515f, -41.6198f, 50), 200),
+                        new Waypoint("Waypoint 9", new Vector3(-10.4746f, -41.2133f, 50), 200),
+                        new Waypoint("Waypoint 10", new Vector3(-9.6945f, -41.2847f, 50), 200),
+                        new Waypoint("Waypoint 11", new Vector3(-9.5407f, -42.1911f, 50), 200),
+                        new Waypoint("Waypoint 12", new Vector3(-9.1342f, -42.0757f, 50), 200)
                     })
         };
 

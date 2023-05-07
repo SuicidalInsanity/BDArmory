@@ -3,7 +3,6 @@ using System.Collections;
 using System.Text;
 using UnityEngine;
 
-using BDArmory.Competition.VesselSpawning;
 using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Damage;
@@ -11,6 +10,7 @@ using BDArmory.Extensions;
 using BDArmory.FX;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Weapons
@@ -104,7 +104,8 @@ namespace BDArmory.Weapons
                 {
                     Fields["status"].guiActive = false;
                     Fields["fuelleft"].guiActive = false;
-                    var missile = part.FindModuleImplementing<MissileLauncher>();
+                    Fields["status"].guiActiveEditor = false;
+                    Fields["fuelleft"].guiActiveEditor = false;
                 }
                 Sourcevessel = part.vessel.GetName();
 
@@ -115,7 +116,7 @@ namespace BDArmory.Weapons
             base.OnStart(state);
         }
 
-        public void Update()
+        public void FixedUpdate()
         {
             if (HighLogic.LoadedSceneIsFlight)
             {
@@ -177,7 +178,7 @@ namespace BDArmory.Weapons
         {
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.RWPS3R2NukeModule]: Nuclear engine on " + Sourcevessel + " going critical in " + delay.ToString("0.0") + "s.");
             goingCritical = true;
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSecondsFixed(delay);
             if (!hasDetonated && part != null) Detonate();
         }
 
@@ -193,14 +194,14 @@ namespace BDArmory.Weapons
             {
                 return;
             }
-            if (missile != null &&
-                (missile.MissileState == MissileBase.MissileStates.Idle || missile.MissileState == MissileBase.MissileStates.Drop))
+            if (Launcher != null &&
+                (Launcher.MissileState == MissileBase.MissileStates.Idle || Launcher.MissileState == MissileBase.MissileStates.Drop))
             {
                 return;
             }
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.BDModuleNuke]: Running Detonate() on nukeModule in vessel " + Sourcevessel);
             //affect any nearby parts/vessels that aren't the source vessel
-            NukeFX.CreateExplosion(part.transform.position, ExplosionSourceType.BattleDamage, Sourcevessel, reportingName, 0, thermalRadius, yield, fluence, isEMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
+            NukeFX.CreateExplosion(part.transform.position, Launcher != null ? ExplosionSourceType.Missile : ExplosionSourceType.BattleDamage, Sourcevessel, reportingName, 0, thermalRadius, yield, fluence, isEMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
             hasDetonated = true;
             if (part.vessel != null) // Already in the process of being destroyed.
                 part.Destroy();
@@ -216,7 +217,7 @@ namespace BDArmory.Weapons
                 output.AppendLine($"Yield: {yield}");
                 output.AppendLine($"Generates EMP: {isEMP}");
             }
-            if (missile != null)
+            if (Launcher != null)
             {
                 output.AppendLine($"Nuclear Warhead");
                 output.AppendLine($"Yield: {yield}");

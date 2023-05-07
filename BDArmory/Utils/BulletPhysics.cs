@@ -24,7 +24,7 @@ namespace BDArmory.Utils
             //Vector3 dragVec = aDrag * velocityVec.normalized * -1f;
 
             ///////////////////////////////////////////////////////
-            float bulletDragArea = Mathf.PI * Mathf.Pow(caliber / 2f, 2f);
+            float bulletDragArea = Mathf.PI * caliber * caliber / 4f;
             float bulletBallisticCoefficient = ((bulletMass * 1000) / (bulletDragArea * 0.295f));
 
             float k = 0.5f * bulletBallisticCoefficient * rho * bulletDragArea;

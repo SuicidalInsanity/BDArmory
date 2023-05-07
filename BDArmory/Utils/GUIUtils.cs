@@ -157,7 +157,7 @@ namespace BDArmory.Utils
         public static void UseMouseEventInRect(Rect rect)
         {
             if (Event.current == null) return;
-            if (GUIUtils.MouseIsInRect(rect) && Event.current.isMouse && (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp))
+            if (GUIUtils.MouseIsInRect(rect) && ((Event.current.isMouse && (Event.current.type == EventType.MouseDown || Event.current.type == EventType.MouseUp)) || Event.current.isScrollWheel))
             {
                 Event.current.Use();
             }
@@ -197,6 +197,7 @@ namespace BDArmory.Utils
                 if (windowPosition.x + windowPosition.width < 1) windowPosition.x = 1 - windowPosition.width;
                 if (windowPosition.y + windowPosition.height < 1) windowPosition.y = 1 - windowPosition.height;
             }
+            GUIUtilsInstance.Reset(); // Reset once-per-frame checks.
         }
 
         internal static Rect GuiToScreenRect(Rect rect)
@@ -234,13 +235,14 @@ namespace BDArmory.Utils
             return outputColor;
         }
 
-        public static AnimationState[] SetUpAnimation(string animationName, Part part) //Thanks Majiir!
+        public static AnimationState[] SetUpAnimation(string animationName, Part part, bool animatePhysics = true) //Thanks Majiir!
         {
             List<AnimationState> states = new List<AnimationState>();
             using (IEnumerator<UnityEngine.Animation> animation = part.FindModelAnimators(animationName).AsEnumerable().GetEnumerator())
                 while (animation.MoveNext())
                 {
                     if (animation.Current == null) continue;
+                    animation.Current.animatePhysics = animatePhysics;
                     AnimationState animationState = animation.Current[animationName];
                     animationState.speed = 0; // FIXME Shouldn't this be 1?
                     animationState.enabled = true;
@@ -251,12 +253,13 @@ namespace BDArmory.Utils
             return states.ToArray();
         }
 
-        public static AnimationState SetUpSingleAnimation(string animationName, Part part)
+        public static AnimationState SetUpSingleAnimation(string animationName, Part part, bool animatePhysics = true)
         {
             using (IEnumerator<UnityEngine.Animation> animation = part.FindModelAnimators(animationName).AsEnumerable().GetEnumerator())
                 while (animation.MoveNext())
                 {
                     if (animation.Current == null) continue;
+                    animation.Current.animatePhysics = animatePhysics;
                     AnimationState animationState = animation.Current[animationName];
                     animationState.speed = 0; // FIXME Shouldn't this be 1?
                     animationState.enabled = true;
@@ -273,6 +276,13 @@ namespace BDArmory.Utils
 
             if (!BDInputSettingsFields.WEAP_FIRE_KEY.inputString.Contains("mouse")) return false;
 
+            if (ModIntegration.MouseAimFlight.IsMouseAimActive) return false;
+
+            return GUIUtilsInstance.fetch.mouseIsOnGUI;
+        }
+
+        static bool _CheckMouseIsOnGui()
+        {
             Vector3 inverseMousePos = new Vector3(Input.mousePosition.x, Screen.height - Input.mousePosition.y, 0);
             Rect topGui = new Rect(0, 0, Screen.width, 65);
 
@@ -300,12 +310,13 @@ namespace BDArmory.Utils
                         return true;
                 }
 
-                if (extraGUIRects != null)
+            }
+            if (extraGUIRects != null)
+            {
+                foreach (var guiRect in extraGUIRects.Values)
                 {
-                    for (int i = 0; i < extraGUIRects.Count; i++)
-                    {
-                        if (extraGUIRects[i].Contains(inverseMousePos)) return true;
-                    }
+                    if (!guiRect.visible) continue;
+                    if (guiRect.rect.Contains(inverseMousePos)) return true;
                 }
             }
 
@@ -314,30 +325,42 @@ namespace BDArmory.Utils
 
         public static void ResizeGuiWindow(Rect windowrect, Vector2 mousePos)
         {
+            GUIUtilsInstance.Reset();
         }
 
-        public static List<Rect> extraGUIRects;
+        public class ExtraGUIRect
+        {
+            public ExtraGUIRect(Rect rect) { this.rect = rect; }
+            public bool visible = false;
+            public Rect rect;
+        }
+        public static Dictionary<int, ExtraGUIRect> extraGUIRects;
 
         public static int RegisterGUIRect(Rect rect)
         {
             if (extraGUIRects == null)
             {
-                extraGUIRects = new List<Rect>();
+                extraGUIRects = new Dictionary<int, ExtraGUIRect>();
             }
 
             int index = extraGUIRects.Count;
-            extraGUIRects.Add(rect);
+            extraGUIRects.Add(index, new ExtraGUIRect(rect));
+            GUIUtilsInstance.Reset();
             return index;
         }
 
         public static void UpdateGUIRect(Rect rect, int index)
         {
-            if (extraGUIRects == null)
-            {
-                Debug.LogWarning("[BDArmory.Misc]: Trying to update a GUI rect for mouse position check, but Rect list is null.");
-            }
+            if (extraGUIRects == null || !extraGUIRects.ContainsKey(index)) return;
+            extraGUIRects[index].rect = rect;
+            GUIUtilsInstance.Reset();
+        }
 
-            extraGUIRects[index] = rect;
+        public static void SetGUIRectVisible(int index, bool visible)
+        {
+            if (extraGUIRects == null || !extraGUIRects.ContainsKey(index)) return;
+            extraGUIRects[index].visible = visible;
+            GUIUtilsInstance.Reset();
         }
 
         public static bool MouseIsInRect(Rect rect)
@@ -365,5 +388,108 @@ namespace BDArmory.Utils
             // window.Dispose();
         }
 
+
+        /// <summary>
+        /// Disable zooming with the scroll wheel if the mouse is over a registered GUI window.
+        /// </summary>
+        public static void SetScrollZoom()
+        {
+            if (CheckMouseIsOnGui()) BeginDisableScrollZoom();
+            else EndDisableScrollZoom();
+        }
+        static bool scrollZoomEnabled = true;
+        static float originalScrollRate = 1;
+        static bool _originalScrollRateSet = false;
+        public static void BeginDisableScrollZoom()
+        {
+            if (!scrollZoomEnabled || !BDArmorySettings.SCROLL_ZOOM_PREVENTION) return;
+            if (!_originalScrollRateSet)
+            {
+                originalScrollRate = GameSettings.AXIS_MOUSEWHEEL.primary.scale; // Get the original scroll rate once.
+                if (originalScrollRate == 0)
+                {
+                    Debug.LogWarning($"[BDArmory.GUIUtils]: Original scroll rate was 0, resetting it to 1.");
+                    originalScrollRate = 1; // Sometimes it's getting set to 0 for some reason. Default it back to 1.
+                }
+                _originalScrollRateSet = true;
+            }
+            GameSettings.AXIS_MOUSEWHEEL.primary.scale = 0;
+            scrollZoomEnabled = false;
+        }
+        public static void EndDisableScrollZoom()
+        {
+            if (scrollZoomEnabled) return;
+            if (_originalScrollRateSet)
+                GameSettings.AXIS_MOUSEWHEEL.primary.scale = originalScrollRate;
+            scrollZoomEnabled = true;
+        }
+
+        /// <summary>
+        /// GUILayout TextField with a grey placeholder string.
+        /// </summary>
+        /// <param name="text">The current text.</param>
+        /// <param name="placeholder">A placeholder text for when 'text' is empty.</param>
+        /// <param name="fieldName">An internal name for the field so it can be reference with, for example, GUI.FocusControl.</param>
+        /// <returns>The current text.</returns>
+        public static string TextField(string text, string placeholder, string fieldName = null)
+        {
+            if (fieldName != null) GUI.SetNextControlName(fieldName);
+            var newText = GUILayout.TextField(text);
+            if (String.IsNullOrEmpty(text))
+            {
+                var guiColor = GUI.color;
+                GUI.color = Color.grey;
+                GUI.Label(GUILayoutUtility.GetLastRect(), placeholder);
+                GUI.color = guiColor;
+            }
+            return newText;
+        }
+
+        [KSPAddon(KSPAddon.Startup.EveryScene, false)]
+        internal class GUIUtilsInstance : MonoBehaviour
+        {
+            public bool mouseIsOnGUI
+            {
+                get
+                {
+                    if (!_mouseIsOnGUICheckedThisFrame)
+                    {
+                        _mouseIsOnGUI = GUIUtils._CheckMouseIsOnGui();
+                        _mouseIsOnGUICheckedThisFrame = true;
+                    }
+                    return _mouseIsOnGUI;
+                }
+            }
+            bool _mouseIsOnGUI = false;
+            bool _mouseIsOnGUICheckedThisFrame = false;
+
+            public static GUIUtilsInstance fetch;
+            void Awake()
+            {
+                if (fetch != null) Destroy(this);
+                fetch = this;
+            }
+
+            void Update()
+            {
+                _mouseIsOnGUICheckedThisFrame = false;
+            }
+
+            void LateUpdate()
+            {
+                SetScrollZoom();
+            }
+
+            public static void Reset()
+            {
+                if (fetch == null) return;
+                fetch.Update();
+            }
+
+            void Destroy()
+            {
+                GUIUtils.EndDisableScrollZoom();
+            }
+        }
     }
 }

@@ -32,6 +32,9 @@ namespace BDArmory.Weapons
         [KSPField(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_Status")]//Status
         public string guiStatusString = "ARMED";
 
+        [KSPField]
+        public float fuseFailureRate = 0f;                              // How often the explosive fuse will fail to detonate (0-1), evaluated once on detonation trigger
+
         //PartWindow buttons
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disarm Warhead")]//Toggle
         public void Toggle()
@@ -40,12 +43,12 @@ namespace BDArmory.Weapons
             if (Armed)
             {
                 guiStatusString = "ARMED";
-                Events["Toggle"].guiName = Localizer.Format("Disarm Warhead");//"Enable Engage Options"
+                Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
             }
             else
             {
                 guiStatusString = "Safe";
-                Events["Toggle"].guiName = Localizer.Format("Arm Warhead");//"Disable Engage Options"
+                Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
             }
         }
 
@@ -60,12 +63,12 @@ namespace BDArmory.Weapons
             if (IFF_On)
             {
                 guiIFFString = "Ignore Allies";
-                Events["ToggleIFF"].guiName = Localizer.Format("Disable IFF");//"Enable Engage Options"
+                Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");//"Enable Engage Options"
             }
             else
             {
                 guiIFFString = "Indescriminate";
-                Events["ToggleIFF"].guiName = Localizer.Format("Enable IFF");//"Disable Engage Options"
+                Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
             }
         }
 
@@ -93,6 +96,12 @@ namespace BDArmory.Weapons
         public string warheadReportingName;
 
         [KSPField]
+        public float caliber = 120;
+
+        [KSPField]
+        public float apMod = 1;
+
+        [KSPField]
         public string explModelPath = "BDArmory/Models/explosion/explosion";
 
         [KSPField]
@@ -103,7 +112,7 @@ namespace BDArmory.Weapons
         {
             Armed = true;
             guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events["Toggle"].guiName = Localizer.Format("Disarm Warhead");//"Enable Engage Options"
+            Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
         }
 
         [KSPAction("Detonate")]
@@ -134,6 +143,10 @@ namespace BDArmory.Weapons
         private double previousMass = -1;
 
         public bool hasDetonated;
+        public bool fuseFailed = false;
+        Collider[] proximityHitColliders = new Collider[100];
+
+        public Vector3 direction;
 
         public override void OnStart(StartState state)
         {
@@ -163,6 +176,13 @@ namespace BDArmory.Weapons
             */
             CalculateBlast();
             ParseWarheadType();
+            if (HighLogic.LoadedSceneIsFlight)
+                GameEvents.onGameSceneSwitchRequested.Add(HandleSceneChange);
+        }
+
+        void OnDestroy()
+        {
+            GameEvents.onGameSceneSwitchRequested.Remove(HandleSceneChange);
         }
 
         public void GuiSetup()
@@ -182,22 +202,22 @@ namespace BDArmory.Weapons
                 if (Armed)
                 {
                     guiStatusString = "ARMED";
-                    Events["Toggle"].guiName = Localizer.Format("Disarm Warhead");
+                    Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");
                 }
                 else
                 {
                     guiStatusString = "Safe";
-                    Events["Toggle"].guiName = Localizer.Format("Arm Warhead");
+                    Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");
                 }
                 if (IFF_On)
                 {
                     guiIFFString = "Ignore Allies";
-                    Events["ToggleIFF"].guiName = Localizer.Format("Disable IFF");
+                    Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");
                 }
                 else
                 {
                     guiIFFString = "Indescriminate";
-                    Events["ToggleIFF"].guiName = Localizer.Format("Enable IFF");
+                    Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");
                 }
                 if (manualOverride)
                 {
@@ -237,43 +257,37 @@ namespace BDArmory.Weapons
             {
                 OnUpdateEditor();
             }
-            if (hasDetonated)
-            {
-                this.part.explode();
-            }
         }
 
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
-            if (HighLogic.LoadedSceneIsFlight)
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!isMissile)
             {
-                if (!isMissile)
+                if (IFF_On)
                 {
-                    if (IFF_On)
+                    updateTimer -= Time.fixedDeltaTime;
+                    if (updateTimer < 0)
                     {
-                        updateTimer -= Time.fixedDeltaTime;
-                        if (updateTimer < 0)
-                        {
-                            GetTeamID(); //have this only called once a sec
-                            updateTimer = 1.0f;    //next update in half a sec only
-                        }
+                        GetTeamID(); //have this only called once a sec
+                        updateTimer = 1.0f;    //next update in half a sec only
                     }
-                    if (manualOverride) // don't call proximity code if a missile/MMG, use theirs
+                }
+                if (manualOverride) // don't call proximity code if a missile/MMG, use theirs
+                {
+                    if (Armed)
                     {
-                        if (Armed)
+                        if (VesselModuleRegistry.GetModule<MissileFire>(vessel) == null)
                         {
-                            if (VesselModuleRegistry.GetModule<MissileFire>(vessel) == null)
+                            if (sourcevessel != null && sourcevessel != part.vessel)
                             {
-                                if (sourcevessel != null && sourcevessel != part.vessel)
-                                {
-                                    distanceFromStart = Vector3.Distance(part.vessel.transform.position, sourcevessel.transform.position);
-                                }
+                                distanceFromStart = Vector3.Distance(part.vessel.transform.position, sourcevessel.transform.position);
                             }
-                            if (Checkproximity(distanceFromStart))
-                            {
-                                Detonate();
-                            }
+                        }
+                        if (Checkproximity(distanceFromStart))
+                        {
+                            Detonate();
                         }
                     }
                 }
@@ -321,22 +335,32 @@ namespace BDArmory.Weapons
                     break;
             }
         }
+
         public void DetonateIfPossible()
         {
-            if (part == null) return;
+            if (!HighLogic.LoadedSceneIsFlight || part == null) return;
             if (!hasDetonated && Armed)
             {
-                Vector3 direction = default(Vector3);
-
-                if (warheadType != "standard")
-                {
-                    direction = (part.transform.position + part.rb.velocity * Time.deltaTime).normalized;
-                }
-                var sourceWeapon = part.FindModuleImplementing<EngageableWeapon>();
-                ExplosionFx.CreateExplosion(part.transform.position, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Missile, 120, part, sourcevessel != null ? sourcevessel.vesselName : null, sourceWeapon != null ? sourceWeapon.GetShortName() : null, direction, -1, false, warheadType == "standard" ? part.mass : 0, -1, 1, warheadType);
                 hasDetonated = true;
-                if (BDArmorySettings.DEBUG_MISSILES)
-                    Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " detonating with a " + warheadType + " warhead");
+
+                if (fuseFailureRate > 0f)
+                    if (Random.Range(0f, 1f) < fuseFailureRate)
+                        fuseFailed = true;
+
+                if (!fuseFailed)
+                {
+                    direction = warheadType == "standard" ? default : part.partTransform.forward; //both the missileReferenceTransform and smallWarhead part's forward direction is Z+, or transform.forward.
+                                                                                                  // could also do warheadType == "standard" ? default: part.partTransform.forward, as this simplifies the isAngleAllowed check in ExplosionFX, but at the cost of standard heads always being 360deg blasts (but we don't have limited angle balsts for missiels at present anyway, so not a bit deal RN)
+                    var sourceWeapon = part.FindModuleImplementing<EngageableWeapon>();
+
+                    ExplosionFx.CreateExplosion(part.transform.position, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Missile, caliber, part, sourcevessel != null ? sourcevessel.vesselName : null, sourceWeapon != null ? sourceWeapon.GetShortName() : null, direction, -1, false, warheadType == "standard" ? part.mass : 0, -1, 1, warheadType, null, apMod);
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                        Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " detonating with a " + warheadType + " warhead");
+                    part.explode();
+                }
+                else
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                        Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " explosive fuse failed!");
             }
         }
 
@@ -344,19 +368,33 @@ namespace BDArmory.Weapons
         {
             if (!hasDetonated && Armed)
             {
-                Vector3 direction = default(Vector3);
-
-                if (warheadType != "standard")
-                {
-                    direction = (part.transform.position + part.rb.velocity * Time.deltaTime).normalized;
-                }
-                var sourceWeapon = part.FindModuleImplementing<EngageableWeapon>();
-                if (BDArmorySettings.DEBUG_MISSILES)
-                    Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " detonating with a " + warheadType + " warhead");
-                ExplosionFx.CreateExplosion(part.transform.position, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Missile, 120, part, sourcevessel != null ? sourcevessel.vesselName : null, sourceWeapon != null ? sourceWeapon.GetShortName() : null, direction, -1, false, warheadType == "standard" ? part.mass : 0, -1, 1, warheadType);
                 hasDetonated = true;
-                part.Destroy();
+
+                if (fuseFailureRate > 0f)
+                    if (Random.Range(0f, 1f) < fuseFailureRate)
+                        fuseFailed = true;
+
+                if (!fuseFailed)
+                {
+                    direction = warheadType == "standard" ? default : part.partTransform.forward;
+                    var sourceWeapon = part.FindModuleImplementing<EngageableWeapon>();
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                        Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " detonating with a " + warheadType + " warhead");
+                    ExplosionFx.CreateExplosion(part.transform.position, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Missile, caliber, part, sourcevessel != null ? sourcevessel.vesselName : null, sourceWeapon != null ? sourceWeapon.GetShortName() : null, direction, -1, false, warheadType == "standard" ? part.mass : 0, -1, 1, warheadType, null, apMod);
+
+                    part.Destroy();
+                    part.explode();
+                }
+                else
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                        Debug.Log("[BDArmory.BDExplosivePart]: " + part + " (" + (uint)(part.GetInstanceID()) + ") from " + (sourcevessel != null ? sourcevessel.vesselName : null) + " explosive fuse failed!");
             }
+        }
+
+        public void HandleSceneChange(GameEvents.FromToAction<GameScenes, GameScenes> fromTo)
+        {
+            if (fromTo.from == GameScenes.FLIGHT)
+            { hasDetonated = true; } // Don't trigger explosions on scene changes.
         }
 
         public float GetBlastRadius()
@@ -383,7 +421,14 @@ namespace BDArmory.Weapons
                 return detonate = false;
             }
 
-            using (var hitsEnu = Physics.OverlapSphere(transform.position, detonationRange, (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19)).AsEnumerable().GetEnumerator())
+            var layerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels);
+            var hitCount = Physics.OverlapSphereNonAlloc(transform.position, detonationRange, proximityHitColliders, layerMask);
+            if (hitCount == proximityHitColliders.Length)
+            {
+                proximityHitColliders = Physics.OverlapSphere(transform.position, detonationRange, layerMask);
+                hitCount = proximityHitColliders.Length;
+            }
+            using (var hitsEnu = proximityHitColliders.Take(hitCount).GetEnumerator())
             {
                 while (hitsEnu.MoveNext())
                 {

@@ -81,7 +81,10 @@ namespace BDArmory.Radar
         public bool canTrackWhileScan = false;      //when tracking/locking, can we still detect/scan?
 
         [KSPField]
-        public bool canRecieveRadarData = false;    //can radar data be received from friendly sources?
+        public bool canReceiveRadarData = false;    //can radar data be received from friendly sources?
+
+        [KSPField] // DEPRECATED
+        public bool canRecieveRadarData = false;    // Original mis-spelling of "receive" for compatibility.
 
         [KSPField]
         public FloatCurve radarDetectionCurve = new FloatCurve();		//FloatCurve defining at what range which RCS size can be detected
@@ -279,7 +282,7 @@ namespace BDArmory.Radar
 
         void UpdateToggleGuiName()
         {
-            Events["Toggle"].guiName = radarEnabled ? Localizer.Format("#autoLOC_bda_1000000") : Localizer.Format("#autoLOC_bda_1000001");		// #autoLOC_bda_1000000 = Disable Radar		// #autoLOC_bda_1000001 = Enable Radar
+            Events["Toggle"].guiName = radarEnabled ? StringUtils.Localize("#autoLOC_bda_1000000") : StringUtils.Localize("#autoLOC_bda_1000001");		// #autoLOC_bda_1000000 = Disable Radar		// #autoLOC_bda_1000001 = Enable Radar
         }
 
         public void EnsureVesselRadarData()
@@ -303,9 +306,11 @@ namespace BDArmory.Radar
             radarEnabled = true;
 
             var mf = VesselModuleRegistry.GetMissileFire(vessel, true);
-            if (mf != null && vesselRadarData != null) vesselRadarData.weaponManager = mf;
+            if (mf is not null && vesselRadarData is not null) vesselRadarData.weaponManager = mf;
             UpdateToggleGuiName();
             vesselRadarData.AddRadar(this);
+			if (mf is not null && mf.guardMode) vesselRadarData.LinkAllRadars();
+            mf._radarsEnabled = true;
         }
 
         public void DisableRadar()
@@ -335,6 +340,22 @@ namespace BDArmory.Radar
                 {
                     BDATargetManager.ClearRadarReport(loadedvessels.Current, weaponManager); //reset radar contact status
                 }
+            var mf = VesselModuleRegistry.GetMissileFire(vessel, true);
+            if (mf != null && mf.radars.Count > 1)
+            {
+                using (List<ModuleRadar>.Enumerator rd = mf.radars.GetEnumerator())
+                    while (rd.MoveNext())
+                    {
+                        if (rd.Current == null) continue;
+                        mf._radarsEnabled = false;
+                        if (rd.Current != this && rd.Current.radarEnabled)
+                        {
+                            mf._radarsEnabled = true;
+                            break;
+                        }
+                    }
+            }
+            else mf._radarsEnabled = false;
         }
 
         void OnDestroy()
@@ -445,6 +466,12 @@ namespace BDArmory.Radar
             {
                 Debug.Log("[BDArmory.ModuleRadar]: WARNING: " + part.name + " has legacy definition, missing new radarDetectionCurve and radarLockTrackCurve definitions! Please update for the part to be usable!");
             }
+
+            if (canRecieveRadarData)
+            {
+                Debug.LogWarning($"[BDArmory.ModuleRadar]: Radar part {part.name} is using deprecated 'canRecieveRadarData' attribute. Please update the config to use 'canReceiveRadarData' instead.");
+                canReceiveRadarData = canRecieveRadarData;
+            }
         }
 
         /*
@@ -460,11 +487,7 @@ namespace BDArmory.Radar
         {
             if (BDArmorySettings.DEBUG_RADAR)
                 Debug.Log("[BDArmory.ModuleRadar]: StartupRoutine: " + radarName + " enabled: " + radarEnabled);
-            while (!FlightGlobals.ready || vessel.packed)
-            {
-                yield return null;
-            }
-
+            yield return new WaitWhile(() => !FlightGlobals.ready || vessel.packed || !vessel.loaded);
             yield return new WaitForFixedUpdate();
 
             // DISABLE RADAR
@@ -474,8 +497,6 @@ namespace BDArmory.Radar
                 EnableRadar();
             }
             */
-
-            yield return null;
 
             if (!vesselRadarData.hasLoadedExternalVRDs)
             {
@@ -489,24 +510,6 @@ namespace BDArmory.Radar
 
         void Update()
         {
-            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && radarEnabled)
-            {
-                if (omnidirectional)
-                {
-                    referenceTransform.position = part.transform.position;
-                    referenceTransform.rotation =
-                        Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
-                            VectorUtils.GetUpDirection(transform.position));
-                }
-                else
-                {
-                    referenceTransform.position = part.transform.position;
-                    referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
-                        VectorUtils.GetUpDirection(referenceTransform.position));
-                }
-                //UpdateInputs();
-            }
-
             drawGUI = (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && radarEnabled &&
                        vessel.isActiveVessel && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled);
         }
@@ -544,6 +547,23 @@ namespace BDArmory.Radar
                     {
                         Scan();
                     }
+                }
+                if (!vessel.packed && radarEnabled)
+                {
+                    if (omnidirectional)
+                    {
+                        referenceTransform.position = part.transform.position;
+                        referenceTransform.rotation =
+                            Quaternion.LookRotation(VectorUtils.GetNorthVector(transform.position, vessel.mainBody),
+                                VectorUtils.GetUpDirection(transform.position));
+                    }
+                    else
+                    {
+                        referenceTransform.position = part.transform.position;
+                        referenceTransform.rotation = Quaternion.LookRotation(part.transform.up,
+                            VectorUtils.GetUpDirection(referenceTransform.position));
+                    }
+                    //UpdateInputs();
                 }
             }
         }
@@ -896,8 +916,9 @@ namespace BDArmory.Radar
 
         IEnumerator RetryLockRoutine(Vessel v)
         {
-            yield return null;
-            vesselRadarData.TryLockTarget(v);
+            yield return new WaitForFixedUpdate();
+            if (vesselRadarData != null && vesselRadarData.isActiveAndEnabled)
+                vesselRadarData.TryLockTarget(v);
         }
 
         public void UnlockTargetVessel(Vessel v)
@@ -1039,20 +1060,17 @@ namespace BDArmory.Radar
                         yield break;
                     }
 
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSecondsFixed(0.5f);
             }
         }
 
         IEnumerator RelinkVRDWhenReadyRoutine(VesselRadarData vrd)
         {
-            while (!vrd.radarsReady || vrd.vessel.packed)
-            {
-                yield return null;
-            }
-            yield return null;
+            yield return new WaitWhile(() => !vrd.radarsReady || (vrd.vessel is not null && (vrd.vessel.packed || !vrd.vessel.loaded)));
+            yield return new WaitForFixedUpdate();
+            if (vrd.vessel is null) yield break;
             vesselRadarData.LinkVRD(vrd);
-            Debug.Log("[BDArmory.ModuleRadar]: Radar data link recovered: Local - " + vessel.vesselName + ", External - " +
-                      vrd.vessel.vesselName);
+            if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.ModuleRadar]: Radar data link recovered: Local - " + vessel.vesselName + ", External - " + vrd.vessel.vesselName);
         }
 
         public string getRWRType(int i)
@@ -1060,66 +1078,66 @@ namespace BDArmory.Radar
             switch (i)
             {
                 case 0:
-                    return Localizer.Format("#autoLOC_bda_1000002");		// #autoLOC_bda_1000002 = SAM
+                    return StringUtils.Localize("#autoLOC_bda_1000002");		// #autoLOC_bda_1000002 = SAM
 
                 case 1:
-                    return Localizer.Format("#autoLOC_bda_1000003");		// #autoLOC_bda_1000003 = FIGHTER
+                    return StringUtils.Localize("#autoLOC_bda_1000003");		// #autoLOC_bda_1000003 = FIGHTER
 
                 case 2:
-                    return Localizer.Format("#autoLOC_bda_1000004");		// #autoLOC_bda_1000004 = AWACS
+                    return StringUtils.Localize("#autoLOC_bda_1000004");		// #autoLOC_bda_1000004 = AWACS
 
                 case 3:
                 case 4:
-                    return Localizer.Format("#autoLOC_bda_1000005");		// #autoLOC_bda_1000005 = MISSILE
+                    return StringUtils.Localize("#autoLOC_bda_1000005");		// #autoLOC_bda_1000005 = MISSILE
 
                 case 5:
-                    return Localizer.Format("#autoLOC_bda_1000006");		// #autoLOC_bda_1000006 = DETECTION
+                    return StringUtils.Localize("#autoLOC_bda_1000006");		// #autoLOC_bda_1000006 = DETECTION
 
                 case 6:
-                    return Localizer.Format("#autoLOC_bda_1000017");		// #autoLOC_bda_1000017 = SONAR
+                    return StringUtils.Localize("#autoLOC_bda_1000017");		// #autoLOC_bda_1000017 = SONAR
             }
-            return Localizer.Format("#autoLOC_bda_1000007");		// #autoLOC_bda_1000007 = UNKNOWN
+            return StringUtils.Localize("#autoLOC_bda_1000007");		// #autoLOC_bda_1000007 = UNKNOWN
             //{SAM = 0, Fighter = 1, AWACS = 2, MissileLaunch = 3, MissileLock = 4, Detection = 5, Sonar = 6}
         }
 
         // RMB info in editor
         public override string GetInfo()
         {
-            bool isLinkOnly = (canRecieveRadarData && !canScan && !canLock);
+            bool isLinkOnly = (canReceiveRadarData && !canScan && !canLock);
 
             StringBuilder output = new StringBuilder();
             output.Append(Environment.NewLine);
-            output.AppendLine(Localizer.Format("#autoLOC_bda_1000008", (isLinkOnly ? Localizer.Format("#autoLOC_bda_1000018") : omnidirectional ? Localizer.Format("#autoLOC_bda_1000019") : Localizer.Format("#autoLOC_bda_1000020"))));
+            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000008", (isLinkOnly ? StringUtils.Localize("#autoLOC_bda_1000018") : omnidirectional ? StringUtils.Localize("#autoLOC_bda_1000019") : StringUtils.Localize("#autoLOC_bda_1000020"))));
 
-            output.AppendLine(Localizer.Format("#autoLOC_bda_1000021", resourceDrain));
+            output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000021", resourceDrain));
             if (!isLinkOnly)
             {
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000022", directionalFieldOfView));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000023", getRWRType(rwrThreatType)));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000022", directionalFieldOfView));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000023", getRWRType(rwrThreatType)));
 
                 output.Append(Environment.NewLine);
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000024"));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000025", canScan));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000026", canTrackWhileScan));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000027", canLock));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024"));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000025", canScan));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000026", canTrackWhileScan));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000027", canLock));
                 if (canLock)
                 {
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000028", maxLocks));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000028", maxLocks));
                 }
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000029", canRecieveRadarData));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000029", canReceiveRadarData));
 
                 output.Append(Environment.NewLine);
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000030"));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000030"));
 
                 if (canScan)
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000031", radarDetectionCurve.Evaluate(radarMaxDistanceDetect), radarMaxDistanceDetect));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000031", radarDetectionCurve.Evaluate(radarMaxDistanceDetect), radarMaxDistanceDetect));
                 else
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000032"));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000032"));
                 if (canLock)
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000033", radarLockTrackCurve.Evaluate(radarMaxDistanceLockTrack), radarMaxDistanceLockTrack));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000033", radarLockTrackCurve.Evaluate(radarMaxDistanceLockTrack), radarMaxDistanceLockTrack));
                 else
-                    output.AppendLine(Localizer.Format("#autoLOC_bda_1000034"));
-                output.AppendLine(Localizer.Format("#autoLOC_bda_1000035", radarGroundClutterFactor));
+                    output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000034"));
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000035", radarGroundClutterFactor));
             }
 
             return output.ToString();
@@ -1136,7 +1154,7 @@ namespace BDArmory.Radar
             double chargeAvailable = part.RequestResource("ElectricCharge", drainAmount, ResourceFlowMode.ALL_VESSEL);
             if (chargeAvailable < drainAmount * 0.95f)
             {
-                ScreenMessages.PostScreenMessage(Localizer.Format("#autoLOC_bda_1000016"), 5.0f, ScreenMessageStyle.UPPER_CENTER);		// #autoLOC_bda_1000016 = Radar Requires EC
+                ScreenMessages.PostScreenMessage(StringUtils.Localize("#autoLOC_bda_1000016"), 5.0f, ScreenMessageStyle.UPPER_CENTER);		// #autoLOC_bda_1000016 = Radar Requires EC
                 DisableRadar();
             }
         }

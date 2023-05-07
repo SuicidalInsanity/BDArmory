@@ -941,7 +941,7 @@ namespace BDArmory.Competition.RemoteOrchestration
             }
             if (!longestHitDistance.ContainsKey(attacker) || hitDistance > longestHitDistance[attacker])
             {
-                Debug.Log(string.Format("[BDACompetitionMode] Tracked longest hit for {0} with {1} at {2}m", attacker, weaponName, hitDistance));
+                Debug.Log(string.Format("[BDArmory.BDACompetitionMode]: Tracked longest hit for {0} with {1} at {2}m", attacker, weaponName, hitDistance));
                 if (longestHitDistance.ContainsKey(attacker))
                 {
                     longestHitWeapon[attacker] = weaponName;

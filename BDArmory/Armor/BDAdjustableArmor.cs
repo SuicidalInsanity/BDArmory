@@ -15,51 +15,55 @@ namespace BDArmory.Armor
         public bool moveChildParts = true;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),//Armor Width
-            UI_FloatRange(minValue = 0.5f, maxValue = 16, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
+            UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 16, scene = UI_Scene.Editor)]
         public float Width = 1;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ArmorWidthR"),//Right Side Width
-            UI_FloatRange(minValue = 0.1f, maxValue = 8, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
+            UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 8, scene = UI_Scene.Editor)]
         public float scaleneWidth = 1;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorLength"),//Armor Length
-            UI_FloatRange(minValue = 0.5f, maxValue = 16, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
+            UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 16, scene = UI_Scene.Editor)]
         public float Length = 1;
 
         [KSPField]
         public float maxScale = 16;
 
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ArmorTriIso", active = true)]//Toggle Tri Type
-        public void ToggleTriTypeOption()
+        public void ToggleTriTypeOption() => ToggleTriTypeOptionHandler();
+        void ToggleTriTypeOptionHandler(bool applySym = true)
         {
             scaleneTri = !scaleneTri;
 
             Fields["scaleneWidth"].guiActiveEditor = scaleneTri;
             UI_FloatRange AWidth = (UI_FloatRange)Fields["Width"].uiControlEditor;
             AWidth.maxValue = scaleneTri ? clamped ? maxScale / 2 : 50 : clamped ? maxScale : 100;
-            AWidth.minValue = scaleneTri ? 0.1f : 0.5f;
 
             if (scaleneTri)
             {
-                Fields["Width"].guiName = Localizer.Format("#LOC_BDArmory_ArmorWidthL");
-                Events["ToggleTriTypeOption"].guiName = Localizer.Format("#LOC_BDArmory_ArmorTriSca");
+                Fields["Width"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidthL");
+                Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriSca");
             }
             else
             {
-                Fields["Width"].guiName = Localizer.Format("#LOC_BDArmory_ArmorWidth");
-                Events["ToggleTriTypeOption"].guiName = Localizer.Format("#LOC_BDArmory_ArmorTriIso");
+                Fields["Width"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidth");
+                Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriIso");
             }
             GUIUtils.RefreshAssociatedWindows(part);
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleTriTypeOption();
-                }
+            if (applySym)
+            {
+                using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
+                    while (sym.MoveNext())
+                    {
+                        if (sym.Current == null) continue;
+                        sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleTriTypeOptionHandler(false);
+                    }
+            }
         }
 
-        [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_UnclampTuning_enabledText", active = true)]//Toggle scale limit
-        public void ToggleScaleClamp()
+        [KSPEvent(active = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_UnclampTuning_disabledText")]//Toggle scale limit
+        public void ToggleScaleClamp() => ToggleScaleClampHandler();
+        public void ToggleScaleClampHandler(bool applySym = true)
         {
             clamped = !clamped;
             UI_FloatRange AWidth = (UI_FloatRange)Fields["Width"].uiControlEditor;
@@ -69,22 +73,24 @@ namespace BDArmory.Armor
             UI_FloatRange SWidth = (UI_FloatRange)Fields["scaleneWidth"].uiControlEditor;
             SWidth.maxValue = clamped ? maxScale / 2 : 50;
 
-            if (clamped)
+            if (!clamped)
             {
-                Events["ToggleScaleClamp"].guiName = Localizer.Format("#LOC_BDArmory_UnclampTuning_enabledText");
+                Events["ToggleScaleClamp"].guiName = StringUtils.Localize("#LOC_BDArmory_UnclampTuning_enabledText");
             }
             else
             {
-                Events["ToggleScaleClamp"].guiName = Localizer.Format("#LOC_BDArmory_UnclampTuning_disabledText");
+                Events["ToggleScaleClamp"].guiName = StringUtils.Localize("#LOC_BDArmory_UnclampTuning_disabledText");
             }
             GUIUtils.RefreshAssociatedWindows(part);
-            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                while (sym.MoveNext())
-                {
-                    if (sym.Current == null) continue;
-                    sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleScaleClamp();
-                }
-            GUIUtils.RefreshAssociatedWindows(part);
+            if (applySym)
+            {
+                using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
+                    while (sym.MoveNext())
+                    {
+                        if (sym.Current == null) continue;
+                        sym.Current.FindModuleImplementing<BDAdjustableArmor>().ToggleScaleClampHandler(false);
+                    }
+            }
         }
         bool clamped = true;
 
@@ -94,6 +100,8 @@ namespace BDArmory.Armor
 
         [KSPField]
         public bool isTriangularPanel = false;
+
+        [KSPField(isPersistant = true)]
         bool scaleneTri = false;
 
         [KSPField]

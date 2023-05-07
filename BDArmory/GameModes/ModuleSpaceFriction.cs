@@ -4,6 +4,7 @@ using UnityEngine;
 using BDArmory.Control;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using System.Collections.Generic;
 
 namespace BDArmory.GameModes
 {
@@ -26,14 +27,17 @@ namespace BDArmory.GameModes
 
         [KSPField(isPersistant = true)]
         public bool AntiGravOverride = false; //per craft override to be set in the .craft file, for things like zeppelin battles where attacking planes shouldn't be under countergrav
-
+        [KSPField(isPersistant = true)]
+        public bool RepulsorOverride = false;
         public float maxVelocity = 300; //MaxSpeed setting in PilotAI
 
         public float frictMult; //engine thrust of craft
 
-        float vesselAlt = 25;
+        float targetAlt = 25;
         //public float driftMult = 2; //additional drag multipler for cornering/decellerating so things don't take the same amount of time to decelerate as they do to accelerate
 
+        List<ModuleWheelBase> repulsors;
+        List<ModuleSpaceFriction> spaceFrictionModules;
         public static bool GameIsPaused
         {
             get { return PauseMenu.isOpen || Time.timeScale == 0; }
@@ -58,6 +62,18 @@ namespace BDArmory.GameModes
                 return SAI;
             }
         }
+
+        BDModuleVTOLAI VAI;
+        public BDModuleVTOLAI flier
+        {
+            get
+            {
+                if (VAI) return VAI;
+                VAI = VesselModuleRegistry.GetModule<BDModuleVTOLAI>(vessel);
+
+                return VAI;
+            }
+        }
         ModuleEngines Engine;
         public ModuleEngines foundEngine
         {
@@ -78,23 +94,52 @@ namespace BDArmory.GameModes
                 return MF;
             }
         }
+
         void Start()
         {
+            if (vessel.rootPart == this.part) //if we're an external non-root repulsor part, don't check for dupes in root.
+            {
+                foreach (var repMod in vessel.rootPart.FindModulesImplementing<ModuleSpaceFriction>())
+                {
+                    if (repMod != this)
+                    {
+                        // Not really sure how this is happening, but it is. It looks a bit like a race condition somewhere is allowing this module to be added twice.
+                        Debug.LogWarning($"[BDArmory.GameModes.ModuleSpaceFriction]: Found a duplicate space friction module on root part of {vessel.vesselName}! Removing...");
+                        Destroy(repMod);
+                    }
+                }
+            }
             if (HighLogic.LoadedSceneIsFlight)
             {
-                using (var engine = VesselModuleRegistry.GetModules<ModuleEngines>(vessel).GetEnumerator())
-                    while (engine.MoveNext())
-                    {
-                        if (engine.Current == null) continue;
-                        frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100));
-                        //have this called onvesselModified?
-                    }
+                if (!RepulsorOverride) //MSF added via Spawn utilities for Space Hacks
+                {
+                    using (var engine = VesselModuleRegistry.GetModules<ModuleEngines>(vessel).GetEnumerator())
+                        while (engine.MoveNext())
+                        {
+                            if (engine.Current == null) continue;
+                            if (engine.Current.independentThrottle) continue; //only grab primary thrust engines
+                            frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100));
+                            //have this called onvesselModified?
+                        }
+                    frictMult /= 6; //doesn't need to be 100% of thrust at max speed, Ai will already self-limit; this also has the AI throttle down, which allows for slamming the throttle full for braking/coming about, instead of being stuck with lower TwR
+                    repulsors = VesselModuleRegistry.GetRepulsorModules(vessel);
+                    using (var r = repulsors.GetEnumerator())
+                        while (r.MoveNext())
+                        {
+                            if (r.Current == null) continue;
+                            r.Current.part.PhysicsSignificance = 1; //only grab primary thrust engines
+                        }
+                }
+                else
+                {
+                    spaceFrictionModules = VesselModuleRegistry.GetModules<ModuleSpaceFriction>(vessel);
+                }
             }
         }
 
         public void FixedUpdate()
         {
-            if (!BDArmorySettings.SPACE_HACKS || !HighLogic.LoadedSceneIsFlight || !FlightGlobals.ready || this.vessel.packed || GameIsPaused) return;
+            if ((!BDArmorySettings.SPACE_HACKS && (!AntiGravOverride && !RepulsorOverride)) || !HighLogic.LoadedSceneIsFlight || !FlightGlobals.ready || this.vessel.packed || GameIsPaused) return;
 
             if (this.part.vessel.situation == Vessel.Situations.FLYING || this.part.vessel.situation == Vessel.Situations.SUB_ORBITAL)
             {
@@ -110,11 +155,22 @@ namespace BDArmory.GameModes
                         {
                             maxVelocity = SAI.MaxSpeed;
                         }
-                        frictionCoeff = Mathf.Pow(((float)part.vessel.speed / maxVelocity), 3) * frictMult; //at maxSpeed, have friction be 100% of vessel's engines thrust
+                        else if (VAI != null)
+                            maxVelocity = VAI.MaxSpeed;
 
-                        frictionCoeff *= (1 + (Vector3.Angle(this.part.vessel.srf_vel_direction, this.part.vessel.GetTransform().up) / 180) * BDArmorySettings.SF_DRAGMULT); //greater AoA off prograde, greater drag
+                        var speedFraction = (float)part.vessel.speed / maxVelocity;
+                        frictionCoeff = speedFraction * speedFraction * speedFraction * frictMult; //at maxSpeed, have friction be 100% of vessel's engines thrust
 
-                        part.vessel.rootPart.rb.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
+                        frictionCoeff *= (1 + (Vector3.Angle(this.part.vessel.srf_vel_direction, this.part.vessel.GetTransform().up) / 180) * BDArmorySettings.SF_DRAGMULT * 4); //greater AoA off prograde, greater drag
+                        frictionCoeff /= vessel.Parts.Count;
+                        //part.vessel.rootPart.rb.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
+                        for (int i = 0; i < part.vessel.Parts.Count; i++)
+                        {
+                            if (part.vessel.parts[i].PhysicsSignificance != 1) //attempting to apply rigidbody force to non-significant parts will NRE
+                            {
+                                part.vessel.Parts[i].Rigidbody.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
+                            }
+                        }
                     }
                 }
                 if (BDArmorySettings.SF_GRAVITY || AntiGravOverride) //have this disabled if no engines left?
@@ -133,37 +189,50 @@ namespace BDArmory.GameModes
             }
             if (this.part.vessel.situation != Vessel.Situations.ORBITING || this.part.vessel.situation != Vessel.Situations.DOCKED || this.part.vessel.situation != Vessel.Situations.ESCAPING || this.part.vessel.situation != Vessel.Situations.PRELAUNCH)
             {
-                if (BDArmorySettings.SF_REPULSOR)
+                if (BDArmorySettings.SF_REPULSOR || RepulsorOverride)
                 {
-                    if ((pilot != null || driver != null) && foundEngine != null)
+                    if ((pilot != null || driver != null || flier != null || RepulsorOverride) && foundEngine != null)
                     {
-                        vesselAlt = 10;
+                        targetAlt = 10;
                         if (AI != null)
                         {
-                            vesselAlt = AI.minAltitude;
+                            targetAlt = AI.defaultAltitude; // Use default alt instead of min alt to keep the vessel away from 'gain alt' behaviour.
                         }
                         else if (SAI != null)
                         {
-                            vesselAlt = SAI.MaxSlopeAngle * 2;
+                            targetAlt = SAI.MaxSlopeAngle * 2;
                         }
-                        float accelMult = 1f;
-                        if (vessel.verticalSpeed > 1) //vessel ascending
+                        else if (VAI != null)
+                            targetAlt = VAI.defaultAltitude;
+
+                        Vector3d grav = FlightGlobals.getGeeForceAtPosition(vessel.CoM);
+                        var vesselMass = part.vessel.GetTotalMass();
+                        if (RepulsorOverride) //Asking this first, so SPACEHACKS repulsor mode will ignore it
                         {
-                            accelMult = Mathf.Clamp(Mathf.Abs((float)vessel.verticalSpeed), 1f, 100);
+                            float pointAltitude = BodyUtils.GetRadarAltitudeAtPos(part.transform.position);
+                            if (pointAltitude <= 0 || pointAltitude > 2f * targetAlt) return;
+                            var factor = Mathf.Clamp(Mathf.Exp(BDArmorySettings.SF_REPULSOR_STRENGTH * (targetAlt - pointAltitude) / targetAlt - (float)vessel.verticalSpeed / targetAlt), 0f, 5f * BDArmorySettings.SF_REPULSOR_STRENGTH); // Decaying exponential balanced at the target altitude with velocity damping.
+                            float repulsorForce = vesselMass * factor / spaceFrictionModules.Count; // Spread the force between the repulsors.
+                            if (float.IsNaN(factor) || float.IsInfinity(factor)) // This should only happen if targetAlt is 0, which should never happen.
+                                Debug.LogWarning($"[BDArmory.Spacehacks]: Repulsor Force is NaN or Infinity. TargetAlt: {targetAlt}, point Alt: {pointAltitude}, VesselMass: {vesselMass}");
+                            else
+                                part.Rigidbody.AddForce(-grav * repulsorForce, ForceMode.Force);
                         }
-                        if (vessel.radarAltitude < Mathf.Max((vesselAlt / 10), 5))
+                        else
                         {
-                            accelMult = Mathf.Clamp((float)vessel.radarAltitude / vesselAlt, 0.3f, 1);
-                        }
-                        if (vessel.radarAltitude < vesselAlt)
-                        {
-                            for (int i = 0; i < part.vessel.Parts.Count; i++)
-                            {
-                                if (part.vessel.parts[i].PhysicsSignificance != 1) //attempting to apply rigidbody force to non-significant parts will NRE
+                            using (var repulsor = repulsors.GetEnumerator())
+                                while (repulsor.MoveNext())
                                 {
-                                    part.vessel.Parts[i].Rigidbody.AddForce((-FlightGlobals.getGeeForceAtPosition(part.vessel.Parts[i].transform.position) * ((vesselAlt / part.vessel.radarAltitude)) / accelMult), ForceMode.Acceleration);
+                                    if (repulsor.Current == null) continue;
+                                    float pointAltitude = BodyUtils.GetRadarAltitudeAtPos(repulsor.Current.transform.position);
+                                    if (pointAltitude <= 0 || pointAltitude > 2f * targetAlt) continue;
+                                    var factor = Mathf.Clamp(Mathf.Exp(BDArmorySettings.SF_REPULSOR_STRENGTH * (targetAlt - pointAltitude) / targetAlt - (float)vessel.verticalSpeed / targetAlt), 0f, 5f * BDArmorySettings.SF_REPULSOR_STRENGTH); // Decaying exponential balanced at the target altitude with velocity damping.
+                                    float repulsorForce = vesselMass * factor / repulsors.Count; // Spread the force between the repulsors.
+                                    if (float.IsNaN(factor) || float.IsInfinity(factor)) // This should only happen if targetAlt is 0, which should never happen.
+                                        Debug.LogWarning($"[BDArmory.Spacehacks]: Repulsor Force is NaN or Infinity. TargetAlt: {targetAlt}, point Alt: {pointAltitude}, VesselMass: {vesselMass}");
+                                    else
+                                        repulsor.Current.part.Rigidbody.AddForce(-grav * repulsorForce, ForceMode.Force);
                                 }
-                            }
                         }
                     }
                 }

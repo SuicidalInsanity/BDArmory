@@ -33,7 +33,7 @@ namespace BDArmory.FX
             audioSource.pitch = UnityEngine.Random.Range(0.93f, 1f);
             audioSource.volume = BDAMath.Sqrt(originalShipVolume);
 
-            audioSource.PlayOneShot(GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/seismicCharge"));
+            audioSource.PlayOneShot(SoundUtils.GetAudioClip("BDArmory/Sounds/seismicCharge"));
 
             rb = gameObject.AddComponent<Rigidbody>();
             rb.useGravity = false;

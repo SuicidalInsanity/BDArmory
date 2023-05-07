@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 using BDArmory.Extensions;
@@ -202,7 +202,7 @@ namespace BDArmory.Guidances
         }
 
         /// <summary>
-        /// Calculate a very accurate time to impact, use the out timeToimpact property if the method returned true. DEPRECIATED, use TimeToCPA.
+        /// Calculate a very accurate time to impact, use the out timeToimpact property if the method returned true. DEPRECATED, use TimeToCPA.
         /// </summary>
         /// <param name="targetVelocity"></param>
         /// <param name="missileVessel"></param>
@@ -243,7 +243,12 @@ namespace BDArmory.Guidances
             return true;
         }
 
-
+        /// <summary>
+        /// Air-2-Air fire solution used by the AI for steering, WM checking if a missile can be launched, unguided missiles
+        /// </summary>
+        /// <param name="missile"></param>
+        /// <param name="targetVessel"></param>
+        /// <returns></returns>
         public static Vector3 GetAirToAirFireSolution(MissileBase missile, Vessel targetVessel)
         {
             if (!targetVessel)
@@ -254,47 +259,82 @@ namespace BDArmory.Guidances
             float leadTime = 0;
             float targetDistance = Vector3.Distance(targetVessel.transform.position, missile.transform.position);
 
-            Vector3 simMissileVel = 500 * (targetPosition - missile.transform.position).normalized;
+            //Vector3 simMissileVel = 500 * (targetPosition - missile.transform.position).normalized;
 
             MissileLauncher launcher = missile as MissileLauncher;
+            /*
             float optSpeed = 400; //TODO: Add parameter
             if (launcher != null)
             {
-                optSpeed = launcher.optimumAirspeed;
+                optSpeed = launcher.optimumAirspeed; //so it assumes missiles start out immediately possessing all their velocity instead of having to accelerate? That explains alot.
             }
             simMissileVel = optSpeed * (targetPosition - missile.transform.position).normalized;
 
             leadTime = targetDistance / (float)(targetVessel.Velocity() - simMissileVel).magnitude;
             leadTime = Mathf.Clamp(leadTime, 0f, 8f);
+            */            
+            Vector3 vel = missile.vessel.Velocity();
+            Vector3 VelOpt = vel.normalized * (launcher != null ? launcher.optimumAirspeed : 1500);
+            float accel = launcher.thrust / missile.part.mass;
+            Vector3 deltaVel = targetVessel.Velocity() - vel;
+            Vector3 DeltaOptvel = targetVessel.Velocity() - VelOpt;
+            float T = Mathf.Clamp((VelOpt - vel).magnitude / accel, 0, 8); //time to optimal airspeed
+
+            Vector3 relPosition = targetPosition - missile.transform.position;
+            Vector3 relAcceleration = targetVessel.acceleration - missile.MissileReferenceTransform.forward * accel;
+            leadTime = AIUtils.ClosestTimeToCPA(relPosition, deltaVel, relAcceleration, T); //missile accelerating, T is greater than our max look time of 8s
+            if (T < 8 && leadTime == T)//missile has reached max speed, and is now cruising; sim positions ahead based on T and run CPA from there
+            {
+                relPosition = AIUtils.PredictPosition(targetPosition, targetVessel.Velocity(), targetVessel.acceleration, T) -
+                    AIUtils.PredictPosition(missile.transform.position, vel, missile.MissileReferenceTransform.forward * accel, T);
+                relAcceleration = targetVessel.acceleration; // - missile.MissileReferenceTransform.forward * 0; assume missile is holding steady velocity at optimumAirspeed
+                leadTime = AIUtils.ClosestTimeToCPA(relPosition, DeltaOptvel, relAcceleration, 8-T) + T;
+            }
+
             targetPosition = targetPosition + (targetVessel.Velocity() * leadTime);
 
-            if (targetVessel && targetDistance < 800)
+            if (targetVessel && targetDistance < 800) //TODO - investigate if this would throw off aim accuracy
             {
                 targetPosition += (Vector3)targetVessel.acceleration * 0.05f * leadTime * leadTime;
             }
 
-            return targetPosition;
+            return targetPosition;           
         }
-
+        /// <summary>
+        /// Air-2-Air lead offset calcualtion used for guided missiles
+        /// </summary>
+        /// <param name="missile"></param>
+        /// <param name="targetPosition"></param>
+        /// <param name="targetVelocity"></param>
+        /// <returns></returns>
         public static Vector3 GetAirToAirFireSolution(MissileBase missile, Vector3 targetPosition, Vector3 targetVelocity)
         {
-            float leadTime = 0;
-            float targetDistance = Vector3.Distance(targetPosition, missile.transform.position);
-
-            float optSpeed = 400; //TODO: Add parameter
             MissileLauncher launcher = missile as MissileLauncher;
-            if (launcher != null)
+            float leadTime = 0;
+            Vector3 leadPosition = targetPosition;
+            Vector3 vel = missile.vessel.Velocity();
+            Vector3 leadDirection, velOpt;
+            float accel = launcher.thrust / missile.part.mass;
+            float leadTimeError = 1f;
+            int count = 0;
+            do
             {
-                optSpeed = launcher.optimumAirspeed;
-            }
-
-            Vector3 simMissileVel = optSpeed * (targetPosition - missile.transform.position).normalized;
-            leadTime = targetDistance / (targetVelocity - simMissileVel).magnitude;
-            leadTime = Mathf.Clamp(leadTime, 0f, 8f);
-
-            targetPosition = targetPosition + (targetVelocity * leadTime);
-
-            return targetPosition;
+                leadDirection = leadPosition - missile.transform.position;
+                float targetDistance = leadDirection.magnitude;
+                leadDirection.Normalize();
+                velOpt = leadDirection * (launcher != null ? launcher.optimumAirspeed : 1500);
+                float deltaVel = Vector3.Dot(targetVelocity - vel, leadDirection);
+                float deltaVelOpt = Vector3.Dot(targetVelocity - velOpt, leadDirection);
+                float T = Mathf.Clamp((velOpt - vel).magnitude / accel, 0, 8); //time to optimal airspeed, clamped to at most 8s
+                float D = deltaVel * T + 1 / 2 * accel * (T * T); //relative distance covered accelerating to optimum airspeed
+                leadTimeError = -leadTime;
+                if (targetDistance > D) leadTime = (targetDistance - D) / deltaVelOpt + T;
+                else leadTime = (-deltaVel - BDAMath.Sqrt((deltaVel * deltaVel) + 2 * accel * targetDistance)) / accel;
+                leadTime = Mathf.Clamp(leadTime, 0f, 8f);
+                leadTimeError += leadTime;
+                leadPosition = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, leadTime);
+            } while (Mathf.Abs(leadTimeError) > 1e-3f && ++count < 5);  // At most 5 iterations to converge. Also, 1e-2f may be sufficient.
+            return leadPosition;
         }
 
         public static Vector3 GetCruiseTarget(Vector3 targetPosition, Vessel missileVessel, float radarAlt)
@@ -417,7 +457,7 @@ namespace BDArmory.Guidances
             float AoA = Mathf.Clamp(Vector3.Angle(ml.transform.forward, velocity.normalized), 0, 90);
             if (AoA > 0)
             {
-                double liftForce = 0.5 * airDensity * Math.Pow(airSpeed, 2) * liftArea * liftMultiplier * liftCurve.Evaluate(AoA);
+                double liftForce = 0.5 * airDensity * airSpeed * airSpeed * liftArea * liftMultiplier * liftCurve.Evaluate(AoA);
                 Vector3 forceDirection = Vector3.ProjectOnPlane(-velocity, ml.transform.forward).normalized;
                 rb.AddForceAtPosition((float)liftForce * forceDirection,
                     ml.transform.TransformPoint(ml.part.CoMOffset + CoL));
@@ -426,7 +466,7 @@ namespace BDArmory.Guidances
             //drag
             if (airSpeed > 0)
             {
-                double dragForce = 0.5 * airDensity * Math.Pow(airSpeed, 2) * liftArea * dragMultiplier * dragCurve.Evaluate(AoA);
+                double dragForce = 0.5 * airDensity * airSpeed * airSpeed * liftArea * dragMultiplier * dragCurve.Evaluate(AoA);
                 rb.AddForceAtPosition((float)dragForce * -velocity.normalized,
                     ml.transform.TransformPoint(ml.part.CoMOffset + CoL));
             }

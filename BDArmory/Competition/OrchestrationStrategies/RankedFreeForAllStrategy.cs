@@ -38,7 +38,30 @@ namespace BDArmory.Competition.OrchestrationStrategies
             service.ClearScores();
 
             service.status = StatusType.RunningHeat;
-            BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE);
+            if (BDArmorySettings.RUNWAY_PROJECT)
+            {
+                switch (BDArmorySettings.RUNWAY_PROJECT_ROUND)
+                {
+                    case 33:
+                        BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+                        break;
+                    case 44:
+                        BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+                        break;
+                    case 53:
+                        BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+                        break;
+                    case 60: // FIXME temporary index, to be assigned later
+                        BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+                        break;
+                    default:
+                        BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE, BDArmorySettings.COMPETITION_START_DESPITE_FAILURES, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+                        break;
+                }
+            }
+            else
+                BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE, BDArmorySettings.COMPETITION_START_DESPITE_FAILURES, tag: $"{model.competition_id}-{model.stage}-{model.order}");
+            //BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE, BDArmorySettings.COMPETITION_START_DESPITE_FAILURES);
             yield return new WaitForFixedUpdate(); // Give the competition start a frame to get going.
 
             // start timer coroutine for the duration specified in settings UI

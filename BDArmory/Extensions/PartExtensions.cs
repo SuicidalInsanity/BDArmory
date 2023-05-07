@@ -13,6 +13,7 @@ namespace BDArmory.Extensions
         public static void AddDamage(this Part p, float damage)
         {
             if (BDArmorySettings.PAINTBALL_MODE) return; // Don't add damage when paintball mode is enabled
+            damage *= (BDArmorySettings.DMG_MULTIPLIER / 100);
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
             {
                 if (p.vessel.rootPart != null)
@@ -34,7 +35,7 @@ namespace BDArmory.Extensions
             else
             {
                 Dependencies.Get<DamageService>().AddDamageToPart_svc(p, damage);
-                if (BDArmorySettings.DEBUG_ARMOR)
+                if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
                     Debug.Log($"[BDArmory.PartExtensions]: Standard Hitpoints Applied to {p.name}" + (p.vessel != null ? $" on {p.vessel.vesselName}" : "") + $" : {damage}");
             }
         }
@@ -51,7 +52,7 @@ namespace BDArmory.Extensions
                 {
                     p.vessel.rootPart.Destroy();
                 }
-                if (BDArmorySettings.DEBUG_ARMOR)
+                if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
                     Debug.Log("[BDArmory.PartExtensions]: Instagib!");
             }
         }
@@ -233,7 +234,7 @@ namespace BDArmory.Extensions
             // Apply HitPoints Ballistic
             //////////////////////////////////////////////////////////
             Dependencies.Get<DamageService>().AddDamageToPart_svc(p, damage_);
-            if (BDArmorySettings.DEBUG_ARMOR)
+            if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
             {
                 Debug.Log("[BDArmory.PartExtensions]: mass: " + mass + " caliber: " + caliber + " multiplier: " + multiplier + " velocity: " + impactVelocity + " penetrationfactor: " + penetrationfactor);
             }
@@ -247,7 +248,7 @@ namespace BDArmory.Extensions
             else
             {
                 Dependencies.Get<DamageService>().AddHealthToPart_svc(p, healing, overcharge);
-                if (BDArmorySettings.DEBUG_ARMOR)
+                if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
                     Debug.Log($"[BDArmory.PartExtensions]: Standard Hitpoints Restored to {p.name}" + (p.vessel != null ? $" on {p.vessel.vesselName}" : "") + $" : {healing}");
             }
         }
@@ -261,7 +262,7 @@ namespace BDArmory.Extensions
             //////////////////////////////////////////////////////////
 
             Dependencies.Get<DamageService>().AddDamageToPart_svc(p, damage);
-            if (BDArmorySettings.DEBUG_ARMOR)
+            if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
                 Debug.Log("[BDArmory.PartExtensions]: Explosive Hitpoints Applied to " + p.name + ": " + damage);
         }
 
@@ -275,7 +276,7 @@ namespace BDArmory.Extensions
             //////////////////////////////////////////////////////////
 
             Dependencies.Get<DamageService>().AddDamageToKerbal_svc(kerbal, damage);
-            if (BDArmorySettings.DEBUG_ARMOR)
+            if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_DAMAGE)
                 Debug.Log("[BDArmory.PartExtensions]: Hitpoints Applied to " + kerbal.name + ": " + damage);
         }
 
@@ -404,8 +405,22 @@ namespace BDArmory.Extensions
 
         public static bool IsMissile(this Part part)
         {
-            return part.Modules.Contains("MissileBase") || part.Modules.Contains("MissileLauncher") ||
-                   part.Modules.Contains("BDModularGuidance");
+            if (part.Modules.Contains("BDModularGuidance")) return true;
+            if (part.Modules.Contains("MissileBase") || part.Modules.Contains("MissileLauncher"))
+            {
+                if (!part.Modules.Contains("MultiMissileLauncher")) return true;
+                IEnumerator<PartModule> partModules = part.Modules.GetEnumerator();
+                while (partModules.MoveNext())
+                {
+                    if (partModules.Current.moduleName == "MultiMissileLauncher")
+                    {
+                        return (((Weapons.Missiles.MultiMissileLauncher)partModules.Current).isClusterMissile);
+                    }
+                }
+                //return ((part.Modules.Contains("MissileBase") || part.Modules.Contains("MissileLauncher") ||
+                //      part.Modules.Contains("BDModularGuidance"))
+            }
+            return false;
         }
         public static bool IsWeapon(this Part part)
         {
@@ -490,7 +505,12 @@ namespace BDArmory.Extensions
             }
             else return false;
         }
-
+        public static bool IsMotor(this Part part)
+        {
+            if (part.GetComponent<ModuleEngines>() != null || part.GetComponent<ModuleEnginesFX>() != null)
+                return true;
+            else return false;
+        }
         public static string GetExplodeMode(this Part part)
         {
             return Dependencies.Get<DamageService>().GetExplodeMode_svc(part);
@@ -650,6 +670,34 @@ namespace BDArmory.Extensions
         private static bool IsKerbalEVA_1_10(this Part part)
         {
             return part.FindModuleImplementing<KerbalEVA>() != null;
+        }
+
+        /// <summary>
+        /// KSP version dependent query of whether the part is a kerbal seat.
+        /// </summary>
+        /// <param name="part">Part to check.</param>
+        /// <returns>true if the part is a kerbal seat.</returns>
+        public static bool IsKerbalSeat(this Part part)
+        {
+            if (part == null) return false;
+            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // Introduced in 1.11
+            {
+                return part.IsKerbalSeat_1_11();
+            }
+            else
+            {
+                return part.IsKerbalSeat_1_10();
+            }
+        }
+
+        private static bool IsKerbalSeat_1_11(this Part part) // KSP has issues on older versions if this call is in the parent function.
+        {
+            return part.isKerbalSeat();
+        }
+
+        private static bool IsKerbalSeat_1_10(this Part part)
+        {
+            return part.FindModuleImplementing<KerbalSeat>() != null;
         }
     }
 }

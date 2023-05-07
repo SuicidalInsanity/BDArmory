@@ -20,7 +20,7 @@ namespace BDArmory.UI
         const float newTeanButtonWidth = 40;
         const float scrollWidth = 20;
 
-        private int guiCheckIndex;
+        private static int guiCheckIndex = -1;
         private bool ready = false;
         private bool open = false;
         private Rect window;
@@ -34,10 +34,16 @@ namespace BDArmory.UI
 
         public void Open(MissileFire weaponManager, Vector2 position)
         {
-            open = true;
+            SetVisible(true);
             targetWeaponManager = weaponManager;
             newTeamName = string.Empty;
             windowLocation = position;
+        }
+
+        void SetVisible(bool visible)
+        {
+            open = visible;
+            GUIUtils.SetGUIRectVisible(guiCheckIndex, visible);
         }
 
         private void TeamSelectorWindow(int id)
@@ -48,12 +54,12 @@ namespace BDArmory.UI
 
             // New team button
             Rect newTeamButtonRect = new Rect(width - margin - newTeanButtonWidth, height, newTeanButtonWidth, buttonHeight);
-            if (GUI.Button(newTeamButtonRect, Localizer.Format("#LOC_BDArmory_Generic_New"), BDArmorySetup.BDGuiSkin.button))//"New"
+            if (GUI.Button(newTeamButtonRect, StringUtils.Localize("#LOC_BDArmory_Generic_New"), BDArmorySetup.BDGuiSkin.button))//"New"
             {
                 if (!string.IsNullOrEmpty(newTeamName.Trim()))
                 {
                     targetWeaponManager.SetTeam(BDTeam.Get(newTeamName.Trim()));
-                    open = false;
+                    SetVisible(false);
                 }
             }
 
@@ -84,11 +90,11 @@ namespace BDArmory.UI
                         {
                             case 1: // right click
                                 if (teams.Current.Name != "Neutral" && teams.Current.Name != "A" && teams.Current.Name != "B")
-                                teams.Current.Neutral = !teams.Current.Neutral;
+                                    teams.Current.Neutral = !teams.Current.Neutral;
                                 break;
                             default:
                                 targetWeaponManager.SetTeam(teams.Current);
-                                open = false;
+                                SetVisible(false);
                                 break;
                         }
                     }
@@ -104,11 +110,11 @@ namespace BDArmory.UI
                 if ((Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter) && !string.IsNullOrEmpty(newTeamName.Trim()))
                 {
                     targetWeaponManager.SetTeam(BDTeam.Get(newTeamName.Trim()));
-                    open = false;
+                    SetVisible(false);
                 }
                 else if (Event.current.keyCode == KeyCode.Escape)
                 {
-                    open = false;
+                    SetVisible(false);
                 }
             }
 
@@ -125,7 +131,7 @@ namespace BDArmory.UI
                     && Event.current.type == EventType.MouseDown
                     && !window.Contains(Event.current.mousePosition))
                 {
-                    open = false;
+                    SetVisible(false);
                 }
 
                 if (open && BDArmorySetup.GAME_UI_ENABLED)
@@ -164,11 +170,10 @@ namespace BDArmory.UI
 
         private IEnumerator WaitForBdaSettings()
         {
-            while (BDArmorySetup.Instance == null)
-                yield return null;
+            yield return new WaitUntil(() => BDArmorySetup.Instance is not null);
 
             ready = true;
-            guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+            if (guiCheckIndex < 0) guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
         }
     }
 }

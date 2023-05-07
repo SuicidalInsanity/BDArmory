@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 
+using BDArmory.Utils;
+
 namespace BDArmory.CounterMeasure
 {
     public class CMSmoke : MonoBehaviour
@@ -14,7 +16,7 @@ namespace BDArmory.CounterMeasure
 
         IEnumerator SmokeRoutine()
         {
-            yield return new WaitForSeconds(10);
+            yield return new WaitForSecondsFixed(10);
 
             gameObject.SetActive(false);
         }

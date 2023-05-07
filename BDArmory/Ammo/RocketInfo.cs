@@ -11,8 +11,10 @@ namespace BDArmory.Bullets
         public string DisplayName { get; private set; }
         public float rocketMass { get; private set; }
         public float caliber { get; private set; }
+        public float apMod { get; private set; }
         public float thrust { get; private set; }
         public float thrustTime { get; private set; }
+        public float lifeTime { get; private set; } = 10f; // Need this here for trajectory sim timing. Could make it a proper config value.
         public bool shaped { get; private set; }
         public bool flak { get; private set; }
         public bool EMP { get; private set; }
@@ -35,13 +37,14 @@ namespace BDArmory.Bullets
         public static HashSet<string> rocketNames;
         public static RocketInfo defaultRocket;
 
-        public RocketInfo(string name, string DisplayName, float rocketMass, float caliber, float thrust, float thrustTime,
+        public RocketInfo(string name, string DisplayName, float rocketMass, float caliber, float apMod, float thrust, float thrustTime,
                          bool shaped, bool flak, bool EMP, bool choker, bool gravitic, bool impulse, float massMod, float force, bool explosive, bool incendiary, float tntMass, bool nuclear, bool beehive, string subMunitionType, int subProjectileCount, float thrustDeviation, string rocketModelPath)
         {
             this.name = name;
             this.DisplayName = DisplayName;
             this.rocketMass = rocketMass;
             this.caliber = caliber;
+            this.apMod = apMod;
             this.thrust = thrust;
             this.thrustTime = thrustTime;
             this.shaped = shaped;
@@ -84,6 +87,7 @@ namespace BDArmory.Bullets
                         (string)ParseField(node, "DisplayName", typeof(string)),
                         (float)ParseField(node, "rocketMass", typeof(float)),
                         (float)ParseField(node, "caliber", typeof(float)),
+                        (float)ParseField(node, "apMod", typeof(float)),
                         (float)ParseField(node, "thrust", typeof(float)),
                         (float)ParseField(node, "thrustTime", typeof(float)),
                         (bool)ParseField(node, "shaped", typeof(bool)),
@@ -131,6 +135,7 @@ namespace BDArmory.Bullets
                             (string)ParseField(node, "DisplayName", typeof(string)),
                             (float)ParseField(node, "rocketMass", typeof(float)),
                             (float)ParseField(node, "caliber", typeof(float)),
+                            (float)ParseField(node, "apMod", typeof(float)),
                             (float)ParseField(node, "thrust", typeof(float)),
                             (float)ParseField(node, "thrustTime", typeof(float)),
                             (bool)ParseField(node, "shaped", typeof(bool)),
@@ -192,7 +197,7 @@ namespace BDArmory.Bullets
                     if (field == "DisplayName") return string.Empty;
                     var defaultValue = typeof(RocketInfo).GetProperty(field == "DisplayName" ? "name" : field, BindingFlags.Public | BindingFlags.Instance).GetValue(defaultRocket);
 
-                    if (field == "EMP" || field == "nuclear" || field == "beehive" || field == "subMunitionType" || field == "choker" || field == "gravitic" || field == "impulse" || field == "massMod" || field == "force")
+                    if (field == "apMod" || field == "EMP" || field == "nuclear" || field == "beehive" || field == "subMunitionType" || field == "choker" || field == "gravitic" || field == "impulse" || field == "massMod" || field == "force")
                     {
                         //not having these throw an error message since these are all optional and default to false, prevents bullet defs from bloating like rockets did
                     }

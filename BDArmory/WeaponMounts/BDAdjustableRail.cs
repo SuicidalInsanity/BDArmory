@@ -47,7 +47,7 @@ namespace BDArmory.WeaponMounts
 
         IEnumerator DelayedUpdateStackNode()
         {
-            yield return null;
+            yield return new WaitForFixedUpdate();
             UpdateStackNode(false);
         }
 

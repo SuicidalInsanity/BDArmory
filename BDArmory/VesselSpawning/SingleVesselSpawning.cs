@@ -3,9 +3,10 @@ using System.Collections;
 using System.IO;
 using System.Linq;
 
+using BDArmory.Competition;
 using BDArmory.Utils;
 
-namespace BDArmory.Competition.VesselSpawning
+namespace BDArmory.VesselSpawning
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class SingleVesselSpawning : VesselSpawnerBase

@@ -61,6 +61,9 @@ namespace BDArmory.WeaponMounts
             }
         }
 
+        [KSPAction("Toggle deployment")]
+        public void AGToggleRail(KSPActionParam param) => ToggleRail();
+
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "toggle deployment")]//FIXME - localize later--
         public void ToggleRail()
         {
@@ -120,7 +123,7 @@ namespace BDArmory.WeaponMounts
         }
         public IEnumerator OnStartDeploy()
         {
-            yield return new WaitForSeconds(1); //figure out what the wait interval needs to be. Too soon, and the offsets get messed up. maybe have the RCS snapshot delay instead?
+            yield return new WaitForSecondsFixed(1); //figure out what the wait interval needs to be. Too soon, and the offsets get messed up. maybe have the RCS snapshot delay instead?
             UpdateMissileChildren();
             DeployRail(true);
         }
@@ -135,7 +138,7 @@ namespace BDArmory.WeaponMounts
                 missilePart.ShieldedFromAirstream = false;
                 if (hideMissiles) missilePart.SetOpacity(1);
             }
-            while (deployState.normalizedTime < 1) 
+            while (deployState.normalizedTime < 1)
             {
                 UpdateChildrenPos();
                 yield return new WaitForFixedUpdate();
@@ -146,7 +149,7 @@ namespace BDArmory.WeaponMounts
             deployed = true;
             if (HighLogic.LoadedSceneIsFlight)
             {
-                yield return new WaitForSeconds(rotationDelay);
+                yield return new WaitForSecondsFixed(rotationDelay);
                 rdyToFire = true;
             }
             if (HighLogic.LoadedSceneIsEditor)
@@ -193,7 +196,7 @@ namespace BDArmory.WeaponMounts
             setupComplete = true;
             for (int i = 0; i < missileChildren.Length; i++)
             {
-                if (!missileTransforms[i] || !missileChildren[i] || missileChildren[i].HasFired) continue;
+                if (!missileTransforms[i] || !missileChildren[i]) continue;
                 Part missilePart = missileChildren[i].part;
                 missilePart.ShieldedFromAirstream = true;
                 if (hideMissiles) missilePart.SetOpacity(0);
@@ -234,7 +237,7 @@ namespace BDArmory.WeaponMounts
             if (part.isActiveAndEnabled) retractRoutine = StartCoroutine(Retract());
         }
 
-        void UpdateChildrenPos()
+        public void UpdateChildrenPos()
         {
             /*
             using (List<Part>.Enumerator p = part.children.GetEnumerator())
@@ -254,7 +257,7 @@ namespace BDArmory.WeaponMounts
 
             for (int i = 0; i < missileChildren.Length; i++)
             {
-                if (!missileTransforms[i] || !missileChildren[i] || missileChildren[i].HasFired) continue;
+                if (!missileTransforms[i] || !missileChildren[i] || missileChildren[i].vessel != this.vessel) continue;
                 missileTransforms[i].position = missileReferenceTransforms[i].position; //wait, is this just moving the mesh, but the part stays where it is? Would explain the need for CoM offset
                 missileTransforms[i].rotation = missileReferenceTransforms[i].rotation; //have this reset on spawn?
                 //float scaleVector = Mathf.Lerp(scaleVector, 1, 0.02f / deployState.length); //have the missile scale (so big missiles can fit inside shallow bays without clipping through base of the bay? Future SI, play around with this
@@ -290,61 +293,61 @@ namespace BDArmory.WeaponMounts
             List<Transform> mtfl = new List<Transform>();
             List<Transform> mrl = new List<Transform>();
             using (List<Part>.Enumerator child = part.children.GetEnumerator())
-            while (child.MoveNext())
-            {
-                if (child.Current == null) continue;
-                if (child.Current.parent != part) continue;
+                while (child.MoveNext())
+                {
+                    if (child.Current == null) continue;
+                    if (child.Current.parent != part) continue;
 
-                MissileLauncher ml = child.Current.FindModuleImplementing<MissileLauncher>();
+                    MissileLauncher ml = child.Current.FindModuleImplementing<MissileLauncher>();
 
-                if (!ml) continue;
+                    if (!ml) continue;
 
-                Transform mTf = child.Current.FindModelTransform("missileTransform");
+                    Transform mTf = child.Current.FindModelTransform("missileTransform");
                     //mTf = child.Current.partTransform;
-                //fix incorrect hierarchy
-                if (!mTf)
-                {
-                    Transform modelTransform = ml.part.partTransform.Find("model");
-
-                    mTf = new GameObject("missileTransform").transform;
-                    Transform[] tfchildren = new Transform[modelTransform.childCount];
-                    for (int i = 0; i < modelTransform.childCount; i++)
+                    //fix incorrect hierarchy
+                    if (!mTf)
                     {
-                        tfchildren[i] = modelTransform.GetChild(i);
-                    }
-                    mTf.parent = modelTransform;
-                    mTf.localPosition = Vector3.zero;
-                    mTf.localRotation = Quaternion.identity;
-                    mTf.localScale = Vector3.one;
-                    using (IEnumerator<Transform> t = tfchildren.AsEnumerable().GetEnumerator())
-                        while (t.MoveNext())
+                        Transform modelTransform = ml.part.partTransform.Find("model");
+
+                        mTf = new GameObject("missileTransform").transform;
+                        Transform[] tfchildren = new Transform[modelTransform.childCount];
+                        for (int i = 0; i < modelTransform.childCount; i++)
                         {
-                            if (t.Current == null) continue;
-                            t.Current.parent = mTf;
+                            tfchildren[i] = modelTransform.GetChild(i);
                         }
+                        mTf.parent = modelTransform;
+                        mTf.localPosition = Vector3.zero;
+                        mTf.localRotation = Quaternion.identity;
+                        mTf.localScale = Vector3.one;
+                        using (IEnumerator<Transform> t = tfchildren.AsEnumerable().GetEnumerator())
+                            while (t.MoveNext())
+                            {
+                                if (t.Current == null) continue;
+                                t.Current.parent = mTf;
+                            }
+                    }
+
+                    if (!ml || !mTf) continue;
+                    msl.Add(ml);
+                    mtfl.Add(mTf);
+                    Transform mRef = new GameObject().transform;
+                    mRef.position = mTf.position;
+                    mRef.rotation = mTf.rotation;
+                    mRef.parent = deployTransform;
+                    mrl.Add(mRef);
+
+                    ml.MissileReferenceTransform = mTf;
+                    ml.deployableRail = this;
+
+                    ml.decoupleForward = false;
+                    ml.dropTime = Mathf.Max(ml.dropTime, 0.2f);
+
+                    if (!comOffsets.ContainsKey(ml.part))
+                    {
+                        comOffsets.Add(ml.part, ml.part.CoMOffset);
+                    }
+                    missileCount++;
                 }
-
-                if (!ml || !mTf) continue;
-                msl.Add(ml);
-                mtfl.Add(mTf);
-                Transform mRef = new GameObject().transform;
-                mRef.position = mTf.position;
-                mRef.rotation = mTf.rotation;
-                mRef.parent = deployTransform; 
-                mrl.Add(mRef);
-
-                ml.MissileReferenceTransform = mTf;
-                ml.deployableRail = this;
-
-                ml.decoupleForward = false;
-                ml.dropTime = Mathf.Max(ml.dropTime, 0.2f);
-
-                if (!comOffsets.ContainsKey(ml.part))
-                {
-                    comOffsets.Add(ml.part, ml.part.CoMOffset);
-                }
-                missileCount++;
-            }
 
             missileChildren = msl.ToArray();
             missileCount = missileChildren.Length;

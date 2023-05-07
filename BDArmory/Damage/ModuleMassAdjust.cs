@@ -22,12 +22,12 @@ namespace BDArmory.Damage
             //Debug.Log("[BDArmory.ModuleMassAdjust]: ME field expired, " + this.part.name + "mass: " + this.part.mass);
         }
 
-        void Update()
+        void FixedUpdate()
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             if (BDArmorySetup.GameIsPaused) return;
 
-            duration -= 1 * TimeWarp.fixedDeltaTime;
+            duration -= TimeWarp.fixedDeltaTime;
 
             if (duration <= 0)
             {

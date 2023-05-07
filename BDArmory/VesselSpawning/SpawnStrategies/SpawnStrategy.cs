@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections;
-using BDArmory.Competition.VesselSpawning;
+﻿using System.Collections;
 
-namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
+namespace BDArmory.VesselSpawning.SpawnStrategies
 {
     public interface SpawnStrategy
     {

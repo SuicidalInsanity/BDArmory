@@ -4,118 +4,112 @@ namespace BDArmory.UI
 {
     public class BDGUIComboBox
     {
-        private static bool forceToUnShow = false;
-        private static int useControlID = -1;
-        private bool isClickedComboButton = false;
-        public bool isOpen { get { return isClickedComboButton; } }
-        private int selectedItemIndex = -1;
+        public bool IsOpen => isOpen;
+        public float Height => scrollViewRect.height;
 
-        private Rect rect;
-        private Rect buttonRect;
-        private GUIContent buttonContent;
-        private GUIContent[] listContent;
-        private GUIStyle listStyle;
-        private Vector2 scrollViewVector;
-        private float comboxbox_height;
-        private bool thisTriggeredForceClose = false;
-        private bool forceCloseNow = false;
+        Rect buttonRect;
+        Rect listRect;
+        GUIContent buttonContent;
+        GUIContent[] listContent;
+        float maxHeight;
+        GUIStyle listStyle;
+        int columns;
 
-        public BDGUIComboBox(Rect rect, Rect buttonRect, GUIContent buttonContent, GUIContent[] listContent, float combo_height, GUIStyle listStyle)
+        bool isClickedComboButton = false;
+        bool isOpen = false;
+        int selectedItemIndex = -1;
+        Vector2 scrollViewVector;
+        Rect scrollViewRect;
+        Rect scrollViewInnerRect;
+        Rect selectionGridRect;
+        RectOffset selectionGridRectOffset = new RectOffset(3, 3, 3, 3);
+        float listHeight;
+        float vScrollWidth = BDArmorySetup.BDGuiSkin.verticalScrollbar.fixedWidth + BDArmorySetup.BDGuiSkin.verticalScrollbar.margin.left;
+
+        /// <summary>
+        /// A drop-down combo-box.
+        /// </summary>
+        /// <param name="buttonRect">The rect for the button.</param>
+        /// <param name="listRect">The rect defining the position and width of the selection grid. The height will be adjusted according to the contents.</param>
+        /// <param name="buttonContent">The button content.</param>
+        /// <param name="listContent">The selection grid contents.</param>
+        /// <param name="maxHeight">The maximum height of the grid before scrolling is enabled.</param>
+        /// <param name="listStyle">The GUIStyle to use for the selection grid.</param>
+        /// <param name="columns">The number of columns in the selection grid.</param>
+        public BDGUIComboBox(Rect buttonRect, Rect listRect, GUIContent buttonContent, GUIContent[] listContent, float maxHeight, GUIStyle listStyle, int columns = 2)
         {
-            this.rect = rect;
             this.buttonRect = buttonRect;
+            this.listRect = listRect;
             this.buttonContent = buttonContent;
-            this.listContent = listContent;
-            this.listStyle = listStyle;
+            this.listStyle = new GUIStyle(listStyle);
             this.listStyle.active.textColor = Color.black;
             this.listStyle.hover.textColor = Color.black;
-            this.comboxbox_height = combo_height;
+            this.maxHeight = maxHeight;
+            this.columns = columns;
+            UpdateContent(listContent);
         }
 
+        /// <summary>
+        /// Display the button and combo-box.
+        /// </summary>
+        /// <returns>The selected item's index.</returns>
         public int Show()
         {
-            bool done = false;
-            int controlID = GUIUtility.GetControlID(FocusType.Passive);
-
-            if (forceToUnShow && !thisTriggeredForceClose) // Close all other comboboxes
-            { isClickedComboButton = false; }
-            if (forceCloseNow)
+            if (GUI.Button(buttonRect, buttonContent, BDArmorySetup.BDGuiSkin.button)) // Button
             {
-                forceToUnShow = false;
-                forceCloseNow = false;
+                isClickedComboButton = !isClickedComboButton;
             }
-            if (thisTriggeredForceClose)
+            isOpen = isClickedComboButton; // Flag indicating if the selection grid open this frame.
+
+            if (isClickedComboButton) // Selection grid
             {
-                thisTriggeredForceClose = false;
-                forceCloseNow = true;
-            }
-            switch (Event.current.GetTypeForControl(controlID))
-            {
-                case EventType.MouseUp:
-                    if (isClickedComboButton)
-                    { done = true; }
-                    break;
-            }
-
-            if (GUI.Button(buttonRect, buttonContent, BDArmorySetup.BDGuiSkin.button))
-            {
-                if (useControlID == -1)
-                { useControlID = controlID; }
-                if (useControlID != controlID)
-                {
-                    if (isClickedComboButton)
-                    {
-                        forceToUnShow = true;
-                        thisTriggeredForceClose = true;
-                    }
-                    useControlID = controlID;
-                }
-                isClickedComboButton = true;
-            }
-
-            if (isClickedComboButton)
-            {
-                float items_height = listStyle.CalcHeight(listContent[0], 1.0f) * (listContent.Length + 5);
-                Rect listRect = new Rect(rect.x + 5, rect.y + listStyle.CalcHeight(listContent[0], 1.0f), rect.width - 20f, items_height);
-
-                scrollViewVector = GUI.BeginScrollView(new Rect(rect.x, rect.y + rect.height, rect.width + 10f, comboxbox_height), scrollViewVector,
-                                                        new Rect(rect.x, rect.y, rect.width - 10, items_height + rect.height), false, false, BDArmorySetup.BDGuiSkin.horizontalScrollbar, BDArmorySetup.BDGuiSkin.verticalScrollbar);
-
-                GUI.Box(new Rect(rect.x, rect.y, rect.width - 10, items_height + rect.height), "", BDArmorySetup.BDGuiSkin.window);
-
-                if (selectedItemIndex != (selectedItemIndex = GUI.SelectionGrid(listRect, selectedItemIndex, listContent, 2, listStyle)))
+                scrollViewVector = GUI.BeginScrollView(scrollViewRect, scrollViewVector, scrollViewInnerRect, BDArmorySetup.BDGuiSkin.horizontalScrollbar, BDArmorySetup.BDGuiSkin.verticalScrollbar);
+                GUI.Box(scrollViewInnerRect, "", BDArmorySetup.BDGuiSkin.box); // Background box in the scroll view.
+                if (selectedItemIndex != (selectedItemIndex = GUI.SelectionGrid(selectionGridRect, selectedItemIndex, listContent, columns, listStyle))) // If the selection is changed, then update the UI and close the combo-box.
                 {
                     if (selectedItemIndex > -1) buttonContent.text = listContent[selectedItemIndex].text;
-                    done = true;
+                    isClickedComboButton = false;
                 }
-
                 GUI.EndScrollView();
             }
-
-            if (done)
-            { isClickedComboButton = false; }
 
             return selectedItemIndex;
         }
 
-        public void UpdateRect(Rect r)
+        /// <summary>
+        /// Update internal rects when the button rect has moved.
+        /// </summary>
+        /// <param name="updatedButtonRect"></param>
+        public void UpdateRect(Rect updatedButtonRect)
         {
-            if (r == rect) return;
-            buttonRect.x += r.x - rect.x;
-            buttonRect.y += r.y - rect.y;
-            rect = r;
+            if (updatedButtonRect == buttonRect) return;
+            listRect.x += updatedButtonRect.x - buttonRect.x;
+            listRect.y += updatedButtonRect.y - buttonRect.y;
+            buttonRect = updatedButtonRect;
+            UpdateScrollViewRect();
         }
 
-        public int SelectedItemIndex
+        /// <summary>
+        /// Update the content of the combobox and recalculate sizes.
+        /// </summary>
+        /// <param name="content"></param>
+        public void UpdateContent(GUIContent[] content)
         {
-            get
-            {
-                return selectedItemIndex;
-            }
-            set
-            {
-                selectedItemIndex = value;
-            }
+            listContent = content;
+            var itemHeight = listStyle.CalcHeight(listContent[0], listRect.width / columns) + listStyle.margin.bottom;
+            listHeight = itemHeight * Mathf.CeilToInt(listContent.Length / (float)columns);
+            UpdateScrollViewRect();
+        }
+
+        /// <summary>
+        /// Update the rects in the scroll view.
+        /// </summary>
+        void UpdateScrollViewRect()
+        {
+            scrollViewRect = new Rect(listRect.x, listRect.y + listRect.height, listRect.width, Mathf.Min(maxHeight, listHeight + selectionGridRectOffset.vertical));
+            scrollViewInnerRect = new Rect(0, 0, scrollViewRect.width, listHeight + selectionGridRectOffset.bottom);
+            if (scrollViewInnerRect.height > scrollViewRect.height) scrollViewInnerRect.width -= vScrollWidth;
+            selectionGridRect = selectionGridRectOffset.Remove(scrollViewInnerRect);
         }
     }
 }

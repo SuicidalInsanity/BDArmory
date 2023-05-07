@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using BDArmory.Settings;
 
 namespace BDArmory.FX
 {
@@ -51,6 +52,8 @@ namespace BDArmory.FX
 
         private void FixedUpdate()
         {
+            if (!BDArmorySettings.GAPLESS_PARTICLE_EMITTERS) return;
+
             if (!part && !rb)
             {
                 internalVelocity = (transform.position - lastPos) / Time.fixedDeltaTime;
@@ -87,6 +90,8 @@ namespace BDArmory.FX
 
         public void EmitParticles()
         {
+            if (!BDArmorySettings.GAPLESS_PARTICLE_EMITTERS) return;
+
             var partRB = part != null ? part.GetComponent<Rigidbody>() : null;
             var velocity = partRB != null ? partRB.velocity : rb.velocity;
             var originalLocalPosition = gameObject.transform.localPosition;

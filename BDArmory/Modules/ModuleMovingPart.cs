@@ -44,10 +44,8 @@ namespace BDArmory.Modules
 
         IEnumerator SetupRoutine()
         {
-            while (vessel.packed)
-            {
-                yield return null;
-            }
+            yield return new WaitWhile(() => vessel is not null && (vessel.packed || !vessel.loaded));
+            yield return new WaitForFixedUpdate();
             SetupJoints();
         }
 

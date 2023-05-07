@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 
-namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
+namespace BDArmory.VesselSpawning.SpawnStrategies
 {
     public class ListSpawnStrategy : SpawnStrategy
     {

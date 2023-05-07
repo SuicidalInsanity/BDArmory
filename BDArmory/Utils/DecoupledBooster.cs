@@ -18,7 +18,7 @@ namespace BDArmory.Utils
                 col.Current.enabled = false;
             }
             col.Dispose();
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSecondsFixed(5);
             Destroy(gameObject);
         }
 

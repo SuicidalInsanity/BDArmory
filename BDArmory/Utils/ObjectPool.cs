@@ -131,7 +131,7 @@ namespace BDArmory.Utils
 
         IEnumerator DisableObject(GameObject obj, float t)
         {
-            yield return new WaitForSeconds(t);
+            yield return new WaitForSecondsFixed(t);
             if (obj)
             {
                 obj.SetActive(false);

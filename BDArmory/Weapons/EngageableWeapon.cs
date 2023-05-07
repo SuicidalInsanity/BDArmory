@@ -42,11 +42,11 @@ namespace BDArmory.Weapons
 
             if (engageEnabled == false)
             {
-                Events["ToggleEngageOptions"].guiName = Localizer.Format("#LOC_BDArmory_EnableEngageOptions");//"Enable Engage Options"
+                Events["ToggleEngageOptions"].guiName = StringUtils.Localize("#LOC_BDArmory_EnableEngageOptions");//"Enable Engage Options"
             }
             else
             {
-                Events["ToggleEngageOptions"].guiName = Localizer.Format("#LOC_BDArmory_DisableEngageOptions");//"Disable Engage Options"
+                Events["ToggleEngageOptions"].guiName = StringUtils.Localize("#LOC_BDArmory_DisableEngageOptions");//"Disable Engage Options"
             }
 
             Fields["engageRangeMin"].guiActive = engageEnabled;
@@ -88,6 +88,35 @@ namespace BDArmory.Weapons
             // ensure max >= min
             if (engageRangeMax < engageRangeMin)
                 engageRangeMax = engageRangeMin;
+        }
+
+        void OnEngageOptionsChanged(BaseField field, object obj)
+        {
+            var wm = VesselModuleRegistry.GetMissileFire(vessel, true);
+            var value = (bool)field.GetValue(this);
+            foreach (var part in part.symmetryCounterparts)
+            {
+                var engageableWeapon = part.GetComponent<EngageableWeapon>();
+                if (engageableWeapon is not null)
+                {
+                    field.SetValue(value, engageableWeapon);
+                }
+            }
+
+            if (wm is not null) wm.weaponsListNeedsUpdating = true;
+        }
+
+        public override void OnStart(StartState state)
+        {
+            base.OnStart(state);
+            var engageAirField = (UI_Toggle)Fields["engageAir"].uiControlFlight;
+            engageAirField.onFieldChanged = OnEngageOptionsChanged;
+            var engageMissileField = (UI_Toggle)Fields["engageMissile"].uiControlFlight;
+            engageMissileField.onFieldChanged = OnEngageOptionsChanged;
+            var engageGroundField = (UI_Toggle)Fields["engageGround"].uiControlFlight;
+            engageGroundField.onFieldChanged = OnEngageOptionsChanged;
+            var engageSLWField = (UI_Toggle)Fields["engageSLW"].uiControlFlight;
+            engageSLWField.onFieldChanged = OnEngageOptionsChanged;
         }
 
         protected void InitializeEngagementRange(float min, float max)

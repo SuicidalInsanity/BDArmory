@@ -14,7 +14,7 @@ namespace BDArmory.FX
         Vector3 angularVelocity;
 
         float atmDensity;
-        int collisionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19); // Why 19?
+        const int collisionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.Unknown19 | LayerMasks.Wheels); // Why 19?
 
         void OnEnable()
         {
@@ -36,8 +36,10 @@ namespace BDArmory.FX
 
         void FixedUpdate()
         {
-            if (!gameObject.activeInHierarchy)
+            if (!gameObject.activeInHierarchy) return;
+            if (Time.time - startTime > 2)
             {
+                gameObject.SetActive(false);
                 return;
             }
 
@@ -46,7 +48,7 @@ namespace BDArmory.FX
                 + Krakensbane.GetLastCorrection();
 
             //drag
-            velocity -= 0.005f * (velocity + Krakensbane.GetFrameVelocityV3f()) * atmDensity;
+            velocity -= 0.005f * (velocity + BDKrakensbane.FrameVelocityV3f) * atmDensity;
 
             transform.rotation *= Quaternion.Euler(angularVelocity * TimeWarp.fixedDeltaTime);
             transform.position += velocity * TimeWarp.deltaTime;
@@ -61,19 +63,6 @@ namespace BDArmory.FX
                     velocity = Quaternion.AngleAxis(Random.Range(0f, 90f), Random.onUnitSphere) *
                                velocity;
                 }
-            }
-        }
-
-        void Update()
-        {
-            if (!gameObject.activeInHierarchy)
-            {
-                return;
-            }
-
-            if (Time.time - startTime > 2)
-            {
-                gameObject.SetActive(false);
             }
         }
     }

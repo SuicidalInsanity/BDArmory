@@ -2,6 +2,7 @@
 using UnityEngine;
 
 using BDArmory.Extensions;
+using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
 
@@ -36,12 +37,7 @@ namespace BDArmory.Guidances
 
             if (missile.vessel.verticalSpeed > 0 && pendingDistance > _originalDistance * 0.5)
             {
-                missile.debugString.Append($"Ascending");
-                missile.debugString.Append(Environment.NewLine);
-
                 var freeFallTime = CalculateFreeFallTime(missile);
-                missile.debugString.Append($"freeFallTime: {freeFallTime}");
-                missile.debugString.Append(Environment.NewLine);
 
                 var futureDistanceVector = Vector3
                     .Project((missile.vessel.GetFuturePosition() - _startPoint), (targetPosition - _startPoint).normalized);
@@ -50,25 +46,22 @@ namespace BDArmory.Guidances
 
                 var horizontalTime = (_originalDistance - futureDistanceVector.magnitude) / futureHorizontalSpeed;
 
-
-                missile.debugString.Append($"horizontalTime: {horizontalTime}");
-                missile.debugString.Append(Environment.NewLine);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    missile.debugString.AppendLine($"Ascending");
+                    missile.debugString.AppendLine($"freeFallTime: {freeFallTime}");
+                    missile.debugString.AppendLine($"horizontalTime: {horizontalTime}");
+                }
 
                 if (freeFallTime >= horizontalTime)
                 {
-                    missile.debugString.Append($"Free fall achieved:");
-                    missile.debugString.Append(Environment.NewLine);
-
+                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Free fall achieved:");
                     missile.Throttle = Mathf.Clamp(missile.Throttle - 0.001f, 0.01f, 1f);
-
                 }
                 else
                 {
-                    missile.debugString.Append($"Free fall not achieved:");
-                    missile.debugString.Append(Environment.NewLine);
-
+                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Free fall not achieved:");
                     missile.Throttle = Mathf.Clamp(missile.Throttle + 0.001f, 0.01f, 1f);
-
                 }
 
                 Vector3 dToTarget = targetPosition - missile.vessel.CoM;
@@ -76,13 +69,11 @@ namespace BDArmory.Guidances
                 agmTarget = missile.vessel.CoM + direction;
 
 
-                missile.debugString.Append($"Throttle: {missile.Throttle}");
-                missile.debugString.Append(Environment.NewLine);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Throttle: {missile.Throttle}");
             }
             else
             {
-                missile.debugString.Append($"Descending");
-                missile.debugString.Append(Environment.NewLine);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) missile.debugString.AppendLine($"Descending");
                 agmTarget = MissileGuidance.GetAirToGroundTarget(targetPosition, targetVelocity, missile.vessel, 1.85f);
 
                 missile.Throttle = Mathf.Clamp((float)(missile.vessel.atmDensity * 10f), 0.01f, 1f);
@@ -109,13 +100,13 @@ namespace BDArmory.Guidances
             double a = 9.80665f * missile.BallisticOverShootFactor;
             double d = missile.vessel.GetFutureAltitude(predictionTime);
 
-            double time1 = (-vi + Math.Sqrt(Math.Pow(vi, 2) - 4 * (0.5f * a) * (-d))) / a;
-            double time2 = (-vi - Math.Sqrt(Math.Pow(vi, 2) - 4 * (0.5f * a) * (-d))) / a;
+            double time1 = (-vi + Math.Sqrt(vi * vi - 4 * (0.5f * a) * (-d))) / a;
+            double time2 = (-vi - Math.Sqrt(vi * vi - 4 * (0.5f * a) * (-d))) / a;
 
             return Math.Max(time1, time2);
         }
 
-        private double CalculateFutureHorizontalSpeed(MissileBase missile,int predictionTime = 10)
+        private double CalculateFutureHorizontalSpeed(MissileBase missile, int predictionTime = 10)
         {
             return missile.vessel.horizontalSrfSpeed + (missile.HorizontalAcceleration / Time.fixedDeltaTime) * predictionTime;
         }

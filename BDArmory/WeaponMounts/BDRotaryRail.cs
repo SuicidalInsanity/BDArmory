@@ -261,7 +261,7 @@ namespace BDArmory.WeaponMounts
 
         IEnumerator DelayedMoveStackNode(float offset)
         {
-            yield return null;
+            yield return new WaitForFixedUpdate();
             MoveEndStackNode(offset);
         }
 
@@ -462,6 +462,7 @@ namespace BDArmory.WeaponMounts
             for (int i = 0; i < missileChildren.Length; i++)
             {
                 if (missileChildren[i].GetShortName() != ml.GetShortName()) continue;
+                if (missileChildren[i].HasFired) continue;
                 RotateToIndex(missileToRailIndex[i], false);
                 nextMissile = missileChildren[i];
                 return;
@@ -528,7 +529,7 @@ namespace BDArmory.WeaponMounts
             rdyMissile = null;
             railIndex = index;
 
-            yield return new WaitForSeconds(rotationDelay);
+            yield return new WaitForSecondsFixed(rotationDelay);
 
             Quaternion targetRot = Quaternion.Euler(0, 0, (float)index * -railAngle);
 
@@ -648,7 +649,7 @@ namespace BDArmory.WeaponMounts
 
                 nextRailIndex = Mathf.RoundToInt(Mathf.Repeat(missileToRailIndex[missileIndex] + 1, numberOfRails));
 
-                UpdateMissileChildren();
+                if (!missileChildren[missileIndex].reloadableRail) UpdateMissileChildren();
 
                 if (wm)
                 {
@@ -797,7 +798,7 @@ namespace BDArmory.WeaponMounts
             UpdateIndexDictionary();
         }
 
-        void UpdateMissilePositions()
+        public void UpdateMissilePositions()
         {
             if (missileCount == 0)
             {
@@ -806,7 +807,7 @@ namespace BDArmory.WeaponMounts
 
             for (int i = 0; i < missileChildren.Length; i++)
             {
-                if (!missileTransforms[i] || !missileChildren[i] || missileChildren[i].HasFired) continue;
+                if (!missileTransforms[i] || !missileChildren[i]) continue;
                 missileTransforms[i].position = missileReferenceTransforms[i].position;
                 missileTransforms[i].rotation = missileReferenceTransforms[i].rotation;
 

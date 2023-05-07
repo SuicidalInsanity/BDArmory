@@ -2,10 +2,10 @@
 using System;
 using UnityEngine;
 
-using BDArmory.Competition.VesselSpawning;
 using BDArmory.Competition;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.UI
@@ -198,15 +198,22 @@ namespace BDArmory.UI
                 using (List<Vessel>.Enumerator v = FlightGlobals.Vessels.GetEnumerator())
                     while (v.MoveNext())
                     {
-                        if (v.Current == null) continue;
+                        if (v.Current == null || v.Current.packed || !v.Current.loaded) continue;
                         if (BDTISettings.MISSILES)
                         {
                             using (var ml = VesselModuleRegistry.GetModules<MissileBase>(v.Current).GetEnumerator())
                                 while (ml.MoveNext())
                                 {
                                     if (ml.Current == null) continue;
+                                    MissileLauncher launcher = ml.Current as MissileLauncher;
                                     //if (ml.Current.MissileState != MissileBase.MissileStates.Idle && ml.Current.MissileState != MissileBase.MissileStates.Drop)
-                                    if (ml.Current.HasFired && !ml.Current.HasMissed && !ml.Current.HasExploded) //culling post-thrust missiles makes AGMs get cleared almost immediately after launch
+                                    
+                                    bool multilauncher = false;
+                                    if (launcher != null)
+                                    {
+                                        if (launcher.multiLauncher && !launcher.multiLauncher.isClusterMissile) multilauncher = true;
+                                    }
+                                    if ((ml.Current.HasFired && !multilauncher) && !ml.Current.HasMissed && !ml.Current.HasExploded) //culling post-thrust missiles makes AGMs get cleared almost immediately after launch
                                     {
                                         Vector3 sPos = FlightGlobals.ActiveVessel.vesselTransform.position;
                                         Vector3 tPos = v.Current.vesselTransform.position;
@@ -236,7 +243,7 @@ namespace BDArmory.UI
                                             {
                                                 if (GUIUtils.WorldToGUIPos(ml.Current.vessel.CoM, out guiPos))
                                                 {
-                                                    IconUIStyle.normal.textColor = BDTISetup.Instance.ColorAssignments[ml.Current.Team.Name];
+                                                    IconUIStyle.normal.textColor = BDTISetup.Instance.ColorAssignments.ContainsKey(ml.Current.Team.Name) ? BDTISetup.Instance.ColorAssignments[ml.Current.Team.Name] : Color.gray;
                                                     Rect nameRect = new Rect((guiPos.x + (24 * BDTISettings.ICONSCALE)), guiPos.y - 4, 100, 32);
                                                     Rect shadowRect = new Rect((nameRect.x + 1), nameRect.y + 1, 100, 32);
                                                     GUI.Label(shadowRect, ml.Current.vessel.vesselName, DropshadowStyle);
@@ -298,7 +305,7 @@ namespace BDArmory.UI
                                             if (GUIUtils.WorldToGUIPos(wm.Current.vessel.CoM, out guiPos))
                                             {
                                                 Rect nameRect = new Rect((guiPos.x + (24 * BDTISettings.ICONSCALE)), guiPos.y - 4, 100, 32);
-                                                Rect shadowRect = new Rect((nameRect.x + 1), nameRect.y +1, 100, 32);
+                                                Rect shadowRect = new Rect((nameRect.x + 1), nameRect.y + 1, 100, 32);
                                                 GUI.Label(shadowRect, wm.Current.vessel.vesselName, DropshadowStyle);
                                                 GUI.Label(nameRect, wm.Current.vessel.vesselName, IconUIStyle);
                                             }

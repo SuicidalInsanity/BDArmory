@@ -80,7 +80,7 @@ namespace BDArmory.Damage
             disabled = false;
         }
 
-        void Update()
+        void FixedUpdate()
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             if (BDArmorySetup.GameIsPaused) return;
@@ -252,7 +252,7 @@ namespace BDArmory.Damage
         }
         IEnumerator TimerRoutine()
         {
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSecondsFixed(5);
             Destroy(gameObject);
         }
 

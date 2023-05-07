@@ -17,6 +17,7 @@ namespace BDArmory.Utils
             for (int i = 0; i < numberOfKeycodes; i++)
             {
                 string output = names[i];
+                if (output.ToLower().StartsWith("mouse") || output.ToLower().StartsWith("joystick")) continue; // Handle mouse and joystick separately.
 
                 if (output.Contains("Keypad"))
                 {
@@ -109,7 +110,8 @@ namespace BDArmory.Utils
                 }
                 catch (System.Exception e)
                 {
-                    Debug.LogWarning("[BDArmory.BDInputUtils]: Exception thrown in GetInputString: " + e.Message + "\n" + e.StackTrace);
+                    if (!e.Message.EndsWith("is unknown")) // Ignore unknown keys
+                        Debug.LogWarning("[BDArmory.BDInputUtils]: Exception thrown in GetInputString: " + e.Message + "\n" + e.StackTrace);
                 }
             }
 
@@ -157,12 +159,12 @@ namespace BDArmory.Utils
 
         public static bool GetKey(BDInputInfo input)
         {
-            return input.inputString != string.Empty && Input.GetKey(input.inputString);
+            return !string.IsNullOrEmpty(input.inputString) && Input.GetKey(input.inputString);
         }
 
         public static bool GetKeyDown(BDInputInfo input)
         {
-            return input.inputString != string.Empty && Input.GetKeyDown(input.inputString);
+            return !string.IsNullOrEmpty(input.inputString) && Input.GetKeyDown(input.inputString);
         }
     }
 

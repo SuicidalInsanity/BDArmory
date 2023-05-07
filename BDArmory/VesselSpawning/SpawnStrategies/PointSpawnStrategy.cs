@@ -4,7 +4,7 @@ using UnityEngine;
 
 using BDArmory.Settings;
 
-namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
+namespace BDArmory.VesselSpawning.SpawnStrategies
 {
     public class PointSpawnStrategy : SpawnStrategy
     {
@@ -38,7 +38,7 @@ namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
             // Essentially, the differences in the spawning strategies are so large, that I don't think the currently defined interface is really suitable.
             // One option would be to remove the "VesselSpawner spawner" from the "public IEnumerator Spawn(VesselSpawner spawner);" in SpawnStrategy.cs and get the appropriate vessel spawner instance directly in each SpawnStrategy.Spawn function, which would then call the specific spawning functions of the vessel spawner instead of "spawner.Spawn(spawnConfig)" as below.
             // E.g., yield return SingleVesselSpawning.Instance.SpawnVessel(craftUrl, latitude, longitude, altitude, heading, pitch);
-            yield return spawner.Spawn(new SpawnConfig(worldIndex, latitude, longitude, altitude, 0, false, BDArmorySettings.VESSEL_SPAWN_EASE_IN_SPEED, false, false, 0, null, null, "", new List<string>{craftUrl}));
+            yield return spawner.Spawn(new SpawnConfig(worldIndex, latitude, longitude, altitude, false, false, 0, null, null, "", new List<string>{craftUrl}));
 
             // wait for spawner to finish
             yield return new WaitWhile(() => spawner.vesselsSpawning);

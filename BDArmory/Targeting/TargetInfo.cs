@@ -27,16 +27,23 @@ namespace BDArmory.Targeting
 
         public float radarBaseSignature = -1;
         public bool radarBaseSignatureNeedsUpdate = true;
+        public float radarRCSReducedSignature;
         public float radarModifiedSignature;
-        public float radarLockbreakFactor;
+        public float radarLockbreakFactor = 1;
         public float radarJammingDistance;
         public bool alreadyScheduledRCSUpdate = false;
         public float radarMassAtUpdate = 0f;
+        public Vector3 bounds = Vector3.zero;
 
-        public List<Part> targetWeaponList = new List<Part>();
-        public List<Part> targetEngineList = new List<Part>();
-        public List<Part> targetCommandList = new List<Part>();
-        public List<Part> targetMassList = new List<Part>();
+        public bool targetPartListNeedsUpdating = true; // Only update when needed — avoids excessive calling due to events.
+        public List<Part> targetWeaponList { get { if (targetPartListNeedsUpdating) UpdateTargetPartList(); return _targetWeaponList; } }
+        public List<Part> targetEngineList { get { if (targetPartListNeedsUpdating) UpdateTargetPartList(); return _targetEngineList; } }
+        public List<Part> targetCommandList { get { if (targetPartListNeedsUpdating) UpdateTargetPartList(); return _targetCommandList; } }
+        public List<Part> targetMassList { get { if (targetPartListNeedsUpdating) UpdateTargetPartList(); return _targetMassList; } }
+        public List<Part> _targetWeaponList = new List<Part>();
+        List<Part> _targetEngineList = new List<Part>();
+        List<Part> _targetCommandList = new List<Part>();
+        public List<Part> _targetMassList = new List<Part>();
 
         public bool isLandedOrSurfaceSplashed
         {
@@ -166,6 +173,7 @@ namespace BDArmory.Targeting
                 return false;
             }
         }
+
         void Awake()
         {
             if (!vessel)
@@ -220,7 +228,7 @@ namespace BDArmory.Targeting
                 GameEvents.onVesselPartCountChanged.Add(VesselModified);
                 //massRoutine = StartCoroutine(MassRoutine());              // TODO: CHECK BEHAVIOUR AND SIDE EFFECTS!
             }
-            UpdateTargetPartList();
+            targetPartListNeedsUpdating = true;
             GameEvents.onVesselDestroy.Add(CleanFriendliesEngaging);
         }
 
@@ -233,7 +241,7 @@ namespace BDArmory.Targeting
         {
             //remove delegate from peace enable event
             BDArmorySetup.OnPeaceEnabled -= OnPeaceEnabled;
-            vessel.OnJustAboutToBeDestroyed -= AboutToBeDestroyed;
+            if (vessel is not null) vessel.OnJustAboutToBeDestroyed -= AboutToBeDestroyed;
             GameEvents.onVesselPartCountChanged.Remove(VesselModified);
             GameEvents.onVesselDestroy.Remove(CleanFriendliesEngaging);
             BDATargetManager.RemoveTarget(this);
@@ -254,7 +262,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        void Update()
+        void FixedUpdate()
         {
             if (vessel == null)
             {
@@ -272,51 +280,38 @@ namespace BDArmory.Targeting
 
         public void UpdateTargetPartList()
         {
-            targetCommandList.Clear();
-            targetWeaponList.Clear();
-            targetMassList.Clear();
-            targetEngineList.Clear();
+            targetPartListNeedsUpdating = false;
+            _targetCommandList.Clear();
+            _targetWeaponList.Clear();
+            _targetMassList.Clear();
+            _targetEngineList.Clear();
             //anything else? fueltanks? - could be useful if incindiary ammo gets implemented
             //power generation? - radiators/generators - if doing CoaDE style fights/need reactors to power weapons
 
             if (vessel == null) return;
-            using (List<Part>.Enumerator part = vessel.Parts.GetEnumerator())
-                while (part.MoveNext())
-                {
-                    if (part.Current == null) continue;
 
-                    if (part.Current.FindModuleImplementing<ModuleWeapon>() || part.Current.FindModuleImplementing<MissileTurret>())
-                    {
-                        targetWeaponList.Add(part.Current);
-                    }
+            bounds = vessel.GetBounds(); // Update vessel bounds on part changes
 
-                    if (part.Current.FindModuleImplementing<ModuleEngines>() || part.Current.FindModuleImplementing<ModuleEnginesFX>())
-                    {
-                        targetEngineList.Add(part.Current);
-                    }
+            // Get the parts via the VesselModuleRegistry to avoid the expensive Find... commands.
+            VesselModuleRegistry.OnVesselModified(vessel); // Make sure the vessel is up-to-date since this can happen as part of an event.
+            _targetWeaponList.AddUniqueRange(VesselModuleRegistry.GetModuleWeapons(vessel).Select(m => m.part).Concat(VesselModuleRegistry.GetModules<MissileTurret>(vessel).Select(m => m.part)).Where(p => p is not null));
+            _targetEngineList.AddUniqueRange(VesselModuleRegistry.GetModuleEngines(vessel).Select(m => m.part).Concat(VesselModuleRegistry.GetModules<ModuleEnginesFX>(vessel).Select(m => m.part)).Where(p => p is not null));
+            _targetCommandList.AddUniqueRange(VesselModuleRegistry.GetModuleCommands(vessel).Select(m => m.part).Concat(VesselModuleRegistry.GetKerbalSeats(vessel).Select(m => m.part)).Where(p => p is not null));
+            _targetMassList.AddRange(vessel.Parts.Where(p => p is not null));
 
-                    if (part.Current.FindModuleImplementing<ModuleCommand>() || part.Current.FindModuleImplementing<KerbalSeat>())
-                    {
-                        targetCommandList.Add(part.Current);
-                    }
-                    targetMassList.Add(part.Current);
-                }
-            targetMassList = targetMassList.OrderBy(w => w.mass).ToList(); //weight target part priority by part mass, also serves as a default 'target heaviest part' in case other options not selected
-            targetMassList.Reverse(); //Order by mass is lightest to heaviest. We want H>L
-            if (targetMassList.Count > 10)
-                targetMassList.RemoveRange(10, (targetMassList.Count - 10)); //trim to max turret targets
-            targetCommandList = targetCommandList.OrderBy(w => w.mass).ToList();
-            targetCommandList.Reverse();
-            if (targetCommandList.Count > 10)
-                targetCommandList.RemoveRange(10, (targetCommandList.Count - 10));
-            targetEngineList = targetEngineList.OrderBy(w => w.mass).ToList();
-            targetEngineList.Reverse();
-            if (targetEngineList.Count > 10)
-                targetEngineList.RemoveRange(10, (targetEngineList.Count - 10));
-            targetWeaponList = targetWeaponList.OrderBy(w => w.mass).ToList();
-            targetWeaponList.Reverse();
-            if (targetWeaponList.Count > 10)
-                targetWeaponList.RemoveRange(10, (targetWeaponList.Count - 10));
+            // Sort and cull target part lists.
+            _targetMassList.Sort((p1, p2) => (p2.mass.CompareTo(p1.mass))); // Heaviest to lightest.
+            if (_targetMassList.Count > 10)
+                _targetMassList.RemoveRange(10, (_targetMassList.Count - 10)); //trim to max turret targets
+            _targetCommandList.Sort((p1, p2) => (p2.mass.CompareTo(p1.mass)));
+            if (_targetCommandList.Count > 10)
+                _targetCommandList.RemoveRange(10, (_targetCommandList.Count - 10));
+            _targetEngineList.Sort((p1, p2) => (p2.mass.CompareTo(p1.mass)));
+            if (_targetEngineList.Count > 10)
+                _targetEngineList.RemoveRange(10, (_targetEngineList.Count - 10));
+            _targetWeaponList.Sort((p1, p2) => (p2.mass.CompareTo(p1.mass)));
+            if (_targetWeaponList.Count > 10)
+                _targetWeaponList.RemoveRange(10, (_targetWeaponList.Count - 10));
         }
 
         void CleanFriendliesEngaging(Vessel v)
@@ -406,7 +401,7 @@ namespace BDArmory.Targeting
             ataDot = (ataDot + 1) / 2; // Adjust from 0-1 instead of -1 to 1
             return ataDot * ataDot;
         }
-        public float TargetPriEngagement(MissileFire mf) // Square cosine of antenna train angle
+        public float TargetPriEngagement(MissileFire mf) // Differentiate between flying and surface targets
         {
             if (mf == null) return 0; // no WM, so no valid target, no impact on targeting score
             if (mf.vessel.LandedOrSplashed)
@@ -483,7 +478,8 @@ namespace BDArmory.Targeting
             if (myMF == null) return 0;
             var relativePosition = vessel.transform.position - myMF.vessel.transform.position;
             float theta = Vector3.Angle(myMF.vessel.srf_vel_direction, relativePosition);
-            return Mathf.Clamp(((Mathf.Pow(Mathf.Cos(theta / 2f), 2f) + 1f) * 100f / Mathf.Max(10f, relativePosition.magnitude)) / 2, 0, 1); // Ranges from 0 to 1, clamped at 1 for distances closer than 100m
+            float cosTheta2 = Mathf.Cos(theta / 2f);
+            return Mathf.Clamp(((cosTheta2 * cosTheta2 + 1f) * 100f / Mathf.Max(10f, relativePosition.magnitude)) / 2, 0, 1); // Ranges from 0 to 1, clamped at 1 for distances closer than 100m
         }
 
         public float TargetPriMass(MissileFire mf, MissileFire myMf) // Relative mass compared to our own mass
@@ -494,6 +490,20 @@ namespace BDArmory.Targeting
                 float targetMass = mf.vessel.GetTotalMass();
                 float myMass = myMf.vessel.GetTotalMass();
                 return Mathf.Clamp(Mathf.Log10(targetMass / myMass) / 2f, -1, 1); // Ranges -1 to 1, -1 if we are 100 times as heavy as target, 1 target is 100 times as heavy as us
+            }
+            else
+            {
+                return 0;
+            }
+        }
+
+        public float TargetPriDmg(MissileFire mf) // Relative HP of Target
+        {
+            if (mf == null) return 0;
+            if (mf.vessel != null)
+            {
+                float TargetPriDmg = 1 - Mathf.Clamp(mf.currentHP / mf.totalHP, 0, 1); //ranges from 0-1, 0 is undamaged, 1 is cockpit falling out of the sky
+                return TargetPriDmg;
             }
             else
             {
@@ -585,11 +595,11 @@ namespace BDArmory.Targeting
 
         public void VesselModified(Vessel v)
         {
-            if (v && v == this.vessel)
+            if (v && v == this.vessel && isActiveAndEnabled)
             {
                 if (!alreadyScheduledRCSUpdate)
                     StartCoroutine(UpdateRCSDelayed());
-                UpdateTargetPartList();
+                targetPartListNeedsUpdating = true;
             }
         }
 

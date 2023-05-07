@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+using BDArmory.Extensions;
 using BDArmory.Utils;
 
 namespace BDArmory.Control
@@ -15,6 +16,7 @@ namespace BDArmory.Control
         public bool allowAfterburner = true;
         public bool forceAfterburner = false;
         public float afterburnerPriority = 50f;
+        public bool forceAfterburnerIfMaxThrottle = false;
 
         //[KSPField(isPersistant = false, guiActive = true, guiActiveEditor = false, guiName = "ThrottleFactor"),
         //	UI_FloatRange(minValue = 1f, maxValue = 20f, stepIncrement = .5f, scene = UI_Scene.All)]
@@ -22,14 +24,25 @@ namespace BDArmory.Control
 
         public Vessel vessel;
 
+        AxisGroupsModule axisGroupsModule;
+        bool hasAxisGroupsModule = false; // To avoid repeated null checks
+
         bool controlEnabled;
 
         private float smoothedAccel = 0; // smoothed acceleration, prevents super fast toggling of afterburner
+        bool shouldSetAfterburners = false;
+        bool setAfterburnersEnabled = false;
 
         //[KSPField(guiActive = true, guiName = "Thrust")]
         public float debugThrust;
 
         public List<MultiModeEngine> multiModeEngines;
+
+        void Start()
+        {
+            axisGroupsModule = vessel.FindVesselModuleImplementingBDA<AxisGroupsModule>(); // Look for an axis group module.
+            if (axisGroupsModule != null) hasAxisGroupsModule = true;
+        }
 
         //[KSPEvent(guiActive = true, guiActiveEditor = false, guiName = "ToggleAC")]
         public void Toggle()
@@ -64,7 +77,7 @@ namespace BDArmory.Control
             {
                 if (useBrakes)
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, true);
-                s.mainThrottle = 0;
+                SetThrottle(s, 0);
                 return;
             }
 
@@ -74,6 +87,11 @@ namespace BDArmory.Control
             float setAccel = speedError * throttleFactor;
 
             SetAcceleration(setAccel, s);
+
+            if (forceAfterburnerIfMaxThrottle && s.mainThrottle == 1f)
+                SetAfterBurners(true);
+            else if (shouldSetAfterburners)
+                SetAfterBurners(setAfterburnersEnabled);
         }
 
         void SetAcceleration(float accel, FlightCtrlState s)
@@ -88,12 +106,12 @@ namespace BDArmory.Control
 
             if (throttleOverride >= 0)
             {
-                s.mainThrottle = throttleOverride;
+                SetThrottle(s, throttleOverride);
                 return;
             }
             if (engineAccel == 0)
             {
-                s.mainThrottle = accel > 0 ? 1 : 0;
+                SetThrottle(s, accel > 0 ? 1 : 0);
                 return;
             }
 
@@ -101,7 +119,7 @@ namespace BDArmory.Control
 
             float requestThrottle = (requestEngineAccel - dragAccel) / engineAccel;
 
-            s.mainThrottle = Mathf.Clamp01(requestThrottle);
+            SetThrottle(s, Mathf.Clamp01(requestThrottle));
 
             //use brakes if overspeeding too much
             if (useBrakes)
@@ -114,6 +132,20 @@ namespace BDArmory.Control
                 {
                     vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, false);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Set the main throttle and the corresponding axis group.
+        /// </summary>
+        /// <param name="s">The flight control state</param>
+        /// <param name="value">The throttle value</param>
+        public void SetThrottle(FlightCtrlState s, float value)
+        {
+            s.mainThrottle = value;
+            if (hasAxisGroupsModule)
+            {
+                axisGroupsModule.UpdateAxisGroup(KSPAxisGroup.MainThrottle, 2f * value - 1f); // Throttle is full-axis: 0—1 throttle maps to -1—1 axis.
             }
         }
 
@@ -168,18 +200,29 @@ namespace BDArmory.Control
             allowAfterburner = allowAfterburner && (afterburnerPriority != 0f);
 
             //use multimode afterburner for extra accel if lacking
-            using (List<MultiModeEngine>.Enumerator mmes = multiModeEngines.GetEnumerator())
+            if (allowAfterburner && (forceAfterburner || smoothedAccel < requestAccel * (1.5f / (Mathf.Exp(100f / 27f) - 1f) * (Mathf.Exp(Mathf.Clamp(afterburnerPriority, 0f, 100f) / 27f) - 1f))))
+            { shouldSetAfterburners = true; setAfterburnersEnabled = true; }
+            else if (!allowAfterburner || (!forceAfterburner && smoothedAccel > requestAccel * (1f + 0.5f / (Mathf.Exp(50f / 25f) - 1f) * (Mathf.Exp(Mathf.Clamp(afterburnerPriority, 0f, 100f) / 25f) - 1f))))
+            { shouldSetAfterburners = true; setAfterburnersEnabled = false; }
+            else
+            { shouldSetAfterburners = false; }
+            return accel;
+        }
+
+        void SetAfterBurners(bool enable)
+        {
+            using (var mmes = multiModeEngines.GetEnumerator())
                 while (mmes.MoveNext())
                 {
                     if (mmes.Current == null) continue;
-                    if (allowAfterburner && (forceAfterburner || smoothedAccel < requestAccel * (1.5f / (Mathf.Exp(100f / 27f) - 1f) * (Mathf.Exp(Mathf.Clamp(afterburnerPriority, 0f, 100f) / 27f) - 1f))))
+                    if (enable)
                     {
                         if (mmes.Current.runningPrimary)
                         {
                             mmes.Current.Events["ModeEvent"].Invoke();
                         }
                     }
-                    else if (!allowAfterburner || (!forceAfterburner && smoothedAccel > requestAccel * (1f + 0.5f / (Mathf.Exp(50f / 25f) - 1f) * (Mathf.Exp(Mathf.Clamp(afterburnerPriority, 0f, 100f) / 25f) - 1f))))
+                    else
                     {
                         if (!mmes.Current.runningPrimary)
                         {
@@ -187,7 +230,6 @@ namespace BDArmory.Control
                         }
                     }
                 }
-            return accel;
         }
 
         private static bool IsAfterBurnerEngine(MultiModeEngine engine)
@@ -302,7 +344,7 @@ namespace BDArmory.Control
                 float altP = Kp * (targetAltitude - (float)vessel.radarAltitude);
                 float altD = Kd * (float)vessel.verticalSpeed;
                 altIntegral = Ki * Mathf.Clamp(altIntegral + altError * Time.deltaTime, -1f, 1f);
-                
+
                 float throttle = altP + altIntegral - altD;
                 s.mainThrottle = Mathf.Clamp01(throttle);
 

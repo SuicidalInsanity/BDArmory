@@ -1,7 +1,10 @@
-using UnityEngine;
-using System.Reflection;
-
 using BDArmory.Settings;
+using UnityEngine;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace BDArmory.Utils
 {
@@ -28,7 +31,20 @@ namespace BDArmory.Utils
             return curve;
         }
 
-        private static int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23);
+        public static IEnumerable<Type> GetLoadableTypes(this Assembly assembly)
+        {
+            // TODO: Argument validation
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException e)
+            {
+                return e.Types.Where(t => t != null);
+            }
+        }
+
+        private const int lineOfSightLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
         public static bool CheckSightLine(Vector3 origin, Vector3 target, float maxDistance, float threshold,
             float startDistance)
         {
@@ -119,5 +135,65 @@ namespace BDArmory.Utils
             BDArmorySettings.TIME_OVERRIDE = enabled;
             Time.timeScale = enabled ? BDArmorySettings.TIME_SCALE : 1f;
         }
+    }
+
+    /// <summary>
+    /// Custom yield instruction that allows waiting for a number of seconds based on the FixedUpdate cycle instead of the Update cycle.
+    /// Based on http://answers.unity.com/comments/1910230/view.html
+    /// 
+    /// Note: All Unity yield instructions other than WaitForFixedUpdate wait until the next Update cycle to check their conditions, including "yield return null".
+    ///       For any yielding that is physics related, use WaitForFixedUpdate (use a single instance and yield it multiple times) or one of the classes below.
+    /// </summary>
+    public class WaitForSecondsFixed : IEnumerator
+    {
+        private WaitForFixedUpdate wait = new WaitForFixedUpdate();
+        public virtual object Current => this.wait;
+        float endTime, seconds;
+
+        public WaitForSecondsFixed(float seconds)
+        {
+            this.seconds = seconds;
+            this.Reset();
+        }
+
+        public bool MoveNext() => this.keepWaiting;
+        public virtual bool keepWaiting => (Time.fixedTime < endTime);
+        public virtual void Reset() => this.endTime = Time.fixedTime + this.seconds;
+    }
+
+    /// <summary>
+    /// Custom yield instruction that allows yielding until a predicate is satisfied based on the FixedUpdate cycle instead of the Update cycle.
+    /// </summary>
+    public class WaitUntilFixed : IEnumerator
+    {
+        private WaitForFixedUpdate wait = new WaitForFixedUpdate();
+        public virtual object Current => wait;
+        Func<bool> predicate;
+
+        public WaitUntilFixed(Func<bool> predicate)
+        {
+            this.predicate = predicate;
+        }
+
+        public bool MoveNext() => !predicate();
+        public virtual void Reset() { }
+    }
+
+    /// <summary>
+    /// Custom yield instruction that allows yielding while a predicate is satisfied based on the FixedUpdate cycle instead of the Update cycle.
+    /// </summary>
+    public class WaitWhileFixed : IEnumerator
+    {
+        private WaitForFixedUpdate wait = new WaitForFixedUpdate();
+        public virtual object Current => wait;
+        Func<bool> predicate;
+
+        public WaitWhileFixed(Func<bool> predicate)
+        {
+            this.predicate = predicate;
+        }
+
+        public bool MoveNext() => predicate();
+        public virtual void Reset() { }
     }
 }

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using BDArmory.Utils;
+using BDArmory.Weapons;
+using System.Collections;
 
 namespace BDArmory.FX
 {
@@ -13,6 +15,7 @@ namespace BDArmory.FX
         public float StartTime { get; set; }
         public AudioClip ExSound { get; set; }
         public AudioSource audioSource { get; set; }
+        public string SoundPath { get; set; }
         private float Power { get; set; }
         private float emitTime { get; set; }
         private float maxTime { get; set; }
@@ -51,6 +54,22 @@ namespace BDArmory.FX
                     emission.enabled = true;
                     EffectBehaviour.AddParticleEmitter(pe);
                 }
+            if (!String.IsNullOrEmpty(SoundPath))
+            {
+                audioSource = gameObject.GetComponent<AudioSource>();
+                if (ExSound == null)
+                {
+                    ExSound = SoundUtils.GetAudioClip(SoundPath);
+
+                    if (ExSound == null)
+                    {
+                        Debug.LogError("[BDArmory.FXEmitter]: " + ExSound + " was not found, using the default sound instead. Please fix your model.");
+                        ExSound = SoundUtils.GetAudioClip(ModuleWeapon.defaultExplSoundPath);
+                    }
+                }
+                audioSource.PlayOneShot(ExSound); //get distance to active vessel and add a delay?
+                //StartCoroutine(DelayBlastSFX(Vector3.Distance(this.transform.position, FlightGlobals.ActiveVessel.CoM) / 343f));
+            }
         }
 
         void OnDisable()
@@ -95,9 +114,18 @@ namespace BDArmory.FX
         {
             if (!gameObject.activeInHierarchy) return;
 
-            if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
+            if (UI.BDArmorySetup.GameIsPaused)
             {
-                transform.position -= FloatingOrigin.OffsetNonKrakensbane;
+                if (audioSource.isPlaying)
+                {
+                    audioSource.Stop();
+                }
+                return;
+            }
+
+            if (BDKrakensbane.IsActive)
+            {
+                transform.position -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
             }
 
             if ((disabled || overrideLifeTime) && TimeIndex > particlesMaxEnergy)
@@ -105,8 +133,23 @@ namespace BDArmory.FX
                 gameObject.SetActive(false);
                 return;
             }
+            if (UI.BDArmorySetup.GameIsPaused)
+            {
+                if (audioSource.isPlaying)
+                {
+                    audioSource.Stop();
+                }
+                return;
+            }
         }
-
+        IEnumerator DelayBlastSFX(float delay)
+        {
+            if (delay > 0)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+            audioSource.PlayOneShot(ExSound);
+        }
         static void CreateObjectPool(string ModelPath, string soundPath)
         {
             var key = ModelPath + soundPath;
@@ -121,19 +164,10 @@ namespace BDArmory.FX
                 var eFx = FXTemplate.AddComponent<FXEmitter>();
                 if (!String.IsNullOrEmpty(soundPath))
                 {
-                    var soundClip = GameDatabase.Instance.GetAudioClip(soundPath);
-                    if (soundClip == null)
-                    {
-                        Debug.LogError("[BDArmory.FXBase]: " + soundPath + " was not found, using the default sound instead. Please fix your model.");
-                        soundClip = GameDatabase.Instance.GetAudioClip(defaultSoundPath);
-                    }
-
-                    eFx.ExSound = soundClip;
                     eFx.audioSource = FXTemplate.AddComponent<AudioSource>();
                     eFx.audioSource.minDistance = 200;
                     eFx.audioSource.maxDistance = 5500;
                     eFx.audioSource.spatialBlend = 1;
-
                 }
                 FXTemplate.SetActive(false);
                 FXPools[key] = ObjectPool.CreateObjectPool(FXTemplate, 10, true, true, 0f, false);
@@ -179,6 +213,7 @@ namespace BDArmory.FX
                     eFx.audioSource.maxDistance = 3000;
                     eFx.audioSource.priority = 9999;
                 }
+                eFx.SoundPath = soundPath;
             }
             newFX.SetActive(true);
         }

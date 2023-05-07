@@ -107,6 +107,15 @@ namespace BDArmory.UI
                     {
                         if (parts.Current.partConfig == null || parts.Current.partPrefab == null)
                             continue;
+                        if (parts.Current.partConfig.HasValue("TechRequired"))
+                        {
+                            var research = parts.Current.partConfig.GetValue("Techrequired");
+                            if (research == "Unresearchable")
+                            {
+                                parts.Current.partConfig.RemoveValue(BDACategoryKey);
+                                continue;
+                            }
+                        }
                         if (parts.Current.partConfig.HasValue(BDACategoryKey))
                             parts.Current.partConfig.AddValue(AutoBDACategoryKey, parts.Current.partConfig.GetValue(BDACategoryKey));
                         else

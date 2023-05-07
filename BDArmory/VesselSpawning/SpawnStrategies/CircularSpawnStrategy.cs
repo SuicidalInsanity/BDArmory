@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using BDArmory.Competition.RemoteOrchestration;
 
-namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
+using BDArmory.Competition.RemoteOrchestration;
+using BDArmory.Settings;
+
+namespace BDArmory.VesselSpawning.SpawnStrategies
 {
     public class CircularSpawnStrategy : SpawnStrategy
     {
@@ -33,14 +35,17 @@ namespace BDArmory.Competition.VesselSpawning.SpawnStrategies
             // use vesselSource to resolve local paths for active vessels
             var craftUrls = vesselIds.Select(e => vesselSource.GetLocalPath(e));
             // spawn all craftUrls in a circle around the center point
-            SpawnConfig spawnConfig = new SpawnConfig(
-                bodyIndex,
-                latitude,
-                longitude,
-                altitude,
+            CircularSpawnConfig spawnConfig = new CircularSpawnConfig(
+                new SpawnConfig(
+                    bodyIndex,
+                    latitude,
+                    longitude,
+                    altitude,
+                    true,
+                    craftFiles: new List<string>(craftUrls)
+                ),
                 radius,
-                true,
-                craftFiles: new List<string>(craftUrls)
+                BDArmorySettings.VESSEL_SPAWN_DISTANCE_TOGGLE
             );
             yield return spawner.Spawn(spawnConfig);
 

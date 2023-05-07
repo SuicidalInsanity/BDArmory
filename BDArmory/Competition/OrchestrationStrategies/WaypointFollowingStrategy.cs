@@ -62,6 +62,8 @@ namespace BDArmory.Competition.OrchestrationStrategies
             this.waypoints = waypoints;
         }
 
+        float liftMultiplier = 0;
+
         public IEnumerator Execute(BDAScoreClient client, BDAScoreService service)
         {
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.WaypointFollowingStrategy]: Started");
@@ -76,19 +78,28 @@ namespace BDArmory.Competition.OrchestrationStrategies
             PrepareCompetition();
 
             // Configure the pilots' waypoints.
-            var mappedWaypoints = waypoints.Select(e => e.location).ToList();
+            var mappedWaypoints = BDArmorySettings.WAYPOINTS_ALTITUDE == 0 ? waypoints.Select(e => e.location).ToList() : waypoints.Select(wp => new Vector3(wp.location.x, wp.location.y, BDArmorySettings.WAYPOINTS_ALTITUDE)).ToList();
             BDACompetitionMode.Instance.competitionStatus.Add($"Starting waypoints competition {BDACompetitionMode.Instance.CompetitionID}.");
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log(string.Format("[BDArmory.WaypointFollowingStrategy]: Setting {0} waypoints", mappedWaypoints.Count));
 
             foreach (var pilot in pilots)
-            { pilot.SetWaypoints(mappedWaypoints); }
+            {
+                pilot.SetWaypoints(mappedWaypoints);
+                foreach (var kerbal in VesselModuleRegistry.GetKerbalEVAs(pilot.vessel))
+                {
+                    if (kerbal == null) continue;
+                    // Remove drag from EVA kerbals on seats.
+                    kerbal.part.dragModel = Part.DragModel.SPHERICAL; // Use the spherical drag model for which the min/max drag values work properly.
+                    kerbal.part.ShieldedFromAirstream = true;
+                }
+            }
 
             if (BDArmorySettings.WAYPOINTS_INFINITE_FUEL_AT_START)
             { foreach (var pilot in pilots) pilot.MaintainFuelLevelsUntilWaypoint(); }
 
             // Wait for the pilots to complete the course.
             var startedAt = Planetarium.GetUniversalTime();
-            yield return new WaitWhile(() => pilots.Any(pilot => pilot != null && pilot.weaponManager != null && pilot.IsRunningWaypoints && !(pilot.vessel.Landed || pilot.vessel.Splashed)));
+            yield return new WaitWhile(() => BDACompetitionMode.Instance.competitionIsActive && pilots.Any(pilot => pilot != null && pilot.weaponManager != null && pilot.IsRunningWaypoints && !(pilot.vessel.Landed || pilot.vessel.Splashed)));
             var endedAt = Planetarium.GetUniversalTime();
 
             BDACompetitionMode.Instance.competitionStatus.Add("Waypoints competition finished. Scores:");
@@ -127,6 +138,11 @@ namespace BDArmory.Competition.OrchestrationStrategies
             if (BDArmorySettings.TIME_OVERRIDE && BDArmorySettings.TIME_SCALE != 0)
             { Time.timeScale = BDArmorySettings.TIME_SCALE; }
             Debug.Log("[BDArmory.BDACompetitionMode:" + BDACompetitionMode.Instance.CompetitionID.ToString() + "]: Starting Competition");
+            if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)
+            {
+                liftMultiplier = PhysicsGlobals.LiftMultiplier;
+                PhysicsGlobals.LiftMultiplier = 0.1f;
+            }
             if (BDArmorySettings.WAYPOINTS_VISUALIZE)
             {
                 Vector3 previousLocation = FlightGlobals.ActiveVessel.transform.position;
@@ -137,34 +153,35 @@ namespace BDArmory.Competition.OrchestrationStrategies
                 for (int i = 0; i < waypoints.Count; i++)
                 {
                     float terrainAltitude = (float)FlightGlobals.currentMainBody.TerrainAltitude(waypoints[i].location.x, waypoints[i].location.y);
-                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoints[i].location.x, waypoints[i].location.y, waypoints[i].location.z + terrainAltitude), FlightGlobals.currentMainBody);
+                    Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoints[i].location.x, waypoints[i].location.y, (BDArmorySettings.WAYPOINTS_ALTITUDE == 0 ? waypoints[i].location.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + terrainAltitude), FlightGlobals.currentMainBody);
                     //FlightGlobals.currentMainBody.GetLatLonAlt(new Vector3(waypoints[i].latitude, waypoints[i].longitude, waypoints[i].altitude), out WorldCoords.x, out WorldCoords.y, out WorldCoords.z);
                     var direction = (WorldCoords - previousLocation).normalized;
                     //WayPointMarker.CreateWaypoint(WorldCoords, direction, ModelPath, BDArmorySettings.WAYPOINTS_SCALE);
-                    WayPointMarker.CreateWaypoint(WorldCoords, direction, ModelPath, BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE  :  waypoints[i].scale);
+                    WayPointMarker.CreateWaypoint(WorldCoords, direction, ModelPath, BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : waypoints[i].scale);
 
                     previousLocation = WorldCoords;
                     var location = string.Format("({0:##.###}, {1:##.###}, {2:####}", waypoints[i].location.x, waypoints[i].location.y, waypoints[i].location.z);
-                    Debug.Log("[BDArmory.Waypoints]: Creating waypoint marker at  " + " " + location + " scale: " + waypoints[i].scale);
+                    Debug.Log("[BDArmory.Waypoints]: Creating waypoint marker at  " + " " + location + " World: " + FlightGlobals.currentMainBody.flightGlobalsIndex + " scale: " + (BDArmorySettings.WAYPOINTS_SCALE > 0 ? BDArmorySettings.WAYPOINTS_SCALE : waypoints[i].scale));
                 }
             }
 
-            if (BDArmorySettings.WAYPOINTS_MODE || (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 50))
+            if (BDArmorySettings.WAYPOINTS_MODE || (BDArmorySettings.RUNWAY_PROJECT && (BDArmorySettings.RUNWAY_PROJECT_ROUND == 50 || BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)))
             {
                 float terrainAltitude = (float)FlightGlobals.currentMainBody.TerrainAltitude(waypoints[0].location.x, waypoints[0].location.y);
                 Vector3d WorldCoords = VectorUtils.GetWorldSurfacePostion(new Vector3(waypoints[0].location.x, waypoints[0].location.y, waypoints[0].location.z + terrainAltitude), FlightGlobals.currentMainBody);
                 foreach (var pilot in pilots)
                 {
-                    if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 50) // S4R10 alt limiter
+                    if (BDArmorySettings.RUNWAY_PROJECT && (BDArmorySettings.RUNWAY_PROJECT_ROUND == 50 || BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)) // S4R10 alt limiter
                     {
                         var pilotAI = pilot as BDModulePilotAI;
                         if (pilotAI != null)
                         {
                             // Max Altitude must be 100.
                             pilotAI.maxAltitudeToggle = true;
-                            pilotAI.maxAltitude = 100f;
+                            pilotAI.maxAltitude = Mathf.Min(pilotAI.maxAltitude, 100f);
                             pilotAI.minAltitude = Mathf.Min(pilotAI.minAltitude, 50f); // Waypoints are at 50, so anything higher than this is going to trigger gain alt all the time.
-                            pilotAI.defaultAltitude = Mathf.Min(pilotAI.defaultAltitude, 100f);
+                            pilotAI.defaultAltitude = Mathf.Clamp(pilotAI.defaultAltitude, pilotAI.minAltitude, pilotAI.maxAltitude);
+                            if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 55) pilotAI.ImmelmannTurnAngle = 0; // Set the Immelmann turn angle to 0 since most of these craft dont't pitch well.
                         }
                     }
                     /*
@@ -239,6 +256,11 @@ namespace BDArmory.Competition.OrchestrationStrategies
         public void CleanUp()
         {
             if (BDACompetitionMode.Instance.competitionIsActive) BDACompetitionMode.Instance.StopCompetition(); // Competition is done, so stop it and do the rest of the book-keeping.
+            if (liftMultiplier > 0)
+            {
+                PhysicsGlobals.LiftMultiplier = liftMultiplier;
+                liftMultiplier = 0;
+            }
         }
     }
 
@@ -286,7 +308,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
         }
         void Awake()
         {
-            transform.parent = FlightGlobals.ActiveVessel.mainBody.transform; 
+            transform.parent = FlightGlobals.ActiveVessel.mainBody.transform;
         }
         private void OnEnable()
         {

@@ -94,7 +94,7 @@ namespace BDArmory.Weapons
 
         void DeploySubmunitions()
         {
-            missileLauncher.sfAudioSource.PlayOneShot(GameDatabase.Instance.GetAudioClip("BDArmory/Sounds/flare"));
+            missileLauncher.sfAudioSource.PlayOneShot(SoundUtils.GetAudioClip("BDArmory/Sounds/flareSound"));
             FXMonger.Explode(part, transform.position + part.rb.velocity * Time.fixedDeltaTime, 0.1f);
 
             deployed = true;
@@ -120,7 +120,7 @@ namespace BDArmory.Weapons
                     Vector3 direction = (sub.Current.transform.position - part.transform.position).normalized;
                     Rigidbody subRB = sub.Current.GetComponent<Rigidbody>();
                     subRB.isKinematic = false;
-                    subRB.velocity = part.rb.velocity + Krakensbane.GetFrameVelocityV3f() +
+                    subRB.velocity = part.rb.velocity + BDKrakensbane.FrameVelocityV3f +
                                      (UnityEngine.Random.Range(submunitionMaxSpeed / 10, submunitionMaxSpeed) * direction);
 
                     Submunition subScript = sub.Current.AddComponent<Submunition>();
@@ -142,7 +142,7 @@ namespace BDArmory.Weapons
                     Vector3 direction = (fairing.Current.transform.position - part.transform.position).normalized;
                     Rigidbody fRB = fairing.Current.GetComponent<Rigidbody>();
                     fRB.isKinematic = false;
-                    fRB.velocity = part.rb.velocity + Krakensbane.GetFrameVelocityV3f() + ((submunitionMaxSpeed + 2) * direction);
+                    fRB.velocity = part.rb.velocity + BDKrakensbane.FrameVelocityV3f + ((submunitionMaxSpeed + 2) * direction);
                     fairing.Current.AddComponent<KSPForceApplier>();
                     fairing.Current.GetComponent<KSPForceApplier>().drag = 0.2f;
                     ClusterBombFairing fairingScript = fairing.Current.AddComponent<ClusterBombFairing>();
@@ -179,7 +179,7 @@ namespace BDArmory.Weapons
         float startTime;
 
         Rigidbody rb;
-        private int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23);
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
 
         void Start()
         {
@@ -207,10 +207,10 @@ namespace BDArmory.Weapons
                 }
 
                 //floating origin and velocity offloading corrections
-                if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
+                if (BDKrakensbane.IsActive)
                 {
-                    transform.position -= FloatingOrigin.OffsetNonKrakensbane;
-                    prevPosition -= FloatingOrigin.OffsetNonKrakensbane;
+                    transform.position -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                    prevPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
                 }
 
                 currPosition = transform.position;
@@ -284,7 +284,7 @@ namespace BDArmory.Weapons
         float startTime;
 
         Rigidbody rb;
-        private int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23);
+        const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
 
         void Start()
         {
@@ -299,10 +299,10 @@ namespace BDArmory.Weapons
             if (deployed)
             {
                 //floating origin and velocity offloading corrections
-                if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
+                if (BDKrakensbane.IsActive)
                 {
-                    transform.position -= FloatingOrigin.OffsetNonKrakensbane;
-                    prevPosition -= FloatingOrigin.OffsetNonKrakensbane;
+                    transform.position -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                    prevPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
                 }
 
                 currPosition = transform.position;

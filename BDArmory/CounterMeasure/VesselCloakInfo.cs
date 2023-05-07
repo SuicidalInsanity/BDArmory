@@ -126,8 +126,9 @@ namespace BDArmory.CounterMeasure
 
         IEnumerator DelayedCleanCloakListRoutine()
         {
-            yield return null;
-            yield return null;
+            var wait = new WaitForFixedUpdate();
+            yield return wait;
+            yield return wait;
             CleanCloakList();
         }
 

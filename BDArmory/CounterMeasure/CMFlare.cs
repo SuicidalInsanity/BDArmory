@@ -23,7 +23,8 @@ namespace BDArmory.CounterMeasure
 
         public Vector3 velocity;
 
-        public float thermal; //heat value
+        public Tuple<float, Part> thermalSig; //heat value
+        public float thermal;
         float minThermal;
         float startThermal;
 
@@ -53,14 +54,15 @@ namespace BDArmory.CounterMeasure
 
             // NEW (1.10 and later): generate flare within spectrum of emitting vessel's heat signature, but narrow range for low heats
 
-            thermal = BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero); //if enabling heatSig occlusion in IR missiles the thermal value of flares will have to be adjusted to compensate.
+            thermalSig = BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero); //if enabling heatSig occlusion in IR missiles the thermal value of flares will have to be adjusted to compensate.
+            thermal = thermalSig.Item1;
             //Then again, these are being ejected in a range of temps, which should cover potential differences in heatreturn from a target based on occlusion. Have vector3.Zero replaced with missile position to sim occlusion level missile owuld see and set flare temps accordingly?
             // float minMult = Mathf.Clamp(-0.265f * Mathf.Log(sourceHeat) + 2.3f, 0.65f, 0.8f);
             float thermalMinMult = Mathf.Clamp(((0.00093f * thermal * thermal - 1.4457f * thermal + 1141.95f) / 1000f), 0.65f, 0.8f); // Equivalent to above, but uses polynomial for speed
             thermal *= UnityEngine.Random.Range(thermalMinMult, Mathf.Max(BDArmorySettings.FLARE_FACTOR, 0f) - thermalMinMult + 0.8f);
 
             if (BDArmorySettings.DEBUG_OTHER)
-                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetDisplayName() + ":" + BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero).ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
+                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetDisplayName() + ":" + thermalSig.Item1.ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
         }
 
         void OnEnable()
@@ -84,7 +86,7 @@ namespace BDArmory.CounterMeasure
 
             EnableEmitters();
 
-            BDArmorySetup.numberOfParticleEmitters++;
+            ++BDArmorySetup.numberOfParticleEmitters;
 
             if (lights == null)
             {
@@ -117,14 +119,14 @@ namespace BDArmory.CounterMeasure
             }
 
             //floating origin and velocity offloading corrections
-            if (!FloatingOrigin.Offset.IsZero() || !Krakensbane.GetFrameVelocity().IsZero())
+            if (BDKrakensbane.IsActive)
             {
-                transform.position -= FloatingOrigin.OffsetNonKrakensbane;
+                transform.localPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
             }
 
             if (velocity != Vector3.zero)
             {
-                transform.rotation = Quaternion.LookRotation(velocity, upDirection);
+                transform.localRotation = Quaternion.LookRotation(velocity, upDirection);
             }
 
             //Particle effects
@@ -132,7 +134,7 @@ namespace BDArmory.CounterMeasure
             Vector3 downForce = (Mathf.Clamp(velocity.magnitude, 0.1f, 150) / 150) * 20 * -upDirection;
 
             //turbulence
-            using (List<KSPParticleEmitter>.Enumerator pEmitter = pEmitters.GetEnumerator())
+            using (var pEmitter = pEmitters.GetEnumerator())
                 while (pEmitter.MoveNext())
                 {
                     if (pEmitter.Current == null) continue;
@@ -167,14 +169,14 @@ namespace BDArmory.CounterMeasure
             {
                 alive = false;
                 BDArmorySetup.Flares.Remove(this);
-                this.transform.localScale = Vector3.zero;
-                using (List<KSPParticleEmitter>.Enumerator pe = pEmitters.GetEnumerator())
+                transform.localScale = Vector3.zero;
+                using (var pe = pEmitters.GetEnumerator())
                     while (pe.MoveNext())
                     {
                         if (pe.Current == null) continue;
                         pe.Current.emit = false;
                     }
-                using (IEnumerator<Light> lgt = lights.AsEnumerable().GetEnumerator())
+                using (var lgt = lights.AsEnumerable().GetEnumerator())
                     while (lgt.MoveNext())
                     {
                         if (lgt.Current == null) continue;
@@ -184,7 +186,7 @@ namespace BDArmory.CounterMeasure
 
             if (Time.time - startTime > lifeTime + 11) //disable object after x seconds
             {
-                BDArmorySetup.numberOfParticleEmitters--;
+                --BDArmorySetup.numberOfParticleEmitters;
                 gameObject.SetActive(false);
                 return;
             }
@@ -206,9 +208,9 @@ namespace BDArmory.CounterMeasure
 
             //gravity
             if (FlightGlobals.RefFrameIsRotating)
-                velocity += FlightGlobals.getGeeForceAtPosition(transform.position) * Time.fixedDeltaTime;
+                velocity += FlightGlobals.getGeeForceAtPosition(currPos) * Time.fixedDeltaTime;
 
-            transform.position += velocity * Time.fixedDeltaTime;
+            transform.localPosition += velocity * Time.fixedDeltaTime;
         }
 
         public void EnableEmitters()

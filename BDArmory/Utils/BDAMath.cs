@@ -61,6 +61,13 @@ namespace BDArmory.Utils
 
         // This is a fun workaround for M1-chip Macs (Apple Silicon). Specific issue the workaround is for is here: 
         // https://issuetracker.unity3d.com/issues/m1-incorrect-calculation-of-values-using-multiplication-with-mathf-dot-sqrt-when-an-unused-variable-is-declared
-        public static float Sqrt(float value) => (float)System.Math.Sqrt((double)value);
+        public static float Sqrt(float value) => (UI.BDArmorySetup.AppleSilicon) ? SqrtARM(value) : (float)System.Math.Sqrt((double)value);
+
+        private static float SqrtARM(float value)
+        {
+            float sqrt = (float)System.Math.Sqrt((double)value);
+            float sqrt1 = 1f * sqrt;
+            return sqrt1;
+        }
     }
 }
