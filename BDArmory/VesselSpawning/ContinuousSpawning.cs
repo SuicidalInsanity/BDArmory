@@ -7,6 +7,7 @@ using System.Linq;
 
 using BDArmory.Competition;
 using BDArmory.Control;
+using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.UI;
@@ -200,7 +201,7 @@ namespace BDArmory.VesselSpawning
                             var heading = 360f * spawnSlots[continuousSpawnedVesselCount] / spawnSlots.Count;
                             ++continuousSpawnedVesselCount;
                             continuousSpawnedVesselCount %= spawnSlots.Count;
-                            var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis(heading, radialUnitVector) * refDirection, radialUnitVector).normalized;
+                            var direction = (Quaternion.AngleAxis(heading, radialUnitVector) * refDirection).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
                             craftSpawnPosition = spawnPoint + spawnDistance * direction;
                             FlightGlobals.currentMainBody.GetLatLonAlt(craftSpawnPosition, out craftGeoCoords.x, out craftGeoCoords.y, out craftGeoCoords.z); // Convert spawn point to geo-coords for the actual spawning function.
                             StartCoroutine(SpawnCraft(new VesselSpawnConfig(craftURL, craftSpawnPosition, direction, (float)spawnConfig.altitude, -80f, true, 0, true)));

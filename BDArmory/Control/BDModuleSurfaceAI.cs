@@ -412,7 +412,7 @@ namespace BDArmory.Control
                     float shotSpeed = 1000f;
                     if ((weaponManager != null ? weaponManager.selectedWeapon : null) is ModuleWeapon wep)
                         shotSpeed = wep.bulletVelocity;
-                    var timeToCPA = targetVessel.ClosestTimeToCPA(vessel.CoM, vessel.Velocity() + vesselTransform.up * shotSpeed, FlightGlobals.getGeeForceAtPosition(vessel.CoM), MaxEngagementRange / shotSpeed);
+                    var timeToCPA = targetVessel.TimeToCPA(vessel.CoM, vessel.Velocity() + vesselTransform.up * shotSpeed, FlightGlobals.getGeeForceAtPosition(vessel.CoM), MaxEngagementRange / shotSpeed);
                     vecToTarget = targetVessel.PredictPosition(timeToCPA) - vessel.CoM;
 
                     if (SurfaceType == AIUtils.VehicleMovementType.Stationary)
@@ -448,7 +448,7 @@ namespace BDArmory.Control
                     }
                     else // just point at target and go
                     {
-                        if ((targetVessel.horizontalSrfSpeed < 10 || Vector3.Dot(Vector3.ProjectOnPlane(targetVessel.srf_vel_direction, upDir), vessel.up) < 0) //if target is stationary or we're facing in opposite directions
+                        if ((targetVessel.horizontalSrfSpeed < 10 || Vector3.Dot(targetVessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), vessel.up) < 0) //if target is stationary or we're facing in opposite directions
                             && (distance < MinEngagementRange || (distance < (MinEngagementRange * 3 + MaxEngagementRange) / 4 //and too close together
                             && extendingTarget != null && targetVessel != null && extendingTarget == targetVessel)))
                         {
@@ -462,7 +462,7 @@ namespace BDArmory.Control
                         else
                         {
                             extendingTarget = null;
-                            targetDirection = Vector3.ProjectOnPlane(vecToTarget, upDir);
+                            targetDirection = vecToTarget.ProjectOnPlanePreNormalized(upDir);
                             if (Vector3.Dot(targetDirection, vesselTransform.up) < 0)
                                 targetVelocity = PoweredSteering ? MaxSpeed : 0; // if facing away from target
                             else if (distance >= MaxEngagementRange || distance <= MinEngagementRange)
@@ -505,14 +505,14 @@ namespace BDArmory.Control
                     Vector3 targetPosition = GetFormationPosition();
                     Vector3 targetDistance = targetPosition - vesselTransform.position;
                     if (Vector3.Dot(targetDistance, vesselTransform.up) < 0
-                        && Vector3.ProjectOnPlane(targetDistance, upDir).sqrMagnitude < 250f * 250f
+                        && targetDistance.ProjectOnPlanePreNormalized(upDir).sqrMagnitude < 250f * 250f
                         && Vector3.Angle(vesselTransform.up, commandLeader.vessel.srf_velocity) < 0.8f)
                     {
-                        targetDirection = Vector3.RotateTowards(Vector3.ProjectOnPlane(commandLeader.vessel.srf_vel_direction, upDir), targetDistance, 0.2f, 0);
+                        targetDirection = Vector3.RotateTowards(commandLeader.vessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), targetDistance, 0.2f, 0);
                     }
                     else
                     {
-                        targetDirection = Vector3.ProjectOnPlane(targetDistance, upDir);
+                        targetDirection = targetDistance.ProjectOnPlanePreNormalized(upDir);
                     }
                     targetVelocity = (float)(commandLeader.vessel.horizontalSrfSpeed + (vesselTransform.position - targetPosition).magnitude / 15);
                     if (Vector3.Dot(targetDirection, vesselTransform.up) < 0 && !PoweredSteering) targetVelocity = 0;
@@ -531,7 +531,7 @@ namespace BDArmory.Control
                 }
 
                 const float targetRadius = 250f;
-                targetDirection = Vector3.ProjectOnPlane(assignedPositionWorld - vesselTransform.position, upDir);
+                targetDirection = (assignedPositionWorld - vesselTransform.position).ProjectOnPlanePreNormalized(upDir);
 
                 if (targetDirection.sqrMagnitude > targetRadius * targetRadius)
                 {
@@ -588,7 +588,7 @@ namespace BDArmory.Control
             if (!vessel.LandedOrSplashed && !BDArmorySettings.SF_REPULSOR)
             {
                 targetVelocity = 0;
-                targetDirection = Vector3.ProjectOnPlane(vessel.srf_velocity, upDir);
+                targetDirection = vessel.srf_velocity.ProjectOnPlanePreNormalized(upDir);
                 SetStatus("Airtime!");
                 return true;
             }
@@ -632,7 +632,7 @@ namespace BDArmory.Control
         {
             const float terrainOffset = 5;
 
-            Vector3 yawTarget = Vector3.ProjectOnPlane(targetDirection, vesselTransform.forward);
+            Vector3 yawTarget = targetDirection.ProjectOnPlanePreNormalized(vesselTransform.forward);
 
             // limit "aoa" if we're moving
             float driftMult = 1;
@@ -659,14 +659,14 @@ namespace BDArmory.Control
                     terrainOffset * 2) * Mathf.Rad2Deg;
                 float pitchAngle = basePitch + TargetPitch * Mathf.Clamp01((float)vessel.horizontalSrfSpeed / CruiseSpeed);
                 if (aimingMode)
-                    pitchAngle = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(targetDirection, vesselTransform.right), -vesselTransform.forward);
+                    pitchAngle = VectorUtils.SignedAngle(vesselTransform.up, targetDirection.ProjectOnPlanePreNormalized(vesselTransform.right), -vesselTransform.forward);
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"terrain fw slope: {basePitch}, target pitch: {pitchAngle}");
                 float pitch = 90 - Vector3.Angle(vesselTransform.up, upDir);
                 pitchError = pitchAngle - pitch;
             }
             else
             {
-                pitchError = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(targetDirection, vesselTransform.right), -vesselTransform.forward);
+                pitchError = VectorUtils.SignedAngle(vesselTransform.up, targetDirection.ProjectOnPlanePreNormalized(vesselTransform.right), -vesselTransform.forward);
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"pitch error: {pitchError}");
             }
 
@@ -679,7 +679,7 @@ namespace BDArmory.Control
                     AIUtils.GetTerrainAltitude(vessel.CoM + baseLateral, vessel.mainBody, false)
                     - AIUtils.GetTerrainAltitude(vessel.CoM - baseLateral, vessel.mainBody, false),
                     terrainOffset * 2) * Mathf.Rad2Deg;
-                float drift = VectorUtils.SignedAngle(vesselTransform.up, Vector3.ProjectOnPlane(vessel.GetSrfVelocity(), upDir), vesselTransform.right);
+                float drift = VectorUtils.SignedAngle(vesselTransform.up, vessel.GetSrfVelocity().ProjectOnPlanePreNormalized(upDir), vesselTransform.right);
                 float bank = VectorUtils.SignedAngle(-vesselTransform.forward, upDir, -vesselTransform.right);
                 float targetRoll = baseRoll + BankAngle * Mathf.Clamp01(drift / MaxDrift) * Mathf.Clamp01((float)vessel.srfSpeed / CruiseSpeed);
                 rollError = targetRoll - bank;

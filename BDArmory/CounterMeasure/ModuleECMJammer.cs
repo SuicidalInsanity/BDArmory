@@ -11,6 +11,8 @@ namespace BDArmory.CounterMeasure
 
         [KSPField] public float rcsReductionFactor = 0.75f;
 
+        [KSPField] public float rcsOverride = -1;
+
         [KSPField] public double resourceDrain = 5;
 
         [KSPField] public string resourceName = "ElectricCharge";

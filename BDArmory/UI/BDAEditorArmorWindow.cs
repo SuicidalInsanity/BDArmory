@@ -111,7 +111,7 @@ namespace BDArmory.UI
             float newCaliber = ProjectileUtils.CalculateDeformation(yieldStrength, bulletEnergy, 30, 1109, 1176, 7850, 0.19f, 0.8f, false);
             */
             //steelValue = ProjectileUtils.CalculatePenetration(30, newCaliber, 0.388f, 1109, 0.15f, 7850, 940, 30, 0.8f, false);
-            steelValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f, 940, 8.45001135e-07f, 0.656060636f, 1.20190930f, 1.77791929f);
+            steelValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f);
             exploValue = 940 * 1.15f * 7.85f;
             listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
             listStyle.fixedHeight = 18; //make list contents slightly smaller
@@ -249,6 +249,7 @@ namespace BDArmory.UI
             HPvisualizer = false;
             HullVisualizer = false;
             LiftVisualizer = false;
+            if (thicknessField != null && thicknessField.ContainsKey("Thickness")) thicknessField["Thickness"].tryParseValueNow();
             Visualize();
         }
 
@@ -279,7 +280,10 @@ namespace BDArmory.UI
 
             GUIStyle style = BDArmorySetup.BDGuiSkin.label;
 
-            useNumField = GUI.Toggle(new Rect(windowRect.width - 36, 2, 16, 16), useNumField, "#", useNumField ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+            if (useNumField != (useNumField = GUI.Toggle(new Rect(windowRect.width - 36, 2, 16, 16), useNumField, "#", useNumField ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+            {
+                if (!useNumField && thicknessField != null && thicknessField.ContainsKey("Thickness")) thicknessField["Thickness"].tryParseValueNow();
+            }
 
             float line = 1.5f;
 
@@ -364,8 +368,9 @@ namespace BDArmory.UI
                 }
                 else
                 {
-                    thicknessField["Thickness"].tryParseValue(GUI.TextField(new Rect(20, line * lineHeight, 260, lineHeight), thicknessField["Thickness"].possibleValue, 4));
-                    Thickness = Mathf.Min((float)thicknessField["Thickness"].currentValue, maxThickness); // FIXME Mathf.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
+                    var field = thicknessField["Thickness"];
+                    field.tryParseValue(GUI.TextField(new Rect(20, line * lineHeight, 260, lineHeight), field.possibleValue, 4, field.style));
+                    Thickness = Mathf.Min((float)field.currentValue, maxThickness); // FIXME Mathf.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
                     line++;
                 }
                 line += 0.75f;
@@ -633,7 +638,7 @@ namespace BDArmory.UI
                     }
                 }
             wingLoading = totalLift / EditorLogic.fetch.ship.GetTotalMass(); //convert to kg/m2. 1 LiftingArea is ~ 3.51m2, or ~285kg/m2
-            totalLiftArea = totalLift * 3.51f;
+            totalLiftArea = totalLift * 3.52f;
             WLRatio = (EditorLogic.fetch.ship.GetTotalMass() * 1000) / totalLiftArea;
 
             CalculateTotalLiftStacking();
@@ -660,7 +665,7 @@ namespace BDArmory.UI
                         float lift1area = wing1.deflectionLiftCoeff * Vector3.Project(wing1.transform.forward, Vector3.up).sqrMagnitude; // Only return vertically oriented lift components
                         float lift1rad = BDAMath.Sqrt(lift1area / Mathf.PI);
                         Vector3 col1Pos = wing1.part.partTransform.TransformPoint(wing1.part.CoLOffset);
-                        Vector3 col1PosProj = Vector3.ProjectOnPlane(col1Pos, Vector3.up);
+                        Vector3 col1PosProj = col1Pos.ProjectOnPlanePreNormalized(Vector3.up);
                         liftStackedAllEval += lift1area; // Add up total lift areas
 
                         using (List<Part>.Enumerator parts2 = EditorLogic.fetch.ship.Parts.GetEnumerator())
@@ -676,7 +681,7 @@ namespace BDArmory.UI
                                     float lift2area = wing2.deflectionLiftCoeff * Vector3.Project(wing2.transform.forward, Vector3.up).sqrMagnitude; // Only return vertically oriented lift components
                                     float lift2rad = BDAMath.Sqrt(lift2area / Mathf.PI);
                                     Vector3 col2Pos = wing2.part.partTransform.TransformPoint(wing2.part.CoLOffset);
-                                    Vector3 col2PosProj = Vector3.ProjectOnPlane(col2Pos, Vector3.up);
+                                    Vector3 col2PosProj = col2Pos.ProjectOnPlanePreNormalized(Vector3.up);
 
                                     float d = Vector3.Distance(col1PosProj, col2PosProj);
                                     float R = lift1rad;

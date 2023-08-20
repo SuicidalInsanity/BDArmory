@@ -1,10 +1,10 @@
 using System;
 using UnityEngine;
 
+using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Weapons;
 
 namespace BDArmory.WeaponMounts
 {
@@ -172,13 +172,12 @@ namespace BDArmory.WeaponMounts
             float deltaTime = Time.fixedDeltaTime;
 
             Vector3 yawNormal = yawTransform.up;
-            Vector3 yawComponent = Vector3.ProjectOnPlane(targetDirection, yawNormal);
-            Vector3 pitchNormal = Vector3.Cross(yawComponent, yawNormal);
-            Vector3 pitchComponent = Vector3.ProjectOnPlane(targetDirection, pitchNormal);
+            Vector3 yawComponent = targetDirection.ProjectOnPlanePreNormalized(yawNormal);
+            Vector3 pitchComponent = targetDirection.ProjectOnPlane(Vector3.Cross(yawComponent, yawNormal));
 
             float currentYaw = yawTransform.localEulerAngles.y.ToAngle();
             float yawError = VectorUtils.SignedAngleDP(
-                Vector3.ProjectOnPlane(referenceTransform.forward, yawNormal),
+                referenceTransform.forward.ProjectOnPlanePreNormalized(yawNormal),
                 yawComponent,
                 Vector3.Cross(yawNormal, referenceTransform.forward));
             float yawOffset = Mathf.Abs(yawError);

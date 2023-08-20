@@ -51,9 +51,6 @@ namespace BDArmory.Competition.OrchestrationStrategies
                     case 53:
                         BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
                         break;
-                    case 60: // FIXME temporary index, to be assigned later
-                        BDACompetitionMode.Instance.StartRapidDeployment(0, tag: $"{model.competition_id}-{model.stage}-{model.order}");
-                        break;
                     default:
                         BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE, BDArmorySettings.COMPETITION_START_DESPITE_FAILURES, tag: $"{model.competition_id}-{model.stage}-{model.order}");
                         break;

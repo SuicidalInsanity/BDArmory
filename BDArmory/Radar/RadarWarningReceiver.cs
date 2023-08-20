@@ -364,10 +364,7 @@ namespace BDArmory.Radar
             if (audioSourceRepeatDelay > 0)
                 audioSourceRepeatDelay -= Time.fixedDeltaTime;
 
-            if (Event.current.type == EventType.MouseUp && resizingWindow)
-            {
-                resizingWindow = false;
-            }
+            if (resizingWindow && Event.current.type == EventType.MouseUp) { resizingWindow = false; }
 
             BDArmorySetup.WindowRectRwr = GUI.Window(94353, BDArmorySetup.WindowRectRwr, WindowRwr, "Radar Warning Receiver", GUI.skin.window);
             GUIUtils.UseMouseEventInRect(RwrDisplayRect);

@@ -192,8 +192,10 @@
     <Compile Include="Evolution\WeaponManagerMutation.cs" />
     <Compile Include="Evolution\WeaponManagerNudgeMutation.cs" />
     <Compile Include="Extensions\BodyExtensions.cs" />
+    <Compile Include="Extensions\ClawExtensions.cs" />
     <Compile Include="Extensions\CrewExtensions.cs" />
     <Compile Include="Extensions\PartExtensions.cs" />
+    <Compile Include="Extensions\VectorExtensions.cs" />
     <Compile Include="Extensions\VesselExtensions.cs" />
     <Compile Include="FX\BDAGaplessParticleEmitter.cs" />
     <Compile Include="FX\BDAParticleSelfDestruct.cs" />
@@ -274,6 +276,7 @@
     <Compile Include="UI\KrakensbaneDebug.cs" />
     <Compile Include="UI\LoadedVesselSwitcher.cs" />
     <Compile Include="UI\RemoteOrchestrationWindow.cs" />
+    <Compile Include="UI\ScoreWindow.cs" />
     <Compile Include="UI\VesselSpawnerWindow.cs" />
     <Compile Include="Utils\AIUtils.cs" />
     <Compile Include="Utils\BDAEditorTools.cs" />
@@ -376,7 +379,7 @@
     <None Include="Distribution\GameData\BDArmory\FX\jetdriveWake.mu" />
     <None Include="Distribution\GameData\BDArmory\FX\PenFX.mu" />
     <None Include="Distribution\GameData\BDArmory\FX\TorpWake.mu" />
-    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac addons.ksp" />
+    <!-- <None Include="Distribution\GameData\BDArmory\KSPedia\bdac addons.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac ammunition.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac control systems.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac countermeasures.ksp" />
@@ -387,7 +390,7 @@
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac ordinance.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac radar and targeting.ksp" />
     <None Include="Distribution\GameData\BDArmory\KSPedia\bdac settings.ksp" />
-    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac turrets.ksp" />
+    <None Include="Distribution\GameData\BDArmory\KSPedia\bdac turrets.ksp" /> -->
     <None Include="Distribution\GameData\BDArmory\Localization\BDArmory.cfg" />
     <None Include="Distribution\GameData\BDArmory\Localization\localization-en-us.cfg" />
     <None Include="Distribution\GameData\BDArmory\Localization\localization-zh-cn.cfg" />

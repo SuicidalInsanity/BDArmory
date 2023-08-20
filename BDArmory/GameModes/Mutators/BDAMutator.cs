@@ -123,9 +123,12 @@ namespace BDArmory.GameModes
                                 else
                                 {
                                     var WM = VesselModuleRegistry.GetMissileFire(part.vessel, true);
-                                    string color = $"{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].r * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].g * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].b * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].a * 255)}";
+									string color = $"{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].r * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].g * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].b * 255)},{Mathf.RoundToInt(BDTISetup.Instance.ColorAssignments[WM.Team.Name].a * 255)}";
                                     weapon.Current.projectileColor = color;
+
                                 }
+                                Debug.Log($"[MUTATOR BEAM DEBUG] Beam color for {part} on {vessel.GetName()} set to {weapon.Current.projectileColor}");
+                                weapon.Current.laserTexList = BDAcTools.ParseNames(weapon.Current.laserTexturePath);
                                 weapon.Current.SetupLaserSpecifics();
                                 weapon.Current.pulseLaser = true;
                             }

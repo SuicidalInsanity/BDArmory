@@ -85,6 +85,7 @@ namespace BDArmory.Evolution
             "targetWeightThreat",
             "targetWeightProtectVIP",
             "targetWeightAttackVIP",
+            "evadeThreshold",
             "cmThreshold",
             "cmInterval",
             "cmWaitTime",

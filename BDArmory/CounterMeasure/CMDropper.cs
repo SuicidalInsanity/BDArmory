@@ -96,6 +96,8 @@ namespace BDArmory.CounterMeasure
 
                 UpdateVolume();
                 BDArmorySetup.OnVolumeChange += UpdateVolume;
+
+                GameEvents.onVesselsUndocking.Add(OnVesselsUndocking);
             }
             else
             {
@@ -115,6 +117,17 @@ namespace BDArmory.CounterMeasure
         void OnDestroy()
         {
             BDArmorySetup.OnVolumeChange -= UpdateVolume;
+            GameEvents.onVesselsUndocking.Remove(OnVesselsUndocking);
+        }
+
+        void OnVesselsUndocking(Vessel v1, Vessel v2)
+        {
+            if (vessel != v1 && vessel != v2) return; // Not us.
+            if (countermeasureType.ToLower() == "chaff" && !vessel.gameObject.GetComponent<VesselChaffInfo>())
+            {
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.CMDropper]: {vessel.vesselName} didn't have VesselChaffInfo on undocking ({v1.vesselName} — {v2.vesselName})");
+                SetupCM(); // Re-setup countermeasures at least one of the vessels would have lost the VesselModule when they docked.
+            }
         }
 
         public override void OnUpdate()

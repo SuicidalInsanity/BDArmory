@@ -28,7 +28,7 @@ namespace BDArmory.Utils
         static public VesselModuleRegistry Instance;
         static public Dictionary<Vessel, Dictionary<Type, List<UnityEngine.Object>>> registry;
         static public Dictionary<Type, System.Reflection.MethodInfo> updateModuleCallbacks;
-        public static HashSet<VesselType> ignoredVesselTypes = new HashSet<VesselType> { VesselType.Debris, VesselType.SpaceObject };
+        public static HashSet<VesselType> ignoredVesselTypes = new() { VesselType.Debris, VesselType.SpaceObject };
 
         // Specialised registries to avoid the boxing/unboxing GC allocations on frequently used module types.
         static public Dictionary<Vessel, List<MissileFire>> registryMissileFire;
@@ -75,11 +75,13 @@ namespace BDArmory.Utils
         void Start()
         {
             GameEvents.onVesselPartCountChanged.Add(OnVesselModifiedHandler);
+            GameEvents.onVesselLoaded.Add(OnVesselLoaded);
         }
 
         void OnDestroy()
         {
             GameEvents.onVesselPartCountChanged.Remove(OnVesselModifiedHandler);
+            GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
 
             registry.Clear();
             registryMissileFire.Clear();
@@ -228,6 +230,12 @@ namespace BDArmory.Utils
                 registryRepulsorModule[vessel] = vessel.FindPartModulesImplementing<ModuleWheelBase>();
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Specialised registry entry for {vessel.vesselName} updated to have {registryRepulsorModule[vessel].Count} modules of type {typeof(ModuleWheelBase).Name}.");
             }
+        }
+
+        public void OnVesselLoaded(Vessel vessel)
+        {
+            if (vessel == null || !registry.ContainsKey(vessel)) return; // If the vessel is null or isn't in the registry, ignore it.
+            OnVesselModified(vessel, true); // Force re-scanning the vessel.
         }
         #endregion
 

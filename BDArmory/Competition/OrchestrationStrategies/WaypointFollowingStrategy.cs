@@ -238,6 +238,16 @@ namespace BDArmory.Competition.OrchestrationStrategies
                                         var HPT = part.Current.FindModuleImplementing<HitpointTracker>();
                                         HPT.defenseMutator = (float)(1 / BDArmorySettings.HOS_DMG);
                                     }
+                                    if (BDArmorySettings.HOS_SAS)
+                                    {
+                                        if (part.Current.GetComponent<ModuleReactionWheel>() != null)
+                                        {
+                                            ModuleReactionWheel SAS; //could have torque reduced per hit
+                                            SAS = part.Current.GetComponent<ModuleReactionWheel>();
+                                            //if (part.Current.CrewCapacity == 0)
+                                                part.Current.RemoveModule(SAS); //don't strip reaction wheels from cockpits, as those are allowed
+                                        }
+                                    }
                                     if (BDArmorySettings.HOS_THRUST != 100)
                                     {
                                         using (var engine = VesselModuleRegistry.GetModuleEngines(pilot.vessel).GetEnumerator())
@@ -248,6 +258,26 @@ namespace BDArmory.Competition.OrchestrationStrategies
                                     }
                                 }
                         }
+                    }
+                    if (BDArmorySettings.RUNWAY_PROJECT)
+                    {
+                        float torqueQuantity = 0;
+                        using (List<Part>.Enumerator part = pilot.vessel.Parts.GetEnumerator())
+                            while (part.MoveNext())
+                                if (part.Current.GetComponent<ModuleReactionWheel>() != null)
+                                {
+                                    ModuleReactionWheel SAS;
+                                    SAS = part.Current.GetComponent<ModuleReactionWheel>();
+                                    if (part.Current.CrewCapacity == 0)
+                                    {
+                                        torqueQuantity += ((SAS.PitchTorque + SAS.RollTorque + SAS.YawTorque) / 3) * (SAS.authorityLimiter / 100);
+                                        if (torqueQuantity > BDArmorySettings.MAX_SAS_TORQUE)
+                                        {
+                                            float excessTorque = torqueQuantity - BDArmorySettings.MAX_SAS_TORQUE;
+                                            SAS.authorityLimiter = 100 - Mathf.Clamp(((excessTorque / ((SAS.PitchTorque + SAS.RollTorque + SAS.YawTorque) / 3)) * 100), 0, 100);
+                                        }
+                                    }
+                                }
                     }
                 }
             }

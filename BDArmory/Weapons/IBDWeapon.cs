@@ -16,6 +16,8 @@ namespace BDArmory.Weapons
 
         Part GetPart();
 
+        ModuleWeapon GetWeaponModule();
+
         // extensions for feature_engagementenvelope
     }
 

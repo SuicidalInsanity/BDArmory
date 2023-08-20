@@ -15,11 +15,11 @@ Current Maintainers:
 - [DocNappers](https://github.com/BrettRyland)
 - [Josue](https://github.com/josuenos)
 - [SuicidalInsanity](https://github.com/SuicidalInsanity)
+- [Bill Nye](https://github.com/BillNyeTheIE)
 
 Contributors:
 - [Aubranium](https://github.com/agoodman) (Remote Orchestration)
 - [Scott Manley](https://github.com/illectro)
-- [Bill Nye](https://github.com/BillNyeTheIE)
 - [Stardust](https://github.com/Stardust-Rapture)
 - [Kurgan](https://github.com/TheKurgan)
 - [Kaz]()

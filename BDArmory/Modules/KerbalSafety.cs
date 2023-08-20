@@ -166,7 +166,7 @@ namespace BDArmory.Modules
             if (kerbal.vessel.radarAltitude + verticalSpeed * Time.fixedDeltaTime < 2f) // Crashed into terrain, explode upwards.
             {
                 if (BDArmorySettings.DEBUG_OTHER) verticalSpeedAdjustment = 3f * (float)gee.magnitude - verticalSpeed;
-                velocity = Vector3.ProjectOnPlane(velocity, -gee.normalized) - 3f * (gee + UnityEngine.Random.onUnitSphere * 0.3f * gee.magnitude);
+                velocity = velocity.ProjectOnPlanePreNormalized(-gee.normalized) - 3f * (gee + UnityEngine.Random.onUnitSphere * 0.3f * gee.magnitude);
                 position += (2f - (float)kerbal.vessel.radarAltitude) * -gee.normalized;
                 kerbal.vessel.SetPosition(position); // Put the kerbal back at just above gound level.
                 kerbal.vessel.Landed = false;

@@ -45,6 +45,10 @@ namespace BDArmory.Settings
                     {
                         settings.SetValue(field.Current.Name, ((Vector2d)fieldValue).ToString("G"), true);
                     }
+                    else if (fieldValue.GetType() == typeof(Vector2))
+                    {
+                        settings.SetValue(field.Current.Name, ((Vector2)fieldValue).ToString("G"), true);
+                    }
                     else if (fieldValue.GetType() == typeof(List<string>))
                     {
                         settings.SetValue(field.Current.Name, string.Join("; ", (List<string>)fieldValue), true);
@@ -195,6 +199,14 @@ namespace BDArmory.Settings
                         height = hVal
                     };
                     return rectVal;
+                }
+                else if (type == typeof(Vector2))
+                {
+                    char[] charsToTrim = { '(', ')', ' ' };
+                    string[] strings = value.Trim(charsToTrim).Split(',');
+                    float x = float.Parse(strings[0]);
+                    float y = float.Parse(strings[1]);
+                    return new Vector2(x, y);
                 }
                 else if (type == typeof(Vector2d))
                 {

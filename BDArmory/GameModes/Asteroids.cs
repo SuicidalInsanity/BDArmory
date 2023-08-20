@@ -309,7 +309,7 @@ namespace BDArmory.GameModes
                     {
                         asteroid.Landed = false;
                         asteroid.Splashed = false;
-                        var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection, upDirection).normalized;
+                        var direction = (Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection).ProjectOnPlanePreNormalized(upDirection).normalized;
                         var x = (float)RNG.NextDouble();
                         var distance = BDAMath.Sqrt(1f - x) * radius;
                         StartCoroutine(RepositionWhenReady(asteroid, direction * distance));
@@ -494,7 +494,7 @@ namespace BDArmory.GameModes
             var refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
             for (int i = 0; i < count; ++i)
             {
-                var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis(i / 60f * 360f, upDirection) * refDirection, upDirection).normalized; // 60 asteroids per layer of the spiral (approx. 100m apart).
+                var direction = (Quaternion.AngleAxis(i / 60f * 360f, upDirection) * refDirection).ProjectOnPlanePreNormalized(upDirection).normalized; // 60 asteroids per layer of the spiral (approx. 100m apart).
                 var position = spawnPoint + (1e4f + 1e2f * i / 60) * upDirection + 1e3f * direction; // 100m altitude difference per layer of the spiral.
                 var asteroid = AsteroidUtils.SpawnAsteroid(position);
                 if (asteroid != null)
@@ -713,7 +713,7 @@ namespace BDArmory.GameModes
             asteroids = new Vessel[numberOfAsteroids];
             for (int i = 0; i < asteroids.Length; ++i)
             {
-                var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection, upDirection).normalized;
+                var direction = (Quaternion.AngleAxis((float)RNG.NextDouble() * 360f, upDirection) * refDirection).ProjectOnPlanePreNormalized(upDirection).normalized;
                 var x = (float)RNG.NextDouble();
                 var distance = BDAMath.Sqrt(1f - x) * radius;
                 var height = RNG.NextDouble() * (altitude - 50f) + 50f;
@@ -843,7 +843,7 @@ namespace BDArmory.GameModes
             var refDirection = Math.Abs(Vector3d.Dot(Vector3.up, upDirection)) < 0.71f ? Vector3d.up : Vector3d.forward; // Avoid that the reference direction is colinear with the local surface normal.
             for (int i = 0; i < count; ++i)
             {
-                var direction = Vector3.ProjectOnPlane(Quaternion.AngleAxis(i / 60f * 360f, upDirection) * refDirection, upDirection).normalized; // 60 asteroids per layer of the spiral (approx. 100m apart).
+                var direction = (Quaternion.AngleAxis(i / 60f * 360f, upDirection) * refDirection).ProjectOnPlanePreNormalized(upDirection).normalized; // 60 asteroids per layer of the spiral (approx. 100m apart).
                 var position = spawnPoint + (1e4f + 1e2f * i / 60) * upDirection + 1e3f * direction; // 100m altitude difference per layer of the spiral.
                 var asteroid = AsteroidUtils.SpawnAsteroid(position);
                 if (asteroid != null)

@@ -678,7 +678,7 @@ namespace BDArmory.Bullets
 
                             BDACompetitionMode.Instance.Scores.RegisterRocketHit(aName, tName, 1);
 
-                            if (BDArmorySettings.DEBUG_WEAPONS || BDArmorySettings.DEBUG_SETTINGS_TOGGLE)
+                            if (BDArmorySettings.DEBUG_WEAPONS)
                                 Debug.Log($"[BDArmory.PooledRocket]: rocket proximity sphere hit | Distance overlap = {detonationRange} | Part name = {partHit.name} on {partHit.vessel.vesselName}");
                             return detonate = true;
                         }

@@ -13,9 +13,11 @@ using BDArmory.VesselSpawning;
 
 namespace BDArmory.Competition
 {
-    public enum DamageFrom { None, Guns, Rockets, Missiles, Ramming, Incompetence };
+    public enum DamageFrom { None, Guns, Rockets, Missiles, Ramming, Incompetence, Asteroids };
     public enum AliveState { Alive, CleanKill, HeadShot, KillSteal, AssistedKill, Dead };
-    public enum GMKillReason { None, GM, OutOfAmmo, BigRedButton, LandedTooLong };
+    public enum GMKillReason { None, GM, OutOfAmmo, BigRedButton, LandedTooLong, Asteroids };
+    public enum SurvivalState { Alive, MIA, Dead };
+    public enum CompetitionResult { Win, Draw, MutualAnnihilation };
 
     public class CompetitionScores
     {
@@ -25,6 +27,9 @@ namespace BDArmory.Competition
         public int deathCount = 0;
         public List<string> deathOrder = new List<string>(); // The names of dead players ordered by their death.
         public string currentlyIT = "";
+        public CompetitionResult competitionResult = CompetitionResult.Draw;
+        public List<List<string>> survivingTeams = new List<List<string>>();
+        public List<List<string>> deadTeams = new List<List<string>>();
         #endregion
 
         #region Helper functions for registering hits, etc.
@@ -39,11 +44,15 @@ namespace BDArmory.Competition
             ScoreData = vessels.ToDictionary(v => v.vesselName, v => new ScoringData());
             foreach (var vessel in vessels)
             {
+                ScoreData[vessel.vesselName].competitionID = BDACompetitionMode.Instance.CompetitionID;
                 ScoreData[vessel.vesselName].team = VesselModuleRegistry.GetMissileFire(vessel, true).Team.Name;
             }
             deathCount = 0;
             deathOrder.Clear();
             currentlyIT = "";
+            competitionResult = CompetitionResult.Draw;
+            survivingTeams.Clear();
+            deadTeams.Clear();
         }
         /// <summary>
         /// Add a competitor after the competition has started.
@@ -54,6 +63,7 @@ namespace BDArmory.Competition
             if (ScoreData.ContainsKey(vessel.vesselName)) return false; // They're already there.
             if (BDACompetitionMode.Instance.IsValidVessel(vessel) != BDACompetitionMode.InvalidVesselReason.None) return false; // Invalid vessel.
             ScoreData[vessel.vesselName] = new ScoringData();
+            ScoreData[vessel.vesselName].competitionID = BDACompetitionMode.Instance.CompetitionID;
             ScoreData[vessel.vesselName].team = VesselModuleRegistry.GetMissileFire(vessel, true).Team.Name;
             ScoreData[vessel.vesselName].lastFiredTime = Planetarium.GetUniversalTime();
             ScoreData[vessel.vesselName].previousPartCount = vessel.parts.Count();
@@ -120,7 +130,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].hitCounts.ContainsKey(attacker)) { ++ScoreData[victim].hitCounts[attacker]; }
             else { ScoreData[victim].hitCounts[attacker] = 1; }
@@ -244,7 +254,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].rocketPartDamageCounts.ContainsKey(attacker)) { ScoreData[victim].rocketPartDamageCounts[attacker] += partsHit; }
             else { ScoreData[victim].rocketPartDamageCounts[attacker] = partsHit; }
@@ -326,12 +336,12 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastDamageTime < timeOfCollision && ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
-            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && !string.IsNullOrEmpty(ScoreData[victim].previousPersonWheDamagedMe) && ScoreData[victim].previousPersonWheDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
+            else if (ScoreData[victim].previousLastDamageTime < timeOfCollision && !string.IsNullOrEmpty(ScoreData[victim].previousPersonWhoDamagedMe) && ScoreData[victim].previousPersonWhoDamagedMe != attacker) // Newer than the current previous last damage, but older than the most recent damage from someone else.
             {
                 ScoreData[victim].previousLastDamageTime = timeOfCollision;
-                ScoreData[victim].previousPersonWheDamagedMe = attacker;
+                ScoreData[victim].previousPersonWhoDamagedMe = attacker;
             }
             if (ScoreData[victim].rammingPartLossCounts.ContainsKey(attacker)) { ScoreData[victim].rammingPartLossCounts[attacker] += partsLost; }
             else { ScoreData[victim].rammingPartLossCounts[attacker] = partsLost; }
@@ -395,7 +405,7 @@ namespace BDArmory.Competition
             if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
             {
                 ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
-                ScoreData[victim].previousPersonWheDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
             }
             if (ScoreData[victim].missilePartDamageCounts.ContainsKey(attacker)) { ScoreData[victim].missilePartDamageCounts[attacker] += partsHit; }
             else { ScoreData[victim].missilePartDamageCounts[attacker] = partsHit; }
@@ -480,7 +490,7 @@ namespace BDArmory.Competition
                 { ScoreData[ScoreData[vesselName].lastPersonWhoDamagedMe].tagKillsWhileIt++; }
             }
 
-            if (ScoreData[vesselName].lastDamageWasFrom == DamageFrom.None) // Died without being hit by anyone => Incompetence
+            if (ScoreData[vesselName].lastDamageWasFrom == DamageFrom.None || (ScoreData[vesselName].damageTypesTaken.Count == 1 && ScoreData[vesselName].damageTypesTaken.Contains(DamageFrom.Asteroids))) // Died without being hit by anyone => Incompetence
             {
                 ScoreData[vesselName].aliveState = AliveState.Dead;
                 if (gmKillReason == GMKillReason.None)
@@ -488,7 +498,7 @@ namespace BDArmory.Competition
                 return true;
             }
 
-            if (now - ScoreData[vesselName].lastDamageTime < BDArmorySettings.SCORING_HEADSHOT && ScoreData[vesselName].gmKillReason == GMKillReason.None) // Died shortly after being hit (and not by the GM)
+            if (now - ScoreData[vesselName].lastDamageTime < BDArmorySettings.SCORING_HEADSHOT && ScoreData[vesselName].gmKillReason == GMKillReason.None && ScoreData[vesselName].lastDamageWasFrom != DamageFrom.Asteroids) // Died shortly after being hit (and not by the GM or asteroids)
             {
                 if (ScoreData[vesselName].previousLastDamageTime < 0) // No-one else hit them => Clean kill
                 { ScoreData[vesselName].aliveState = AliveState.CleanKill; }
@@ -510,6 +520,36 @@ namespace BDArmory.Competition
 
             if (BDArmorySettings.VESSEL_SPAWN_DUMP_LOG_EVERY_SPAWN && ContinuousSpawning.Instance.vesselsSpawningContinuously) ContinuousSpawning.Instance.DumpContinuousSpawningScores();
 
+            return true;
+        }
+        /// <summary>
+        /// Register the number of parts lost due to crashing into an asteroid.
+        /// </summary>
+        /// <param name="victim">The player that crashed</param>
+        /// <param name="partsDestroyed">The number of parts they lost.</param>
+        /// <returns>true if successfully registered, false otherwise.</returns>
+        public bool RegisterAsteroidCollision(string victim, int partsDestroyed)
+        {
+            if (!BDACompetitionMode.Instance.competitionIsActive) return false;
+            if (partsDestroyed <= 0 || victim == null || !ScoreData.ContainsKey(victim)) return false;
+
+            var now = Planetarium.GetUniversalTime();
+
+            var attacker = "Asteroids";
+            if (ScoreData[victim].lastPersonWhoDamagedMe != attacker)
+            {
+                ScoreData[victim].previousLastDamageTime = ScoreData[victim].lastDamageTime;
+                ScoreData[victim].previousPersonWhoDamagedMe = ScoreData[victim].lastPersonWhoDamagedMe;
+            }
+            ScoreData[victim].partsLostToAsteroids += partsDestroyed;
+            ScoreData[victim].lastDamageTime = now;
+            ScoreData[victim].lastDamageWasFrom = DamageFrom.Asteroids;
+            ScoreData[victim].lastPersonWhoDamagedMe = attacker;
+            ScoreData[victim].everyoneWhoDamagedMe.Add(attacker);
+            ScoreData[victim].damageTypesTaken.Add(DamageFrom.Asteroids);
+
+            if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
+            { BDAScoreService.Instance.TrackPartsLostToAsteroids(victim, partsDestroyed); }
             return true;
         }
 
@@ -590,12 +630,13 @@ namespace BDArmory.Competition
 
             // Find out who's still alive
             var alive = new HashSet<string>();
-            var survivingTeams = new HashSet<string>();
+            var survivingTeamNames = new HashSet<string>();
             foreach (var vessel in FlightGlobals.Vessels)
             {
                 if (vessel == null || !vessel.loaded || vessel.packed || VesselModuleRegistry.ignoredVesselTypes.Contains(vessel.vesselType))
                     continue;
                 var mf = VesselModuleRegistry.GetModule<MissileFire>(vessel);
+                var ai = VesselModuleRegistry.GetIBDAIControl(vessel);
                 double HP = 0;
                 double WreckFactor = 0;
                 if (mf != null)
@@ -604,16 +645,24 @@ namespace BDArmory.Competition
                     if (ScoreData.ContainsKey(vessel.vesselName))
                     {
                         ScoreData[vessel.vesselName].remainingHP = HP;
-                        survivingTeams.Add(ScoreData[vessel.vesselName].team); //move this here so last man standing can claim the win, even if they later don't meet the 'survive' criteria
+                        survivingTeamNames.Add(ScoreData[vessel.vesselName].team); //move this here so last man standing can claim the win, even if they later don't meet the 'survive' criteria
                     }
                     if (HP < 100)
                     {
                         WreckFactor += (100 - HP) / 100; //the less plane remaining, the greater the chance it's a wreck
                     }
+                    if (ai == null)
+                    {
+                        WreckFactor += 0.5f; // It's brain-dead.
+                    }
+                    else if (vessel.LandedOrSplashed && (ai as BDModulePilotAI != null || ai as BDModuleVTOLAI != null))
+                    {
+                        WreckFactor += 0.5f; // It's a plane / helicopter that's now on the ground.
+                    }
                     if (vessel.verticalSpeed < -30) //falling out of the sky? Could be an intact plane diving to default alt, could be a cockpit
                     {
                         WreckFactor += 0.5f;
-                        var AI = VesselModuleRegistry.GetBDModulePilotAI(vessel, true);
+                        var AI = ai as BDModulePilotAI;
                         if (AI == null || vessel.radarAltitude < AI.defaultAltitude) //craft is uncontrollably diving, not returning from high alt to cruising alt
                         {
                             WreckFactor += 0.5f;
@@ -639,27 +688,39 @@ namespace BDArmory.Competition
                     }
                 }
             }
+            // Set survival state and various heat stats.
+            foreach (var player in Players)
+            {
+                ScoreData[player].survivalState = alive.Contains(player) ? SurvivalState.Alive : ScoreData[player].deathOrder > -1 ? SurvivalState.Dead : SurvivalState.MIA;
+                ScoreData[player].numberOfCompetitors = Players.Count;
+                ScoreData[player].compDuration = BDArmorySettings.COMPETITION_DURATION * 60d;
+            }
 
             // General result. (Note: uses hand-coded JSON to make parsing easier in python.)     
-            if (survivingTeams.Count == 0)
+            if (survivingTeamNames.Count == 0)
             {
                 logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: RESULT:Mutual Annihilation");
+                competitionResult = CompetitionResult.MutualAnnihilation;
             }
-            else if (survivingTeams.Count == 1)
+            else if (survivingTeamNames.Count == 1)
             { // Win
-                var winningTeam = survivingTeams.First();
+                var winningTeam = survivingTeamNames.First();
                 var winningTeamMembers = ScoreData.Where(s => s.Value.team == winningTeam).Select(s => s.Key);
                 logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: RESULT:Win:{\"team\": " + $"\"{winningTeam}\", \"members\": [" + string.Join(", ", winningTeamMembers.Select(m => $"\"{m.Replace("\"", "\\\"")}\"")) + "]}");
+                competitionResult = CompetitionResult.Win;
             }
             else
             { // Draw
-                var drawTeams = survivingTeams.ToDictionary(t => t, t => ScoreData.Where(s => s.Value.team == t).Select(s => s.Key));
-                logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: RESULT:Draw:[" + string.Join(", ", drawTeams.Select(t => "{\"team\": " + $"\"{t.Key}\"" + ", \"members\": [" + string.Join(", ", t.Value.Select(m => $"\"{m.Replace("\"", "\\\"")}\"")) + "]}")) + "]");
+                var drawTeamMembers = survivingTeamNames.ToDictionary(t => t, t => ScoreData.Where(s => s.Value.team == t).Select(s => s.Key));
+                logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: RESULT:Draw:[" + string.Join(", ", drawTeamMembers.Select(t => "{\"team\": " + $"\"{t.Key}\"" + ", \"members\": [" + string.Join(", ", t.Value.Select(m => $"\"{m.Replace("\"", "\\\"")}\"")) + "]}")) + "]");
+                competitionResult = CompetitionResult.Draw;
             }
+            survivingTeams = survivingTeamNames.Select(team => ScoreData.Where(kvp => kvp.Value.team == team).Select(kvp => kvp.Key).ToList()).ToList(); // Register the surviving teams for tournament scores.
             { // Dead teams.
-                var deadTeamNames = ScoreData.Where(s => !survivingTeams.Contains(s.Value.team)).Select(s => s.Value.team).ToHashSet();
-                var deadTeams = deadTeamNames.ToDictionary(t => t, t => ScoreData.Where(s => s.Value.team == t).Select(s => s.Key));
-                logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: DEADTEAMS:[" + string.Join(", ", deadTeams.Select(t => "{\"team\": " + $"\"{t.Key}\"" + ", \"members\": [" + string.Join(", ", t.Value.Select(m => $"\"{m.Replace("\"", "\\\"")}\"")) + "]}")) + "]");
+                var deadTeamNames = ScoreData.Where(s => !survivingTeamNames.Contains(s.Value.team)).Select(s => s.Value.team).ToHashSet();
+                var deadTeamMembers = deadTeamNames.ToDictionary(t => t, t => ScoreData.Where(s => s.Value.team == t).Select(s => s.Key));
+                logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: DEADTEAMS:[" + string.Join(", ", deadTeamMembers.Select(t => "{\"team\": " + $"\"{t.Key}\"" + ", \"members\": [" + string.Join(", ", t.Value.Select(m => $"\"{m.Replace("\"", "\\\"")}\"")) + "]}")) + "]");
+                deadTeams = deadTeamNames.Select(team => ScoreData.Where(kvp => kvp.Value.team == team).Select(kvp => kvp.Key).ToList()).ToList(); // Register the dead teams for tournament scores.
             }
 
             // Record ALIVE/DEAD status of each craft.
@@ -789,7 +850,7 @@ namespace BDArmory.Competition
             // GM kill reasons
             foreach (var player in Players)
                 if (ScoreData[player].gmKillReason != GMKillReason.None)
-                    logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: GMKILL:" + player + ":" + ScoreData[player].gmKillReason);
+                    logStrings.Add($"[BDArmory.BDACompetitionMode:{CompetitionID}]: GMKILL:{player}:{ScoreData[player].gmKillReason}");
 
             // Clean kills/rams/etc.
             var specialKills = new HashSet<AliveState> { AliveState.CleanKill, AliveState.HeadShot, AliveState.KillSteal };
@@ -800,6 +861,11 @@ namespace BDArmory.Competition
                     logStrings.Add("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + ScoreData[player].aliveState.ToString().ToUpper() + ScoreData[player].lastDamageWasFrom.ToString().ToUpper() + ":" + player + ":" + ScoreData[player].lastPersonWhoDamagedMe);
                 }
             }
+
+            // Asteroids
+            foreach (var player in Players)
+                if (ScoreData[player].partsLostToAsteroids > 0)
+                    logStrings.Add($"[BDArmory.BDACompetitionMode:{CompetitionID}]: PARTSLOSTTOASTEROIDS:{player}:{ScoreData[player].partsLostToAsteroids}");
 
             // remaining health
             foreach (var key in Players)
@@ -853,10 +919,15 @@ namespace BDArmory.Competition
         }
     }
 
+    [Serializable]
     public class ScoringData
     {
-        public AliveState aliveState = AliveState.Alive; // State of the vessel.
+        public int competitionID;
+        public AliveState aliveState = AliveState.Alive; // Current state of the vessel.
+        public SurvivalState survivalState = SurvivalState.Alive; // State of the vessel at the end of the tournament.
         public string team; // The vessel's team.
+        public int numberOfCompetitors;
+        public double compDuration;
 
         #region Guns
         public int hits; // Number of hits this vessel landed.
@@ -887,6 +958,10 @@ namespace BDArmory.Competition
         public Dictionary<string, int> missileHitCounts = new Dictionary<string, int>(); // Number of missile strikes from other vessels.
         #endregion
 
+        #region Special
+        public int partsLostToAsteroids = 0; // Number of parts lost due to crashing into asteroids.
+        #endregion
+
         #region Battle Damage
         public Dictionary<string, float> battleDamageFrom = new Dictionary<string, float>(); // Battle damage taken from others.
         #endregion
@@ -913,6 +988,7 @@ namespace BDArmory.Competition
         #endregion
 
         #region Waypoint
+        [Serializable]
         public struct WaypointReached
         {
             public WaypointReached(int waypointIndex, float deviation, double timestamp) { this.waypointIndex = waypointIndex; this.deviation = deviation; this.timestamp = timestamp; }
@@ -933,11 +1009,88 @@ namespace BDArmory.Competition
         public DamageFrom lastDamageWasFrom = DamageFrom.None;
         public string lastPersonWhoDamagedMe = "";
         public double previousLastDamageTime = -1;
-        public string previousPersonWheDamagedMe = "";
+        public string previousPersonWhoDamagedMe = "";
         public int deathOrder = -1;
         public double deathTime = -1;
         public HashSet<DamageFrom> damageTypesTaken = new HashSet<DamageFrom>();
         public HashSet<string> everyoneWhoDamagedMe = new HashSet<string>(); // Every other vessel that damaged this vessel.
         #endregion
+
+        /// <summary>
+        /// Clone the current ScoringData.
+        /// </summary>
+        /// <returns>A new instance of ScoringData with the same information as the current version.</returns>
+        public ScoringData Clone()
+        {
+            return new ScoringData
+            {
+                // General
+                competitionID = competitionID,
+                aliveState = aliveState,
+                survivalState = survivalState,
+                team = team,
+                numberOfCompetitors = numberOfCompetitors,
+                compDuration = compDuration,
+                // Guns
+                hits = hits,
+                PinataHits = PinataHits,
+                shotsFired = shotsFired,
+                hitCounts = hitCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                damageFromGuns = damageFromGuns.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                // Rockets
+                totalDamagedPartsDueToRockets = totalDamagedPartsDueToRockets,
+                rocketStrikes = rocketStrikes,
+                rocketsFired = rocketsFired,
+                damageFromRockets = damageFromRockets.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                rocketPartDamageCounts = rocketPartDamageCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                rocketStrikeCounts = rocketStrikeCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                // Ramming
+                totalDamagedPartsDueToRamming = totalDamagedPartsDueToRamming,
+                rammingPartLossCounts = rammingPartLossCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                // Missiles
+                totalDamagedPartsDueToMissiles = totalDamagedPartsDueToMissiles,
+                damageFromMissiles = damageFromMissiles.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                missilePartDamageCounts = missilePartDamageCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                missileHitCounts = missileHitCounts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                // Special
+                partsLostToAsteroids = partsLostToAsteroids,
+                // Battle Damage
+                battleDamageFrom = battleDamageFrom.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
+                // GM
+                lastFiredTime = lastFiredTime,
+                landedState = landedState,
+                lastLandedTime = lastLandedTime,
+                landedKillTimer = landedKillTimer,
+                AltitudeKillTimer = AltitudeKillTimer,
+                AverageSpeed = AverageSpeed,
+                AverageAltitude = AverageAltitude,
+                averageCount = averageCount,
+                gmKillReason = gmKillReason,
+                // Tag
+                tagIsIt = tagIsIt,
+                tagKillsWhileIt = tagKillsWhileIt,
+                tagTimesIt = tagTimesIt,
+                tagTotalTime = tagTotalTime,
+                tagScore = tagScore,
+                tagLastUpdated = tagLastUpdated,
+                // Waypoints
+                waypointsReached = waypointsReached.ToList(),
+                totalWPDeviation = totalWPDeviation,
+                totalWPTime = totalWPTime,
+                // Misc.
+                previousPartCount = previousPartCount,
+                lastLostPartTime = lastLostPartTime,
+                remainingHP = remainingHP,
+                lastDamageTime = lastDamageTime,
+                lastDamageWasFrom = lastDamageWasFrom,
+                lastPersonWhoDamagedMe = lastPersonWhoDamagedMe,
+                previousLastDamageTime = previousLastDamageTime,
+                previousPersonWhoDamagedMe = previousPersonWhoDamagedMe,
+                deathOrder = deathOrder,
+                deathTime = deathTime,
+                damageTypesTaken = damageTypesTaken.ToHashSet(),
+                everyoneWhoDamagedMe = everyoneWhoDamagedMe.ToHashSet()
+            };
+        }
     }
 }

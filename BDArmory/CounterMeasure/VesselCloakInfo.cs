@@ -7,7 +7,6 @@ using BDArmory.Utils;
 
 namespace BDArmory.CounterMeasure
 {
-    [RequireComponent(typeof(Vessel))]
     public class VesselCloakInfo : MonoBehaviour
     {
         List<ModuleCloakingDevice> cloaks;
@@ -32,11 +31,16 @@ namespace BDArmory.CounterMeasure
             get { return trf; }
         }
 
-        void Awake()
+        void Start()
         {
-            cloaks = new List<ModuleCloakingDevice>();
             vessel = GetComponent<Vessel>();
-
+            if (!vessel)
+            {
+                Debug.Log("[BDArmory.VesselCloakInfo]: VesselCloakInfo was added to an object with no vessel component");
+                Destroy(this);
+                return;
+            }
+            cloaks = new List<ModuleCloakingDevice>();
             vessel.OnJustAboutToBeDestroyed += AboutToBeDestroyed;
             GameEvents.onVesselCreate.Add(OnVesselCreate);
             GameEvents.onPartJointBreak.Add(OnPartJointBreak);
@@ -45,7 +49,7 @@ namespace BDArmory.CounterMeasure
 
         void OnDestroy()
         {
-            vessel.OnJustAboutToBeDestroyed -= AboutToBeDestroyed;
+            if (vessel) vessel.OnJustAboutToBeDestroyed -= AboutToBeDestroyed;
             GameEvents.onVesselCreate.Remove(OnVesselCreate);
             GameEvents.onPartJointBreak.Remove(OnPartJointBreak);
             GameEvents.onPartDie.Remove(OnPartDie);

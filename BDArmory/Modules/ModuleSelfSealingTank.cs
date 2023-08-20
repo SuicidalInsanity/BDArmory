@@ -150,7 +150,7 @@ namespace BDArmory.Modules
         [KSPField(isPersistant = true)]
         public bool armoredCockpit = false;
 
-        [KSPEvent(advancedTweakable = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_Armorcockpit_On", active = true)]//Self-Sealing Tank
+        [KSPEvent(advancedTweakable = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_Armorcockpit_On", active = true)]//"Add Armored Cockpit"
         public void TogglecockpitArmor()
         {
             armoredCockpit = !armoredCockpit;
@@ -249,6 +249,15 @@ namespace BDArmory.Modules
                     Fields["FireBottles"].guiActiveEditor = false;
                     Fields["FBRemaining"].guiActive = false;
                     FireBottles = 0;
+                    if (!armoredCockpit)
+                    {
+                        Events["TogglecockpitArmor"].guiName = StringUtils.Localize("#LOC_BDArmory_Armorcockpit_On");//"Add Armored Cockpit"
+                    }
+                    else
+                    {
+                        Events["TogglecockpitArmor"].guiName = StringUtils.Localize("#LOC_BDArmory_Armorcockpit_Off");//"Remove Armored Cockpit"
+                        ArmorMass = 0.2f * part.CrewCapacity;
+                    }
                 }
                 else part.RemoveModule(this); //don't assign to drone cores
             }

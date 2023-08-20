@@ -170,26 +170,59 @@ namespace BDArmory.Utils
 
     /// <summary>
     /// A class for more easily inputting numeric values in TextFields.
-    /// There's a 0.5s delay after the last keystroke before attempting to interpret the string as a double.
+    /// There's a configurable delay after the last keystroke before attempting to interpret the string as a double. Default: 0.5s.
     /// Explicit cast to lower precision types may be needed when assigning the current value.
     /// </summary>
     public class NumericInputField : MonoBehaviour
     {
-        public NumericInputField Initialise(double l, double v, double minV = double.MinValue, double maxV = double.MaxValue) { lastUpdated = l; currentValue = v; minValue = minV; maxValue = maxV; return this; }
+        public static GUIStyle InputFieldStyle;
+        public static GUIStyle InputFieldBadStyle;
+        static void ConfigureStyles()
+        {
+            InputFieldStyle = new GUIStyle(GUI.skin.textField);
+            InputFieldStyle.alignment = TextAnchor.MiddleRight;
+            InputFieldBadStyle = new GUIStyle(InputFieldStyle);
+            InputFieldBadStyle.normal.textColor = Color.red;
+            InputFieldBadStyle.focused.textColor = Color.red;
+        }
+
+        public NumericInputField Initialise(double l, double v, double minV = double.MinValue, double maxV = double.MaxValue)
+        { lastUpdated = l; currentValue = v; minValue = minV; maxValue = maxV; return this; }
         public double lastUpdated;
         public string possibleValue = string.Empty;
         private double _value;
-        public double currentValue { get { return _value; } set { _value = value; possibleValue = _value.ToString("G6"); } }
+        public double currentValue // Note: setting the current value doesn't necessarily update the displayed string. Use SetCurrentValue to force updating the displayed value.
+        {
+            get { return _value; }
+            private set
+            {
+                _value = value;
+                if (string.IsNullOrEmpty(possibleValue))
+                {
+                    possibleValue = _value.ToString("G6");
+                    valid = true;
+                }
+            }
+        }
         public double minValue;
         public double maxValue;
         private bool coroutineRunning = false;
         private Coroutine coroutine;
+        public bool valid = true;
+
+        // Set the current value and force the display to update.
+        public void SetCurrentValue(double value)
+        {
+            possibleValue = null; // Clear the possibleValue first so that it gets updated.
+            currentValue = value;
+            lastUpdated = Time.time;
+        }
 
         public void tryParseValue(string v)
         {
             if (v != possibleValue)
             {
-                lastUpdated = !string.IsNullOrEmpty(v) ? Time.time : Time.time + 0.5; // Give the empty string an extra 0.5s.
+                lastUpdated = !string.IsNullOrEmpty(v) ? Time.time : Time.time + BDArmorySettings.NUMERIC_INPUT_DELAY; // Give the empty string an extra delay.
                 possibleValue = v;
                 if (!coroutineRunning)
                 {
@@ -200,33 +233,55 @@ namespace BDArmory.Utils
 
         IEnumerator UpdateValueCoroutine()
         {
+            var wait = new WaitForFixedUpdate();
             coroutineRunning = true;
-            while (Time.time - lastUpdated < 0.5)
-                yield return new WaitForFixedUpdate();
-            tryParseCurrentValue();
+            valid = true; // Flag the value as valid until we've tried parsing it.
+            while (Time.time - lastUpdated < BDArmorySettings.NUMERIC_INPUT_DELAY)
+                yield return wait;
+            tryParseCurrentValue(BDArmorySettings.NUMERIC_INPUT_SELF_UPDATE);
             coroutineRunning = false;
-            yield return new WaitForFixedUpdate();
+            yield return wait;
         }
 
-        void tryParseCurrentValue()
+        void tryParseCurrentValue(bool updatePossible = false)
         {
             double newValue;
             if (double.TryParse(possibleValue, out newValue))
             {
                 currentValue = Math.Min(Math.Max(newValue, minValue), Math.Max(maxValue, currentValue)); // Clamp the new value between the min and max, but not if it's been set higher with the unclamped tuning option. This still allows reducing the value while still above the clamp limit.
+                if (newValue != currentValue) // The value got clamped.
+                    possibleValue = currentValue.ToString("G6");
                 lastUpdated = Time.time;
+                valid = true;
             }
-            possibleValue = currentValue.ToString("G6");
+            else
+            {
+                valid = false;
+            }
+            if (updatePossible)
+            {
+                possibleValue = currentValue.ToString("G6");
+                valid = true;
+            }
         }
 
         // Parse the current possible value immediately.
         public void tryParseValueNow()
         {
-            tryParseCurrentValue();
+            tryParseCurrentValue(true);
             if (coroutineRunning)
             {
                 StopCoroutine(coroutine);
                 coroutineRunning = false;
+            }
+        }
+
+        public GUIStyle style
+        {
+            get
+            {
+                if (InputFieldStyle == null || InputFieldBadStyle == null) ConfigureStyles();
+                return valid ? InputFieldStyle : InputFieldBadStyle;
             }
         }
     }

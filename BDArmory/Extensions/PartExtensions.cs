@@ -10,9 +10,13 @@ namespace BDArmory.Extensions
     public enum ExplosionSourceType { Other, Missile, Bullet, Rocket, BattleDamage };
     public static class PartExtensions
     {
-        public static void AddDamage(this Part p, float damage)
+        public static void AddDamage(this Part p, float damage) //Fires, lasers, ammo detonations
         {
-            if (BDArmorySettings.PAINTBALL_MODE) return; // Don't add damage when paintball mode is enabled
+            if (BDArmorySettings.PAINTBALL_MODE)
+            {
+                var ti = p.vessel.gameObject.GetComponent<Targeting.TargetInfo>();
+                if (!(ti != null && ti.isMissile)) return; // Don't add damage when paintball mode is enabled, except against fired missiles
+            }
             damage *= (BDArmorySettings.DMG_MULTIPLIER / 100);
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
             {
@@ -61,9 +65,13 @@ namespace BDArmory.Extensions
                                                float explosiveDamage,
                                                float caliber,
                                                ExplosionSourceType sourceType,
-                                               float multiplier = 1)
+                                               float multiplier = 1) //bullet/rocket/missile explosive damage
         {
-            if (BDArmorySettings.PAINTBALL_MODE) return 0f; // Don't add damage when paintball mode is enabled
+            if (BDArmorySettings.PAINTBALL_MODE)
+            {
+                var ti = p.vessel.gameObject.GetComponent<Targeting.TargetInfo>();
+                if (!(ti != null && ti.isMissile)) return 0f; // Don't add damage when paintball mode is enabled, except against fired missiles
+            }
             /*
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
             {
@@ -143,9 +151,13 @@ namespace BDArmory.Extensions
                                                float penetrationfactor,
                                                float bulletDmgMult,
                                                float impactVelocity,
-                                               ExplosionSourceType sourceType)
+                                               ExplosionSourceType sourceType) //bullet/rocket kinetic damage
         {
-            if (BDArmorySettings.PAINTBALL_MODE) return 0f; // Don't add damage when paintball mode is enabled
+            if (BDArmorySettings.PAINTBALL_MODE)
+            {
+                var ti = p.vessel.gameObject.GetComponent<Targeting.TargetInfo>();
+                if (!(ti != null && ti.isMissile)) return 0f; // Don't add damage when paintball mode is enabled, except against fired missiles
+            }
             /*
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
             {
@@ -496,6 +508,7 @@ namespace BDArmory.Extensions
                 {
                     return false;
                 }
+                if (part.partInfo.bulkheadProfiles.Contains("mk2")) return false;
                 else return true;
             }
             else if (part.Modules.Contains("ModuleControlSurface") ||

@@ -3,8 +3,9 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-using BDArmory.Weapons.Missiles;
+using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Extensions
 {
@@ -94,10 +95,10 @@ namespace BDArmory.Extensions
             {
                 // Check the 4 diagonals of the box and take the max.
                 var radius = BDAMath.Sqrt(Mathf.Max(
-                    Vector3.ProjectOnPlane(vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z, fireTransform).sqrMagnitude,
-                    Vector3.ProjectOnPlane(-vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z, fireTransform).sqrMagnitude,
-                    Vector3.ProjectOnPlane(vessel.vesselTransform.up * bounds.y - vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z, fireTransform).sqrMagnitude,
-                    Vector3.ProjectOnPlane(vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x - vessel.vesselTransform.forward * bounds.z, fireTransform).sqrMagnitude
+                    (vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z).ProjectOnPlane(fireTransform).sqrMagnitude,
+                    (-vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z).ProjectOnPlane(fireTransform).sqrMagnitude,
+                    (vessel.vesselTransform.up * bounds.y - vessel.vesselTransform.right * bounds.x + vessel.vesselTransform.forward * bounds.z).ProjectOnPlane(fireTransform).sqrMagnitude,
+                    (vessel.vesselTransform.up * bounds.y + vessel.vesselTransform.right * bounds.x - vessel.vesselTransform.forward * bounds.z).ProjectOnPlane(fireTransform).sqrMagnitude
                 )) / 2f;
 #if DEBUG
                 if (radius < bounds.x / 2f && radius < bounds.y / 2f && radius < bounds.z / 2f) Debug.LogWarning($"DEBUG Radius {radius} of {vessel.vesselName} is less than half its minimum bounds {bounds}");
@@ -115,13 +116,16 @@ namespace BDArmory.Extensions
                 var weapon = part.partPrefab.FindModuleImplementing<Weapons.ModuleWeapon>();
                 if (weapon != null)
                 {
-                    if (!string.IsNullOrEmpty(weapon.name)) // For some reason, the weapons are showing up a second time with an empty name.
+                    if (BDArmorySettings.DEBUG_OTHER && !string.IsNullOrEmpty(weapon.name)) // For some reason, the weapons are showing up a second time with an empty name.
                         Debug.Log($"[BDArmory.VesselExtensions]: Adding {weapon.name} to the bounds exclusion list.");
                     badBoundsParts.Add(weapon.name); // Exclude all weapons as they can become unreasonably large if they have line renderers attached to them.
                 }
             }
         }
 
+#if DEBUG
+        static HashSet<string> badBoundsReported = new HashSet<string>(); // Only report vessels with bad bounds once.
+#endif
         /// <summary>
         /// Get a vessel's bounds.
         /// </summary>
@@ -160,8 +164,12 @@ namespace BDArmory.Extensions
                 size = max - min; //x: Width, y: Length, z: Height
             }
 #if DEBUG
-            var GetBoundString = (Part p) => { var bwop = GetRendererPartBounds(p); return $"{bwop.size}@{bwop.center}"; };
-            if (size.x > 1000 || size.y > 1000 || size.z > 1000) Debug.LogWarning($"DEBUG Bounds on {vessel.vesselName} are bad: {size} (max: {max}, min: {min}, useBounds: {useBounds}). Parts: {string.Join("; ", vessel.Parts.Select(p => $"{p.name}, collider bounds: {string.Join(", ", p.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}, bounds w/o particles: {GetBoundString(p)}"))}. Root: {vessel.rootPart.name}, bounds {string.Join(", ", vessel.rootPart.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}.");
+            if (!badBoundsReported.Contains(vessel.vesselName))
+            {
+                var GetBoundString = (Part p) => { var bwop = GetRendererPartBounds(p); return $"{bwop.size}@{bwop.center}"; };
+                if (size.x > 1000 || size.y > 1000 || size.z > 1000) Debug.LogWarning($"[BDArmory.VesselExtensions]: Bounds on {vessel.vesselName} are bad: {size} (max: {max}, min: {min}, useBounds: {useBounds}). Parts: {string.Join("; ", vessel.Parts.Select(p => $"{p.name}, collider bounds: {string.Join(", ", p.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}, bounds w/o particles: {GetBoundString(p)}"))}. Root: {vessel.rootPart.name}, bounds {string.Join(", ", vessel.rootPart.GetColliderBounds().Select(b => $"{b.size}@{b.center}"))}.");
+                badBoundsReported.Add(vessel.vesselName);
+            }
 #endif
             vessel.SetRotation(vesselRot);
             return size;

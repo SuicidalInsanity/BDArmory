@@ -50,20 +50,19 @@ namespace BDArmory.Weapons.Missiles
             if (maxAngleOffTarget >= 0) { launcherVelocity = Vector3.RotateTowards(vectorToTarget, launcherVelocity, maxAngleOffTarget, 0); }
 
             bool surfaceLaunch = missile.vessel.LandedOrSplashed;
-            float launcherSpeed = (float)missile.vessel.srfSpeed;
-            float minLaunchRange = missile.minStaticLaunchRange;
-            float maxLaunchRange = missile.maxStaticLaunchRange;
+            float minLaunchRange = Mathf.Max(missile.minStaticLaunchRange, missile.GetEngagementRangeMin());
+            float maxLaunchRange = missile.GetEngagementRangeMax();
             if (unguidedGuidedMissile) maxLaunchRange /= 10;
             float bodyGravity = (float)PhysicsGlobals.GravitationalAcceleration * (float)missile.vessel.orbit.referenceBody.GeeASL; // Set gravity for calculations;
             float missileActiveTime = 2f;
             float rangeAddMax = 0;
             float relSpeed;
-
+            float missileMaxRangeTime = 8; //placeholder value for MMGs
             // Calculate relative speed
             Vector3 relV = targetVelocity - launcherVelocity;
             Vector3 relVProjected = Vector3.Project(relV, vectorToTarget);
             relSpeed = -Mathf.Sign(Vector3.Dot(relVProjected, vectorToTarget)) * relVProjected.magnitude; // Positive value when targets are closing on each other, negative when they are flying apart
-
+            relSpeed -= (float)missile.vessel.speed;
             if (missile.GetComponent<BDModularGuidance>() == null && missile.GetComponent<ModuleDrone>() == null)
             {
                 // Basic time estimate for missile to drop and travel a safe distance from vessel assuming constant acceleration and firing vessel not accelerating
@@ -94,21 +93,19 @@ namespace BDArmory.Weapons.Missiles
                     // Add additional range term for the missile to manuever to target at missileActiveTime
                     minLaunchRange = Mathf.Max(arcLength, minLaunchRange);
                 }
+                missileMaxRangeTime = Mathf.Min(Vector3.Distance(targetPosition, launcherPosition), missile.maxStaticLaunchRange) / ml.optimumAirspeed;
             }
-
-            float missileMaxRangeTime = 8f; // Placeholder value since this doesn't really matter much in BDA combat
-
             // Adjust ranges
+
             minLaunchRange = Mathf.Min(minLaunchRange + relSpeed * missileActiveTime, minLaunchRange);
             rangeAddMax += relSpeed * missileMaxRangeTime;
-
             // Add altitude term to max
             double diffAlt = missile.vessel.altitude - FlightGlobals.getAltitudeAtPos(targetPosition);
             rangeAddMax += (float)diffAlt;
 
             float min = Mathf.Clamp(minLaunchRange, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE);
-            float max = Mathf.Clamp(maxLaunchRange + rangeAddMax, min + 100, BDArmorySettings.MAX_ENGAGEMENT_RANGE);
-
+            float max = Mathf.Clamp(maxLaunchRange + rangeAddMax, 0, BDArmorySettings.MAX_ENGAGEMENT_RANGE);
+            if (!BDArmorySettings.USE_DLZ_LAUNCH_RANGE) Mathf.Clamp(max, 0, missile.GetEngagementRangeMax());
             return new MissileLaunchParams(min, max);
         }
     }

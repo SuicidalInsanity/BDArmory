@@ -19,7 +19,7 @@ namespace BDArmory.Utils
 
         public static void ForceDeadVessel(Vessel v)
         {
-            Debug.Log("[BDArmory.Misc]: GM Killed Vessel " + v.GetDisplayName());
+            Debug.Log("[BDArmory.Misc]: GM Killed Vessel " + v.GetName());
             foreach (var missileFire in VesselModuleRegistry.GetModules<MissileFire>(v))
             {
                 PartExploderSystem.AddPartToExplode(missileFire.part);

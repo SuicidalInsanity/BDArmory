@@ -133,7 +133,7 @@ namespace BDArmory.Utils
         {
             if (materialsBlacklist == null)
             {
-                materialsBlacklist = new HashSet<string> { "bdPilotAI", "bdShipAI", "missileController", "bdammGuidanceModule" };
+                materialsBlacklist = new HashSet<string> { "bdPilotAI", "bdShipAI", "missileController", "bdammGuidanceModule", "PotatoRoid" };
 
                 var fileNode = ConfigNode.Load(settingsConfigURL);
                 if (fileNode.HasNode("MaterialsBlacklist"))
@@ -859,8 +859,8 @@ namespace BDArmory.Utils
 
 
         public static float CalculatePenetration(float caliber, float bulletVelocity,
-            float bulletMass, float apBulletMod, float Strength, float vFactor,
-            float muParam1, float muParam2, float muParam3, bool sabot = false,
+            float bulletMass, float apBulletMod, float Strength = 940, float vFactor = 0.00000094776185184f,
+            float muParam1 = 0.656060636f, float muParam2 = 1.20190930f, float muParam3 = 1.77791929f, bool sabot = false,
             float length = 0)
         {
             // Calculate the length of the projectile

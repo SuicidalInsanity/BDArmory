@@ -1,5 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System;
 using UnityEngine;
 
 using BDArmory.Control;
@@ -17,6 +18,7 @@ namespace BDArmory.Utils
         /// <param name="v">vessel to be extrapolated</param>
         /// <param name="time">after this time</param>
         /// <returns>Vector3 extrapolated position</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 PredictPosition(this Vessel v, float time)
         {
             Vector3 pos = v.CoM;
@@ -25,23 +27,31 @@ namespace BDArmory.Utils
             return pos;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, Vector3 acceleration, float time)
         {
             return position + time * velocity + 0.5f * time * time * acceleration;
         }
 
+        public enum CPAType
+        {
+            Earliest, // The earliest future CPA solution.
+            Latest, // The latest future CPA solution (even if beyond the max time).
+            Closest // The closest CPA solution within the range 0 — max time.
+        };
         /// <summary>
         /// Predict the next time to the closest point of approach within the next maxTime seconds using the same kinematics as PredictPosition (i.e, position, velocity and acceleration).
         /// </summary>
         /// <param name="vessel">The first vessel.</param>
         /// <param name="v">The second vessel.</param>
         /// <param name="maxTime">The maximum time to look ahead.</param>
+        /// <param name="cpaType">When multiple valid solutions exist, return the one of the given type.</param>
         /// <returns>float The time to the closest point of approach within the next maxTime seconds.</returns>
-        public static float ClosestTimeToCPA(this Vessel vessel, Vessel v, float maxTime)
-        { // Find the closest future time to closest point of approach considering accelerations in addition to velocities. This uses the generalisation of Cardano's solution to finding roots of cubics to find where the derivative of the separation is a minimum.
+        public static float TimeToCPA(this Vessel vessel, Vessel v, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
+        { // Find the closest/furthest future time to closest point of approach considering accelerations in addition to velocities. This uses the generalisation of Cardano's solution to finding roots of cubics to find where the derivative of the separation is a minimum.
             if (vessel == null) return 0f; // We don't have a vessel.
             if (v == null) return 0f; // We don't have a target.
-            return vessel.ClosestTimeToCPA(v.transform.position, v.Velocity(), v.acceleration, maxTime);
+            return vessel.TimeToCPA(v.transform.position, v.Velocity(), v.acceleration, maxTime, cpaType);
         }
 
         /// <summary>
@@ -52,22 +62,33 @@ namespace BDArmory.Utils
         /// <param name="targetVelocity">The second vessel velocity.</param>
         /// <param name="targetAcceleration">The second vessel acceleration.</param>
         /// <param name="maxTime">The maximum time to look ahead.</param>
+        /// <param name="cpaType">When multiple valid solutions exist, return the one of the given type.</param>
         /// <returns>
-        public static float ClosestTimeToCPA(this Vessel vessel, Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, float maxTime)
+        public static float TimeToCPA(this Vessel vessel, Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
         {
             if (vessel == null) return 0f; // We don't have a vessel.
             Vector3 relPosition = targetPosition - vessel.transform.position;
             Vector3 relVelocity = targetVelocity - vessel.Velocity();
             Vector3 relAcceleration = targetAcceleration - vessel.acceleration;
-            return ClosestTimeToCPA(relPosition, relVelocity, relAcceleration, maxTime);
+            return TimeToCPA(relPosition, relVelocity, relAcceleration, maxTime, cpaType);
         }
 
-        public static float ClosestTimeToCPA(Vector3 relPosition, Vector3 relVelocity, Vector3 relAcceleration, float maxTime)
+        /// <summary>
+        /// Predict the time to the closest point of approach within the next maxTime seconds using the relative position, velocity and acceleration.
+        /// </summary>
+        /// <param name="relPosition">The relative separation.</param>
+        /// <param name="relVelocity">The relative velocity.</param>
+        /// <param name="relAcceleration">The relative acceleration.</param>
+        /// <param name="maxTime">The maximum time to look ahead.</param>
+        /// <param name="cpaType">When multiple valid solutions exist, return the one of the given type.</param>
+        /// <returns></returns>
+        public static float TimeToCPA(Vector3 relPosition, Vector3 relVelocity, Vector3 relAcceleration, float maxTime = float.MaxValue, CPAType cpaType = CPAType.Earliest)
         {
             float A = Vector3.Dot(relAcceleration, relAcceleration) / 2f;
             float B = Vector3.Dot(relVelocity, relAcceleration) * 3f / 2f;
             float C = Vector3.Dot(relVelocity, relVelocity) + Vector3.Dot(relPosition, relAcceleration);
             float D = Vector3.Dot(relPosition, relVelocity);
+            float tolerance = 1e-7f; // Tolerance in comparisons.
             if (A == 0) // Not actually a cubic. Relative acceleration is zero, so return the much simpler linear timeToCPA.
             {
                 return Mathf.Clamp(-Vector3.Dot(relPosition, relVelocity) / relVelocity.sqrMagnitude, 0f, maxTime);
@@ -76,14 +97,14 @@ namespace BDArmory.Utils
             float D1 = 2 * B * B * B - 9f * A * B * C + 27f * A * A * D;
             float E = D1 * D1 - 4f * D0 * D0 * D0; // = -27*A^2*discriminant
             // float discriminant = 18f * A * B * C * D - 4f * Mathf.Pow(B, 3f) * D + Mathf.Pow(B, 2f) * Mathf.Pow(C, 2f) - 4f * A * Mathf.Pow(C, 3f) - 27f * Mathf.Pow(A, 2f) * Mathf.Pow(D, 2f);
-            if (E > 0)
+            if (E > tolerance)
             { // Single solution (E is positive)
                 float F = (D1 + Mathf.Sign(D1) * BDAMath.Sqrt(E)) / 2f;
                 float G = Mathf.Sign(F) * Mathf.Pow(Mathf.Abs(F), 1f / 3f);
                 float time = -1f / 3f / A * (B + G + D0 / G);
                 return Mathf.Clamp(time, 0f, maxTime);
             }
-            else if (E < 0)
+            else if (E < -tolerance)
             { // Triple solution (E is negative)
                 float F_real = D1 / 2f;
                 float F_imag = Mathf.Sign(D1) * BDAMath.Sqrt(-E) / 2f;
@@ -92,34 +113,70 @@ namespace BDArmory.Utils
                 float G_abs = Mathf.Pow(F_abs, 1f / 3f);
                 float G_ang = F_ang / 3f;
                 float time = -1f;
+                float distanceSqr = float.MaxValue;
                 for (int i = 0; i < 3; ++i)
                 {
                     float G = G_abs * Mathf.Cos(G_ang + 2f * (float)i * Mathf.PI / 3f);
                     float t = -1f / 3f / A * (B + G + D0 * G / G_abs / G_abs);
-                    if (t > 0f && Mathf.Sign(Vector3.Dot(relVelocity, relVelocity) + Vector3.Dot(relPosition, relAcceleration) + 3f * t * Vector3.Dot(relVelocity, relAcceleration) + 3f / 2f * t * t * Vector3.Dot(relAcceleration, relAcceleration)) > 0)
-                    { // It's a minimum and in the future.
-                        if (time < 0f || t < time) // Update the closest time.
-                            time = t;
+                    if (Mathf.Sign(C + t * B / 2f + 3f * t * t * A) > 0) // It's a minimum. There can be at most 2 minima and 1 maxima.
+                    {
+                        switch (cpaType)
+                        {
+                            case CPAType.Earliest:
+                                if (t > 0 && (time < 0 || t < time)) time = t;
+                                break;
+                            case CPAType.Latest:
+                                if (t > time) time = t;
+                                break;
+                            case CPAType.Closest:
+                                t = Mathf.Clamp(t, 0, maxTime);
+                                var distSqr = (relPosition + relVelocity * t + relAcceleration * t * t / 2f).sqrMagnitude;
+                                if (distSqr < distanceSqr)
+                                {
+                                    distanceSqr = distSqr;
+                                    time = t;
+                                }
+                                break;
+                        }
                     }
                 }
                 return Mathf.Clamp(time, 0f, maxTime);
             }
             else
             { // Repeated root
-                if (Mathf.Abs(B * B - 2f * A * C) < 1e-7)
+                if (Mathf.Abs(B * B - 2f * A * C) < tolerance)
                 { // A triple-root.
                     return Mathf.Clamp(-B / 3f / A, 0f, maxTime);
                 }
                 else
                 { // Double root and simple root.
-                    return Mathf.Clamp(Mathf.Max((9f * A * D - B * C) / 2 / (B * B - 3f * A * C), (4f * A * B * C - 9f * A * A * D - B * B * B) / A / (B * B - 3f * A * C)), 0f, maxTime);
+                    float time = -1f;
+                    float t0 = (9f * A * D - B * C) / 2f / (B * B - 3f * A * C);
+                    float t1 = (4f * A * B * C - 9f * A * A * D - B * B * B) / A / (B * B - 3f * A * C);
+                    switch (cpaType)
+                    {
+                        case CPAType.Earliest:
+                            if (t0 > 0 && (time < 0 || t0 < time)) time = t0;
+                            if (t1 > 0 && (time < 0 || t1 < time)) time = t1;
+                            break;
+                        case CPAType.Latest:
+                            if (t0 > time) time = t0;
+                            if (t1 > time) time = t1;
+                            break;
+                        case CPAType.Closest:
+                            t0 = Mathf.Clamp(t0, 0, maxTime);
+                            t1 = Mathf.Clamp(t1, 0, maxTime);
+                            time = ((relPosition + relVelocity * t0 + relAcceleration * t0 * t0 / 2f).sqrMagnitude < (relPosition + relVelocity * t1 + relAcceleration * t1 * t1 / 2f).sqrMagnitude) ? t0 : t1;
+                            break;
+                    }
+                    return Mathf.Clamp(time, 0, maxTime);
                 }
             }
         }
 
         public static float PredictClosestApproachSqrSeparation(this Vessel vessel, Vessel otherVessel, float maxTime)
         {
-            var timeToCPA = vessel.ClosestTimeToCPA(otherVessel, maxTime);
+            var timeToCPA = vessel.TimeToCPA(otherVessel, maxTime);
             if (timeToCPA > 0 && timeToCPA < maxTime)
                 return (vessel.PredictPosition(timeToCPA) - otherVessel.PredictPosition(timeToCPA)).sqrMagnitude;
             else

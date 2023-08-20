@@ -31,14 +31,16 @@ namespace BDArmory.Utils
 
             do
             {
-                ExplodingParts.Remove(null); // Clear out any null parts.
-                ExplodingParts.RemoveWhere(p => p.packed || (p.vessel is not null && !p.vessel.loaded)); // Remove parts that are already gone.
-                nowExploding = ExplodingParts.Where(p => !ExplodingParts.Contains(p.parent)).ToList(); // Explode outer-most parts first to avoid creating new vessels needlessly.
+                // Remove parts that are already gone.
+                nowExploding.AddRange(ExplodingParts.Where(p => p is null || p.packed || (p.vessel is not null && !p.vessel.loaded)));
+                ExplodingParts.ExceptWith(nowExploding);
+                nowExploding.Clear();
+                // Explode outer-most parts first to avoid creating new vessels needlessly.
+                nowExploding.AddRange(ExplodingParts.Where(p => !ExplodingParts.Contains(p.parent)));
                 foreach (var part in nowExploding)
-                {
                     part.explode();
-                    ExplodingParts.Remove(part);
-                }
+                ExplodingParts.ExceptWith(nowExploding);
+                nowExploding.Clear();
             } while (ExplodingParts.Count > 0);
         }
     }

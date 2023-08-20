@@ -21,6 +21,8 @@ namespace BDArmory.WeaponMounts
 
         ModuleTurret turret;
 
+        public MissileLauncher missilepod;
+
         [KSPField(guiActive = true, guiName = "#LOC_BDArmory_TurretEnabled")] public bool turretEnabled;//Turret Enabled
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MissileTurretFireFOV"),
@@ -262,7 +264,14 @@ namespace BDArmory.WeaponMounts
                     break;
                 }
                 tur.Dispose();
-
+                List<MissileLauncher>.Enumerator mml = part.FindModulesImplementing<MissileLauncher>().GetEnumerator();
+                while (mml.MoveNext())
+                {
+                    if (mml.Current == null) continue;
+                    missilepod = mml.Current;
+                    break;
+                }
+                mml.Dispose();
                 attachedRadar = part.FindModuleImplementing<ModuleRadar>();
                 if (attachedRadar) hasAttachedRadar = true;
 
@@ -280,12 +289,10 @@ namespace BDArmory.WeaponMounts
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
-
             if (turretEnabled)
             {
                 hasReturned = false;
-
-                if (missileCount == 0)
+                if ((missilepod == null && missileCount == 0) || (missilepod != null && missilepod.multiLauncher.missileSpawner.ammoCount < 1 && !BDArmorySettings.INFINITE_ORDINANCE))
                 {
                     DisableTurret();
                     return;
@@ -306,13 +313,11 @@ namespace BDArmory.WeaponMounts
                 {
                     UpdateMissilePositions();
                 }
-
                 if (autoReturn && !hasReturned)
                 {
                     DisableTurret();
                 }
             }
-
             pausingAfterShot = (Time.time - timeFired < firePauseTime);
         }
 

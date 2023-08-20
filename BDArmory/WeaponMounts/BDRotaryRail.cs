@@ -4,6 +4,7 @@ using UniLinq;
 using UnityEngine;
 
 using BDArmory.Control;
+using BDArmory.Extensions;
 using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
 
@@ -382,7 +383,7 @@ namespace BDArmory.WeaponMounts
             {
                 if (p.Current == null) continue;
                 Vector3 direction = p.Current.transform.position - part.transform.position;
-                direction = Vector3.ProjectOnPlane(direction, part.transform.up).normalized;
+                direction = direction.ProjectOnPlanePreNormalized(part.transform.up).normalized;
 
                 p.Current.transform.position += direction * offset;
             }

@@ -118,7 +118,7 @@ namespace BDArmory.GameModes
                         {
                             if (engine.Current == null) continue;
                             if (engine.Current.independentThrottle) continue; //only grab primary thrust engines
-                            frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100));
+                            frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100)); //FIXME - Look into grabbing max thrust from velCurve, if for whatever reason a rocket engine has one of these
                             //have this called onvesselModified?
                         }
                     frictMult /= 6; //doesn't need to be 100% of thrust at max speed, Ai will already self-limit; this also has the AI throttle down, which allows for slamming the throttle full for braking/coming about, instead of being stuck with lower TwR
@@ -127,7 +127,7 @@ namespace BDArmory.GameModes
                         while (r.MoveNext())
                         {
                             if (r.Current == null) continue;
-                            r.Current.part.PhysicsSignificance = 1; //only grab primary thrust engines
+                            r.Current.part.PhysicsSignificance = 1; 
                         }
                 }
                 else
@@ -159,31 +159,39 @@ namespace BDArmory.GameModes
                             maxVelocity = VAI.MaxSpeed;
 
                         var speedFraction = (float)part.vessel.speed / maxVelocity;
+                        if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
                         frictionCoeff = speedFraction * speedFraction * speedFraction * frictMult; //at maxSpeed, have friction be 100% of vessel's engines thrust
 
                         frictionCoeff *= (1 + (Vector3.Angle(this.part.vessel.srf_vel_direction, this.part.vessel.GetTransform().up) / 180) * BDArmorySettings.SF_DRAGMULT * 4); //greater AoA off prograde, greater drag
                         frictionCoeff /= vessel.Parts.Count;
                         //part.vessel.rootPart.rb.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
-                        for (int i = 0; i < part.vessel.Parts.Count; i++)
-                        {
-                            if (part.vessel.parts[i].PhysicsSignificance != 1) //attempting to apply rigidbody force to non-significant parts will NRE
+                        using (var p = part.vessel.Parts.GetEnumerator())
+                            while (p.MoveNext())
                             {
-                                part.vessel.Parts[i].Rigidbody.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
+                                if (p.Current == null || p.Current.PhysicsSignificance == 1) continue;
+                                p.Current.Rigidbody.AddForceAtPosition((-part.vessel.srf_vel_direction * frictionCoeff), part.vessel.CoM, ForceMode.Acceleration);
                             }
-                        }
                     }
                 }
                 if (BDArmorySettings.SF_GRAVITY || AntiGravOverride) //have this disabled if no engines left?
                 {
                     if (weaponManager != null && foundEngine != null) //have engineless craft fall
                     {
-                        for (int i = 0; i < part.vessel.Parts.Count; i++)
-                        {
-                            if (part.vessel.parts[i].PhysicsSignificance != 1) //attempting to apply rigidbody force to non-significant parts will NRE
+                        using (var p = part.vessel.Parts.GetEnumerator())
+                            while (p.MoveNext())
                             {
-                                part.vessel.Parts[i].Rigidbody.AddForce(-FlightGlobals.getGeeForceAtPosition(part.vessel.Parts[i].transform.position), ForceMode.Acceleration);
+                                if (p.Current == null || p.Current.PhysicsSignificance == 1) continue; //attempting to apply rigidbody force to non-significant parts will NRE
+                                p.Current.Rigidbody.AddForce(-FlightGlobals.getGeeForceAtPosition(p.Current.transform.position), ForceMode.Acceleration);
                             }
-                        }
+                    }
+                    else //out of control/engineless craft get hurtled into the ground
+                    {
+                        using (var p = part.vessel.Parts.GetEnumerator())
+                            while (p.MoveNext())
+                            {
+                                if (p.Current == null || p.Current.PhysicsSignificance == 1) continue;
+                                p.Current.Rigidbody.AddForce(FlightGlobals.getGeeForceAtPosition(p.Current.transform.position), ForceMode.Acceleration);
+                            }
                     }
                 }
             }

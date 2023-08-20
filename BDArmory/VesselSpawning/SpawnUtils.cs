@@ -204,6 +204,10 @@ namespace BDArmory.VesselSpawning
         public static void RestoreKAL(Vessel vessel, bool restore = true) => SpawnUtilsInstance.Instance.RestoreKAL(vessel, restore);
         #endregion
 
+        #region Post-Spawn
+        public static void OnVesselReady(Vessel vessel) => SpawnUtilsInstance.Instance.OnVesselReady(vessel);
+        #endregion
+
         #region Vessel Removal
         public static bool removingVessels => SpawnUtilsInstance.Instance.removeVesselsPending > 0;
         public static void RemoveVessel(Vessel vessel) => SpawnUtilsInstance.Instance.RemoveVessel(vessel);
@@ -296,6 +300,23 @@ namespace BDArmory.VesselSpawning
             SpaceFrictionOnNewVessels(false);
         }
 
+
+        #region Post-Spawn
+        public void OnVesselReady(Vessel vessel) => StartCoroutine(OnVesselReadyCoroutine(vessel));
+        /// <summary>
+        /// Perform adjustments to spawned craft once they're loaded and unpacked.
+        /// </summary>
+        /// <param name="vessel"></param>
+        IEnumerator OnVesselReadyCoroutine(Vessel vessel)
+        {
+            var wait = new WaitForFixedUpdate();
+            while (vessel != null && (!vessel.loaded || vessel.packed)) yield return wait;
+            if (vessel == null) yield break;
+            // EVA Kerbals get their Assigned status reverted to Available for some reason. This fixes that.
+            foreach (var kerbal in VesselModuleRegistry.GetKerbalEVAs(vessel)) foreach (var crew in kerbal.part.protoModuleCrew) crew.rosterStatus = ProtoCrewMember.RosterStatus.Assigned;
+        }
+        #endregion
+
         #region Vessel Removal
         public int removeVesselsPending = 0;
         // Remove a vessel and clean up any remaining parts. This fixes the case where the currently focussed vessel refuses to die properly.
@@ -332,8 +353,12 @@ namespace BDArmory.VesselSpawning
             {
                 if (vessel.vesselType == VesselType.SpaceObject)
                 {
-                    if (BDArmorySettings.ASTEROID_RAIN && AsteroidRain.IsManagedAsteroid(vessel)) yield break; // Don't remove asteroids when we're using them.
-                    if (BDArmorySettings.ASTEROID_FIELD && AsteroidField.IsManagedAsteroid(vessel)) yield break; // Don't remove asteroids when we're using them.
+                    if ((BDArmorySettings.ASTEROID_RAIN && AsteroidRain.IsManagedAsteroid(vessel))
+                        || (BDArmorySettings.ASTEROID_FIELD && AsteroidField.IsManagedAsteroid(vessel))) // Don't remove asteroids when we're using them.
+                    {
+                        --removeVesselsPending;
+                        yield break;
+                    }
                     if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // Comets introduced in 1.11
                         RemoveComet_1_11(vessel);
                 }
@@ -430,7 +455,8 @@ namespace BDArmory.VesselSpawning
             if (!spawning)
             {
                 var overLand = (worldIndex != -1 ? FlightGlobals.Bodies[worldIndex] : FlightGlobals.currentMainBody).TerrainAltitude(latitude, longitude) > 0;
-                FlightGlobals.fetch.SetVesselPosition(worldIndex != -1 ? worldIndex : FlightGlobals.currentMainBody.flightGlobalsIndex, latitude, longitude, overLand ? Math.Max(5, altitude) : altitude, FlightGlobals.ActiveVessel.vesselType == VesselType.Plane ? 0 : 90, 0, true, overLand); // FIXME This should be using the vessel reference transform to determine the inclination. Also below.
+                var easeToSurface = altitude <= 10;
+                FlightGlobals.fetch.SetVesselPosition(worldIndex != -1 ? worldIndex : FlightGlobals.currentMainBody.flightGlobalsIndex, latitude, longitude, overLand ? Math.Max(5, altitude) : altitude, FlightGlobals.ActiveVessel.vesselType == VesselType.Plane ? 0 : 90, 0, true, easeToSurface, easeToSurface ? 0.1 : 1); // FIXME This should be using the vessel reference transform to determine the inclination. Also below.
                 FloatingOrigin.SetOffset(FlightGlobals.ActiveVessel.transform.position); // This adjusts local coordinates, such that the vessel position is (0,0,0).
                 VehiclePhysics.Gravity.Refresh();
             }

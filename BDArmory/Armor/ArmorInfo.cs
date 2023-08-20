@@ -108,9 +108,9 @@ namespace BDArmory.Armor
             ConfigNode node;
 
             // Based on average piece of shrapnel
-            float defaultPenShrapnel = ProjectileUtils.CalculatePenetration(15, 430, 0.02f, 1, 940, 0.00000094776185184f, 0.6560606203f, 1.201909309f, 1.777919321f);
+            float defaultPenShrapnel = ProjectileUtils.CalculatePenetration(15, 430, 0.02f, 1);
             // Based on 120x570 mm NATO HEAT shell
-            float defaultPenHEAT = ProjectileUtils.CalculatePenetration(6, 5000, 0.13098f, 1, 940, 0.00000094776185184f, 0.6560606203f, 1.201909309f, 1.777919321f);
+            float defaultPenHEAT = ProjectileUtils.CalculatePenetration(6, 5000, 0.13098f, 1);
 
             // First locate BDA's default armor definition so we can fill in missing fields.
             if (defaultArmor == null)

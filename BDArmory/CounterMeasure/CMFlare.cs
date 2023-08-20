@@ -62,7 +62,7 @@ namespace BDArmory.CounterMeasure
             thermal *= UnityEngine.Random.Range(thermalMinMult, Mathf.Max(BDArmorySettings.FLARE_FACTOR, 0f) - thermalMinMult + 0.8f);
 
             if (BDArmorySettings.DEBUG_OTHER)
-                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetDisplayName() + ":" + thermalSig.Item1.ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
+                Debug.Log("[BDArmory.CMFlare]: New flare generated from " + sourceVessel.GetName() + ":" + thermalSig.Item1.ToString("0.0") + ", heat: " + thermal.ToString("0.0"));
         }
 
         void OnEnable()

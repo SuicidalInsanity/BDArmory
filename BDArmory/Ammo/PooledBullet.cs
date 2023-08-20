@@ -61,7 +61,9 @@ namespace BDArmory.Bullets
         public Color lightColor = GUIUtils.ParseColor255("255, 235, 145, 255");
         public Color projectileColor;
         public string bulletTexturePath;
+        public string smokeTexturePath;
         public bool fadeColor;
+        Color smokeColor = Color.white;
         public Color startColor;
         Color currentColor;
         public bool bulletDrop = true;
@@ -109,7 +111,8 @@ namespace BDArmory.Bullets
         public float defaultDetonationRange = 3500f;
         public float maxAirDetonationRange = 3500f;
         float randomWidthScale = 1;
-        LineRenderer bulletTrail;
+        LineRenderer[] bulletTrail;
+        float timeAlive = 0;
         public float timeToLiveUntil;
         Light lightFlash;
         bool wasInitiated;
@@ -154,6 +157,7 @@ namespace BDArmory.Bullets
         static List<RaycastHit> allHits;
         static Dictionary<Vessel, float> rayLength;
         private Vector3[] linePositions = new Vector3[2];
+        private Vector3[] smokePositions = new Vector3[5];
 
         private List<Part> partsHit = new List<Part>();
 
@@ -244,12 +248,17 @@ namespace BDArmory.Bullets
             //tracer setup
             if (bulletTrail == null || !gameObject.GetComponent<LineRenderer>())
             {
-                bulletTrail = gameObject.AddOrGetComponent<LineRenderer>();
-            }
+                bulletTrail = new LineRenderer[2];
+                bulletTrail[0] = gameObject.AddOrGetComponent<LineRenderer>();
 
+                GameObject bulletFX = new GameObject("bulletTrail");
+                bulletFX.transform.SetParent(this.gameObject.transform);
+                bulletTrail[1] = bulletFX.AddOrGetComponent<LineRenderer>();
+            }
             if (!wasInitiated)
             {
-                bulletTrail.positionCount = linePositions.Length;
+                bulletTrail[0].positionCount = linePositions.Length;
+                bulletTrail[1].positionCount = smokePositions.Length;
             }
             // Note: call SetTracerPosition() after enabling the bullet and making adjustments to it's position.
 
@@ -261,14 +270,34 @@ namespace BDArmory.Bullets
 
             if (!wasInitiated)
             {
-                bulletTrail.material = new Material(bulletShader);
+                bulletTrail[0].material = new Material(bulletShader);
+                bulletTrail[1].material = new Material(bulletShader);
                 randomWidthScale = UnityEngine.Random.Range(0.5f, 1f);
                 gameObject.layer = 15;
             }
-
-            bulletTrail.material.mainTexture = GameDatabase.Instance.GetTexture(bulletTexturePath, false);
-            bulletTrail.material.SetColor("_TintColor", currentColor);
-            bulletTrail.material.SetFloat("_Lum", tracerLuminance);
+            smokeColor.r = 0.85f;
+            smokeColor.g = 0.85f;
+            smokeColor.b = 0.85f;
+            smokeColor.a = 0.75f;
+            timeAlive = 0;
+            bulletTrail[0].material.mainTexture = GameDatabase.Instance.GetTexture(bulletTexturePath, false);
+            bulletTrail[0].material.SetColor("_TintColor", currentColor);
+            bulletTrail[0].material.SetFloat("_Lum", (tracerLuminance > 0? tracerLuminance : 0.5f));
+            if (!string.IsNullOrEmpty(smokeTexturePath))
+            {
+                bulletTrail[1].material.mainTexture = GameDatabase.Instance.GetTexture(smokeTexturePath, false);
+                bulletTrail[1].material.SetColor("_TintColor", smokeColor);
+                bulletTrail[1].material.SetFloat("_Lum", 0.5f);
+                bulletTrail[1].textureMode = LineTextureMode.Tile;
+                bulletTrail[1].material.SetTextureScale("_MainTex", new Vector2(0.1f, 1));
+                bulletTrail[1].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                bulletTrail[1].receiveShadows = false;
+                bulletTrail[1].enabled = true;
+            }
+            else
+            {
+                bulletTrail[1].enabled = false;
+            }
 
             tracerStartWidth *= 2f;
             tracerEndWidth *= 2f;
@@ -307,6 +336,7 @@ namespace BDArmory.Bullets
             isAPSprojectile = false;
             tgtRocket = null;
             tgtShell = null;
+            smokeTexturePath = "";
         }
 
         void OnDestroy()
@@ -354,8 +384,17 @@ namespace BDArmory.Bullets
             if (fadeColor)
             {
                 FadeColor();
-                bulletTrail.material.SetColor("_TintColor", currentColor * tracerLuminance);
+                bulletTrail[0].material.SetColor("_TintColor", currentColor * (tracerLuminance > 0 ? tracerLuminance : 0.5f));
             }
+            if (tracerLuminance > 1)
+            {
+                float fade = Mathf.Lerp(0.75f, 0.05f, 0.07f);
+                smokeColor.a = fade;
+                bulletTrail[1].material.SetColor("_TintColor", smokeColor);
+                bulletTrail[1].material.SetTextureOffset("_MainTex", new Vector2(-timeAlive / 3, 0));
+                if (fade <= 0.05f) bulletTrail[1].enabled = false;
+            }
+            timeAlive += Time.fixedDeltaTime;
             SetTracerPosition();
 
             if (Time.time > timeToLiveUntil) //kill bullet when TTL ends
@@ -1659,8 +1698,11 @@ namespace BDArmory.Bullets
             float fov = c.fieldOfView;
             float factor = (fov / 60) * resizeFactor *
                            Mathf.Clamp(Vector3.Distance(transform.position, c.transform.position), 0, 3000) / 50;
-            bulletTrail.startWidth = tracerStartWidth * factor * randomWidthScale;
-            bulletTrail.endWidth = tracerEndWidth * factor * randomWidthScale;
+            bulletTrail[0].startWidth = tracerStartWidth * factor * randomWidthScale;
+            bulletTrail[0].endWidth = tracerEndWidth * factor * randomWidthScale;
+
+            bulletTrail[1].startWidth = (tracerStartWidth/2) * factor * 0.5f;
+            bulletTrail[1].endWidth = (tracerEndWidth/2) * factor * 0.5f;
         }
 
         public void KillBullet()
@@ -1689,7 +1731,29 @@ namespace BDArmory.Bullets
                 linePositions[0] = transform.position + ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * tracerLength);
             }
             linePositions[1] = transform.position;
-            bulletTrail.SetPositions(linePositions);
+            smokePositions[0] = startPosition;
+            for (int i = 0; i < smokePositions.Length - 1; i++)
+            {
+                if (timeAlive < i)
+                {
+                    smokePositions[i] = transform.position;
+                }
+            }
+            if (timeAlive > smokePositions.Length)
+            {
+                //smokePositions[0] = smokePositions[1];
+                startPosition = smokePositions[1]; //Start position isn't used for anything else, so modifying shouldn't be an issue. Vestigial value from some deprecated legacy function?
+                for (int i = 0; i < smokePositions.Length - 1; i++)
+                {
+                    smokePositions[i] = smokePositions[i + 1];
+                    //have it so each sec interval after timeAlive > smokePositions.length, have smokePositions[i] = smokePosition[i+1]if i < = smokePosition.length - 1;
+                }
+                timeAlive -= 1;
+            }            
+            smokePositions[4] = transform.position;
+            //if (Vector3.Distance(startPosition, transform.position) > 1000) smokePositions[0] = transform.position - ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * 1000);
+            bulletTrail[0].SetPositions(linePositions);
+            bulletTrail[1].SetPositions(smokePositions);
         }
 
         void FadeColor()
@@ -1750,6 +1814,7 @@ namespace BDArmory.Bullets
             currentVelocity = Vector3.RotateTowards(currentVelocity, randomDirection,
                 UnityEngine.Random.Range(0f, 5f) * Mathf.Deg2Rad, 0);
             MoveBullet((1f - fractionOfDistance) * period);
+            bulletTrail[1].enabled = false;
         }
 
         private float GetExplosivePower()

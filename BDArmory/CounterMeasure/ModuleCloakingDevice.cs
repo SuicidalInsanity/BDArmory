@@ -102,12 +102,15 @@ namespace BDArmory.CounterMeasure
         {
             GameEvents.onVesselCreate.Remove(OnVesselCreate);
             cloakEnabled = false;
-            using (var Part = this.part.vessel.Parts.GetEnumerator())
-                while (Part.MoveNext())
-                {
-                    if (Part.Current == null) continue;
-                    Part.Current.SetOpacity(1);
-                }
+            if (part != null && part.vessel != null)
+            {
+                using (var Part = part.vessel.Parts.GetEnumerator())
+                    while (Part.MoveNext())
+                    {
+                        if (Part.Current == null) continue;
+                        Part.Current.SetOpacity(1);
+                    }
+            }
         }
 
         void OnVesselCreate(Vessel v)
@@ -124,7 +127,7 @@ namespace BDArmory.CounterMeasure
 
             StopCloakDecloakRoutines();
             cloakTimer = 0;
-			cloakRoutine = StartCoroutine(CloakRoutine());
+            cloakRoutine = StartCoroutine(CloakRoutine());
         }
 
         public void DisableCloak()

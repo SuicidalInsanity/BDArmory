@@ -69,8 +69,7 @@ namespace BDArmory.Guidances
 
             upDirection = VectorUtils.GetUpDirection(_missile.vessel.CoM);
 
-            planarDirectionToTarget =
-                Vector3.ProjectOnPlane(targetPosition - _missile.vessel.CoM, upDirection).normalized;
+            planarDirectionToTarget = (targetPosition - _missile.vessel.CoM).ProjectOnPlanePreNormalized(upDirection).normalized;
 
             // Ascending
             var missileAltitude = GetCurrentAltitude(_missile.vessel);
