@@ -1753,7 +1753,7 @@ namespace BDArmory.Radar
         /// (Visual Target acquisition)
         /// </summary>
 
-        public static ViewScanResults GuardScanInDirection(MissileFire myWpnManager, Transform referenceTransform, float fov, float maxViewDistance, RadarWarningReceiver RWR = null, ModuleDrone myDrone = null) )
+        public static ViewScanResults GuardScanInDirection(MissileFire myWpnManager, Transform referenceTransform, float fov, float maxViewDistance, RadarWarningReceiver RWR = null, ModuleDrone myDrone = null)
         {
             fov *= 1.1f;
             var results = new ViewScanResults
@@ -1787,15 +1787,19 @@ namespace BDArmory.Radar
             Vector3 forwardVector = referenceTransform.forward;
             Vector3 upVector = referenceTransform.up;
             Vector3 lookDirection = -forwardVector;
-            var pilotAI = VesselModuleRegistry.GetBDModulePilotAI(myVessel, true);
-            var ignoreMyTargetTargetingMe = pilotAI != null && pilotAI.evasionIgnoreMyTargetTargetingMe;
+            Vessel myVessel = myWpnManager != null ? myWpnManager.vessel : (myDrone != null ? myDrone.vessel : null);
+            bool ignoreMyTargetTargetingMe = false;
+            if (myWpnManager != null)
+            {
+                var pilotAI = VesselModuleRegistry.GetBDModulePilotAI(myWpnManager.vessel, true);
+                ignoreMyTargetTargetingMe = pilotAI != null && pilotAI.evasionIgnoreMyTargetTargetingMe;
+            }
             float maxRWRDistance = RWR != null ? RWR.rwrDisplayRange : maxViewDistance;
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
                 {
                     if (loadedvessels.Current == null || !loadedvessels.Current.loaded || VesselModuleRegistry.ignoredVesselTypes.Contains(loadedvessels.Current.vesselType)) continue;
                     if (loadedvessels.Current == myVessel) continue; //ignore self
-
                     Vector3 vesselProjectedDirection = (loadedvessels.Current.transform.position - position).ProjectOnPlanePreNormalized(upVector);
                     Vector3 vesselDirection = loadedvessels.Current.transform.position - position;
 					
@@ -1834,7 +1838,7 @@ namespace BDArmory.Radar
                                         }
                                     }
                                     if (vesselDistanceSqr > sightDistance * sightDistance) continue; //missile outside of modified visibility range, disregard
-                                    if (MissileIsThreat(missileBase, myWpnManager))
+                                    if (MissileIsThreat(missileBase, myVessel, myWpnManager != null ? myWpnManager.Team : (myDrone != null ? myDrone.Team : null), myWpnManager))
                                     {
                                         results.incomingMissiles.Add(new IncomingMissile
                                         {
@@ -1923,8 +1927,8 @@ namespace BDArmory.Radar
 
                 return (missile.HasFired && missile.MissileState > MissileBase.MissileStates.Drop && approaching &&
                             (
-                                (missile.TargetPosition - (mf.vessel.CoM + (mf.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
-                                mf.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(mf.cmThreshold, mf.evadeThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
+                                (missile.TargetPosition - (v.CoM + (v.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
+                                v.PredictClosestApproachSqrSeparation(missile.vessel, mf != null ? Mathf.Max(mf.cmThreshold, mf.evadeThreshold) : 0) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
                                 withinRadarFOV // We are within radar FOV of missile boresight.
                             ));
             }

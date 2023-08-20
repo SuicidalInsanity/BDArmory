@@ -1192,14 +1192,14 @@ namespace BDArmory.UI
                         {
                             if (targetingMeOnly)
                             {
-                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf))
+                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf))
                                 {
                                     continue;
                                 }
                             }
                             else
                             {
-                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
+                                if (!RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf, false))
                                 {
                                     continue;
                                 }
@@ -1227,7 +1227,7 @@ namespace BDArmory.UI
                 {
                     if (target.Current == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf.vessel, mf.Team, mf, false))
                     {
                         if (target.Current.NumFriendliesEngaging(mf.Team) == 0)
                         {

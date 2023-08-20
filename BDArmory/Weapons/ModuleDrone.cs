@@ -188,9 +188,6 @@ namespace BDArmory.Weapons
         [KSPField]
 		float MinAlt = 150; //min flight alt
 
-		[KSPField]
-		float maxAlt = 5000;
-
         [KSPField]
         public string rotationTransformName = string.Empty;
         Transform rotationTransform;
@@ -217,7 +214,7 @@ namespace BDArmory.Weapons
 		public float extendTargetDist = 300f;
 
 		//AI internal stuff
-        public Vessel targetVessel = null;
+        public Vessel vesselTarget = null;
 		ModuleWeapon weapon;
 
         public MissileFire weaponManager;
@@ -593,7 +590,7 @@ namespace BDArmory.Weapons
                 startDirection = transform.forward;
                 //if (AquisitionMode == AquisitionModes.AtLaunch)
                 //{
-                 //   targetVessel = weaponManager.currentTarget.Vessel; //this should be already covered via SendtargetingDataToMissile()
+                 //   vesselTarget = weaponManager.currentTarget.Vessel; //this should be already covered via SendtargetingDataToMissile()
                 //}
                 part.crashTolerance = 9999; //to combat stresses of launch, missle generate a lot of G Force
                 part.decouple(0);
@@ -604,7 +601,10 @@ namespace BDArmory.Weapons
                 part.bodyLiftMultiplier = 0;
                 part.dragModel = Part.DragModel.NONE;
 
-                AddTargetInfoToVessel(); //needs check for Drone, not missile
+                TargetInfo info = vessel.gameObject.AddComponent<TargetInfo>();
+                info.Team = Team;
+                info.isMissile = false;
+                info.MissileBaseModule = this;
                 /* //this should be in the update node, not launch
                 if (AquisitionMode == AquisitionModes.Slaved)
                 {
@@ -612,7 +612,7 @@ namespace BDArmory.Weapons
                     {
                         if (weaponManager.currentTarget != null)
                         {
-                            targetVessel = weaponManager.currentTarget.Vessel;
+                            vesselTarget = weaponManager.currentTarget.Vessel;
                         }
                     }
                     else //parentVessel WM somehow destroyed moment of launch, SD
@@ -733,7 +733,7 @@ namespace BDArmory.Weapons
                         StartCoroutine(SelfDestructRoutine(0));
                         Debug.Log("[DRONEDEBUG] Wingman Drone lost connection to mothership");
                     }
-                    if (((DependancyMode == DependancyModes.SingleUse && targetVessel == null)))
+                    if (((DependancyMode == DependancyModes.SingleUse && vesselTarget == null)))
                     {
                         StartCoroutine(SelfDestructRoutine(10));
                         Debug.Log("[DRONEDEBUG] Single-Target drone lost target");
@@ -791,9 +791,9 @@ namespace BDArmory.Weapons
                 }    
                 */
                 //Guidancetype = ImageRecongnition
-                if (targetVessel != null)
+                if (vesselTarget != null)
                 {
-                    debugString.Append($"Target Vessel: {targetVessel.GetName()}");
+                    debugString.Append($"Target Vessel: {vesselTarget.GetName()}");
                 }
                 else
                 {
@@ -914,7 +914,7 @@ namespace BDArmory.Weapons
                     //if (DependancyMode == DependancyModes.SingleUse) //killed its target, begin selfdestruct
                     {
                         guidanceActive = false;
-                        targetVessel = null;
+                        vesselTarget = null;
                         return;
                     }
                     //have Atlaunch multitarget drones lock current target of sourceVessel
@@ -924,12 +924,12 @@ namespace BDArmory.Weapons
                     if (DependancyMode == DependancyModes.SingleUse) //killed its target, begin selfdestruct
                     {
                         guidanceActive = false;
-                        targetVessel = null;
+                        vesselTarget = null;
                         return;
                     }
                     else
                     {
-                        targetVessel = SourceVessel; //multi-target drone slaved to mothership; return to motherhip
+                        vesselTarget = SourceVessel; //multi-target drone slaved to mothership; return to motherhip
                     }
                 }
                 else //autonomous target aquisition
@@ -937,10 +937,10 @@ namespace BDArmory.Weapons
                     if (DependancyMode == DependancyModes.SingleUse) //killed its target, begin selfdestruct
                     {
                         guidanceActive = false;
-                        targetVessel = null;
+                        vesselTarget = null;
                         return;
                     }
-                    targetVessel = SourceVessel; //return to mothership until new targets present themself
+                    vesselTarget = SourceVessel; //return to mothership until new targets present themself
                 }
             }
         }
@@ -1233,9 +1233,9 @@ namespace BDArmory.Weapons
             BDArmorySetup.numberOfParticleEmitters--;
             HasExploded = true;
 
-            if (targetVessel != null)
+            if (vesselTarget != null)
             {
-                using (var wpm = VesselModuleRegistry.GetModules<MissileFire>(targetVessel).GetEnumerator())
+                using (var wpm = VesselModuleRegistry.GetModules<MissileFire>(vesselTarget).GetEnumerator())
                     while (wpm.MoveNext())
                     {
                         if (wpm.Current == null) continue;
@@ -1605,7 +1605,7 @@ namespace BDArmory.Weapons
             {
                 if (weaponManager != null)
                 {
-                    targetVessel = weaponManager.currentTarget.Vessel;
+                    vesselTarget = weaponManager.currentTarget.Vessel;
                 }
                 else
                 {
@@ -1613,7 +1613,7 @@ namespace BDArmory.Weapons
                     SDtriggered = true;
                     Debug.Log("[DRONEDEBUG] Slaved Drone has no mothership");
                 }
-                if (targetVessel != null)
+                if (vesselTarget != null)
                 {
                     TargetAcquired = true;
                 }
@@ -1621,18 +1621,18 @@ namespace BDArmory.Weapons
             }
             if (DependancyMode == DependancyModes.SingleUse)
             {
-                if (targetVessel = null)
+                if (vesselTarget = null)
                 {
                     TargetAcquired = false;
                 }
             }
-            if (targetVessel != null)
+            if (vesselTarget != null)
             {
                 TargetAcquired = true;
                 weapon.targetCOM = true;
                 weapon.autoFireTimer = Time.time;
                 weapon.autoFireLength = 1;
-                weapon.visualTargetVessel = targetVessel;
+                weapon.visualTargetVessel = vesselTarget;
             }
             else
             {
@@ -1646,7 +1646,7 @@ namespace BDArmory.Weapons
 
         void UpdateGuardViewScan()
         {
-            results = RadarUtils.GuardScanInDirection(part.vessel, null, MissileReferenceTransform, 360, 15000, this);
+            results = RadarUtils.GuardScanInDirection(null, MissileReferenceTransform, 360, 15000, null, this);
             incomingThreatVessel = null;
 
             if (results.foundMissile)
@@ -1733,7 +1733,7 @@ namespace BDArmory.Weapons
                     {
                         float theta = Vector3.Angle(part.vessel.srf_vel_direction, target.Current.transform.position - part.vessel.CoM);
                         float distance = (part.vessel.CoM - target.Current.position).magnitude;
-                        float targetScore = (target.Current.Vessel == targetVessel ? hysteresis : 1f) * ((bias - 1f) * Mathf.Pow(Mathf.Cos(theta / 2f), 2f) + 1f) / distance;
+                        float targetScore = (target.Current.Vessel == vesselTarget ? hysteresis : 1f) * ((bias - 1f) * Mathf.Pow(Mathf.Cos(theta / 2f), 2f) + 1f) / distance;
                         if (finalTarget == null || targetScore > finalTargetScore)
                         {
                             finalTarget = target.Current;
@@ -1741,8 +1741,8 @@ namespace BDArmory.Weapons
                         }
                     }
                 }
-            targetVessel = finalTarget.Vessel;
-            if (targetVessel != null)
+            vesselTarget = finalTarget.Vessel;
+            if (vesselTarget != null)
             {
                 guidanceActive = true;
                 TargetAcquired = true;
@@ -1763,8 +1763,9 @@ namespace BDArmory.Weapons
             set { radarWarn = value; }
         }
         #endregion
-        void OnGUI()
+        protected override void OnGUI()
         {
+            base.OnGUI();
             if (!HasFired) return;
             if (!FlightGlobals.ActiveVessel) return;
             if (BDArmorySettings.DEBUG_MISSILES)

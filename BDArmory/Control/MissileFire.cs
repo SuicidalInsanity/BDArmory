@@ -2693,7 +2693,7 @@ namespace BDArmory.Control
 
                 if (ml.vessel && CanSeeTarget(ml))
                 {
-                    BDATargetManager.ReportVessel(ml.vessel, this.Team);
+                    BDATargetManager.ReportVessel(ml.vessel, this);
                 }
             }
             warningSounding = false;

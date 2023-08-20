@@ -4766,13 +4766,13 @@ namespace BDArmory.Weapons
                 if ((weaponManager.slavingTurrets || DroneWeapon) && turret)
                 {
                     slaved = true;
-                    targetRadius = DroneWeapon ? (drone.targetVessel != null ? drone.targetVessel.GetRadius() : 35) : weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
-                    targetPosition = DroneWeapon ? drone.targetVessel.CoM : weaponManager.slavedPosition;
-                    if (DroneWeapon) targetVelocity = drone.targetVessel != null ? drone.targetVessel.rb_velocity : Vector3.zero;
+                    targetRadius = DroneWeapon ? (drone.targetVessel != null ? drone.targetVessel.Vessel.GetRadius() : 35) : weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
+                    targetPosition = DroneWeapon ? drone.targetVessel.Vessel.CoM : weaponManager.slavedPosition;
+                    if (DroneWeapon) targetVelocity = drone.targetVessel != null ? drone.targetVessel.Vessel.rb_velocity : Vector3.zero;
                     else targetVelocity = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - Krakensbane.GetFrameVelocityV3f());
                     //targetAcceleration = weaponManager.slavedTarget.vessel != null ? weaponManager.slavedTarget.vessel.acceleration : weaponManager.slavedAcceleration;
                     //CS0172 Type of conditional expression cannot be determined because 'Vector3' and 'Vector3' implicitly convert to one another
-                    if (DroneWeapon ? drone.targetVessel != null : weaponManager.slavedTarget.vessel != null) targetAcceleration = DroneWeapon ? drone.targetVessel.acceleration : weaponManager.slavedTarget.vessel.acceleration;
+                    if (DroneWeapon ? drone.targetVessel != null : weaponManager.slavedTarget.vessel != null) targetAcceleration = DroneWeapon ? drone.targetVessel.Vessel.acceleration : weaponManager.slavedTarget.vessel.acceleration;
                     else
                         targetAcceleration = DroneWeapon ? Vector3.zero : weaponManager.slavedAcceleration;
                     targetAcquired = true;
