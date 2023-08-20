@@ -3319,7 +3319,7 @@ namespace BDArmory.Weapons
 
             Vector3 finalTarget = targetPosition;
             bool manualAiming = false;
-            if ((aiControlled && !slaved && weaponManager && (!targetAcquired || weaponManager.staleTarget))) || DroneWeapon
+            if ((aiControlled && !slaved && weaponManager && (!targetAcquired || weaponManager.staleTarget)) || DroneWeapon)
             {
                 if (BDKrakensbane.IsActive)
                 {

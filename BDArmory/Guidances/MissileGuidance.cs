@@ -406,7 +406,7 @@ namespace BDArmory.Guidances
         public static FloatCurve DefaultLiftCurve = null;
         public static FloatCurve DefaultDragCurve = null;
 
-        public static Vector3 DoAeroForces(MissileLauncher ml, Vector3 targetPosition, float liftArea, float steerMult,
+        public static Vector3 DoAeroForces(MissileBase ml, Vector3 targetPosition, float liftArea, float steerMult,
             Vector3 previousTorque, float maxTorque, float maxAoA)
         {
             if (DefaultLiftCurve == null)
@@ -439,7 +439,7 @@ namespace BDArmory.Guidances
                 dragCurve);
         }
 
-        public static Vector3 DoAeroForces(MissileLauncher ml, Vector3 targetPosition, float liftArea, float steerMult,
+        public static Vector3 DoAeroForces(MissileBase ml, Vector3 targetPosition, float liftArea, float steerMult,
             Vector3 previousTorque, float maxTorque, float maxAoA, FloatCurve liftCurve, FloatCurve dragCurve)
         {
             Rigidbody rb = ml.part.rb;
@@ -470,9 +470,9 @@ namespace BDArmory.Guidances
                 rb.AddForceAtPosition((float)dragForce * -velocity.normalized,
                     ml.transform.TransformPoint(ml.part.CoMOffset + CoL));
             }
-
+            MissileLauncher msl = ml.GetComponent<MissileLauncher>();
             //guidance
-            if (airSpeed > 1 || (ml.vacuumSteerable && ml.Throttle > 0))
+            if (airSpeed > 1 || (msl.vacuumSteerable && ml.Throttle > 0))
             {
                 Vector3 targetDirection;
                 float targetAngle;
