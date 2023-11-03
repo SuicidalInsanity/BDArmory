@@ -35,7 +35,6 @@ namespace BDArmory.Control
         float weaveAdjustment = 0;
         float weaveDirection = 1;
         const float weaveLimit = 15;
-        const float weaveFactor = 6.5f;
 
         Vector3 upDir;
 
@@ -113,6 +112,14 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MaxBankAngle"),// Max Bank angle
             UI_FloatRange(minValue = 0f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
         public float MaxBankAngle = 30;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_WeaveFactor"),//Weave Factor
+    UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float weaveFactor = 6.5f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Differential Thrust Stabilization"),//Differential Thrust Stabilization
+    UI_Toggle(enabledText = "#LOC_BDArmory_On", disabledText = "#LOC_BDArmory_Off", scene = UI_Scene.All),]//Maneuvers--Combat
+        public bool DiffThrustStab = false;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MinEngagementRange"),//Min engagement range
             UI_FloatRange(minValue = 0f, maxValue = 6000f, stepIncrement = 100f, scene = UI_Scene.All)]
@@ -580,6 +587,7 @@ namespace BDArmory.Control
         void AdjustThrottle(float targetSpeed)
         {
             altitudeControl.targetAltitude = targetAltitude;
+            altitudeControl.differentialThrust = DiffThrustStab;
         }
 
         //Controller Integral

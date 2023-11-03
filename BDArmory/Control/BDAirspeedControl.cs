@@ -345,6 +345,7 @@ namespace BDArmory.Control
     public class BDVTOLSpeedControl : MonoBehaviour
     {
         public float targetAltitude;
+        public bool differentialThrust;
         public Vessel vessel;
         public bool preventNegativeZeroPoint = false;
 
@@ -386,15 +387,23 @@ namespace BDArmory.Control
             }
             else
             {
-                float altError = (targetAltitude - (float)vessel.radarAltitude);
-                float altP = Kp * (targetAltitude - (float)vessel.radarAltitude);
-                float altD = Kd * (float)vessel.verticalSpeed;
-                altIntegral = Ki * Mathf.Clamp(altIntegral + altError * Time.deltaTime, -1f, 1f);
+                if (!differentialThrust)
+                {
+                    float altError = (targetAltitude - (float)vessel.radarAltitude);
+                    float altP = Kp * (targetAltitude - (float)vessel.radarAltitude);
+                    float altD = Kd * (float)vessel.verticalSpeed;
+                    altIntegral = Ki * Mathf.Clamp(altIntegral + altError * Time.deltaTime, -1f, 1f);
 
-                float throttle = altP + altIntegral - altD;
-                SetThrottle(s, Mathf.Clamp01(throttle));
+                    float throttle = altP + altIntegral - altD;
+                    SetThrottle(s, Mathf.Clamp01(throttle));
 
-                vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, throttle < -5f);
+                    vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, throttle < -5f);
+                }
+                else
+                {
+                    SetThrottle(s, 1);
+                    DifferentialPID(s);
+                }
             }
         }
 
@@ -410,6 +419,24 @@ namespace BDArmory.Control
             {
                 axisGroupsModule.UpdateAxisGroup(KSPAxisGroup.MainThrottle, 2f * value - 1f); // Throttle is full-axis: 0—1 throttle maps to -1—1 axis.
             }
+        }
+        public void DifferentialPID(FlightCtrlState s)
+        {
+            Vector3 Up = VectorUtils.GetUpDirection(vessel.vesselTransform.position);
+            using (var engines = VesselModuleRegistry.GetModules<ModuleEngines>(vessel).GetEnumerator())
+                while (engines.MoveNext())
+                {
+                    if (engines.Current == null) continue;
+                    if (!engines.Current.EngineIgnited) continue;
+                    if (engines.Current.independentThrottle) continue;
+                    if (Vector3.Dot(engines.Current.thrustTransforms[0].forward, -Up) < 0.5) continue; //engine pointing more that ~45deg from vertical, not going to be producing much lift
+                    float altError = (targetAltitude - BodyUtils.GetRadarAltitudeAtPos(engines.Current.thrustTransforms[0].position));
+                    float altP = Kp * (targetAltitude - BodyUtils.GetRadarAltitudeAtPos(engines.Current.thrustTransforms[0].position));
+                    float altD = Kd * (float)vessel.verticalSpeed;
+                    altIntegral = Ki * Mathf.Clamp(altIntegral + altError * Time.deltaTime, -1f, 1f);
+                    float throttle = Mathf.Clamp((altP + altIntegral - altD), 0, engines.Current.part.GetDamagePercentage()) * 100f;
+                    engines.Current.thrustPercentage = throttle;
+                }
         }
     }
 }
