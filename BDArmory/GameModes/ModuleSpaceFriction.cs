@@ -17,7 +17,7 @@ namespace BDArmory.GameModes
         /// TL;DR, provides the means for SciFi style space dogfights
         /// </summary>
 
-        private double frictionCoeff = 1.0f; //how much force is applied to decellerate craft
+        private double frictionCoeff = 1.0f; //how much force is applied to decelerate craft
 
         //[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Space Friction"), UI_Toggle(disabledText = "Disabled", enabledText = "Enabled", scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
         //public bool FrictionEnabled = false; //global value
@@ -30,6 +30,16 @@ namespace BDArmory.GameModes
         [KSPField(isPersistant = true)]
         public bool RepulsorOverride = false;
         public float maxVelocity = 300; //MaxSpeed setting in PilotAI
+
+        [KSPField(isPersistant = true)]
+        public float maxRepulsorMass = 10; //levitate up to 10t per repulsor
+
+        [KSPField(isPersistant = true)]
+        public float resourcePerSec = -1;
+
+        [KSPField(isPersistant = true)]
+        public string resourceName = "ElectricCharge";
+        private int resourceID;
 
         public float frictMult; //engine thrust of craft
 
@@ -122,6 +132,7 @@ namespace BDArmory.GameModes
                     }
                 }
             }
+            resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
             if (HighLogic.LoadedSceneIsFlight)
             {
                 if (!RepulsorOverride) //MSF added via Spawn utilities for Space Hacks
@@ -232,10 +243,11 @@ namespace BDArmory.GameModes
                         {
                             float pointAltitude = BodyUtils.GetRadarAltitudeAtPos(part.transform.position);
                             if (pointAltitude <= 0 || pointAltitude > 2f * targetAlt) return;
+                            if (!DrainResource()) return;
                             var factor = Mathf.Clamp(Mathf.Exp(BDArmorySettings.SF_REPULSOR_STRENGTH * (targetAlt - pointAltitude) / targetAlt - (float)vessel.verticalSpeed / targetAlt), 0f, 5f * BDArmorySettings.SF_REPULSOR_STRENGTH); // Decaying exponential balanced at the target altitude with velocity damping.
-                            float repulsorForce = vesselMass * factor / spaceFrictionModules.Count; // Spread the force between the repulsors.
+                            float repulsorForce = Mathf.Min(vesselMass * factor / spaceFrictionModules.Count, maxRepulsorMass); // Spread the force between the repulsors.
                             if (float.IsNaN(factor) || float.IsInfinity(factor)) // This should only happen if targetAlt is 0, which should never happen.
-                                Debug.LogWarning($"[BDArmory.Spacehacks]: Repulsor Force is NaN or Infinity. TargetAlt: {targetAlt}, point Alt: {pointAltitude}, VesselMass: {vesselMass}");
+                            Debug.LogWarning($"[BDArmory.Spacehacks]: Repulsor Force is NaN or Infinity. TargetAlt: {targetAlt}, point Alt: {pointAltitude}, VesselMass: {vesselMass}");
                             else
                                 part.Rigidbody.AddForce(-grav * repulsorForce, ForceMode.Force);
                         }
@@ -247,6 +259,7 @@ namespace BDArmory.GameModes
                                     if (repulsor.Current == null) continue;
                                     float pointAltitude = BodyUtils.GetRadarAltitudeAtPos(repulsor.Current.transform.position);
                                     if (pointAltitude <= 0 || pointAltitude > 2f * targetAlt) continue;
+                                    if (!DrainResource()) return;
                                     var factor = Mathf.Clamp(Mathf.Exp(BDArmorySettings.SF_REPULSOR_STRENGTH * (targetAlt - pointAltitude) / targetAlt - (float)vessel.verticalSpeed / targetAlt), 0f, 5f * BDArmorySettings.SF_REPULSOR_STRENGTH); // Decaying exponential balanced at the target altitude with velocity damping.
                                     float repulsorForce = vesselMass * factor / repulsors.Count; // Spread the force between the repulsors.
                                     if (float.IsNaN(factor) || float.IsInfinity(factor)) // This should only happen if targetAlt is 0, which should never happen.
@@ -259,7 +272,21 @@ namespace BDArmory.GameModes
                 }
             }
         }
+        bool DrainResource()
+        {
+            if (resourcePerSec <= 0)
+            {
+                return true;
+            }
 
+            double drainAmount = resourcePerSec * TimeWarp.fixedDeltaTime;
+            double chargeAvailable = part.RequestResource(resourceID, drainAmount, ResourceFlowMode.ALL_VESSEL);
+            if (chargeAvailable < drainAmount * 0.95f)
+            {
+                return false;
+            }
+            return true;
+        }
         public static void AddSpaceFrictionToAllValidVessels()
         {
             foreach (var vessel in FlightGlobals.Vessels)

@@ -42,6 +42,8 @@ namespace BDArmory.Control
         List<Vector3> pathingWaypoints = new List<Vector3>();
         bool leftPath = false;
 
+        bool doReverse = false;
+
         protected override Vector3d assignedPositionGeo
         {
             get { return intermediatePositionGeo; }
@@ -124,6 +126,10 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaxEngagementRange"),//Max engagement range
             UI_FloatRange(minValue = 500f, maxValue = 8000f, stepIncrement = 100f, scene = UI_Scene.All)]
         public float MaxEngagementRange = 4000;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MaintainEngagementRange"),//Maintain min Range
+UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_false")]//true; false
+        public bool maintainMinRange = false;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BroadsideAttack"),//Attack vector
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_BroadsideAttack_enabledText", disabledText = "#LOC_BDArmory_AI_BroadsideAttack_disabledText")]//Broadside--Bow
@@ -431,9 +437,9 @@ namespace BDArmory.Control
                 else // just point at target and go
                 {
                     targetAltitude = CombatAltitude;
-                    if ((targetVessel.horizontalSrfSpeed < 10 || Vector3.Dot(targetVessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), vessel.up) < 0) //if target is stationary or we're facing in opposite directions
+                    if (!maintainMinRange && (((targetVessel.horizontalSrfSpeed < 10) || Vector3.Dot(targetVessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), vessel.up) < 0) //if target is stationary or we're facing in opposite directions
                         && (distance < MinEngagementRange || (distance < (MinEngagementRange * 3 + MaxEngagementRange) / 4 //and too close together
-                        && extendingTarget != null && targetVessel != null && extendingTarget == targetVessel)))
+                        && extendingTarget != null && targetVessel != null && extendingTarget == targetVessel))))
                     {
                         extendingTarget = targetVessel;
                         // not sure if this part is very smart, potential for improvement
@@ -449,8 +455,32 @@ namespace BDArmory.Control
                         targetDirection = vecToTarget.ProjectOnPlanePreNormalized(upDir);
                         if (Vector3.Dot(targetDirection, vesselTransform.up) < 0)
                             targetVelocity = PoweredSteering ? MaxSpeed : 0; // if facing away from target
-                        else if (distance >= MaxEngagementRange || distance <= MinEngagementRange)
-                            targetVelocity = MaxSpeed;
+                        else if (distance >= MaxEngagementRange || distance <= MinEngagementRange * 1.25f)
+                        {
+                            if (distance >= MaxEngagementRange)
+                                targetVelocity = MaxSpeed;//out of engagement range, engines ahead full
+                            if (distance <= MinEngagementRange * 1.25f) //coming within minEngagement range
+                            {
+                                if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
+                                {
+                                    if (targetVessel.srfSpeed < 10)
+                                    {
+                                        targetVelocity = 0;
+                                        SetStatus($"Braking");
+                                    }
+                                    if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
+                                    {
+                                        doReverse = true;
+                                        targetVelocity = -MaxSpeed;
+                                        SetStatus($"Reversing");
+                                        return;
+                                    }
+                                    return;
+                                }
+                                else
+                                    targetVelocity = MaxSpeed;
+                            }
+                        }
                         else
                         {
                             targetVelocity = CombatSpeed / 10 + (MaxSpeed - CombatSpeed / 10) * (distance - MinEngagementRange) / (MaxEngagementRange - MinEngagementRange); //slow down if inside engagement range to extend shooting opportunities
@@ -492,9 +522,9 @@ namespace BDArmory.Control
                                 }
                             }
                         }
-                        targetVelocity = Mathf.Clamp(targetVelocity, PoweredSteering ? CombatSpeed / 5 : 0, MaxSpeed); // maintain a bit of speed if using powered steering
+                        targetVelocity = Mathf.Clamp(targetVelocity, PoweredSteering ? CombatSpeed / 5 : (doReverse ? -MaxSpeed : 0), MaxSpeed); // maintain a bit of speed if using powered steering
+                        }
                     }
-                }
                 SetStatus($"Engaging target");
                 return;
             }
@@ -582,6 +612,22 @@ namespace BDArmory.Control
         void AdjustThrottle(float targetSpeed)
         {
             altitudeControl.targetAltitude = targetAltitude;
+
+            targetVelocity = Mathf.Clamp(targetVelocity, doReverse ? -MaxSpeed : 0, MaxSpeed);
+            targetSpeed = Mathf.Clamp(targetSpeed, doReverse ? -MaxSpeed : 0, MaxSpeed);
+            float velocitySignedSrfSpeed = Vector3.Angle(vessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir), vesselTransform.up) < 110 ? (float)vessel.srfSpeed : -(float)vessel.srfSpeed;
+
+            if (float.IsNaN(targetSpeed)) //because yeah, I might have left division by zero in there somewhere
+            {
+                targetSpeed = CombatSpeed;
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine("Target velocity NaN, set to CruiseSpeed.");
+            }
+            else
+            {
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Target velocity: {targetSpeed}; signed Velocity: {velocitySignedSrfSpeed}; brakeVel: {targetSpeed * velocitySignedSrfSpeed}; use brakes: {(targetSpeed * velocitySignedSrfSpeed < -5)}");
+            }
+
+            altitudeControl.targetSpeed = targetSpeed;
         }
 
         //Controller Integral
