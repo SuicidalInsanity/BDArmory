@@ -418,6 +418,122 @@ namespace BDArmory.Bullets
             }
         }
 
+        public void SetupBulletVitalStatistics(BulletInfo bInfo, Transform fireTransform)
+        {
+            currentPosition = fireTransform.position;
+
+            caliber = bInfo.caliber;
+            bulletVelocity = bInfo.bulletVelocity;
+            bulletMass = bInfo.bulletMass;
+            tntMass = bInfo.tntMass;
+            if (bInfo.tntMass > 0)
+            {
+                if (bInfo.explosive.ToLower() == "shaped")
+                    HEType = PooledBulletTypes.Shaped;
+                else
+                    HEType = PooledBulletTypes.Explosive;
+            }
+            else
+                HEType = PooledBulletTypes.Slug;
+
+            incendiary = bInfo.incendiary;
+            apBulletMod = bInfo.apBulletMod;
+            bulletDmgMult = 1;
+            timeToLiveUntil = 10 + Time.time; //Inherit
+            timeElapsedSinceCurrentSpeedWasAdjusted = 0;
+
+            sourceWeapon = null; //inherit
+            sourceVessel = null; //inherit
+            team = ""; //inherit
+            bulletTexturePath = "BDArmory/Textures/bullet"; //inherit
+            smokeTexturePath = ""; //inherit
+
+            projectileColor = GUIUtils.ParseColor255(bInfo.projectileColor);
+            startColor = GUIUtils.ParseColor255(bInfo.startColor);
+            fadeColor = bInfo.fadeColor;
+            tracerStartWidth = bInfo.caliber / 300;
+            tracerEndWidth = bInfo.caliber / 750;
+            tracerLength = 0;
+            tracerLuminance = 1;
+            tracerDeltaFactor = 1;
+            bulletDrop = true;
+            // measure bullet lifetime in time rather than in distance, because distances get very relative in orbit
+
+            if (bInfo.tntMass > 0 || bInfo.beehive)
+            {
+                explModelPath = ModuleWeapon.defaultExplModelPath;
+                explSoundPath = ModuleWeapon.defaultExplSoundPath;
+                detonationRange = float.PositiveInfinity;
+                timeToDetonation = -1;
+                switch (bInfo.fuzeType.ToLower())
+                {
+                    case "none":
+                        fuzeType = BulletFuzeTypes.None;
+                        break;
+                    case "impact":
+                        fuzeType = BulletFuzeTypes.Impact;
+                        break;
+                    case "delay":
+                        fuzeType = BulletFuzeTypes.Delay;
+                        break;
+                    case "penetrating":
+                        fuzeType = BulletFuzeTypes.Penetrating;
+                        break;
+                    case "timed":
+                        fuzeType = BulletFuzeTypes.Timed;
+                        break;
+                    case "proximity":
+                        fuzeType = BulletFuzeTypes.Proximity;
+                        break;
+                    case "flak":
+                        fuzeType = BulletFuzeTypes.Flak;
+                        break;
+                }
+            }
+            else
+            {
+                fuzeType = BulletFuzeTypes.None;
+                sabot = false;
+            }
+            EMP = bInfo.EMP;
+            nuclear = bInfo.nuclear;
+            beehive = bInfo.beehive;
+            if (beehive)
+            {
+                subMunitionType = bInfo.subMunitionType;
+            }
+            //pBullet.homing = BulletInfo.homing;
+            impulse = bInfo.impulse;
+            massMod = bInfo.massMod;
+            switch (bInfo.bulletDragTypeName.ToLower())
+            {
+                case "none":
+                    dragType = BulletDragTypes.None;
+                    break;
+
+                case "numericalintegration":
+                    dragType = BulletDragTypes.AnalyticEstimate;
+                    break;
+
+                case "analyticestimate":
+                    dragType = BulletDragTypes.NumericalIntegration;
+                    break;
+            }
+
+            bullet = bInfo;
+            stealResources = false; //inherit
+            dmgMult = 1;
+
+            isAPSprojectile = false; //inherit
+            tgtShell = null;
+            tgtRocket = null;
+            targetVessel = null;
+            guidanceDPS = 0;
+
+            BDACompetitionMode.Instance.Scores.RegisterShot(sourceVessel.GetName());
+        }
+
+
         void Update()
         {
             if (!gameObject.activeInHierarchy) return;
@@ -1508,167 +1624,12 @@ namespace BDArmory.Bullets
             if (BulletInfo.bulletNames.Contains(projType))
             {
                 BulletInfo sBullet = BulletInfo.bullets[projType];
-                string fuze = sBullet.fuzeType.ToLower();
 
-                BulletFuzeTypes sFuze;
-                switch (fuze)
-                {
-                    case "timed":
-                        sFuze = BulletFuzeTypes.Timed;
-                        break;
-                    case "proximity":
-                        sFuze = BulletFuzeTypes.Proximity;
-                        break;
-                    case "flak":
-                        sFuze = BulletFuzeTypes.Flak;
-                        break;
-                    case "delay":
-                        sFuze = BulletFuzeTypes.Delay;
-                        break;
-                    case "penetrating":
-                        sFuze = BulletFuzeTypes.Penetrating;
-                        break;
-                    case "impact":
-                        sFuze = BulletFuzeTypes.Impact;
-                        break;
-                    case "none":
-                        sFuze = BulletFuzeTypes.Impact;
-                        break;
-                    default:
-                        sFuze = BulletFuzeTypes.None;
-                        break;
-                }
-                if (BDArmorySettings.DEBUG_WEAPONS)
-                    Debug.Log("[BDArmory.PooledBullet]: Beehive Detonation: parsing submunition fuze: " + fuze + ", index: " + sFuze);
                 float incrementVelocity = 1000 / (bulletVelocity + sBullet.bulletVelocity); //using 1km/s as a reference Unit
                 float dispersionAngle = sBullet.subProjectileDispersion > 0 ? sBullet.subProjectileDispersion : BDAMath.Sqrt(count) / 2; //fewer fragments/pellets are going to be larger-> move slower, less dispersion
-                float dispersionVelocityforAngle = 1000 / incrementVelocity * Mathf.Sin(dispersionAngle * Mathf.Deg2Rad); // convert m/s despersion to angle, accounting for vel of round
-
                 float subProjVelocity = GetDragAdjustedVelocity().magnitude + sBullet.bulletVelocity;
-                float subDetonationRange = 0;
-                bool isSabot = ((sBullet.bulletMass * 1000 / (sBullet.caliber * sBullet.caliber * Mathf.PI / 400 * 19) + 1) * 10) > sBullet.caliber * 4; //moving these here do they don't need to be re-calced 20 times per beehive det
-                if (sBullet.tntMass > 0)
-                {
-                    subDetonationRange = sBullet.nuclear ? Mathf.Pow(sBullet.tntMass, 0.33333f) * 10 * (10 * atmosphereDensity) : BlastPhysicsUtils.CalculateBlastRange(sBullet.tntMass) * 0.666f;
-                }
-                for (int s = 0; s < count * sBullet.projectileCount; s++) //this does mean that setting a subMunitionType to, say, shotgun shells and then setting a sMT projectile count of, say, 5, would have only 5 shotgun pellets spawn, even if the shutgun shell projectileCount = 30. Could always have it be count * subMunitiontype.projectileCount if you want shotshells as an allowable submunition
-                {
-                    GameObject Bullet = ModuleWeapon.bulletPool.GetPooledObject();
-                    PooledBullet pBullet = Bullet.GetComponent<PooledBullet>();
-                    pBullet.currentPosition = currentPosition;
 
-                    pBullet.caliber = sBullet.caliber;
-                    pBullet.bulletVelocity = subProjVelocity;
-                    pBullet.bulletMass = sBullet.bulletMass;
-                    pBullet.incendiary = sBullet.incendiary;
-                    pBullet.apBulletMod = sBullet.apBulletMod;
-                    pBullet.bulletDmgMult = bulletDmgMult;
-                    pBullet.ballisticCoefficient = sBullet.bulletMass / (((Mathf.PI * 0.25f * sBullet.caliber * sBullet.caliber) / 1000000f) * 0.295f);
-                    pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = 0;
-                    pBullet.timeToLiveUntil = Mathf.Max(sBullet.projectileTTL, detonationRange / pBullet.bulletVelocity * 1.1f) + Time.time;
-                    //Vector3 firedVelocity = VectorUtils.GaussianDirectionDeviation(currentVelocity.normalized, subMunitionType.subProjectileDispersion > 0 ? subMunitionType.subProjectileDispersion : (subMunitionType.subProjectileCount / BDAMath.Sqrt(GetDragAdjustedVelocity().magnitude / 100))) * (GetDragAdjustedVelocity().magnitude + subMunitionType.bulletVelocity); //more subprojectiles = wider spread, higher base velocity = tighter spread
-                    Vector3 firedVelocity = currentVelocity + UnityEngine.Random.onUnitSphere * dispersionVelocityforAngle;
-                    pBullet.currentVelocity = firedVelocity; //if submunitions have additional vel, would need modifications to ModuleWeapon's CPA calcs to offset targetPos by -targetVel * (submunitionVelocity / proximityDetonationdist)
-                    pBullet.sourceWeapon = sourceWeapon;
-                    pBullet.sourceVessel = sourceVessel;
-                    pBullet.team = team;
-                    pBullet.bulletTexturePath = bulletTexturePath;
-                    pBullet.projectileColor = GUIUtils.ParseColor255(sBullet.projectileColor);
-                    pBullet.startColor = GUIUtils.ParseColor255(sBullet.startColor);
-                    pBullet.fadeColor = sBullet.fadeColor;
-                    pBullet.tracerStartWidth = sBullet.caliber / 300;
-                    pBullet.tracerEndWidth = sBullet.caliber / 750;
-                    pBullet.tracerLength = tracerLength;
-                    pBullet.tracerDeltaFactor = tracerDeltaFactor;
-                    pBullet.tracerLuminance = tracerLuminance;
-                    pBullet.bulletDrop = bulletDrop;
-
-                    if (sBullet.tntMass > 0)// || sBullet.beehive)
-                    {
-                        pBullet.explModelPath = sBullet.tntMass > 0.5f ? explModelPath : "BDArmory/Models/explosion/30mmExplosion";
-                        pBullet.explSoundPath = explSoundPath;
-                        pBullet.tntMass = sBullet.tntMass;
-                        if (!sBullet.nuclear)
-                        {
-                            string HEtype = sBullet.explosive.ToLower();
-                            switch (HEtype)
-                            {
-                                case "standard":
-                                    pBullet.HEType = PooledBulletTypes.Explosive;
-                                    break;
-                                //legacy support for older configs that are still explosive = true
-                                case "true":
-                                    pBullet.HEType = PooledBulletTypes.Explosive;
-                                    break;
-                                case "shaped":
-                                    pBullet.HEType = PooledBulletTypes.Shaped;
-                                    break;
-                            }
-                        }
-                        pBullet.detonationRange = subDetonationRange;
-                        pBullet.fuzeType = sFuze;
-                        pBullet.timeToDetonation = sFuze switch
-                        {
-                            BulletFuzeTypes.Timed => detonationRange / pBullet.bulletVelocity, //because beehive TimedFuze for the parent shell is timeToDetonation - detonationRange / bulletVelocity
-                            BulletFuzeTypes.Flak => detonationRange / pBullet.bulletVelocity + Time.fixedDeltaTime, // Detonate at expected impact time for flak (plus 1 frame to allow proximity detection).
-                            _ => pBullet.timeToLiveUntil - Time.time // Otherwise detonate at the TTL.
-                        };
-                    }
-                    else
-                    {
-                        pBullet.fuzeType = BulletFuzeTypes.None;
-                        pBullet.sabot = isSabot;
-                        pBullet.HEType = PooledBulletTypes.Slug;
-                    }
-                    pBullet.EMP = sBullet.EMP;
-                    pBullet.nuclear = sBullet.nuclear;
-                    if (pBullet.nuclear) // Inherit the parent shell's nuke models.
-                    {
-                        pBullet.flashModelPath = flashModelPath;
-                        pBullet.shockModelPath = shockModelPath;
-                        pBullet.blastModelPath = blastModelPath;
-                        pBullet.plumeModelPath = plumeModelPath;
-                        pBullet.debrisModelPath = debrisModelPath;
-                        pBullet.blastSoundPath = blastSoundPath;
-                    }
-                    pBullet.beehive = false; // No sub-sub-munitions.
-                    //pBullet.beehive = subMunitionType.beehive;
-                    //pBullet.subMunitionType = BulletInfo.bullets[subMunitionType.subMunitionType]
-                    //pBullet.homing = BulletInfo.homing;
-                    pBullet.impulse = sBullet.impulse;
-                    pBullet.massMod = sBullet.massMod;
-                    switch (sBullet.bulletDragTypeName)
-                    {
-                        case "None":
-                            pBullet.dragType = BulletDragTypes.None;
-                            break;
-                        case "AnalyticEstimate":
-                            pBullet.dragType = BulletDragTypes.AnalyticEstimate;
-                            break;
-                        case "NumericalIntegration":
-                            pBullet.dragType = BulletDragTypes.NumericalIntegration;
-                            break;
-                        default:
-                            pBullet.dragType = BulletDragTypes.AnalyticEstimate;
-                            break;
-                    }
-                    pBullet.bullet = BulletInfo.bullets[sBullet.name];
-                    pBullet.stealResources = stealResources;
-                    pBullet.dmgMult = dmgMult;
-                    pBullet.isSubProjectile = true;
-                    pBullet.isAPSprojectile = isAPSprojectile;
-                    pBullet.tgtShell = tgtShell;
-                    pBullet.tgtRocket = tgtRocket;
-                    pBullet.gameObject.SetActive(true);
-
-                    // Tracers shouldn't really be drawn before the next frame, but not doing so results in them appearing as randomly oriented streaks and the parent bullet disappears on the same frame, so we draw them here and they appear to stutter for a frame (drawn ahead by 1 frame, then drawn in the same position as the FX catches up with the physics).
-                    pBullet.SetTracerPosition();
-
-                    if (pBullet.CheckBulletCollisions(iTime)) continue; // Bullet immediately hit something and died.
-                    if (!hasRicocheted) pBullet.MoveBullet(iTime); // Move the bullet the remaining part of the frame.
-                    pBullet.currentPosition += (TimeWarp.fixedDeltaTime - iTime) * BDKrakensbane.FrameVelocityV3f; // Re-adjust for Krakensbane.
-                    pBullet.timeAlive = iTime;
-                }
+                ProjectileUtils.spawnSubProjectiles(sBullet, currentVelocity, incrementVelocity, subProjVelocity, atmosphereDensity, count, currentPosition, detonationRange, 0, dmgMult, sourceWeapon, team, explSoundPath, explModelPath, stealResources, tgtShell, tgtRocket);
             }
         }
         /// <summary>

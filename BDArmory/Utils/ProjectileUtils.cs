@@ -10,6 +10,8 @@ using BDArmory.Extensions;
 using BDArmory.FX;
 using BDArmory.GameModes;
 using BDArmory.Settings;
+using BDArmory.Bullets;
+using BDArmory.Weapons;
 
 namespace BDArmory.Utils
 {
@@ -1205,6 +1207,83 @@ namespace BDArmory.Utils
             part.explosionPotential = explodeScale;
 
             PartExploderSystem.AddPartToExplode(part);
+        }
+
+        public static void spawnSubProjectiles(BulletInfo sBullet, Vector3 currentVelocity, float incrementVelocity, float subProjectileVelocity, float atmDensity, float subProjectileCount, Vector3 currentPosition, float detonationRange, float iTime, float dmgMult = 1,
+            Part sourceWeapon = null, string team = "", string explSoundPath = "BDArmory/Sounds/explode1", string explModelPath = "BDArmory/Models/explosion/explosion", bool thief = false, PooledBullet tgtShell = null, PooledRocket tgtRocket = null)
+        {
+            float dispersionAngle = sBullet.subProjectileDispersion > 0 ? sBullet.subProjectileDispersion : BDAMath.Sqrt(subProjectileCount) / 2; //fewer fragments/pellets are going to be larger-> move slower, less dispersion
+            float dispersionVelocityforAngle = 1000 / incrementVelocity * Mathf.Sin(dispersionAngle * Mathf.Deg2Rad); // convert m/s despersion to angle, accounting for vel of round
+
+
+            float subDetonationRange = 0;
+            float bulletCoeff = sBullet.bulletMass / (((Mathf.PI * 0.25f * sBullet.caliber * sBullet.caliber) / 1000000f) * 0.295f);
+            bool isSabot = (((((sBullet.bulletMass * 1000) / ((sBullet.caliber * sBullet.caliber * Mathf.PI / 400) * 19) + 1) * 10) > sBullet.caliber * 4));
+            if (sBullet.tntMass > 0)
+            {
+                subDetonationRange = sBullet.nuclear ? Mathf.Pow(sBullet.tntMass, 0.33333f) * 10 * (10 * atmDensity) : BlastPhysicsUtils.CalculateBlastRange(sBullet.tntMass) * 0.666f;
+            }
+            for (int s = 0; s < subProjectileCount; s++)
+            {
+                GameObject Bullet = ModuleWeapon.bulletPool.GetPooledObject();
+                PooledBullet pBullet = Bullet.GetComponent<PooledBullet>();
+                pBullet.currentPosition = currentPosition;
+
+                pBullet.bulletVelocity = subProjectileVelocity;
+                pBullet.bulletDmgMult = dmgMult;
+                pBullet.ballisticCoefficient = bulletCoeff;
+                pBullet.timeElapsedSinceCurrentSpeedWasAdjusted = 0;
+                pBullet.timeToLiveUntil = Mathf.Max(sBullet.projectileTTL, detonationRange / pBullet.bulletVelocity * 1.1f) + Time.time;
+                Vector3 firedVelocity = currentVelocity + UnityEngine.Random.onUnitSphere * dispersionVelocityforAngle;
+                pBullet.currentVelocity = firedVelocity;
+                pBullet.sourceWeapon = sourceWeapon;
+                pBullet.sourceVessel = sourceWeapon.vessel;
+                pBullet.team = team;
+
+                if (sBullet.tntMass > 0)// || sBullet.beehive)
+                {
+                    pBullet.explModelPath = sBullet.tntMass > 0.5f ? explModelPath : "BDArmory/Models/explosion/30mmExplosion";
+                    pBullet.explSoundPath = explSoundPath;
+
+                    pBullet.detonationRange = subDetonationRange;
+                    pBullet.timeToDetonation = sBullet.fuzeType.ToLower() switch
+                    {
+                        "timed" => detonationRange / pBullet.bulletVelocity, //because beehive TimedFuze for the parent shell is timeToDetonation - detonationRange / bulletVelocity
+                        "flak" => detonationRange / pBullet.bulletVelocity + Time.fixedDeltaTime, // Detonate at expected impact time for flak (plus 1 frame to allow proximity detection).
+                        _ => pBullet.timeToLiveUntil - Time.time // Otherwise detonate at the TTL.
+                    };
+                }
+                else
+                {
+                    pBullet.sabot = isSabot;
+                }
+                if (pBullet.nuclear) // Inherit the parent shell's nuke models.
+                {
+                    BDModuleNuke srcNuke = sourceWeapon.FindModuleImplementing<BDModuleNuke>();
+                    pBullet.flashModelPath = srcNuke != null ? srcNuke.flashModelPath : BDModuleNuke.defaultflashModelPath;
+                    pBullet.shockModelPath = srcNuke != null ? srcNuke.shockModelPath : BDModuleNuke.defaultShockModelPath;
+                    pBullet.blastModelPath = srcNuke != null ? srcNuke.blastModelPath : BDModuleNuke.defaultBlastModelPath;
+                    pBullet.plumeModelPath = srcNuke != null ? srcNuke.plumeModelPath : BDModuleNuke.defaultPlumeModelPath;
+                    pBullet.debrisModelPath = srcNuke != null ? srcNuke.debrisModelPath : BDModuleNuke.defaultDebrisModelPath;
+                    pBullet.blastSoundPath = srcNuke != null ? srcNuke.blastSoundPath : BDModuleNuke.defaultBlastSoundPath;
+                }
+                pBullet.beehive = false; // No sub-sub-munitions.
+
+                pBullet.bullet = sBullet;
+                pBullet.stealResources = thief;
+                pBullet.dmgMult = dmgMult;
+                pBullet.isAPSprojectile = tgtShell || tgtRocket != null;
+                pBullet.isSubProjectile = true;
+                pBullet.tgtShell = tgtShell;
+                pBullet.tgtRocket = tgtRocket;
+                pBullet.gameObject.SetActive(true);
+                pBullet.SetTracerPosition();
+
+                if (pBullet.CheckBulletCollisions(iTime)) continue; // Bullet immediately hit something and died.
+                pBullet.MoveBullet(iTime); // Move the bullet the remaining part of the frame.
+                pBullet.currentPosition += (TimeWarp.fixedDeltaTime - iTime) * BDKrakensbane.FrameVelocityV3f; // Re-adjust for Krakensbane.
+                pBullet.timeAlive = iTime;
+            }
         }
     }
 }
