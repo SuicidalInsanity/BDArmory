@@ -1087,7 +1087,7 @@ namespace BDArmory.Bullets
                 float incrementVelocity = 1000 / (currentVelocity.magnitude + sBullet.bulletVelocity); //using 1km/s as a reference Unit 
                 float subProjVelocity = relVelocity + sBullet.bulletVelocity;
 
-                ProjectileUtils.spawnSubProjectiles(sBullet, currentVelocity, incrementVelocity, subProjVelocity, atmosphereDensity, count, currentPosition, detonationRange, 0, dmgMult, sourceWeapon, team, explSoundPath, explModelPath, thief, tgtShell, tgtRocket);
+                PooledBulletManager.spawnSubProjectiles(sBullet, currentVelocity, incrementVelocity, subProjVelocity, atmosphereDensity, count, currentPosition, detonationRange, 0, dmgMult, sourceWeapon, team, explSoundPath, explModelPath, thief, tgtShell, tgtRocket);
             }
             else
             {
