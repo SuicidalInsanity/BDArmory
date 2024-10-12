@@ -638,7 +638,62 @@ namespace BDArmory.UI
                 }
             }
 
-            if (BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS != 11) // Tournament options
+            // Custom Spawn Template
+            if (BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS == 11)
+            {
+                if (GUI.Button(SLineRect(++line), $"{(BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show"))} {StringUtils.Localize("#LOC_BDArmory_Settings_CustomSpawnTemplateOptions")}", BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide tournament options
+                {
+                    BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS = !BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS;
+                }
+                if (BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS)
+                {
+                    line += 0.25f;
+                    var spawnTemplate = CustomTemplateSpawning.customSpawnConfig;
+                    spawnTemplate.name = GUIUtils.TextField(spawnTemplate.name, "Specify a name then save the template.", rect: SQuarterRect(++line, 0, 2)); // Writing in the text field updates the name of the current template.
+                    if (GUI.Button(SQuarterRect(line, 2), StringUtils.Localize("#LOC_BDArmory_Generic_Load"), BDArmorySetup.BDGuiSkin.button))
+                    {
+                        CustomTemplateSpawning.Instance.ShowTemplateSelection(BDArmorySettings._UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position);
+                    }
+                    if (GUI.Button(SEighthRect(line, 6), StringUtils.Localize("#LOC_BDArmory_Generic_Save"), BDArmorySetup.BDGuiSkin.button)) // Save overwrites the current template with the current vessel positions in the LoadedVesselSwitcher.
+                    {
+                        CustomTemplateSpawning.Instance.SaveTemplate();
+                    }
+                    if (GUI.Button(SEighthRect(line, 7), StringUtils.Localize("#LOC_BDArmory_Generic_New"), BDArmorySetup.BDGuiSkin.button)) // New generates a new template from the current vessels in the LoadedVesselSwitcher.
+                    {
+                        spawnTemplate = CustomTemplateSpawning.Instance.NewTemplate();
+                    }
+                    line += 0.25f;
+                    // We then want a table of teams of craft buttons for selecting the craft with kerbal buttons beside them for selecting the kerbals.
+                    char teamName = 'A';
+                    foreach (var team in spawnTemplate.customVesselSpawnConfigs)
+                    {
+                        foreach (var member in team)
+                        {
+                            GUI.Label(ShortLabel(++line, 20), $"{teamName}: ");
+                            // if (GUI.Button(SQuarterRect(line, 0, 3, 20), Path.GetFileNameWithoutExtension(member.craftURL), BDArmorySetup.BDGuiSkin.button))
+                            if (GUI.Button(SQuarterRect(line, 0, 3, 20), CustomTemplateSpawning.ShipName(member.craftURL), BDArmorySetup.BDGuiSkin.button))
+                            {
+                                if (Event.current.button == 1)//Right click
+                                    CustomTemplateSpawning.Instance.HideVesselSelection(member);
+                                else
+                                    CustomTemplateSpawning.Instance.ShowVesselSelection(BDArmorySettings._UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position, member, team);
+                            }
+                            if (GUI.Button(SQuarterRect(line, 3, 1), string.IsNullOrEmpty(member.kerbalName) ? "random" : member.kerbalName, BDArmorySetup.BDGuiSkin.button))
+                            {
+                                if (Event.current.button == 1) // Right click
+                                    CustomTemplateSpawning.Instance.HideCrewSelection(member);
+                                else
+                                    CustomTemplateSpawning.Instance.ShowCrewSelection(BDArmorySettings._UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position, member);
+                            }
+                        }
+                        ++teamName;
+                        line += 0.25f;
+                    }
+                    --line;
+                }
+                ++line;
+            }
+            // Tournament options
             {
                 if (GUI.Button(SLineRect(++line), $"{(BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show"))} {StringUtils.Localize("#LOC_BDArmory_Settings_TournamentOptions")}", BDArmorySettings.SHOW_TOURNAMENT_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide tournament options
                 {
@@ -705,7 +760,7 @@ namespace BDArmory.UI
                     else
                     {
                         GUI.Label(SLineRect(++line), $"ID: {BDATournament.Instance.tournamentID}, {BDATournament.Instance.teamCount} teams, {BDATournament.Instance.numberOfRounds} rounds, {BDATournament.Instance.teamsPerHeat} teams per heat, {BDATournament.Instance.numberOfHeats} heats per round,", leftLabel);
-                        GUI.Label(SLineRect(++line), $"{BDATournament.Instance.vesselCount} vessels,{(BDATournament.Instance.fullTeams ? "" : " up to")} {BDATournament.Instance.vesselsPerTeam} vessels per team per heat, {BDATournament.Instance.heatsRemaining} heats remaining.", leftLabel);
+                        GUI.Label(SLineRect(++line), $"{BDATournament.Instance.vesselCount} vessels,{(BDATournament.Instance.fullTeams ? "" : " up to")} {(BDATournament.Instance.vesselsPerTeam == 0 ? "auto" : BDATournament.Instance.vesselsPerTeam)} vessels per team per heat, {BDATournament.Instance.heatsRemaining} heats remaining.", leftLabel);
                     }
                     switch (BDATournament.Instance.tournamentStatus)
                     {
@@ -715,7 +770,6 @@ namespace BDArmory.UI
                                 BDATournament.Instance.StopTournament();
                             GUI.Label(SRightRect(line), $" Status: {BDATournament.Instance.tournamentStatus},  Round {BDATournament.Instance.currentRound},  Heat {BDATournament.Instance.currentHeat}");
                             break;
-
                         default:
                             if (GUI.Button(SLeftRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_TournamentSetup"), BDArmorySetup.BDGuiSkin.button)) // Setup tournament
                             {
@@ -727,8 +781,8 @@ namespace BDArmory.UI
                                     BDArmorySettings.TOURNAMENT_NPCS_PER_HEAT,
                                     BDArmorySettings.TOURNAMENT_TEAMS_PER_HEAT,
                                     BDArmorySettings.TOURNAMENT_VESSELS_PER_TEAM,
-                                    BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS,
-                                    (TournamentStyle)BDArmorySettings.TOURNAMENT_STYLE,
+                                    BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS == 11 ? 1 : BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS,
+                                    BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS == 11 ? TournamentStyle.TemplateRNG : (TournamentStyle)BDArmorySettings.TOURNAMENT_STYLE,
                                     (TournamentRoundType)BDArmorySettings.TOURNAMENT_ROUND_TYPE
                                 );
                                 BDArmorySetup.SaveConfig();
@@ -750,61 +804,8 @@ namespace BDArmory.UI
                             break;
                     }
                 }
+                ++line;
             }
-            else // Custom Spawn Template
-            {
-                if (GUI.Button(SLineRect(++line), $"{(BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show"))} {StringUtils.Localize("#LOC_BDArmory_Settings_CustomSpawnTemplateOptions")}", BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide tournament options
-                {
-                    BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS = !BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS;
-                }
-                if (BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_SHOW_OPTIONS)
-                {
-                    line += 0.25f;
-                    var spawnTemplate = CustomTemplateSpawning.Instance.customSpawnConfig;
-                    spawnTemplate.name = GUIUtils.TextField(spawnTemplate.name, "Specify a name then save the template.", rect: SQuarterRect(++line, 0, 2)); // Writing in the text field updates the name of the current template.
-                    if (GUI.Button(SQuarterRect(line, 2), StringUtils.Localize("#LOC_BDArmory_Generic_Load"), BDArmorySetup.BDGuiSkin.button))
-                    {
-                        CustomTemplateSpawning.Instance.ShowTemplateSelection(BDArmorySettings.UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position);
-                    }
-                    if (GUI.Button(SEighthRect(line, 6), StringUtils.Localize("#LOC_BDArmory_Generic_Save"), BDArmorySetup.BDGuiSkin.button)) // Save overwrites the current template with the current vessel positions in the LoadedVesselSwitcher.
-                    {
-                        CustomTemplateSpawning.Instance.SaveTemplate();
-                    }
-                    if (GUI.Button(SEighthRect(line, 7), StringUtils.Localize("#LOC_BDArmory_Generic_New"), BDArmorySetup.BDGuiSkin.button)) // New generates a new template from the current vessels in the LoadedVesselSwitcher.
-                    {
-                        spawnTemplate = CustomTemplateSpawning.Instance.NewTemplate();
-                    }
-                    line += 0.25f;
-                    // We then want a table of teams of craft buttons for selecting the craft with kerbal buttons beside them for selecting the kerbals.
-                    char teamName = 'A';
-                    foreach (var team in spawnTemplate.customVesselSpawnConfigs)
-                    {
-                        foreach (var member in team)
-                        {
-                            GUI.Label(ShortLabel(++line, 20), $"{teamName}: ");
-                            // if (GUI.Button(SQuarterRect(line, 0, 3, 20), Path.GetFileNameWithoutExtension(member.craftURL), BDArmorySetup.BDGuiSkin.button))
-                            if (GUI.Button(SQuarterRect(line, 0, 3, 20), CustomTemplateSpawning.Instance.ShipName(member.craftURL), BDArmorySetup.BDGuiSkin.button))
-                            {
-                                if (Event.current.button == 1)//Right click
-                                    CustomTemplateSpawning.Instance.HideVesselSelection(member);
-                                else
-                                    CustomTemplateSpawning.Instance.ShowVesselSelection(BDArmorySettings.UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position, member, team);
-                            }
-                            if (GUI.Button(SQuarterRect(line, 3, 1), string.IsNullOrEmpty(member.kerbalName) ? "random" : member.kerbalName, BDArmorySetup.BDGuiSkin.button))
-                            {
-                                if (Event.current.button == 1) // Right click
-                                    CustomTemplateSpawning.Instance.HideCrewSelection(member);
-                                else
-                                    CustomTemplateSpawning.Instance.ShowCrewSelection(BDArmorySettings.UI_SCALE * Event.current.mousePosition + BDArmorySetup.WindowRectVesselSpawner.position, member);
-                            }
-                        }
-                        ++teamName;
-                        line += 0.25f;
-                    }
-                    --line;
-                }
-            }
-            ++line;
             if (BDArmorySettings.WAYPOINTS_MODE)
             {
                 if (!waypointsRunning)
@@ -929,7 +930,7 @@ namespace BDArmory.UI
                         if (CustomTemplateSpawning.Instance.ConfigureTemplate(spawnAndStartCompetition))
                         {
                             // Spawn the craft and start the competition.
-                            CustomTemplateSpawning.Instance.SpawnCustomTemplate(CustomTemplateSpawning.Instance.customSpawnConfig);
+                            CustomTemplateSpawning.Instance.SpawnCustomTemplate(CustomTemplateSpawning.customSpawnConfig);
                         }
                     }
                 }

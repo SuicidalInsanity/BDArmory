@@ -194,9 +194,23 @@ namespace BDArmory.VesselSpawning
             // Assign the vessels to teams.
             LogMessage("Assigning vessels to teams.", false);
             var teamVesselNames = new List<List<string>>();
-            for (int i = 0; i < spawnedVesselsTeamIndex.Max(kvp => kvp.Value); ++i)
+            for (int i = 0; i < spawnedVesselsTeamIndex.Max(kvp => kvp.Value) + 1; ++i)
                 teamVesselNames.Add(spawnedVesselsTeamIndex.Where(kvp => kvp.Value == i).Select(kvp => kvp.Key).ToList());
-            LoadedVesselSwitcher.Instance.MassTeamSwitch(true, false, null, teamVesselNames); // Assign A, B, ...
+            bool useOriginalTeamNames = spawnConfig.assignTeams && (spawnConfig.numberOfTeams == 1 || spawnConfig.numberOfTeams == -1); // Flag to use per file / per team organisation.
+            if (useOriginalTeamNames)
+            {
+                if (spawnConfig.numberOfTeams == 1) // Folders
+                {
+                    foreach (var vesselName in spawnedVesselURLs.Keys)
+                        SpawnUtils.originalTeams[vesselName] = Path.GetFileName(Path.GetDirectoryName(spawnedVesselURLs[vesselName]));
+                }
+                else // Files as folders
+                {
+                    foreach (var vesselName in spawnedVesselURLs.Keys)
+                        SpawnUtils.originalTeams[vesselName] = Path.GetFileNameWithoutExtension(spawnedVesselURLs[vesselName]);
+                }
+            }
+            LoadedVesselSwitcher.Instance.MassTeamSwitch(true, useOriginalTeamNames, null, teamVesselNames); // Assign A, B, ...
             #endregion
 
             LogMessage("Vessel spawning SUCCEEDED!", true, BDArmorySettings.DEBUG_SPAWNING);
@@ -212,18 +226,18 @@ namespace BDArmory.VesselSpawning
         #endregion
 
         #region Templates
-        public CustomSpawnConfig customSpawnConfig = null;
+        public static CustomSpawnConfig customSpawnConfig = null;
         /// <summary>
         /// Reload all the templates from disk and return the specified one or an empty one if no name (or an invalid one) was specified.
         /// </summary>
         /// <param name="templateName">The name of the template to load.</param>
-        public void LoadTemplate(string templateName = null, bool fromDisk = false)
+        public static void LoadTemplate(string templateName = null, bool fromDisk = false)
         {
             if (fromDisk) // Reload the templates from disk.
                 CustomSpawnTemplateField.Load();
             else if (templateName != null && templateName == customSpawnConfig.name)
             {
-                RefreshSelectedCrew();
+                if (Instance) Instance.RefreshSelectedCrew();
                 return; // It's the same config, which hasn't been adjusted, so return it without clearing the fields.
             }
 
@@ -240,10 +254,10 @@ namespace BDArmory.VesselSpawning
                         longitude: BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y,
                         altitude: BDArmorySettings.VESSEL_SPAWN_ALTITUDE
                     ),
-                    new List<List<CustomVesselSpawnConfig>>()
+                    []
                 );
             }
-            RefreshSelectedCrew();
+            if (Instance) Instance.RefreshSelectedCrew();
         }
 
         /// <summary>
@@ -374,6 +388,31 @@ namespace BDArmory.VesselSpawning
                             }
                         }
                 }
+        }
+
+        public void PopulateEntriesFromTournament(CustomSpawnConfig customSpawnConfig)
+        {
+            foreach (var team in customSpawnConfig.customVesselSpawnConfigs)
+                foreach (var member in team)
+                {
+                    if (string.IsNullOrEmpty(member.craftURL)) continue;
+                    if (CustomCraftBrowserDialog.shipNames.ContainsKey(member.craftURL)) continue; // Already exists.
+                    var craftMeta = $"{Path.GetFileNameWithoutExtension(member.craftURL)}.loadmeta";
+                    var craftProfile = new CraftProfileInfo();
+                    if (File.Exists(craftMeta) && File.GetLastWriteTime(craftMeta) > File.GetLastWriteTime(member.craftURL)) // If the loadMeta file exists and has a timestamp that's later than the craft file (because WTF KSP‽), use it, otherwise generate one.
+                    {
+                        craftProfile.LoadFromMetaFile(craftMeta);
+                    }
+                    else
+                    {
+                        var craftNode = ConfigNode.Load(member.craftURL);
+                        craftProfile.LoadDetailsFromCraftFile(craftNode, member.craftURL);
+                        if (File.Exists(craftMeta)) // If the file existed, but was out of date, update it. Otherwise, don't to avoid polluting folders with .loadmeta files.
+                            craftProfile.SaveToMetaFile(craftMeta);
+                    }
+                    CustomCraftBrowserDialog.shipNames.Add(member.craftURL, craftProfile.shipName);
+                }
+            CustomTemplateSpawning.customSpawnConfig.customVesselSpawnConfigs = customSpawnConfig.customVesselSpawnConfigs;
         }
 
         /// <summary>
@@ -519,7 +558,7 @@ namespace BDArmory.VesselSpawning
         bool folderSelectionMode = false; // Show SPH/VAB and folders instead of craft files.
 
         CustomCraftBrowserDialog craftBrowser;
-        public string ShipName(string craft) => (!string.IsNullOrEmpty(craft) && CustomCraftBrowserDialog.shipNames.TryGetValue(craft, out string shipName)) ? shipName : "";
+        public static string ShipName(string craft) => (!string.IsNullOrEmpty(craft) && CustomCraftBrowserDialog.shipNames.TryGetValue(craft, out string shipName)) ? shipName : "";
 
         /// <summary>
         /// Show the vessel selection window.

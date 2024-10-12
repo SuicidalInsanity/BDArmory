@@ -1594,7 +1594,7 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                var explosiveParts = VesselModuleRegistry.GetModules<BDExplosivePart>(vessel);
+                var explosiveParts = VesselModuleRegistry.GetModules<BDWarheadBase>(vessel);
                 if (explosiveParts != null)
                 {
                     foreach (var explosivePart in explosiveParts)

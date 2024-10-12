@@ -126,6 +126,15 @@ namespace BDArmory.VesselSpawning
             this.name = name;
             this.customVesselSpawnConfigs = vesselSpawnConfigs;
         }
+        /// <summary>
+        /// Note: this only makes a shallow copy of customVesselSpawnConfigs.
+        /// </summary>
+        /// <param name="other"></param>
+        public CustomSpawnConfig(CustomSpawnConfig other) : base(other)
+        {
+            this.name = other.name;
+            this.customVesselSpawnConfigs = other.customVesselSpawnConfigs;
+        }
         public string name;
         public List<List<CustomVesselSpawnConfig>> customVesselSpawnConfigs;
         public override string ToString() => $"{{name: {name}, worldIndex: {worldIndex}, lat: {latitude:F3}, lon: {longitude:F3}, alt: {altitude:F0}; {(customVesselSpawnConfigs == null ? "" : string.Join("; ", customVesselSpawnConfigs.Select(cfgs => string.Join(", ", cfgs))))}}}";

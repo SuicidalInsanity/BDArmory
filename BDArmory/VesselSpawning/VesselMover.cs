@@ -1535,12 +1535,12 @@ namespace BDArmory.VesselSpawning
         static string currentFolder;
 
         string _currentFolder; // For checking if the current folder has changed between instances and thus the craftList needs refreshing.
-        public Dictionary<string, CraftProfileInfo> craftList = new();
-        public Dictionary<string, int> crewCounts = new();
-        public List<string> subfolders = new();
+        public Dictionary<string, CraftProfileInfo> craftList = [];
+        public Dictionary<string, int> crewCounts = [];
+        public List<string> subfolders = [];
         public Action<string> selectFileCallback = null;
         public Action cancelledCallback = null;
-        public static Dictionary<string, string> shipNames = new(); // craftURLs to ship names.
+        public static Dictionary<string, string> shipNames = []; // craftURLs to ship names.
         public static GUIStyle ButtonStyle = new(BDArmorySetup.ButtonStyle);
         public static GUIStyle SelectedButtonStyle = new(BDArmorySetup.SelectedButtonStyle);
         public static GUIStyle InfoStyle = new(BDArmorySetup.BDGuiSkin.label);
