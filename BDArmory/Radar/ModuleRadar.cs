@@ -54,11 +54,17 @@ namespace BDArmory.Radar
         [KSPField]
         public bool omnidirectional = true;			//false=boresight only
 
-        [KSPField]
-        public float directionalFieldOfView = 90;	//relevant for omnidirectional only
+        [KSPField]       
+        public float boresightFOV = 10;            //relevant for omnidirectional only. DEPRECATED
 
         [KSPField]
-        public float boresightFOV = 10;				//relevant for boresight only
+        public float directionalFieldOfView = -1;	//Radar FOV value. Deprecated.
+
+        [KSPField]
+        public float azimuthFOV = 90;             //New boresightFOV value, legacy values will update to this
+
+        [KSPField]
+        public float elevationFOV = -1;				//if >0, define vertical FoV angle separate from Horizontal, for units with oblate FOV
 
         [KSPField]
         public float scanRotationSpeed = 120; 		//in degrees per second, relevant for omni and directional
@@ -343,6 +349,9 @@ namespace BDArmory.Radar
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
+            if (directionalFieldOfView > 0) //legacy support for old configs
+                azimuthFOV = directionalFieldOfView;
+            if (elevationFOV < 0) elevationFOV = azimuthFOV;
         }
 
         public void EnsureVesselRadarData()
@@ -489,7 +498,7 @@ namespace BDArmory.Radar
 
                 signalPersistTime = omnidirectional
                     ? 360 / (scanRotationSpeed + 5)
-                    : directionalFieldOfView / (scanRotationSpeed + 5);
+                    : azimuthFOV / (scanRotationSpeed + 5);
 
                 rwrType = (RadarWarningReceiver.RWRThreatTypes)rwrThreatType;
                 sonarMode = (SonarModes)sonarType;
@@ -750,10 +759,10 @@ namespace BDArmory.Radar
                 if (locked)
                 {
                     float targetAngle = VectorUtils.SignedAngle(referenceTransform.forward, (lockedTarget.position - referenceTransform.position).ProjectOnPlanePreNormalized(referenceTransform.up), referenceTransform.right);
-                    leftLimit = Mathf.Clamp(targetAngle - (multiLockFOV / 2), -directionalFieldOfView / 2,
-                        directionalFieldOfView / 2);
-                    rightLimit = Mathf.Clamp(targetAngle + (multiLockFOV / 2), -directionalFieldOfView / 2,
-                        directionalFieldOfView / 2);
+                    leftLimit = Mathf.Clamp(targetAngle - (multiLockFOV / 2), -azimuthFOV / 2,
+                        azimuthFOV / 2);
+                    rightLimit = Mathf.Clamp(targetAngle + (multiLockFOV / 2), -azimuthFOV / 2,
+                        azimuthFOV / 2);
 
                     if (radialScanDirection < 0 && currentAngle < leftLimit)
                     {
@@ -768,9 +777,9 @@ namespace BDArmory.Radar
                 }
                 else
                 {
-                    if (Mathf.Abs(currentAngle) > directionalFieldOfView / 2)
+                    if (Mathf.Abs(currentAngle) > azimuthFOV / 2)
                     {
-                        currentAngle = Mathf.Sign(currentAngle) * directionalFieldOfView / 2;
+                        currentAngle = Mathf.Sign(currentAngle) * azimuthFOV / 2;
                         radialScanDirection = -radialScanDirection;
                     }
                 }
@@ -911,7 +920,9 @@ namespace BDArmory.Radar
             }
 
             //if still failed or out of FOV, unlock.
-            if (!lockedTarget.exists || (!omnidirectional && Vector3.Angle(lockedTarget.position - referenceTransform.position, transform.up) > directionalFieldOfView / 2))
+            if (!lockedTarget.exists || (!omnidirectional && 
+                (90 - Vector3.Angle(lockedTarget.position - referenceTransform.position, transform.right) > azimuthFOV / 2 ||
+                90 - Vector3.Angle(lockedTarget.position - referenceTransform.position, transform.forward) > elevationFOV / 2)))
             {
                 //UnlockAllTargets();
                 UnlockTargetAt(index, true);
@@ -1125,8 +1136,14 @@ namespace BDArmory.Radar
                 if (boresightScan)
                 {
                     GUIUtils.DrawTextureOnWorldPos(transform.position + (3500 * transform.up),
-                        BDArmorySetup.Instance.dottedLargeGreenCircle, new Vector2(156, 156), 0);
+                        BDArmorySetup.Instance.dottedLargeGreenCircle, new Vector2(156 * (azimuthFOV / 10), 156 * (elevationFOV / 10)), 0); //156x156 @ 3500 is about a 10deg circle
                 }
+            }
+            if (BDArmorySettings.DEBUG_LINES)
+            {
+                GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 5, 2, Color.red);
+                GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 5, 2, Color.blue);
+                GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10f, 2, Color.green);
             }
         }
 
@@ -1206,7 +1223,7 @@ namespace BDArmory.Radar
             output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000021", resourceDrain));
             if (!isLinkOnly)
             {
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000022", directionalFieldOfView));
+                output.AppendLine($"{StringUtils.Localize("#autoLOC_bda_1000022")}: {azimuthFOV} / {elevationFOV}"); //Field of View
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000023", getRWRType(rwrThreatType)));
 
                 output.Append(Environment.NewLine);

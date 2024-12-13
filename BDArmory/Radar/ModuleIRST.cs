@@ -51,10 +51,13 @@ namespace BDArmory.Radar
         public bool omnidirectional = true;			//false=boresight only
 
         [KSPField]
-        public float directionalFieldOfView = 90;	//relevant for omnidirectional only
+        public float directionalFieldOfView = -1;	//Field of view for IRSTs. DEPRECATED
 
         [KSPField]
-        public float boresightFOV = 10;				//relevant for boresight only
+        public float azimuthFOV = 90;             //New boresightFOV value, legacy values will update to this
+
+        [KSPField]
+        public float elevationFOV = -1;				//if >0, define vertical FoV angle separate from Horizontal, for units with oblate FOV
 
         [KSPField]
         public float scanRotationSpeed = 120; 		//in degrees per second, relevant for omni and directional
@@ -192,6 +195,10 @@ namespace BDArmory.Radar
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
+            if (directionalFieldOfView > 0) //legacy support for old configs
+                azimuthFOV = directionalFieldOfView;
+            if (elevationFOV < 0) elevationFOV = azimuthFOV;
+            Debug.Log($"[RADAR FOV DEBUG]: IRST azimuth FOV: {azimuthFOV}; elevation FOV: {elevationFOV}");
         }
 
         public void EnsureVesselRadarData() 
@@ -286,7 +293,7 @@ namespace BDArmory.Radar
 
                 signalPersistTime = omnidirectional
     ? 360 / (scanRotationSpeed + 5)
-    : directionalFieldOfView / (scanRotationSpeed + 5);
+    : azimuthFOV / (scanRotationSpeed + 5);
 
                 if (rotationTransformName != string.Empty)
                 {
@@ -435,7 +442,7 @@ namespace BDArmory.Radar
         void Scan()
         {
             float angleDelta = scanRotationSpeed * Time.fixedDeltaTime;
-            RadarUtils.IRSTUpdateScan(weaponManager, currentAngle, referenceTransform, boresightFOV, referenceTransform.position, this);
+            RadarUtils.IRSTUpdateScan(weaponManager, currentAngle, referenceTransform, elevationFOV, referenceTransform.position, this);
 
             if (omnidirectional)
             {
@@ -445,9 +452,9 @@ namespace BDArmory.Radar
             {
                 currentAngle += radialScanDirection * angleDelta;
 
-                if (Mathf.Abs(currentAngle) > directionalFieldOfView / 2)
+                if (Mathf.Abs(currentAngle) > azimuthFOV / 2)
                 {
-                    currentAngle = Mathf.Sign(currentAngle) * directionalFieldOfView / 2;
+                    currentAngle = Mathf.Sign(currentAngle) * azimuthFOV / 2;
                     radialScanDirection = -radialScanDirection;
                 }
             }
@@ -456,7 +463,7 @@ namespace BDArmory.Radar
         void BoresightScan()
         {
             currentAngle = Mathf.Lerp(currentAngle, 0, 0.08f);
-            RadarUtils.IRSTUpdateScan(weaponManager, currentAngle, referenceTransform, boresightFOV, referenceTransform.position, this);
+            RadarUtils.IRSTUpdateScan(weaponManager, currentAngle, referenceTransform, elevationFOV, referenceTransform.position, this);
         }
 
         public void ReceiveContactData(TargetSignatureData contactData, float _magnitude)
@@ -466,7 +473,6 @@ namespace BDArmory.Radar
                 vesselRadarData.AddIRSTContact(this, contactData, _magnitude);
             }
         }
-
 
         void OnGUI()
         {
@@ -489,7 +495,7 @@ namespace BDArmory.Radar
 
             output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000021", resourceDrain)); //Ec/sec
 
-                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000022", directionalFieldOfView)); //Field of View
+                output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000022", $"{azimuthFOV} / {elevationFOV}")); //Field of View
 
                 output.Append(Environment.NewLine);
                 output.AppendLine(StringUtils.Localize("#autoLOC_bda_1000024")); //Capabilities

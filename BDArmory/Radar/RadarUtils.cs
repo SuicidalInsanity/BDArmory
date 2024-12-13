@@ -13,6 +13,7 @@ using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.Damage;
+using TMPro;
 
 namespace BDArmory.Radar
 {
@@ -1528,8 +1529,8 @@ namespace BDArmory.Radar
                     if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||
                          (Vector3.Dot(vectorToTarget, ray.direction) < 0))
                         continue;
-
-                    if (Vector3.Angle(loadedvessels.Current.CoM - ray.origin, ray.direction) < fov / 2f)
+                    if (Mathf.Abs(90 - Vector3.Angle(loadedvessels.Current.CoM - radar.transform.position, radar.transform.forward)) > radar.elevationFOV / 2) continue;
+                    if (Vector3.Angle(loadedvessels.Current.CoM - ray.origin, ray.direction) < fov / 2f) //Shouldn't this be a projectToPlane angle...? fov is Boresight, which is 10deg, not the FOV value of the radar/2
                     {
                         float terrainR = 0f, terrainAngle = 0f;
                         float notchMultiplier = 1f;
@@ -1830,6 +1831,7 @@ namespace BDArmory.Radar
                     if (loadedvessels.Current.IsUnderwater() && radar.sonarMode == ModuleRadar.SonarModes.None) //don't detect underwater targets with radar
                         continue;
                     Vector3 vesselDirection = (loadedvessels.Current.CoM - position).ProjectOnPlanePreNormalized(upVector);
+                    if (Mathf.Abs(90 - Vector3.Angle(targetPosition - referenceTransform.position, radar.transform.forward)) > radar.elevationFOV / 2) continue;
                     if (Vector3.Angle(vesselDirection, lookDirection) < fov / 2f)
                     {
                         float terrainR = 0f, terrainAngle = 0f;
@@ -2019,6 +2021,8 @@ namespace BDArmory.Radar
             {
                 targetPosition = lockedVessel.CoM;
 
+                if (Mathf.Abs(90 - Vector3.Angle(targetPosition - radar.transform.position, radar.transform.forward)) > radar.elevationFOV / 2) return false;
+
                 // evaluate range
                 float distance = (lockedVessel.CoM - ray.origin).sqrMagnitude * 0.000001f;                                      //TODO: Performance! better if we could switch to sqrMagnitude...
 
@@ -2144,6 +2148,8 @@ namespace BDArmory.Radar
                     // ignore too close ones
                     if ((loadedvessels.Current.CoM - position).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR)
                         continue;
+
+                    if (Mathf.Abs(90 - Vector3.Angle(loadedvessels.Current.CoM - referenceTransform.position, irst.transform.forward)) > irst.elevationFOV / 2) continue;
 
                     Vector3 vesselDirection = (loadedvessels.Current.CoM - position).ProjectOnPlanePreNormalized(upVector);
                     float angle = Vector3.Angle(vesselDirection, lookDirection);

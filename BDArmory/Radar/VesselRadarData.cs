@@ -890,9 +890,8 @@ namespace BDArmory.Radar
                 && radarTarget.targetData.signalStrength >= radar.radarLockTrackCurve.Evaluate((radarTarget.targetData.predictedPosition - radar.transform.position).magnitude / 1000f)
                 &&
                 (radar.omnidirectional ||
-                 Vector3.Angle(radar.transform.up, radarTarget.targetData.predictedPosition - radar.transform.position) <
-                 radar.directionalFieldOfView / 2)
-            );
+                 (90 - Vector3.Angle(radar.transform.right, radarTarget.targetData.predictedPosition - radar.transform.position) < radar.azimuthFOV / 2) &&
+                 90 - Vector3.Angle(radar.transform.forward, radarTarget.targetData.predictedPosition - radar.transform.position) < radar.elevationFOV / 2));
         }
 
         private void DisableAllRadars()
@@ -935,12 +934,12 @@ namespace BDArmory.Radar
                     {
                         if (radar.Current == null) continue;
                         if (radar.Current.omnidirectional) return 360f;
-                        fov = Mathf.Max(fov, radar.Current.directionalFieldOfView);
+                        fov = Mathf.Max(fov, radar.Current.azimuthFOV);
                     }
             }
             for (int i = 0; i < lockedTargetIndexes.Count; i++)
             {
-                fov = Mathf.Min(fov, displayedTargets[lockedTargetIndexes[i]].detectedByRadar.directionalFieldOfView);
+                fov = Mathf.Min(fov, displayedTargets[lockedTargetIndexes[i]].detectedByRadar.azimuthFOV);
             }
 
             return fov;
@@ -1062,7 +1061,7 @@ namespace BDArmory.Radar
 
             var guiMatrix = GUI.matrix;
             //bool omnidirectionalDisplay = (radarCount == 1 && linkedRadars[0].omnidirectional);
-            float directionalFieldOfView = omniDisplay ? 0 : availableRadars.Count > 0 ? availableRadars[0].directionalFieldOfView : availableIRSTs[0].directionalFieldOfView;
+            float directionalFieldOfView = omniDisplay ? 0 : availableRadars.Count > 0 ? availableRadars[0].azimuthFOV : availableIRSTs[0].azimuthFOV;
             //bool linked = (radarCount > 1);
             Rect scanRect = new Rect(0, 0, RadarDisplayRect.width, RadarDisplayRect.height);
             if (omniDisplay)
@@ -1135,7 +1134,7 @@ namespace BDArmory.Radar
 
                     //if linked and directional, draw FOV lines
                     if (availableRadars[i].omnidirectional) continue;
-                    float fovAngle = availableRadars[i].directionalFieldOfView / 2;
+                    float fovAngle = availableRadars[i].azimuthFOV / 2;
                     float lineWidth = 2;
                     Rect verticalLineRect = new Rect(scanRect.center.x - (lineWidth / 2), 0, lineWidth,
                       scanRect.center.y);
@@ -1186,7 +1185,7 @@ namespace BDArmory.Radar
 
                     //if linked and directional, draw FOV lines
                     if (availableIRSTs[i].omnidirectional) continue;
-                    float fovAngle = availableIRSTs[i].directionalFieldOfView / 2;
+                    float fovAngle = availableIRSTs[i].azimuthFOV / 2;
                     float lineWidth = 2;
                     Rect verticalLineRect = new Rect(scanRect.center.x - (lineWidth / 2), 0, lineWidth,
                       scanRect.center.y);
@@ -2011,7 +2010,7 @@ namespace BDArmory.Radar
             else
             {
                 return RadarUtils.WorldToRadarRadial(worldPosition, referenceTransform, RadarDisplayRect,
-                    rIncrements[rangeIndex], radar.directionalFieldOfView / 2);
+                    rIncrements[rangeIndex], radar.azimuthFOV / 2);
             }
         }
 
@@ -2025,7 +2024,7 @@ namespace BDArmory.Radar
             else
             {
                 return RadarUtils.WorldToRadarRadial(worldPosition, referenceTransform, RadarDisplayRect,
-                    rIncrements[rangeIndex], irst.directionalFieldOfView / 2);
+                    rIncrements[rangeIndex], irst.azimuthFOV / 2);
             }
         }
 
@@ -2057,7 +2056,7 @@ namespace BDArmory.Radar
                     {
                         pingPosition = RadarUtils.WorldToRadarRadial(lockedTarget.position, referenceTransform,
                             RadarDisplayRect, rIncrements[rangeIndex],
-                            displayedTargets[i].detectedByRadar.directionalFieldOfView / 2);
+                            displayedTargets[i].detectedByRadar.azimuthFOV / 2);
                     }
 
                     //GUIUtils.DrawRectangle(new Rect(pingPosition.x-(4),pingPosition.y-(4),8, 8), Color.green);
@@ -2303,7 +2302,7 @@ namespace BDArmory.Radar
                                 {
                                     pingPosition = RadarUtils.WorldToRadarRadial(jammedPosition, referenceTransform,
                                         RadarDisplayRect, rIncrements[rangeIndex],
-                                        displayedTargets[i].detectedByRadar.directionalFieldOfView / 2);
+                                        displayedTargets[i].detectedByRadar.azimuthFOV / 2);
                                 }
 
                                 jammedRect = new Rect(pingPosition.x - (pingSize.x / 2),

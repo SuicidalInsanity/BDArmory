@@ -3,6 +3,8 @@
 	- Re-add look-ahead check to Missile Launch authorization, AI now again checks if the target is predicted to still be within boresight 2s later, should cut down on incidents of missiles firing at bad angles the moment a target enters FOV.
 	- Missiles set to not use DLZ launch ranges now have still use turn radius kinematics min range check to see if a missile can plausibly physically maneuver to reach the target at shorter ranges for determining when the AI should launch.
 	- Adds experimental Building collision avoidance logic to the Surface AI.
+- Detectors
+	-Implements Non-Symmetric Radar/IRST FOV. 'directionalFieldOfView' setting in ModuleRadar/ModuleIRST is now deprecated, and has been replaced with 'azimuthFOV' and 'elevationFOV' to set width and height of sensor FOV. Legacy configs will assume symmetrical FOVs defined by the legacy directionalFieldOfView value.
 - Weapons:
 	- Missiles:
 		- Fix NRe when trying to use Antirad missiles in reloadable rails/MultiMissileLaunchers
