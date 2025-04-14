@@ -1296,7 +1296,10 @@ namespace BDArmory.Weapons.Missiles
                         BDATargetManager.FiredMissiles.Add(this);
                         if (wpm != null)
                         {
-                            wpm.heatTarget = TargetSignatureData.noTarget;
+                            for (int i = 0; i < wpm.multiMissileTgtNum; i++)
+                            {
+                                wpm.heatTarget[i] = TargetSignatureData.noTarget;
+                            }
                             GpsUpdateMax = wpm.GpsUpdateMax;
                             wpm.UpdateMissilesAway(targetVessel, this);
                         }
@@ -1326,7 +1329,10 @@ namespace BDArmory.Weapons.Missiles
                     BDATargetManager.FiredMissiles.Add(this);
                     if (wpm != null)
                     {
-                        wpm.heatTarget = TargetSignatureData.noTarget;
+                        for (int i = 0; i < wpm.multiMissileTgtNum; i++)
+                        {
+                            wpm.heatTarget[i] = TargetSignatureData.noTarget;
+                        }
                         GpsUpdateMax = wpm.GpsUpdateMax;
                         wpm.UpdateMissilesAway(targetVessel, this);
                     }
@@ -1479,7 +1485,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 ml.Team = wpm.Team;
                 wpm.SendTargetDataToMissile(ml, targetVessel != null ? targetVessel.Vessel : null, true, new MissileFire.TargetData(targetGPSCoords, TimeOfLastINS, INStimetogo), true);
-                wpm.heatTarget = TargetSignatureData.noTarget;
+                for (int i = 0; i < wpm.multiMissileTgtNum; i++)
+                {
+                    wpm.heatTarget[i] = TargetSignatureData.noTarget;
+                }
                 ml.GpsUpdateMax = wpm.GpsUpdateMax;
                 wpm.UpdateQueuedLaunches(targetVessel, ml, false);
                 wpm.UpdateMissilesAway(targetVessel, ml);
@@ -2124,7 +2133,7 @@ namespace BDArmory.Weapons.Missiles
                             heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, new Ray(transform.position, tempTargetPos - transform.position), TargetSignatureData.noTarget, lockedSensorFOV / 2, heatThreshold, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias,
                                 (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel, IFF: hasIFF);
                         else
-                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position, tempTargetPos - transform.position), TargetSignatureData.noTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel, IFF: hasIFF);
+                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(transform.position, tempTargetPos - transform.position), TargetSignatureData.noTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, SourceVessel ? VesselModuleRegistry.GetModule<MissileFire>(SourceVessel) : null, targetVessel, IFF: hasIFF).First();
                         if (heatTarget.exists && CheckTargetEngagementEnvelope(heatTarget.targetInfo))
                         {
                             if (BDArmorySettings.DEBUG_MISSILES)

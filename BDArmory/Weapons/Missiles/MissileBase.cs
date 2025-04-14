@@ -832,7 +832,7 @@ namespace BDArmory.Weapons.Missiles
                     heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias,
                         (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel, IFF: hasIFF);
                 else
-                    heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel, IFF: hasIFF);
+                    heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, lookRay, predictedHeatTarget, lockedSensorFOV / 2, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, (SourceVessel == null ? null : SourceVessel.gameObject == null ? null : SourceVessel.gameObject.GetComponent<MissileFire>()), targetVessel, IFF: hasIFF).First();
 
                 if (heatTarget.exists)
                 {

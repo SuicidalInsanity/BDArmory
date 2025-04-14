@@ -1009,15 +1009,28 @@ namespace BDArmory.Weapons.Missiles
                                     if (ml.TargetingMode == TargetingModes.Heat) //need to input a heattarget, else this will just return MissileFire.CurrentTarget
                                     {
                                         Vector3 direction = (targetsAssigned[TargetID].position * targetsAssigned[TargetID].velocity.magnitude) - missileLauncher.MissileReferenceTransform.position;
-                                        ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, targetsAssigned[TargetID], IFF: ml.hasIFF);
+                                        var heatSig = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, targetsAssigned[TargetID], IFF: ml.hasIFF, arraySize: (int)wpm.multiMissileTgtNum);
+                                        if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
+                                        {
+                                            int targetNum = launchesThisSalvo - 1;
+                                            if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                            ml.heatTarget = heatSig[targetNum];
+                                        }
+                                        else ml.heatTarget = heatSig[0];
                                     }
                                     if (ml.TargetingMode == TargetingModes.Radar)
                                     {
                                         AssignRadarTarget(ml, targetsAssigned[TargetID].Vessel);
                                     }
                                     if (ml.TargetingMode == TargetingModes.Gps)
-                                    {
-                                        ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[TargetID].Vessel.CoM, vessel.mainBody);
+                                    {                                        
+                                        if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
+                                        {
+                                            int targetNum = launchesThisSalvo - 1;
+                                            if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                            ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
+                                        }
+                                        else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[TargetID].Vessel.CoM, vessel.mainBody);
                                     }
                                     if (ml.TargetingMode == TargetingModes.Inertial)
                                     {
@@ -1045,7 +1058,15 @@ namespace BDArmory.Weapons.Missiles
                                             if (ml.TargetingMode == TargetingModes.Heat)
                                             {
                                                 Vector3 direction = (targetsAssigned[t].position * targetsAssigned[t].velocity.magnitude) - missileLauncher.MissileReferenceTransform.position;
-                                                ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, targetsAssigned[t], IFF: ml.hasIFF);
+                                                var heatSig = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, targetsAssigned[t], IFF: ml.hasIFF, arraySize: (int)wpm.multiMissileTgtNum);
+
+                                                if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
+                                                {
+                                                    int targetNum = launchesThisSalvo - 1;
+                                                    if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                                    ml.heatTarget = heatSig[targetNum];
+                                                }
+                                                else ml.heatTarget = heatSig[0];
                                             }
                                             if (ml.TargetingMode == TargetingModes.Radar)
                                             {
@@ -1053,7 +1074,13 @@ namespace BDArmory.Weapons.Missiles
                                             }
                                             if (ml.TargetingMode == TargetingModes.Gps)
                                             {
-                                                ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[t].Vessel.CoM, vessel.mainBody);
+                                                if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
+                                                {
+                                                    int targetNum = launchesThisSalvo - 1;
+                                                    if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                                    ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
+                                                }
+                                                else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[t].Vessel.CoM, vessel.mainBody);
                                             }
                                             if (ml.TargetingMode == TargetingModes.Inertial)
                                             {
@@ -1086,7 +1113,15 @@ namespace BDArmory.Weapons.Missiles
                                                     if (ml.TargetingMode == TargetingModes.Heat)
                                                     {
                                                         Vector3 direction = (item.Current.position * item.Current.velocity.magnitude) - missileLauncher.MissileReferenceTransform.position;
-                                                        ml.heatTarget = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, item.Current, IFF: ml.hasIFF);
+                                                        var heatSig = BDATargetManager.GetHeatTarget(ml.SourceVessel, ml.vessel, new Ray(missileLauncher.MissileReferenceTransform.position + (5 * missileLauncher.GetForwardTransform()), direction), TargetSignatureData.noTarget, ml.lockedSensorFOV * 0.5f, ml.heatThreshold, ml.frontAspectHeatModifier, true, ml.targetCoM, ml.lockedSensorFOVBias, ml.lockedSensorVelocityBias, wpm, item.Current, IFF: ml.hasIFF, arraySize: (int)wpm.multiMissileTgtNum);
+
+                                                        if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
+                                                        {
+                                                            int targetNum = launchesThisSalvo - 1;
+                                                            if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                                            ml.heatTarget = heatSig[targetNum];
+                                                        }
+                                                        else ml.heatTarget = heatSig[0];
                                                     }
                                                     if (ml.TargetingMode == TargetingModes.Radar)
                                                     {
@@ -1094,7 +1129,13 @@ namespace BDArmory.Weapons.Missiles
                                                     }
                                                     if (ml.TargetingMode == TargetingModes.Gps)
                                                     {
-                                                        ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(item.Current.Vessel.CoM, vessel.mainBody);
+                                                        if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
+                                                        {
+                                                            int targetNum = launchesThisSalvo - 1;
+                                                            if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                                            ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
+                                                        }
+                                                        else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(item.Current.Vessel.CoM, vessel.mainBody);
                                                     }
                                                     if (ml.TargetingMode == TargetingModes.Inertial)
                                                     {
@@ -1258,7 +1299,11 @@ namespace BDArmory.Weapons.Missiles
                 ml.launched = true;
                 if (ml.TargetPosition == Vector3.zero) ml.TargetPosition = missileLauncher.MissileReferenceTransform.position + (missileLauncher.MissileReferenceTransform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
                 ml.MissileLaunch();
-                if (wpm != null) wpm.heatTarget = TargetSignatureData.noTarget;
+                if (wpm != null) 
+                    for (int i = 0; i < wpm.multiMissileTgtNum; i++)
+                    {
+                        wpm.heatTarget[i] = TargetSignatureData.noTarget;
+                    }
             }
             if (wpm != null)
             {

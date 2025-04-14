@@ -54,7 +54,7 @@ namespace BDArmory.CounterMeasure
 
             // NEW (1.10 and later): generate flare within spectrum of emitting vessel's heat signature, but narrow range for low heats
 
-            thermalSig = BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero); //if enabling heatSig occlusion in IR missiles the thermal value of flares will have to be adjusted to compensate.
+            thermalSig = BDATargetManager.GetVesselHeatSignature(sourceVessel, Vector3.zero).First(); //if enabling heatSig occlusion in IR missiles the thermal value of flares will have to be adjusted to compensate.
             thermal = thermalSig.Item1;
             //Then again, these are being ejected in a range of temps, which should cover potential differences in heatreturn from a target based on occlusion. Have vector3.Zero replaced with missile position to sim occlusion level missile owuld see and set flare temps accordingly?
             // float minMult = Mathf.Clamp(-0.265f * Mathf.Log(sourceHeat) + 2.3f, 0.65f, 0.8f);

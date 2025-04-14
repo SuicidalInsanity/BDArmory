@@ -41,7 +41,6 @@
 		- Fix reload gauge for reloadable launchers.
 		- Add dynamic ordinance offset for reloadable rails so larger missiles no longer clip into rails/hardpoint mounts.
 		- Fix lock-less Radar missiles doing a loop isntead of going straight.
-		- Fix Reload Gauge on reloadable launchers.
 		- Fix Account For Mass/Cost not applying to Missile magazines.
 		- Fix Modular Missiles not being able to intercept missiles.
 - Competition:

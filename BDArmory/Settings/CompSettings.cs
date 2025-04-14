@@ -22,7 +22,7 @@ namespace BDArmory.Settings
                 //AI allowRamming?
                 //WM gunRange?
                 //WM multiMissileTgtNum
-				        {"extensionCutoffTime", -1},
+				{"extensionCutoffTime", -1},
                 {"extendDistanceAirToAir", -1},
                 {"MONOCOCKPIT_VIEWRANGE", -1},
                 {"DUALCOCKPIT_VIEWRANGE", -1},

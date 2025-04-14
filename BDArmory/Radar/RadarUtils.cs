@@ -13,6 +13,7 @@ using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.Damage;
+using System.Linq;
 
 namespace BDArmory.Radar
 {
@@ -2180,7 +2181,7 @@ namespace BDArmory.Radar
                             tInfo = loadedvessels.Current.gameObject.AddComponent<TargetInfo>();
                         }
 
-                        IRSig = BDATargetManager.GetVesselHeatSignature(loadedvessels.Current, position, 1f, irst.TempSensitivityCurve);
+                        IRSig = BDATargetManager.GetVesselHeatSignature(loadedvessels.Current, position, 1f, irst.TempSensitivityCurve, maxSigs: 1).First();
                         float signature = IRSig.Item1 * (irst.boresightScan ? Mathf.Clamp01(15 / angle) : 1);
                         //signature *= (1400 * 1400) / Mathf.Clamp((loadedvessels.Current.CoM - referenceTransform.position).sqrMagnitude, 90000, 36000000); //300 to 6000m - clamping sig past 6km; Commenting out as it makes tuning detection curves much easier
 

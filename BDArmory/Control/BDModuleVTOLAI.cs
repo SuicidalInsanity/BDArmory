@@ -510,7 +510,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                                         orderedToExtend = false;
                                         if (missile != null)
                                         {
-                                            if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget.exists)
+                                            if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget[weaponManager.firedMissiles].exists)
                                             {
                                                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"Attempting heat lock");
                                                 aimingMode = true;
