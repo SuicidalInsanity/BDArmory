@@ -227,7 +227,7 @@ namespace BDArmory.Bullets
                     blastSoundPath = nuke.blastSoundPath;
                 }
             }
-            sourceWeaponName = sourceWeapon ? sourceWeapon.FindModuleImplementing<ModuleWeapon>().WeaponName : rocketName;
+            sourceWeaponName = sourceWeapon ? sourceWeapon.FindModuleImplementing<ModuleWeapon>().OriginalShortName : rocketName;
             TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, BetterLateThanNever);
         }
 
