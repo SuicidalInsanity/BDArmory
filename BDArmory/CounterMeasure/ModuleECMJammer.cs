@@ -91,6 +91,7 @@ namespace BDArmory.CounterMeasure
         void Start()
         {
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
+            cooldownTimer = 3; //delay alwaysOn jammers by 3 sec to wait for vessel to settle if spawning in, else GT jammers end up setting their ghost targets ~65km from the jammer for some reason.
         }
         public override void OnStart(StartState state)
         {
@@ -102,8 +103,7 @@ namespace BDArmory.CounterMeasure
             {
                 isMissileECM = true;
                 Events["Toggle"].guiActive = false;
-            }
-            if (alwaysOn && !isMissileECM) EnableJammer();
+            }            
             gauge = (BDStagingAreaGauge)part.AddModule("BDStagingAreaGauge");
             GameEvents.onVesselCreate.Add(OnVesselCreate);
         }

@@ -1068,7 +1068,7 @@ namespace BDArmory.Weapons.Missiles
                         {
                             for (int i = 0; i < scannedTargets.Length; i++)
                             {
-                                float predictedPositionError = (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
+                                float predictedPositionError = (scannedTargets[i].positionOffset - radarTarget.positionOffset).sqrMagnitude;
                                 if (scannedTargets[i].exists && predictedPositionError < sqrThresh && predictedPositionError < errorMagnitude) //even a 'within 10m, close enough' is sloppy. have it go for TDS that's closest to predictedTarget.pos
                                 {
                                     errorMagnitude = predictedPositionError;

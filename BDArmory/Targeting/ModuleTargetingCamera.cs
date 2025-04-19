@@ -13,7 +13,7 @@ using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using System.Text;
 using System;
-using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 namespace BDArmory.Targeting
 {
@@ -262,7 +262,7 @@ namespace BDArmory.Targeting
             }
         }
 
-        ModuleTargetingCamera FindNextActiveCamera()
+        ModuleTargetingCamera FindNextActiveCamera() //ToDo - this cycles to the end of the list and then stops
         {
             using (var mtc = VesselModuleRegistry.GetModules<ModuleTargetingCamera>(vessel).GetEnumerator())
                 while (mtc.MoveNext())
@@ -273,7 +273,6 @@ namespace BDArmory.Targeting
                         return mtc.Current;
                     }
                 }
-
             return null;
         }
 

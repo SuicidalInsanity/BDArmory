@@ -1943,6 +1943,8 @@ namespace BDArmory.Radar
                 return true;
             }
             return false;
+            //add an optional vector3 position input for filtering Ghost Target false locks, add mechanism for Ai with radar affected by GT ECM to at close range/large GT offset distance to figure out
+            //its locked to a false target and automatically cycle locks to the correct one to target the vessel?
         }
 
         public void UnlockAllTargetsOfRadar(ModuleRadar radar)

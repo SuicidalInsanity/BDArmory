@@ -605,6 +605,7 @@ namespace BDArmory.UI
                         {
                             float tempDist = (priorHeatTarget.IRSource.transform.position - IRSigs[h].Item2.transform.position).sqrMagnitude;
                             if (tempDist < distance) distance = tempDist;
+                            if (IRSigs[h].Item2 == priorHeatTarget.IRSource) distance = 0;
                         }
                         float score = IRSigs[h].Item1 * Mathf.Clamp01(15 / angle);
                         score *= (1400 * 1400) / Mathf.Max((vessel.CoM - ray.origin).sqrMagnitude, 90000); // Clamp below 300m
