@@ -794,14 +794,14 @@ namespace BDArmory.Guidances
         /// <param name="missile"></param>
         /// <param name="targetVessel"></param>
         /// <returns></returns>
-        public static Vector3 GetAirToAirFireSolution(MissileBase missile, Vessel targetVessel, out float timetogo)
+        public static Vector3 GetAirToAirFireSolution(MissileBase missile, Vessel targetVessel, out float timetogo, Vector3 tgtPosition = default)
         {
             if (!targetVessel)
             {
                 timetogo = float.PositiveInfinity;
                 return missile.vessel.CoM + (missile.GetForwardTransform() * 1000);
             }
-            Vector3 targetPosition = targetVessel.CoM;
+            Vector3 targetPosition = tgtPosition != default ? tgtPosition : targetVessel.CoM;
             Vector3 vel = missile.vessel.Velocity();
             Vector3 startPosition = missile.vessel.CoM;
             if (missile.GetWeaponClass() == WeaponClasses.SLW && !missile.vessel.LandedOrSplashed)

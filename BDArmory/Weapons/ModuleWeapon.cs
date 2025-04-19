@@ -5264,7 +5264,7 @@ namespace BDArmory.Weapons
                             targetRadius = visualTargetVessel.GetRadius(fireTransforms[0].forward, currentTarget.bounds);
                         }
                         else
-                        {
+                        {                            
                             if (targetCockpits)
                             {
                                 for (int i = 0; i < currentTarget.targetCommandList.Count; i++)
@@ -5329,6 +5329,7 @@ namespace BDArmory.Weapons
                             targetparts = targetparts.OrderBy(w => w.mass).ToList(); //weight target part priority by part mass, also serves as a default 'target heaviest part' in case other options not selected
                             targetparts.Reverse(); //Order by mass is lightest to heaviest. We want H>L
                                                    //targetparts.Shuffle(); //alternitively, increase the random range from maxtargetnum to targetparts.count, otherwise edge cases where lots of one thing (targeting command/mass) will be pulled before lighter things (weapons, maybe engines) if both selected
+                            
                             if (turret)
                             {
                                 targetID = (int)UnityEngine.Random.Range(0, Mathf.Min(targetparts.Count, weaponManager.multiTargetNum));

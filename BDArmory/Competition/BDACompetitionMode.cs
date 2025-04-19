@@ -151,99 +151,148 @@ namespace BDArmory.Competition
         {
             if (BDArmorySettings.DISPLAY_COMPETITION_STATUS)
             {
-                // Clock
-                if (competitionIsActive || competitionStarting) // Show a competition clock (for post-processing synchronisation).
+                if (BDArmorySettings.MINIMALIST_COMP_STATUS)
                 {
-                    var gTime = (float)(Planetarium.GetUniversalTime() - (competitionIsActive ? competitionStartTime : competitionPreStartTime));
+                    if (competitionIsActive || competitionStarting)
+                    { 
+                        var gTime = (float)(Planetarium.GetUniversalTime() - (competitionIsActive ? competitionStartTime : competitionPreStartTime));
                     var minutes = Mathf.FloorToInt(gTime / 60);
                     var seconds = gTime % 60;
                     // string pTime = minutes.ToString("0") + ":" + seconds.ToString("00.00");
                     string pTime = $"{minutes:0}:{seconds:00.00}";
                     GUI.Label(clockRectShadow, pTime, statusStyleShadow);
+                        statusStyle.normal.textColor = Color.green;
                     GUI.Label(clockRect, pTime, statusStyle);
-                    string pDate = DateTime.UtcNow.ToString("yyyy-MM-dd\nHH:mm:ss") + " UTC";
-                    GUI.Label(dateRectShadow, pDate, dateStyleShadow);
-                    GUI.Label(dateRect, pDate, dateStyle);
-                    GUI.Label(versionRectShadow, BDArmorySetup.Version, dateStyleShadow);
-                    GUI.Label(versionRect, BDArmorySetup.Version, dateStyle);
-                }
-
-                // Messages
-                guiStatusString = competitionStatus.ToString();
-                if (BDArmorySetup.GAME_UI_ENABLED || BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) // Append current pilot action to guiStatusString.
-                {
-                    if (competitionStarting || competitionStartTime > 0)
-                    {
-                        string currentVesselStatus = "";
-                        if (FlightGlobals.ActiveVessel != null)
+                    guiStatusString = competitionStatus.ToString();
+                        if (BDArmorySetup.GAME_UI_ENABLED || BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) // Append current pilot action to guiStatusString.
                         {
-                            var vesselName = FlightGlobals.ActiveVessel.GetName();
-                            string postFix = "";
-                            if (pilotActions.ContainsKey(vesselName))
+                            string Attacker = "";
+                            string Weapon = "";
+                            string Victim = "";
+
+                            if (!string.IsNullOrEmpty(guiStatusString))
                             {
-                                postFix = pilotActions[vesselName];
-                            }
-                            if (Scores.Players.Contains(vesselName))
-                            {
-                                ScoringData vData = Scores.ScoreData[vesselName];
-                                if (Planetarium.GetUniversalTime() - vData.lastDamageTime < 2)
-                                {
-                                    postFix = " is taking damage from " + vData.lastPersonWhoDamagedMe;
-                                    if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(vData.lastPersonWhoDamagedMe))
+                                List<Tuple<string, string, string>> status = new List<Tuple<string, string, string>>();
+                                using (IEnumerator<string> killReport = guiStatusString.Split(new char[] { '\n' }).AsEnumerable().GetEnumerator())
+                                    while (killReport.MoveNext())
                                     {
-                                        if (!string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                        if (killReport.Current == string.Empty) continue;
+                                        if (!killReport.Current.Contains(";")) continue;
+                                        string[] options = killReport.Current.Split(new char[] { ';' });
+                                        string attacker = options[0];
+                                        string weapon = $"{options[0]} {options[1]}";
+                                        string victim = $"{options[0]} {options[1]} {options[2]}";
+                                        status.Add(new Tuple<string, string, string>(attacker, weapon, victim));
+                                    }
+                                Attacker = string.Join("\n", status.Select(s => s.Item1));
+                                Weapon = string.Join("\n", status.Select(s => s.Item2));
+                                Victim = string.Join("\n", status.Select(s => s.Item3));
+                            }
+                            GUI.Label(statusRectShadow, Victim, statusStyleShadow);
+                            statusStyle.normal.textColor = XKCDColors.Red;
+                            GUI.Label(statusRect, Victim, statusStyle);
+                            GUI.Label(statusRect, Weapon, dateStyle);
+                            statusStyle.normal.textColor = XKCDColors.Peach;
+                            GUI.Label(statusRect, Attacker, statusStyle);
+                        }
+                    }
+                }
+                else
+                {
+                    // Clock
+                    if (competitionIsActive || competitionStarting) // Show a competition clock (for post-processing synchronisation).
+                    {
+                        var gTime = (float)(Planetarium.GetUniversalTime() - (competitionIsActive ? competitionStartTime : competitionPreStartTime));
+                        var minutes = Mathf.FloorToInt(gTime / 60);
+                        var seconds = gTime % 60;
+                        // string pTime = minutes.ToString("0") + ":" + seconds.ToString("00.00");
+                        string pTime = $"{minutes:0}:{seconds:00.00}";
+                        GUI.Label(clockRectShadow, pTime, statusStyleShadow);
+                        GUI.Label(clockRect, pTime, statusStyle);
+                        string pDate = DateTime.UtcNow.ToString("yyyy-MM-dd\nHH:mm:ss") + " UTC";
+                        GUI.Label(dateRectShadow, pDate, dateStyleShadow);
+                        GUI.Label(dateRect, pDate, dateStyle);
+                        GUI.Label(versionRectShadow, BDArmorySetup.Version, dateStyleShadow);
+                        GUI.Label(versionRect, BDArmorySetup.Version, dateStyle);
+                    }
+
+                    // Messages
+                    guiStatusString = competitionStatus.ToString();
+                    if (BDArmorySetup.GAME_UI_ENABLED || BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) // Append current pilot action to guiStatusString.
+                    {
+                        if (competitionStarting || competitionStartTime > 0)
+                        {
+                            string currentVesselStatus = "";
+                            if (FlightGlobals.ActiveVessel != null)
+                            {
+                                var vesselName = FlightGlobals.ActiveVessel.GetName();
+                                string postFix = "";
+                                if (pilotActions.ContainsKey(vesselName))
+                                {
+                                    postFix = pilotActions[vesselName];
+                                }
+                                if (Scores.Players.Contains(vesselName))
+                                {
+                                    ScoringData vData = Scores.ScoreData[vesselName];
+                                    if (Planetarium.GetUniversalTime() - vData.lastDamageTime < 2)
+                                    {
+                                        postFix = " is taking damage from " + vData.lastPersonWhoDamagedMe;
+                                        if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(vData.lastPersonWhoDamagedMe))
                                         {
-                                            postFix += " (" + BDArmorySettings.HOS_BADGE + ")";
+                                            if (!string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                            {
+                                                postFix += " (" + BDArmorySettings.HOS_BADGE + ")";
+                                            }
                                         }
                                     }
                                 }
+                                if (postFix != "" || vesselName != competitionStatus.lastActiveVessel)
+                                    currentVesselStatus = vesselName + postFix;
+                                competitionStatus.lastActiveVessel = vesselName;
                             }
-                            if (postFix != "" || vesselName != competitionStatus.lastActiveVessel)
-                                currentVesselStatus = vesselName + postFix;
-                            competitionStatus.lastActiveVessel = vesselName;
-                        }
-                        guiStatusString += (string.IsNullOrEmpty(guiStatusString) ? "" : "\n") + currentVesselStatus;
-                        if (BDArmorySettings.RUNWAY_PROJECT)
-                        {
-                            if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
+                            guiStatusString += (string.IsNullOrEmpty(guiStatusString) ? "" : "\n") + currentVesselStatus;
+                            if (BDArmorySettings.RUNWAY_PROJECT)
                             {
-                                guiStatusString += $"\nCurrent Firing Rate: {BDArmorySettings.FIRE_RATE_OVERRIDE} shots/min.";
-                            }
-                            if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 67 && pinataAlive && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled)
-                            {
-                                double hpPercent = 1;
-                                float DmgTaken = Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromGuns.Values.Sum() + Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromRockets.Values.Sum() + Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromMissiles.Values.Sum();
-                                hpPercent = Mathf.Clamp((BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken) / BDArmorySettings.MAX_ACTIVE_RADAR_RANGE, 0, 1);
-                                if (hpPercent > 0)
+                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 41)
                                 {
-                                    Rect barRect = new Rect((Screen.width / 2) - (Screen.width / 6) - 5, Screen.height / 6 + 10, (Screen.width / 3) + 10, 60);
-                                    Rect healthRect = new Rect((Screen.width / 2) - ((Screen.width / 6)), (Screen.height / 6) + 5, ((Screen.width / 3) * (float)hpPercent), 50);
-                                    Color temp = XKCDColors.Grey;
-                                    GUIUtils.DrawRectangle(barRect, temp);
-                                    temp = Color.HSVToRGB((85f * (float)hpPercent) / 255, 1f, 1f);
-                                    GUIUtils.DrawRectangle(healthRect, temp);
-
+                                    guiStatusString += $"\nCurrent Firing Rate: {BDArmorySettings.FIRE_RATE_OVERRIDE} shots/min.";
                                 }
-                                Rect labelrect = new Rect((Screen.width / 2) - 75, (Screen.height / 6) + 70, Screen.width / 3, 60);
-                                Rect shadowRect = new Rect((labelrect.x + 1), (labelrect.y + 1), Screen.width / 3, 60);
-                                GUI.Label(shadowRect, "Asteroid HP:" + (BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken).ToString("0"), statusStyleShadow);
-                                GUI.Label(labelrect, "Asteroid HP:" + (BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken).ToString("0"), statusStyle);
+                                if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 67 && pinataAlive && BDArmorySetup.GAME_UI_ENABLED && !MapView.MapIsEnabled)
+                                {
+                                    double hpPercent = 1;
+                                    float DmgTaken = Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromGuns.Values.Sum() + Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromRockets.Values.Sum() + Scores.ScoreData[BDArmorySettings.PINATA_NAME].damageFromMissiles.Values.Sum();
+                                    hpPercent = Mathf.Clamp((BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken) / BDArmorySettings.MAX_ACTIVE_RADAR_RANGE, 0, 1);
+                                    if (hpPercent > 0)
+                                    {
+                                        Rect barRect = new Rect((Screen.width / 2) - (Screen.width / 6) - 5, Screen.height / 6 + 10, (Screen.width / 3) + 10, 60);
+                                        Rect healthRect = new Rect((Screen.width / 2) - ((Screen.width / 6)), (Screen.height / 6) + 5, ((Screen.width / 3) * (float)hpPercent), 50);
+                                        Color temp = XKCDColors.Grey;
+                                        GUIUtils.DrawRectangle(barRect, temp);
+                                        temp = Color.HSVToRGB((85f * (float)hpPercent) / 255, 1f, 1f);
+                                        GUIUtils.DrawRectangle(healthRect, temp);
+
+                                    }
+                                    Rect labelrect = new Rect((Screen.width / 2) - 75, (Screen.height / 6) + 70, Screen.width / 3, 60);
+                                    Rect shadowRect = new Rect((labelrect.x + 1), (labelrect.y + 1), Screen.width / 3, 60);
+                                    GUI.Label(shadowRect, "Asteroid HP:" + (BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken).ToString("0"), statusStyleShadow);
+                                    GUI.Label(labelrect, "Asteroid HP:" + (BDArmorySettings.MAX_ACTIVE_RADAR_RANGE - DmgTaken).ToString("0"), statusStyle);
+                                }
                             }
                         }
                     }
-                }
-                if (!BDArmorySetup.GAME_UI_ENABLED)
-                {
-                    if (ContinuousSpawning.Instance.vesselsSpawningContinuously) // Don't do the ALIVE / DEAD string in continuous spawn.
-                    { if (!BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) guiStatusString = ""; }
-                    else
+                    if (!BDArmorySetup.GAME_UI_ENABLED)
                     {
-                        if (BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) { guiStatusString = deadOrAlive + "\n" + guiStatusString; }
-                        else { guiStatusString = deadOrAlive; }
+                        if (ContinuousSpawning.Instance.vesselsSpawningContinuously) // Don't do the ALIVE / DEAD string in continuous spawn.
+                        { if (!BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) guiStatusString = ""; }
+                        else
+                        {
+                            if (BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI) { guiStatusString = deadOrAlive + "\n" + guiStatusString; }
+                            else { guiStatusString = deadOrAlive; }
+                        }
                     }
+                    GUI.Label(statusRectShadow, guiStatusString, statusStyleShadow);
+                    GUI.Label(statusRect, guiStatusString, statusStyle);
                 }
-                GUI.Label(statusRectShadow, guiStatusString, statusStyleShadow);
-                GUI.Label(statusRect, guiStatusString, statusStyle);
             }
             if (KSP.UI.Dialogs.FlightResultsDialog.isDisplaying && KSP.UI.Dialogs.FlightResultsDialog.showExitControls) // Prevent the Flight Results window from interrupting things when a certain vessel dies.
             {
@@ -279,6 +328,17 @@ namespace BDArmory.Competition
                 shadowOffset = 1;
                 statusStyle.fontSize = Mathf.Max(14, Mathf.CeilToInt(14 * BDArmorySettings.UI_SCALE_ACTUAL));
                 dateStyle.fontSize = Mathf.Max(10, Mathf.CeilToInt(10 * BDArmorySettings.UI_SCALE_ACTUAL));
+            }
+            if(BDArmorySettings.MINIMALIST_COMP_STATUS)
+            {
+                statusStyle.fontSize = Mathf.Max(16, Mathf.CeilToInt(16 * BDArmorySettings.UI_SCALE_ACTUAL));
+                dateStyle.fontSize = Mathf.Max(16, Mathf.CeilToInt(16 * BDArmorySettings.UI_SCALE_ACTUAL));
+                dateStyle.normal.textColor = XKCDColors.LightBeige;
+                shadowOffset = 1;
+                float RectLength = Mathf.Max(100, Mathf.CeilToInt(100 * BDArmorySettings.UI_SCALE_ACTUAL));
+                float RectHeight = Mathf.Max(20, Mathf.CeilToInt(20 * BDArmorySettings.UI_SCALE_ACTUAL));
+                clockRect = new Rect(10, Mathf.CeilToInt(42 * GameSettings.UI_SCALE), RectLength, 30);
+                statusRect = new Rect(30, Mathf.CeilToInt(60 * GameSettings.UI_SCALE) + RectLength / 5, Screen.width - 130, Mathf.FloorToInt(Screen.height / 2));
             }
             clockRectShadow = new Rect(clockRect);
             clockRectShadow.x += shadowOffset;
@@ -725,7 +785,7 @@ namespace BDArmory.Competition
                     Debug.LogWarning("[BDArmory.BDACompetitionMode]: " + message);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add("Competition: " + message);
+                        if(!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: " + message);
                         leaderNames = RefreshPilots(out pilots, out leaders, false);
                     }
                     else
@@ -773,7 +833,7 @@ namespace BDArmory.Competition
                     Debug.LogWarning("[BDArmory.BDACompetitionMode]: " + message);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add("Competition: " + message);
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: " + message);
                         leaderNames = RefreshPilots(out pilots, out leaders, true);
                     }
                     else
@@ -795,7 +855,7 @@ namespace BDArmory.Competition
                     Debug.LogWarning("[BDArmory.BDACompetitionMode]: " + message);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add("Competition: " + message);
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: " + message);
                         break;
                     }
                     else
@@ -836,7 +896,7 @@ namespace BDArmory.Competition
             if (BDArmorySettings.ASTEROID_FIELD) { AsteroidField.Instance.SpawnField(BDArmorySettings.ASTEROID_FIELD_NUMBER, BDArmorySettings.ASTEROID_FIELD_ALTITUDE, BDArmorySettings.ASTEROID_FIELD_RADIUS, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS); }
             if (BDArmorySettings.ASTEROID_RAIN) { AsteroidRain.Instance.SpawnRain(BDArmorySettings.VESSEL_SPAWN_GEOCOORDS); }
 
-            competitionStatus.Add("Competition: Sending pilots to start position.");
+            if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: Sending pilots to start position.");
             Vector3 center = Vector3.zero;
             using (var leader = leaders.GetEnumerator())
                 while (leader.MoveNext())
@@ -857,7 +917,7 @@ namespace BDArmory.Competition
             Vector3 centerGPS = VectorUtils.WorldPositionToGeoCoords(center, FlightGlobals.currentMainBody);
 
             //wait till everyone is in position
-            competitionStatus.Add("Competition: Waiting for teams to get in position.");
+            if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: Waiting for teams to get in position.");
             bool waiting = true;
             var sqrDistance = distance * distance;
             while (waiting && !startCompetitionNow)
@@ -872,7 +932,7 @@ namespace BDArmory.Competition
                     Debug.LogWarning("[BDArmory.BDACompetitionMode]: " + message);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add("Competition: " + message);
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition: " + message);
                         leaderNames = RefreshPilots(out pilots, out leaders, true);
                     }
                     else
@@ -931,7 +991,7 @@ namespace BDArmory.Competition
                     Debug.LogWarning("[BDArmory.BDACompetitionMode]: " + message);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add(message);
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(message);
                         leaderNames = RefreshPilots(out pilots, out leaders, true);
                         waiting = true;
                     }
@@ -983,7 +1043,7 @@ namespace BDArmory.Competition
                     Debug.LogError($"[BDArmory.BDACompetitionMode]: Exception thrown in DogfightCompetitionModeRoutine: " + e.Message + "\n" + e.StackTrace);
                     if (startDespiteFailures)
                     {
-                        competitionStatus.Add("Failed to update radar cross sections, continuing anyway");
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Failed to update radar cross sections, continuing anyway");
                     }
                     else
                     {
@@ -1019,7 +1079,7 @@ namespace BDArmory.Competition
                         pilot.vessel.altimeterDisplayState = AltimeterDisplayState.AGL;
                     }
             }
-            competitionStatus.Add("Competition starting!  Good luck!");
+            if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Competition starting!  Good luck!");
             CompetitionStarted();
         }
         #endregion
@@ -1335,7 +1395,8 @@ namespace BDArmory.Competition
                     killerName = "Killed By GM";
                 }
                 Scores.RegisterDeath(vesselName, GMKillReason.GM);
-                competitionStatus.Add(vesselName + killReason);
+                if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + killReason);
+                else competitionStatus.Add($"GM;{killReason};{vesselName}");
             }
             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
             VesselUtils.ForceDeadVessel(vessel);
@@ -2789,7 +2850,7 @@ namespace BDArmory.Competition
                         }
                     }
                     // does it have ammunition: no ammo => Disable guard mode
-                    if (!BDArmorySettings.INFINITE_AMMO)
+                    if (!BDArmorySettings.INFINITE_AMMO && !BDArmorySettings.MINIMALIST_COMP_STATUS)
                     {
                         if (mf.outOfAmmo && !outOfAmmo.Contains(vesselName)) // Report being out of weapons/ammo once.
                         {
@@ -2855,7 +2916,8 @@ namespace BDArmory.Competition
                                     Scores.ScoreData[vesselName].lastPersonWhoDamagedMe = killerName;
                                 }
                                 Scores.RegisterDeath(vesselName, GMKillReason.GM);
-                                competitionStatus.Add(vesselName + " no fly zone!");
+                                if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + " no fly zone!");
+                                else competitionStatus.Add($"GM;No Fly Zone!;{vesselName}");
                                 if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
                                 if (KillTimer.ContainsKey(vesselName)) KillTimer.Remove(vesselName);
                                 VesselUtils.ForceDeadVessel(vessel);
@@ -2889,14 +2951,14 @@ namespace BDArmory.Competition
                 {
                     Debug.Log("[BDArmory.BDACompetitionMode" + CompetitionID.ToString() + "]: Setting Pinata Flag to Alive!");
                     pinataAlive = true;
-                    competitionStatus.Add("Enabling Pinata");
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Enabling Pinata");
                 }
                 else if (pinataAlive && !alive.Contains(BDArmorySettings.PINATA_NAME))
                 {
                     if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 67)
                     {
                         competitionStatus.Add("Asteroid destroyed by " + Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe + "!");
-                        Scores.RegisterMissileStrike(Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe, BDArmorySettings.PINATA_NAME); //give a missile strike point to indicate the pinata kill on the web API
+                        Scores.RegisterMissileStrike(Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe, BDArmorySettings.PINATA_NAME, Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastWeaponThatdamagedMe); //give a missile strike point to indicate the pinata kill on the web API
                         Scores.RegisterDeath(BDArmorySettings.PINATA_NAME, GMKillReason.None, now);
                         foreach (string key in alive)
                         {
@@ -2909,8 +2971,8 @@ namespace BDArmory.Competition
                     // switch everyone onto separate teams when the Pinata Dies
                     LoadedVesselSwitcher.Instance.MassTeamSwitch(originalTeams: true);
                     pinataAlive = false;
-                    competitionStatus.Add("Pinata killed by " + Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe + "! Competition is now a Free for all");
-                    Scores.RegisterMissileStrike(Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe, BDArmorySettings.PINATA_NAME); //give a missile strike point to indicate the pinata kill on the web API
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add("Pinata killed by " + Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe + "! Competition is now a Free for all");
+                    Scores.RegisterMissileStrike(Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastPersonWhoDamagedMe, BDArmorySettings.PINATA_NAME, Scores.ScoreData[BDArmorySettings.PINATA_NAME].lastWeaponThatdamagedMe); //give a missile strike point to indicate the pinata kill on the web API
                     if (BDArmorySettings.AUTO_ENABLE_VESSEL_SWITCHING)
                         LoadedVesselSwitcher.Instance.EnableAutoVesselSwitching(true);
                     // start kill clock
@@ -2948,82 +3010,120 @@ namespace BDArmory.Competition
                                 break;
                         }
                         Scores.RegisterDeath(player, GMKillReason.None, timeOfDeath);
-                        pilotActions[player] = " is Dead";
-                        var statusMessage = player;
-                        if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(player) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
-                        {
-                            statusMessage += $" ({BDArmorySettings.HOS_BADGE})";
-                        }
-                        switch (Scores.ScoreData[player].lastDamageWasFrom)
-                        {
-                            case DamageFrom.Guns:
-                                statusMessage += " was killed by ";
-                                break;
-                            case DamageFrom.Rockets:
-                                statusMessage += " was fragged by ";
-                                break;
-                            case DamageFrom.Missiles:
-                                statusMessage += " was exploded by ";
-                                break;
-                            case DamageFrom.Ramming:
-                                statusMessage += " was rammed by ";
-                                break;
-                            case DamageFrom.Asteroids:
-                                statusMessage += " flew into an asteroid ";
-                                break;
-                            case DamageFrom.Incompetence:
-                                statusMessage += " CRASHED and BURNED.";
-                                break;
-                            case DamageFrom.None:
-                                statusMessage += $" {Scores.ScoreData[player].gmKillReason}";
-                                break;
-                        }
+                        var statusMessage = "";
                         bool canAssignMutator = true;
-                        switch (Scores.ScoreData[player].aliveState)
+                        if (!BDArmorySettings.MINIMALIST_COMP_STATUS)
                         {
-                            case AliveState.CleanKill: // Damaged recently and only ever took damage from the killer.
-                                if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (NAILED 'EM! CLEAN KILL!)";
-                                }
-                                else
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (NAILED 'EM! CLEAN KILL!)";
-                                }
-                                //canAssignMutator = true;
-                                break;
-                            case AliveState.HeadShot: // Damaged recently, but took damage a while ago from someone else.
-                                if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (BOOM! HEAD SHOT!)";
-                                }
-                                else
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (BOOM! HEAD SHOT!)";
-                                }
-                                //canAssignMutator = true;
-                                break;
-                            case AliveState.KillSteal: // Damaged recently, but took damage from someone else recently too.
-                                if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (KILL STEAL!)";
-                                }
-                                else
-                                {
-                                    statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (KILL STEAL!)";
-                                }
-                                //canAssignMutator = true;
-                                break;
-                            case AliveState.AssistedKill: // Assist (not damaged recently or GM kill).
-                                if (Scores.ScoreData[player].gmKillReason != GMKillReason.None) Scores.ScoreData[player].everyoneWhoDamagedMe.Add(Scores.ScoreData[player].gmKillReason.ToString()); // Log the GM kill reason.
-                                //canAssignMutator = false; //comment out if wanting last person to deal damage to be awarded a On Kill mutator
-                                if (Scores.ScoreData[player].gmKillReason != GMKillReason.None) // Note: LandedTooLong is handled separately.
-                                    canAssignMutator = false; //GM kill, no mutator, else award last player to deal damage
-                                statusMessage += string.Join(", ", Scores.ScoreData[player].everyoneWhoDamagedMe) + " (" + string.Join(", ", Scores.ScoreData[player].damageTypesTaken) + ")";
-                                break;
-                            case AliveState.Dead: // Suicide/Incompetance (never took damage from others).
-                                canAssignMutator = false;
-                                break;
+                            pilotActions[player] = " is Dead";
+                            statusMessage = player;
+                            if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(player) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                            {
+                                statusMessage += $" ({BDArmorySettings.HOS_BADGE})";
+                            }
+                            switch (Scores.ScoreData[player].lastDamageWasFrom)
+                            {
+                                case DamageFrom.Guns:
+                                    statusMessage += " was killed by ";
+                                    break;
+                                case DamageFrom.Rockets:
+                                    statusMessage += " was fragged by ";
+                                    break;
+                                case DamageFrom.Missiles:
+                                    statusMessage += " was exploded by ";
+                                    break;
+                                case DamageFrom.Ramming:
+                                    statusMessage += " was rammed by ";
+                                    break;
+                                case DamageFrom.Asteroids:
+                                    statusMessage += " flew into an asteroid ";
+                                    break;
+                                case DamageFrom.Incompetence:
+                                    statusMessage += " CRASHED and BURNED.";
+                                    break;
+                                case DamageFrom.None:
+                                    statusMessage += $" {Scores.ScoreData[player].gmKillReason}";
+                                    break;
+                            }
+                            
+                            switch (Scores.ScoreData[player].aliveState)
+                            {
+                                case AliveState.CleanKill: // Damaged recently and only ever took damage from the killer.
+                                    if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (NAILED 'EM! CLEAN KILL!)";
+                                    }
+                                    else
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (NAILED 'EM! CLEAN KILL!)";
+                                    }
+                                    //canAssignMutator = true;
+                                    break;
+                                case AliveState.HeadShot: // Damaged recently, but took damage a while ago from someone else.
+                                    if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (BOOM! HEAD SHOT!)";
+                                    }
+                                    else
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (BOOM! HEAD SHOT!)";
+                                    }
+                                    //canAssignMutator = true;
+                                    break;
+                                case AliveState.KillSteal: // Damaged recently, but took damage from someone else recently too.
+                                    if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (" + BDArmorySettings.HOS_BADGE + ")" + " (KILL STEAL!)";
+                                    }
+                                    else
+                                    {
+                                        statusMessage += Scores.ScoreData[player].lastPersonWhoDamagedMe + " (KILL STEAL!)";
+                                    }
+                                    //canAssignMutator = true;
+                                    break;
+                                case AliveState.AssistedKill: // Assist (not damaged recently or GM kill).
+                                    if (Scores.ScoreData[player].gmKillReason != GMKillReason.None) Scores.ScoreData[player].everyoneWhoDamagedMe.Add(Scores.ScoreData[player].gmKillReason.ToString()); // Log the GM kill reason.
+                                                                                                                                                                                                         //canAssignMutator = false; //comment out if wanting last person to deal damage to be awarded a On Kill mutator
+                                    if (Scores.ScoreData[player].gmKillReason != GMKillReason.None) // Note: LandedTooLong is handled separately.
+                                        canAssignMutator = false; //GM kill, no mutator, else award last player to deal damage
+                                    statusMessage += string.Join(", ", Scores.ScoreData[player].everyoneWhoDamagedMe) + " (" + string.Join(", ", Scores.ScoreData[player].damageTypesTaken) + ")";
+                                    break;
+                                case AliveState.Dead: // Suicide/Incompetance (never took damage from others).
+                                    canAssignMutator = false;
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            switch (Scores.ScoreData[player].lastDamageWasFrom)
+                            {
+                                case DamageFrom.Guns:
+                                case DamageFrom.Rockets:
+                                case DamageFrom.Missiles:
+                                case DamageFrom.Ramming:
+                                    {
+                                        statusMessage = Scores.ScoreData[player].lastPersonWhoDamagedMe;
+                                        if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(Scores.ScoreData[player].lastPersonWhoDamagedMe) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                                        {
+                                            statusMessage += $"({BDArmorySettings.HOS_BADGE})";
+                                        }
+                                        break;
+                                    }
+                                case DamageFrom.Asteroids:
+                                    statusMessage += "Asteroid";
+                                    break;
+                                case DamageFrom.Incompetence:
+                                    statusMessage += "Ground";
+                                    break;
+                                case DamageFrom.None:
+                                    statusMessage += "GM";
+                                    break;
+                            }
+                            statusMessage += $";{Scores.ScoreData[player].lastWeaponThatdamagedMe}";
+                            statusMessage += $";{player}";
+                            if (BDArmorySettings.ENABLE_HOS && BDArmorySettings.HALL_OF_SHAME_LIST.Contains(player) && !string.IsNullOrEmpty(BDArmorySettings.HOS_BADGE))
+                            {
+                                statusMessage += $"({BDArmorySettings.HOS_BADGE})";
+                            }
                         }
                         competitionStatus.Add(statusMessage);
                         if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode:{CompetitionID}]: " + statusMessage);
@@ -3072,10 +3172,13 @@ namespace BDArmory.Competition
                         }
                         alive.Clear();
                     }
-                    competitionStatus.Add("All Pilots are Dead");
-                    foreach (string key in alive)
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS)
                     {
-                        competitionStatus.Add(key + " wins the round!");
+                        competitionStatus.Add("All Pilots are Dead");
+                        foreach (string key in alive)
+                        {
+                            competitionStatus.Add(key + " wins the round!");
+                        }
                     }
                     if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]:No viable competitors, Automatically dumping scores");
                     StopCompetition();
@@ -3136,7 +3239,8 @@ namespace BDArmory.Competition
                         killerName = "Landed Too Long";
                     }
                     Scores.RegisterDeath(vesselName, GMKillReason.LandedTooLong);
-                    competitionStatus.Add(vesselName + " was landed too long.");
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + " was landed too long.");
+                    else competitionStatus.Add($"Ground;Landed Too Long;{vesselName}");
                     if (BDArmorySettings.MUTATOR_MODE && BDArmorySettings.MUTATOR_APPLY_KILL && BDArmorySettings.MUTATOR_LIST.Count > 0)
                         ApplyOnKillMutator(vesselName); // Apply mutators for LandedTooLong kills, which count as assists.
                 }
@@ -3627,7 +3731,7 @@ namespace BDArmory.Competition
                 {
                     Scores.RegisterAsteroidCollision(vesselName, partsLost);
                     Scores.RegisterDeath(vesselName, GMKillReason.Asteroids, timeOfDeath);
-                    competitionStatus.Add($"{vesselName} flew into an asteroid and died!");
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add($"{vesselName} flew into an asteroid and died!");
                     if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and died!");
                 }
             }
@@ -3638,7 +3742,7 @@ namespace BDArmory.Competition
                 if (Scores.ScoreData[vesselName].aliveState == AliveState.Alive)
                 {
                     Scores.RegisterAsteroidCollision(vesselName, partsLost);
-                    competitionStatus.Add($"{vesselName} flew into an asteroid and lost {partsLost} parts!");
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add($"{vesselName} flew into an asteroid and lost {partsLost} parts!");
                     if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log($"[BDArmory.BDACompetitionMode]: {vesselName} flew into an asteroid and lost {partsLost} parts!");
                 }
             }
@@ -3800,7 +3904,7 @@ namespace BDArmory.Competition
         // Actually log the ram to various places. Note: vesselName and targetVesselName need to be those returned by the GetName() function to match the keys in Scores.
         public void LogRammingVesselScore(string rammingVesselName, string rammedVesselName, int rammedPartsLost, int rammingPartsLost, bool headOn, bool accidental, bool logToCompetitionStatus, bool logToDebug, double timeOfCollision)
         {
-            if (logToCompetitionStatus)
+            if (logToCompetitionStatus && !BDArmorySettings.MINIMALIST_COMP_STATUS)
             {
                 if (!headOn)
                     competitionStatus.Add(rammedVesselName + " got " + (accidental ? "ACCIDENTALLY " : "") + "RAMMED by " + rammingVesselName + " and lost " + rammedPartsLost + " parts (" + rammingVesselName + " lost " + rammingPartsLost + " parts).");

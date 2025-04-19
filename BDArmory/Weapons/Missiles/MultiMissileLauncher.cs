@@ -161,6 +161,7 @@ namespace BDArmory.Weapons.Missiles
             }
             targetsAssigned = new List<TargetInfo>();
             launchTubes = launchTransforms.Length;
+            lockedTarget = new List<TargetSignatureData>();
             StartCoroutine(DelayedStart());
         }
 
@@ -964,13 +965,14 @@ namespace BDArmory.Weapons.Missiles
                 if (wpm != null)
                 {
                     if (ml.TargetingMode == TargetingModes.Heat || ml.TargetingMode == TargetingModes.Radar || ml.TargetingMode == TargetingModes.Gps || ml.TargetingMode == TargetingModes.Inertial)
+                    //if (ml.TargetingMode != TargetingModes.None) //TODO: AntiRad/laser (subsystem)multitargeting?
                     {
-                        //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Beginning target distribution; Num of targets: {targetsAssigned.Count - 1}; wpm targets: {wpm.targetsAssigned.Count}");
+                        Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Beginning target distribution; Num of targets: {targetsAssigned.Count}; wpm targets: {wpm.targetsAssigned.Count}");
                         if (targetsAssigned.Count > 0 && salvoSize > 1)
                         {
-                            if (TargetID <= Mathf.Min(targetsAssigned.Count - 1, wpm.multiMissileTgtNum))
+                            if (TargetID < Mathf.Min(targetsAssigned.Count, wpm.multiMissileTgtNum))
                             {
-                                for (int t = TargetID; t < Mathf.Min(targetsAssigned.Count - 1, wpm.multiMissileTgtNum); t++) //MML targeting independant of MissileFire target assignment,
+                                for (int t = TargetID; t < Mathf.Min(targetsAssigned.Count, wpm.multiMissileTgtNum); t++) //MML targeting independant of MissileFire target assignment,
                                 {// and each MMl will be independantly working off the same targets list, iterating over the same first couple targets
                                     if (wpm.missilesAway.ContainsKey(targetsAssigned[t]))
                                     {
@@ -991,7 +993,7 @@ namespace BDArmory.Weapons.Missiles
                                 }
                             }
                             //Debug.Log($"[MML Targeting Debug] TargetID is {TargetID} of {Mathf.Min((targetsAssigned.Count), wpm.multiMissileTgtNum)}");
-                            if (TargetID > Mathf.Min(targetsAssigned.Count - 1, wpm.multiMissileTgtNum))
+                            if (TargetID >= Mathf.Min(targetsAssigned.Count, wpm.multiMissileTgtNum))
                             {
                                 TargetID = 0; //if more missiles than targets, loop target list
                                 if (salvoSize > 1)
@@ -1013,21 +1015,21 @@ namespace BDArmory.Weapons.Missiles
                                         if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
                                         {
                                             int targetNum = launchesThisSalvo - 1;
-                                            if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                            if (targetNum >= heatSig.Count) targetNum -= heatSig.Count * (int)Mathf.Floor((targetNum / heatSig.Count));
                                             ml.heatTarget = heatSig[targetNum];
                                         }
                                         else ml.heatTarget = heatSig[0];
                                     }
                                     if (ml.TargetingMode == TargetingModes.Radar)
                                     {
-                                        AssignRadarTarget(ml, targetsAssigned[TargetID].Vessel);
+                                        AssignRadarTarget(ml, targetsAssigned[TargetID].Vessel, launchesThisSalvo);
                                     }
                                     if (ml.TargetingMode == TargetingModes.Gps)
                                     {                                        
                                         if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
                                         {
                                             int targetNum = launchesThisSalvo - 1;
-                                            if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                            if (targetNum >= wpm.targetparts.Count) targetNum -= wpm.targetparts.Count * (int)Mathf.Floor((targetNum / wpm.targetparts.Count));
                                             ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
                                         }
                                         else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[TargetID].Vessel.CoM, vessel.mainBody);
@@ -1040,7 +1042,7 @@ namespace BDArmory.Weapons.Missiles
                                     ml.TargetAcquired = true;
                                     firedTargets.Add(targetsAssigned[TargetID]);
                                     if (BDArmorySettings.DEBUG_MISSILES)
-                                        Debug.Log($"[BDArmory.MultiMissileLauncher] Assigning target {TargetID}: {targetsAssigned[TargetID].Vessel.GetName()}; total possible targets {targetsAssigned.Count - 1}");
+                                        Debug.Log($"[BDArmory.MultiMissileLauncher] Assigning target {TargetID}: {targetsAssigned[TargetID].Vessel.GetName()}; total possible targets {targetsAssigned.Count}");
                                 }
                                 else //else try remaining targets on the list. 
                                 {
@@ -1063,21 +1065,21 @@ namespace BDArmory.Weapons.Missiles
                                                 if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
                                                 {
                                                     int targetNum = launchesThisSalvo - 1;
-                                                    if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                                    if (targetNum >= heatSig.Count) targetNum -= heatSig.Count * (int)Mathf.Floor((targetNum / heatSig.Count));
                                                     ml.heatTarget = heatSig[targetNum];
                                                 }
                                                 else ml.heatTarget = heatSig[0];
                                             }
                                             if (ml.TargetingMode == TargetingModes.Radar)
                                             {
-                                                AssignRadarTarget(ml, targetsAssigned[t].Vessel);
+                                                AssignRadarTarget(ml, targetsAssigned[t].Vessel, launchesThisSalvo);
                                             }
                                             if (ml.TargetingMode == TargetingModes.Gps)
                                             {
                                                 if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
                                                 {
                                                     int targetNum = launchesThisSalvo - 1;
-                                                    if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                                    if (targetNum >= wpm.targetparts.Count) targetNum -= wpm.targetparts.Count * (int)Mathf.Floor((targetNum / wpm.targetparts.Count));
                                                     ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
                                                 }
                                                 else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[t].Vessel.CoM, vessel.mainBody);
@@ -1118,21 +1120,21 @@ namespace BDArmory.Weapons.Missiles
                                                         if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1)
                                                         {
                                                             int targetNum = launchesThisSalvo - 1;
-                                                            if (targetNum > heatSig.Count) targetNum -= heatSig.Count;
+                                                            if (targetNum > heatSig.Count) targetNum -= heatSig.Count * (int)Mathf.Floor((targetNum / heatSig.Count));
                                                             ml.heatTarget = heatSig[targetNum];
                                                         }
                                                         else ml.heatTarget = heatSig[0];
                                                     }
                                                     if (ml.TargetingMode == TargetingModes.Radar)
                                                     {
-                                                        AssignRadarTarget(ml, item.Current.Vessel);
+                                                        AssignRadarTarget(ml, item.Current.Vessel, launchesThisSalvo);
                                                     }
                                                     if (ml.TargetingMode == TargetingModes.Gps)
                                                     {
                                                         if (targetsAssigned.Count == 1 && wpm.multiMissileTgtNum > 1 && salvoSize > 1 && !wpm.targetCoM)
                                                         {
                                                             int targetNum = launchesThisSalvo - 1;
-                                                            if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count;
+                                                            if (targetNum > wpm.targetparts.Count) targetNum -= wpm.targetparts.Count * (int)Mathf.Floor((targetNum / wpm.targetparts.Count));
                                                             ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(wpm.targetparts[targetNum].transform.position, vessel.mainBody);
                                                         }
                                                         else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(item.Current.Vessel.CoM, vessel.mainBody);
@@ -1256,7 +1258,7 @@ namespace BDArmory.Weapons.Missiles
                                         }
                                         if (INSTarget.exists)
                                         {
-                                            VectorUtils.WorldPositionToGeoCoords(MissileGuidance.GetAirToAirFireSolution(ml, missileLauncher.targetVessel.Vessel, out INStimetogo), missileLauncher.targetVessel.Vessel.mainBody);
+                                            VectorUtils.WorldPositionToGeoCoords(MissileGuidance.GetAirToAirFireSolution(ml, missileLauncher.targetVessel.Vessel, out INStimetogo, INSTarget.position), missileLauncher.targetVessel.Vessel.mainBody);
                                             TimeOfLastINS = Time.time;
                                             targetINScoords = INSTarget.geoPos;
                                         }
@@ -1299,11 +1301,11 @@ namespace BDArmory.Weapons.Missiles
                 ml.launched = true;
                 if (ml.TargetPosition == Vector3.zero) ml.TargetPosition = missileLauncher.MissileReferenceTransform.position + (missileLauncher.MissileReferenceTransform.forward * 5000); //set initial target position so if no target update, missileBase will count a miss if it nears this point or is flying post-thrust
                 ml.MissileLaunch();
-                if (wpm != null) 
-                    for (int i = 0; i < wpm.multiMissileTgtNum; i++)
-                    {
-                        wpm.heatTarget[i] = TargetSignatureData.noTarget;
-                    }
+                if (wpm != null)
+                {
+                    wpm.heatTarget.Clear();
+                    wpm.heatTarget.Add(TargetSignatureData.noTarget);
+                }
             }
             if (wpm != null)
             {
@@ -1397,8 +1399,8 @@ namespace BDArmory.Weapons.Missiles
                 ml.TargetINSCoords = ml.targetGPSCoords;
             }
         }
-
-        void AssignRadarTarget(MissileLauncher ml, Vessel targetV)
+        List<TargetSignatureData> lockedTarget;
+        void AssignRadarTarget(MissileLauncher ml, Vessel targetV, int firedMissiles)
         {
             ml.vrd = wpm.vesselRadarData;
             if (wpm.vesselRadarData) wpm.vesselRadarData.TryLockTarget(targetV);
@@ -1406,39 +1408,42 @@ namespace BDArmory.Weapons.Missiles
             if (wpm.vesselRadarData && wpm.vesselRadarData.locked) //if we have existing radar locks, use thsoe
             {
                 List<TargetSignatureData> possibleTargets = wpm.vesselRadarData.GetLockedTargets();
-                TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
+                lockedTarget.Clear();
                 for (int i = 0; i < possibleTargets.Count; i++)
                 {
                     if (possibleTargets[i].vessel == targetV)
                     {
-                        lockedTarget = possibleTargets[i]; //send correct targetlock if firing multiple SARH missiles
-                        foundTarget = true;
-                        if (BDArmorySettings.DEBUG_MISSILES)
-                            Debug.Log($"[BDArmory.MultiMissileLauncher] Found locked Radar target {targetV.GetName()}");
-                        break;
+                        lockedTarget.Add(possibleTargets[i]); //send correct targetlock if firing multiple SARH missiles
                     }
                 }
-                ml.radarTarget = lockedTarget;
+                int targetNum = firedMissiles - 1;
+                if (targetNum >= lockedTarget.Count) targetNum -= lockedTarget.Count * (int)Mathf.Floor((targetNum / lockedTarget.Count));
+                ml.radarTarget = lockedTarget[targetNum];
+                ml.vrd = wpm.vesselRadarData;
+                wpm.vesselRadarData.LastMissile = ml;
+                foundTarget = true;
+                if (BDArmorySettings.DEBUG_MISSILES)
+                    Debug.Log($"[BDArmory.MultiMissileLauncher] Found locked Radar target {targetV.GetName()}");
             }
             if (!foundTarget)
             {
                 if (missileLauncher.MissileReferenceTransform.position.CloserToThan(targetV.CoM, ml.activeRadarRange))
                 {
-                    TargetSignatureData[] scannedTargets = new TargetSignatureData[(int)wpm.multiMissileTgtNum];
+                    TargetSignatureData[] scannedTargets = new TargetSignatureData[100];
                     RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight / 2, ref scannedTargets, 0.4f, ml);
-                    TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
-
+                    lockedTarget.Clear();
                     for (int i = 0; i < scannedTargets.Length; i++)
                     {
                         if (scannedTargets[i].exists && scannedTargets[i].vessel == targetV)
                         {
-                            lockedTarget = scannedTargets[i];
-                            if (BDArmorySettings.DEBUG_MISSILES)
-                                Debug.Log($"[BDArmory.MultiMissileLauncher] Found Radar target {targetV.GetName()}");
-                            break;
+                            lockedTarget.Add(scannedTargets[i]);
                         }
                     }
-                    ml.radarTarget = lockedTarget;
+                    int targetNum = firedMissiles - 1;
+                    if (targetNum >= lockedTarget.Count) targetNum -= lockedTarget.Count * (int)Mathf.Floor((targetNum / lockedTarget.Count));
+                    ml.radarTarget = lockedTarget[targetNum];
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                        Debug.Log($"[BDArmory.MultiMissileLauncher] Found Radar target {targetV.GetName()}");
                     if (BDArmorySettings.DEBUG_MISSILES)
                     {
                         if (!ml.radarTarget.exists)

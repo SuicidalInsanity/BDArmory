@@ -22,11 +22,12 @@ namespace BDArmory.Targeting
         public float notchMod;
         public TargetInfo targetInfo;
         public BDTeam Team;
-        public Vector2 pingPosition;
+        public Vector2 pingPosition; //not actually used by anything..?
         public VesselECMJInfo vesselJammer;
         public ModuleRadar lockedByRadar;
         public Vessel vessel;
         public Part IRSource;
+        public Vector3 positionOffset;
         bool orbital;
         Orbit orbit;
 
@@ -38,7 +39,7 @@ namespace BDArmory.Targeting
                 timeAcquired == other.timeAcquired;
         }
 
-        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchMod = 0f)
+        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchMod = 0f, Vector3 ghostPos = default)
         {
             orbital = v.InOrbit();
             orbit = v.orbit;
@@ -47,7 +48,8 @@ namespace BDArmory.Targeting
             vessel = v;
             velocity = v.Velocity();
             IRSource = heatpart;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : v.CoM, v.mainBody);
+            positionOffset = ghostPos != default ? ghostPos : Vector3.zero;
+            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : v.CoM + positionOffset, v.mainBody);
             acceleration = v.acceleration_immediate;
             exists = true;
             notchMod = _notchMod;
@@ -97,6 +99,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            positionOffset = Vector3.zero;
             notchMod = 0f;
         }
 
@@ -117,6 +120,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            positionOffset = Vector3.zero;
             notchMod = 0f;
         }
 
@@ -137,6 +141,7 @@ namespace BDArmory.Targeting
             lockedByRadar = null;
             vessel = null;
             IRSource = null;
+            positionOffset = Vector3.zero;
             notchMod = 0f;
         }
 

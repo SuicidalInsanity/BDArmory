@@ -1182,6 +1182,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 Destroy(vesselReferenceTransform.gameObject);
             }
+            if (lockedCamera != null) lockedCamera.guidingOrdinance = false;
         }
 
         public override float GetBlastRadius()
@@ -1296,12 +1297,13 @@ namespace BDArmory.Weapons.Missiles
                         BDATargetManager.FiredMissiles.Add(this);
                         if (wpm != null)
                         {
-                            for (int i = 0; i < wpm.multiMissileTgtNum; i++)
+                            if (wpm != null)
                             {
-                                wpm.heatTarget[i] = TargetSignatureData.noTarget;
+                                wpm.heatTarget.Clear();
+                                wpm.heatTarget.Add(TargetSignatureData.noTarget);
+                                GpsUpdateMax = wpm.GpsUpdateMax;
+                                wpm.UpdateMissilesAway(targetVessel, this);
                             }
-                            GpsUpdateMax = wpm.GpsUpdateMax;
-                            wpm.UpdateMissilesAway(targetVessel, this);
                         }
                         launched = true;
                     }
@@ -1329,10 +1331,8 @@ namespace BDArmory.Weapons.Missiles
                     BDATargetManager.FiredMissiles.Add(this);
                     if (wpm != null)
                     {
-                        for (int i = 0; i < wpm.multiMissileTgtNum; i++)
-                        {
-                            wpm.heatTarget[i] = TargetSignatureData.noTarget;
-                        }
+                        wpm.heatTarget.Clear();
+                        wpm.heatTarget.Add(TargetSignatureData.noTarget);
                         GpsUpdateMax = wpm.GpsUpdateMax;
                         wpm.UpdateMissilesAway(targetVessel, this);
                     }
@@ -1485,10 +1485,8 @@ namespace BDArmory.Weapons.Missiles
             {
                 ml.Team = wpm.Team;
                 wpm.SendTargetDataToMissile(ml, targetVessel != null ? targetVessel.Vessel : null, true, new MissileFire.TargetData(targetGPSCoords, TimeOfLastINS, INStimetogo), true);
-                for (int i = 0; i < wpm.multiMissileTgtNum; i++)
-                {
-                    wpm.heatTarget[i] = TargetSignatureData.noTarget;
-                }
+                wpm.heatTarget.Clear();
+                wpm.heatTarget.Add(TargetSignatureData.noTarget);
                 ml.GpsUpdateMax = wpm.GpsUpdateMax;
                 wpm.UpdateQueuedLaunches(targetVessel, ml, false);
                 wpm.UpdateMissilesAway(targetVessel, ml);
@@ -2183,7 +2181,7 @@ namespace BDArmory.Weapons.Missiles
 
                         // pretend we have an active radar seeker for ground targets:
                         //TargetSignatureData[] scannedTargets = new TargetSignatureData[5];
-                        if (scannedTargets == null) scannedTargets = new TargetSignatureData[BDATargetManager.LoadedVessels.Count];
+                        if (scannedTargets == null) scannedTargets = new TargetSignatureData[100];
                         TargetSignatureData.ResetTSDArray(ref scannedTargets);
                         Ray ray = new Ray(transform.position, GetForwardTransform());
 

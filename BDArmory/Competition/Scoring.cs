@@ -139,7 +139,7 @@ namespace BDArmory.Competition
             ScoreData[victim].lastPersonWhoDamagedMe = attacker;
             ScoreData[victim].everyoneWhoDamagedMe.Add(attacker);
             ScoreData[victim].damageTypesTaken.Add(DamageFrom.Guns);
-
+            ScoreData[victim].lastWeaponThatdamagedMe = weaponName;
             if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
             { BDAScoreService.Instance.TrackHit(attacker, victim, weaponName, distanceTraveled); }
 
@@ -223,19 +223,19 @@ namespace BDArmory.Competition
         /// <param name="attacker"></param>
         /// <param name="victim"></param>
         /// <returns></returns>
-        public bool RegisterRocketStrike(string attacker, string victim)
+        public bool RegisterRocketStrike(string attacker, string victim, string weaponName)
         {
             if (!BDACompetitionMode.Instance.competitionIsActive) return false;
             if (attacker == null || victim == null || attacker == victim || !ScoreData.ContainsKey(attacker) || !ScoreData.ContainsKey(victim)) return false;
             if (ScoreData[victim].aliveState != AliveState.Alive) return false; // Ignore hits after the victim is dead.
 
             if (BDArmorySettings.DEBUG_OTHER)
-                Debug.Log($"[BDArmory.BDACompetitionMode.Scores]: {attacker} scored a rocket strike against {victim}.");
+                Debug.Log($"[BDArmory.BDACompetitionMode.Scores]: {attacker} scored a rocket strike against {victim} with {weaponName}.");
 
             ++ScoreData[attacker].rocketStrikes;
             if (ScoreData[victim].rocketStrikeCounts.ContainsKey(attacker)) { ++ScoreData[victim].rocketStrikeCounts[attacker]; }
             else { ScoreData[victim].rocketStrikeCounts[attacker] = 1; }
-
+            ScoreData[victim].lastWeaponThatdamagedMe = weaponName;
             if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
             { BDAScoreService.Instance.TrackRocketStrike(attacker, victim); }
             return true;
@@ -377,18 +377,18 @@ namespace BDArmory.Competition
         /// <param name="attacker">The vessel that launched the missile.</param>
         /// <param name="victim">The struck vessel.</param>
         /// <returns>true if successfully registered, false otherwise</returns>
-        public bool RegisterMissileStrike(string attacker, string victim)
+        public bool RegisterMissileStrike(string attacker, string victim, string weaponName)
         {
             if (!BDACompetitionMode.Instance.competitionIsActive) return false;
             if (attacker == null || victim == null || attacker == victim || !ScoreData.ContainsKey(attacker) || !ScoreData.ContainsKey(victim)) return false;
             if (ScoreData[victim].aliveState != AliveState.Alive) return false; // Ignore hits after the victim is dead.
 
             if (BDArmorySettings.DEBUG_OTHER)
-                Debug.Log($"[BDArmory.BDACompetitionMode.Scores]: {attacker} scored a missile strike against {victim}.");
+                Debug.Log($"[BDArmory.BDACompetitionMode.Scores]: {attacker} scored a missile strike against {victim} with a {weaponName}.");
 
             if (ScoreData[victim].missileHitCounts.ContainsKey(attacker)) { ++ScoreData[victim].missileHitCounts[attacker]; }
             else { ScoreData[victim].missileHitCounts[attacker] = 1; }
-
+            ScoreData[victim].lastWeaponThatdamagedMe = weaponName;
             if (BDArmorySettings.REMOTE_LOGGING_ENABLED)
             { BDAScoreService.Instance.TrackMissileStrike(attacker, victim); }
             return true;
@@ -1031,6 +1031,7 @@ namespace BDArmory.Competition
         public double remainingHP; // HP of vessel
         public double lastDamageTime = -1;
         public DamageFrom lastDamageWasFrom = DamageFrom.None;
+        public string lastWeaponThatdamagedMe = "";
         public string lastPersonWhoDamagedMe = "";
         public double previousLastDamageTime = -1;
         public string previousPersonWhoDamagedMe = "";

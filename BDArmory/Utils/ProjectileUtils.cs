@@ -216,11 +216,11 @@ namespace BDArmory.Utils
             // Update scoring structures
             //if (firstHit)
             //{
-            ApplyScore(hitPart, sourceVesselName, distanceTraveled, damage, name, explosionSource, firstHit);
+            ApplyScore(hitPart, sourceVesselName, distanceTraveled, damage, name, explosionSource, firstHit, explosive);
             //}
             ResourceUtils.StealResources(hitPart, sourceVessel);
         }
-        public static void ApplyScore(Part hitPart, string sourceVessel, double distanceTraveled, float damage, string name, ExplosionSourceType ExplosionSource, bool newhit = false)
+        public static void ApplyScore(Part hitPart, string sourceVessel, double distanceTraveled, float damage, string name, ExplosionSourceType ExplosionSource, bool newhit = false, bool explosive = false)
         {
             var aName = sourceVessel;//.GetName();
             var tName = hitPart.vessel.GetName();
@@ -228,7 +228,7 @@ namespace BDArmory.Utils
             switch (ExplosionSource)
             {
                 case ExplosionSourceType.Bullet:
-                    if (newhit) BDACompetitionMode.Instance.Scores.RegisterBulletHit(aName, tName, name, distanceTraveled);
+                    if (newhit && !explosive) BDACompetitionMode.Instance.Scores.RegisterBulletHit(aName, tName, name, distanceTraveled); //explosive hits registered in ExplosionFX
                     BDACompetitionMode.Instance.Scores.RegisterBulletDamage(aName, tName, damage);
                     break;
                 case ExplosionSourceType.Rocket:

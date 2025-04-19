@@ -285,7 +285,7 @@ namespace BDArmory.FX
                     switch (ExplosionSource)
                     {
                         case ExplosionSourceType.Missile:
-                            BDACompetitionMode.Instance.Scores.RegisterMissileStrike(SourceVesselName, vesselName);
+                            BDACompetitionMode.Instance.Scores.RegisterMissileStrike(SourceVesselName, vesselName, ReportingName);
                             break;
                     }
                 }

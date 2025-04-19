@@ -1583,18 +1583,28 @@ namespace BDArmory.Radar
                         // get vessel's radar signature
                         TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
                         float signature = 0;
-                        if (radar.sonarMode != ModuleRadar.SonarModes.passive)
+                        switch (radar.sonarMode)
                         {
-                            signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;
-                            signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, ray.origin, loadedvessels.Current.CoM, ti);
-                            signature *= GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, ray.origin, loadedvessels.Current, signature);
-                            if (radar.vessel.Splashed && loadedvessels.Current.Splashed) signature *= GetVesselBubbleFactor(radar.transform.position, loadedvessels.Current);
-                            signature *= notchMultiplier;
-                        }
-                        else
-                        {
-                            float selfNoise = BDATargetManager.GetVesselAcousticSignature(radar.vessel, radar.referenceTransform.position).Item1 / 3;
-                            signature = BDATargetManager.GetVesselAcousticSignature(loadedvessels.Current, radar.referenceTransform.position).Item1 - selfNoise;
+                            case ModuleRadar.SonarModes.passive:
+                                {
+                                    float selfNoise = BDATargetManager.GetVesselAcousticSignature(radar.vessel, radar.referenceTransform.position).Item1 / 3;
+                                    signature = BDATargetManager.GetVesselAcousticSignature(loadedvessels.Current, radar.referenceTransform.position).Item1 - selfNoise;
+                                    break;
+                                }
+                            case ModuleRadar.SonarModes.Active:
+                                {
+                                    signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;
+                                    if (radar.vessel.Splashed && loadedvessels.Current.Splashed) signature *= GetVesselBubbleFactor(radar.transform.position, loadedvessels.Current);
+                                    signature *= notchMultiplier;
+                                    break;
+                                }
+                            case ModuleRadar.SonarModes.None:
+                                {
+                                    signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;
+                                    signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, ray.origin, loadedvessels.Current.CoM, ti);
+                                    signature *= GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, ray.origin, loadedvessels.Current, signature);
+                                    break;
+                                }
                         }
                         // no ecm lockbreak factor here
                         // no chaff factor here
@@ -1614,10 +1624,30 @@ namespace BDArmory.Radar
 
                             if (dataIndex < dataArray.Length)
                             {
-                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature);
-                                dataArray[dataIndex].lockedByRadar = radar;
-                                dataIndex++;
-                                hasLocked = true;
+                                if (ti.radarGhostTargets.Count > 0)
+                                {
+                                    List<Vector3> tempOffsets = ti.radarGhostTargets;
+                                    tempOffsets.Add(Vector3.zero); //add to account for base vessel CoM radar return
+                                    tempOffsets.OrderByDescending(t => Vector3.Angle((loadedvessels.Current.CoM + t) - ray.origin, ray.direction)); //report targets colsest to center first
+
+                                    foreach (var target in tempOffsets) //fill remaining locks with ghost targets/actual target
+                                    {
+                                        if (dataIndex < dataArray.Length)
+                                        {
+                                            dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, ghostPos: target);
+                                            dataArray[dataIndex].lockedByRadar = radar;
+                                            dataIndex++;
+                                            hasLocked = true;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature);
+                                    dataArray[dataIndex].lockedByRadar = radar;
+                                    dataIndex++;
+                                    hasLocked = true;
+                                }
                             }
                         }
 
@@ -1723,19 +1753,21 @@ namespace BDArmory.Radar
                         // get vessel's radar signature
                         TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
                         float signature = 10f;
+                        float ghostSig = 10;
                         if (ti != null)
                         {
-                            signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;
+                            signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;                            
                             // no ground clutter modifier for missiles
                             signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
 
                         }                                                                 //do not multiply chaff factor here
                         signature *= GetStandoffJammingModifier(missile.vessel, missile.Team, ray.origin, loadedvessels.Current, signature);
+                        if (ti.radarGhostTargets.Count > 0) ghostSig = signature;
                         if (missile.GetWeaponClass() == WeaponClasses.SLW) signature *= GetVesselBubbleFactor(missile.transform.position, loadedvessels.Current);
 
                         float baseSignature = signature;
                         float SCR = -1f;
-                        
+
                         signature *= notchMultiplier;
 
                         // check SCR if we're checking notching, are not a torpedo, the target isn't splashed and the radar is active
@@ -1753,7 +1785,7 @@ namespace BDArmory.Radar
                             //evaluate if we can detect such a signature at that range
                             float minDetectSig = missile.activeRadarLockTrackCurve.Evaluate(distance * 0.001f);
 
-                            if (signature > minDetectSig || (SCR > missile.activeRadarMinTrackSCR))
+                            if (signature > minDetectSig || (SCR > missile.activeRadarMinTrackSCR) || ghostSig > minDetectSig) //even if vessel itself stealthed, are there active ghostTarget decoy returns that are visible instead?
                             {
                                 // detected by radar
                                 // fill attempted locks array for locking later:
@@ -1765,14 +1797,31 @@ namespace BDArmory.Radar
                                     }
                                     dataIndex++;
                                 }
-
                                 if (dataIndex < dataArray.Length)
                                 {
-                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, null, notchMod);
-                                    dataIndex++;
-                                    hasLocked = true;
+                                    if (ti.radarGhostTargets.Count > 0) 
+                                    {
+                                        List<Vector3> tempOffsets = ti.radarGhostTargets;
+                                        if (signature > minDetectSig || (SCR > missile.activeRadarMinTrackSCR)) tempOffsets.Add(Vector3.zero); //add to account for base vessel CoM radar return
+                                        tempOffsets.OrderByDescending(t => Vector3.Angle((loadedvessels.Current.CoM + t) - ray.origin, ray.direction)); //report targets closest to center first
+                                        foreach (var target in tempOffsets) //fill remaining locks with ghost targets/actual target
+                                        {
+                                            if (dataIndex < dataArray.Length)
+                                            {
+                                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, ghostPos: target);
+                                                dataIndex++;
+                                                hasLocked = true;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, null, notchMod);
+                                        dataIndex++;
+                                        hasLocked = true;
+                                    }
                                 }
-                            }
+                            }                            
                         }
 
                         //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
@@ -1891,15 +1940,31 @@ namespace BDArmory.Radar
                         // get vessel's radar signature
                         TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
                         float signature = 1;
-                        if (radar.sonarMode != ModuleRadar.SonarModes.passive)    //radar or active soanr
+                        float ghostSig = 1;
+                        switch (radar.sonarMode)
                         {
-                            signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, position) : ti.radarModifiedSignature;
-                            signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, position, loadedvessels.Current.CoM, ti);
-                            if (radar.vessel.Splashed && loadedvessels.Current.Splashed) signature *= GetVesselBubbleFactor(radar.transform.position, loadedvessels.Current);
-                            signature *= notchMultiplier;
+                            case ModuleRadar.SonarModes.Active:
+                                {
+                                    signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, position) : ti.radarModifiedSignature;
+                                    if (ti.radarGhostTargets.Count > 0) ghostSig = signature;
+                                    if (radar.vessel.Splashed && loadedvessels.Current.Splashed) signature *= GetVesselBubbleFactor(radar.transform.position, loadedvessels.Current);
+                                    break;
+                                }
+                            case ModuleRadar.SonarModes.passive:
+                                {
+                                    signature = BDATargetManager.GetVesselAcousticSignature(loadedvessels.Current, radar.referenceTransform.position).Item1 - selfNoise;
+                                    if (ti.radarGhostTargets.Count > 0) ghostSig = signature;
+                                    break;
+                                }
+                            case ModuleRadar.SonarModes.None:
+                                {
+                                    signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, position) : ti.radarModifiedSignature;
+                                    if (ti.radarGhostTargets.Count > 0) ghostSig = signature;
+                                    signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, position, loadedvessels.Current.CoM, ti);
+                                    signature *= notchMultiplier;
+                                    break;
+                                }
                         }
-                        else //passive sonar
-                            signature = BDATargetManager.GetVesselAcousticSignature(loadedvessels.Current, radar.referenceTransform.position).Item1 - selfNoise;
                         //do not multiply chaff factor here
 
                         BDATargetManager.ClearRadarReport(loadedvessels.Current, myWpnManager);
@@ -1910,12 +1975,13 @@ namespace BDArmory.Radar
                             {
                                 //evaluate if we can lock/track such a signature at that range
                                 float minLockSig = radar.radarLockTrackCurve.Evaluate(distance);
-
+                                ghostSig *= ti.radarLockbreakFactor;
                                 signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
                                                                          //do not multiply chaff factor here
-                                signature *= GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, position, loadedvessels.Current, signature);
-
-                                if (signature >= minLockSig && RadarCanDetect(radar, signature, distance)) // Must be able to detect and lock to lock targets
+                                float jamMod = GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, position, loadedvessels.Current, signature);
+                                signature *= jamMod;
+                                ghostSig *= jamMod;
+                                if (Mathf.Max(signature, ghostSig) >= minLockSig && RadarCanDetect(radar, Mathf.Max(signature, ghostSig), distance)) // Must be able to detect and lock to lock targets
                                 {
                                     // detected by radar
                                     if (myWpnManager != null)
@@ -1935,10 +2001,30 @@ namespace BDArmory.Radar
 
                                     if (dataIndex < dataArray.Length)
                                     {
-                                        dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature);
-                                        dataArray[dataIndex].lockedByRadar = radar;
-                                        dataIndex++;
-                                        hasLocked = true;
+                                        if (ti.radarGhostTargets.Count > 0)
+                                        {
+                                            List<Vector3> tempOffsets = ti.radarGhostTargets;
+                                            if (signature >= minLockSig && RadarCanDetect(radar, signature, distance)) tempOffsets.Add(Vector3.zero); //add to account for base vessel CoM radar return
+                                            tempOffsets.OrderByDescending(t => Vector3.Angle(((loadedvessels.Current.CoM + t) - position).ProjectOnPlanePreNormalized(upVector), lookDirection)); //report targets closest to center first
+
+                                            foreach (var target in tempOffsets) //fill remaining locks with ghost targets/actual target
+                                            {
+                                                if (dataIndex < dataArray.Length)
+                                                {
+                                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, ghostPos: target);
+                                                    dataArray[dataIndex].lockedByRadar = radar;
+                                                    dataIndex++;
+                                                    hasLocked = true;
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature);
+                                            dataArray[dataIndex].lockedByRadar = radar;
+                                            dataIndex++;
+                                            hasLocked = true;
+                                        }
                                     }
                                 }
                             }
@@ -1952,7 +2038,7 @@ namespace BDArmory.Radar
                         else   // SCAN/DETECT TARGETS:
                         {
                             //evaluate if we can detect such a signature at that range
-                            if (RadarCanDetect(radar, signature, distance))
+                            if (RadarCanDetect(radar, Mathf.Max(signature,ghostSig), distance))
                             {
                                 // detected by radar
                                 if (myWpnManager != null)
@@ -2079,10 +2165,18 @@ namespace BDArmory.Radar
 
                 // get vessel's radar signature
                 TargetInfo ti = GetVesselRadarSignature(lockedVessel);
+                float ghostSig = 0;
                 float signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin) : ti.radarModifiedSignature;
+                if (ti.radarGhostTargets.Count > 0) ghostSig = signature;
                 signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, ray.origin, lockedVessel.CoM, ti);
                 signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
-                if (radar.weaponManager is not null) signature *= GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, ray.origin, lockedVessel, signature);
+                ghostSig *= ti.radarLockbreakFactor;
+                if (radar.weaponManager is not null)
+                { 
+                    float jamMod = GetStandoffJammingModifier(radar.vessel, radar.weaponManager.Team, ray.origin, lockedVessel, signature);
+                    signature *= jamMod;
+                    ghostSig *= jamMod;
+                }              
                 if (radar.vessel.Splashed && lockedVessel.Splashed) signature *= GetVesselBubbleFactor(radar.transform.position, lockedVessel);
                 //do not multiply chaff factor here
 
@@ -2113,6 +2207,20 @@ namespace BDArmory.Radar
                         else
                             return false;
                     }
+                    if ((ghostSig >= minTrackSig) && (RadarCanDetect(radar, ghostSig, distance)))
+                    {
+                        // can be tracked
+                        if (ti.radarGhostTargets.Count > 0)
+                        {
+                            List<Vector3> tempOffsets = ti.radarGhostTargets;
+                            tempOffsets.OrderByDescending(t => Vector3.Angle((lockedVessel.CoM + t) - ray.origin, ray.direction)); //report targets colsest to center first
+
+                            foreach (var target in tempOffsets) //fill remaining locks with ghost targets/actual target
+                            {
+                                radar.ReceiveContactData(new TargetSignatureData(lockedVessel, ghostSig, null, notchMod, target), locked);
+                            }
+                        }
+                    }
                 }
 
                 //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
@@ -2137,7 +2245,7 @@ namespace BDArmory.Radar
             Vector3 upVector = referenceTransform.up;
             Vector3 lookDirection = Quaternion.AngleAxis(directionAngle, upVector) * forwardVector;
             TargetSignatureData finalData = TargetSignatureData.noTarget;
-            Tuple<float, Part> IRSig; //heat value
+            List<Tuple<float, Part>> IRSig; //heat value
             // guard clauses
             if (!myWpnManager || !myWpnManager.vessel || !irst)
                 return false;
@@ -2181,38 +2289,41 @@ namespace BDArmory.Radar
                             tInfo = loadedvessels.Current.gameObject.AddComponent<TargetInfo>();
                         }
 
-                        IRSig = BDATargetManager.GetVesselHeatSignature(loadedvessels.Current, position, 1f, irst.TempSensitivityCurve, maxSigs: 1).First();
-                        float signature = IRSig.Item1 * (irst.boresightScan ? Mathf.Clamp01(15 / angle) : 1);
-                        //signature *= (1400 * 1400) / Mathf.Clamp((loadedvessels.Current.CoM - referenceTransform.position).sqrMagnitude, 90000, 36000000); //300 to 6000m - clamping sig past 6km; Commenting out as it makes tuning detection curves much easier
-
-                        signature *= Mathf.Clamp(Vector3.Angle(loadedvessels.Current.CoM - position, - irst.vessel.upAxis) / 90, 0.5f, 1.5f);
-                        //ground will mask thermal sig                        
-                        signature *= (GetRadarGroundClutterModifier(irst.GroundClutterFactor, position, loadedvessels.Current.CoM, tInfo) * (tInfo.isSplashed ? 12 : 1));
-                        //cold ocean on the other hand...
-
-                        // evaluate range
-                        float distance = (loadedvessels.Current.CoM - position).magnitude / 1000f;                                      //TODO: Performance! better if we could switch to sqrMagnitude...
-
-                        BDATargetManager.ClearRadarReport(loadedvessels.Current, myWpnManager);
-
-                        //evaluate if we can detect such a signature at that range
-                        float attenuationFactor = ((float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position), FlightGlobals.getExternalTemperature(position))) +
-                            ((float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(loadedvessels.Current.CoM), FlightGlobals.getExternalTemperature(loadedvessels.Current.CoM) / 2));
-
-                        if (distance > irst.irstMinDistanceDetect && distance < (irst.irstMaxDistanceDetect * irst.atmAttenuationCurve.Evaluate(attenuationFactor)))
+                        IRSig = BDATargetManager.GetVesselHeatSignature(loadedvessels.Current, position, 1f, irst.TempSensitivityCurve, maxSigs: (int)loadedvessels.Current.parts.Count / 10);
+                        for (int h = 0; h < IRSig.Count; h++)
                         {
-                            //evaluate if we can detect or lock such a signature at that range
-                            float minDetectSig = irst.DetectionCurve.Evaluate(distance / attenuationFactor);
+                            float signature = IRSig[h].Item1 * (irst.boresightScan ? Mathf.Clamp01(15 / angle) : 1);
+                            //signature *= (1400 * 1400) / Mathf.Clamp((loadedvessels.Current.CoM - referenceTransform.position).sqrMagnitude, 90000, 36000000); //300 to 6000m - clamping sig past 6km; Commenting out as it makes tuning detection curves much easier
 
-                            if (signature >= minDetectSig)
+                            signature *= Mathf.Clamp(Vector3.Angle(loadedvessels.Current.CoM - position, -irst.vessel.upAxis) / 90, 0.5f, 1.5f);
+                            //ground will mask thermal sig                        
+                            signature *= (GetRadarGroundClutterModifier(irst.GroundClutterFactor, position, loadedvessels.Current.CoM, tInfo) * (tInfo.isSplashed ? 12 : 1));
+                            //cold ocean on the other hand...
+
+                            // evaluate range
+                            float distance = (loadedvessels.Current.CoM - position).magnitude / 1000f;                                      //TODO: Performance! better if we could switch to sqrMagnitude...
+
+                            BDATargetManager.ClearRadarReport(loadedvessels.Current, myWpnManager);
+
+                            //evaluate if we can detect such a signature at that range
+                            float attenuationFactor = ((float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(position), FlightGlobals.getExternalTemperature(position))) +
+                                ((float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(loadedvessels.Current.CoM), FlightGlobals.getExternalTemperature(loadedvessels.Current.CoM) / 2));
+
+                            if (distance > irst.irstMinDistanceDetect && distance < (irst.irstMaxDistanceDetect * irst.atmAttenuationCurve.Evaluate(attenuationFactor)))
                             {
-                                // detected by irst
-                                if (myWpnManager != null)
+                                //evaluate if we can detect or lock such a signature at that range
+                                float minDetectSig = irst.DetectionCurve.Evaluate(distance / attenuationFactor);
+
+                                if (signature >= minDetectSig)
                                 {
-                                    BDATargetManager.ReportVessel(loadedvessels.Current, myWpnManager, true);
+                                    // detected by irst
+                                    if (myWpnManager != null)
+                                    {
+                                        BDATargetManager.ReportVessel(loadedvessels.Current, myWpnManager, true);
+                                    }
+                                    irst.ReceiveContactData(new TargetSignatureData(loadedvessels.Current, signature), signature);
+                                    //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] sent data to IRST for {loadedvessels.Current.GetName()}'s thermalSig from {IRSig[h].Item2.partInfo.title}");
                                 }
-                                irst.ReceiveContactData(new TargetSignatureData(loadedvessels.Current, signature), signature);
-                                if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[IRSTdebugging] sent data to IRST for " + loadedvessels.Current.GetName() + "'s thermalSig");
                             }
                         }
                     }

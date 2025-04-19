@@ -163,7 +163,7 @@ namespace BDArmory.UI
 
             try
             {
-                Gatepath = Path.GetFullPath(Path.GetDirectoryName(Path.Combine(KSPUtil.ApplicationRootPath, "GameData", WaypointFollowingStrategy.ModelPath)));
+                Gatepath = Path.GetFullPath(Path.GetDirectoryName(Path.Combine(KSPUtil.ApplicationRootPath, "GameData", "BDArmory/Models/WayPoint")));
                 gateFiles = Directory.GetFiles(Gatepath, "*.mu").Select(f => Path.GetFileName(f)).ToArray();
                 Array.Sort(gateFiles, StringComparer.Ordinal); // Sort them alphabetically, uppercase first.
                 WaygateCount = gateFiles.Count() - 1;

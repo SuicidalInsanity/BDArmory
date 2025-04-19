@@ -24,6 +24,7 @@ namespace BDArmory.Bullets
         public Transform spawnTransform;
         public Vessel sourceVessel;
         public Part sourceWeapon;
+        string sourceWeaponName;
         public string sourceVesselName;
         public string team;
         public string rocketName;
@@ -226,7 +227,7 @@ namespace BDArmory.Bullets
                     blastSoundPath = nuke.blastSoundPath;
                 }
             }
-
+            sourceWeaponName = sourceWeapon ? sourceWeapon.FindModuleImplementing<ModuleWeapon>().WeaponName : rocketName;
             TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, BetterLateThanNever);
         }
 
@@ -596,7 +597,7 @@ namespace BDArmory.Bullets
                 }
                 else
                 {
-                    ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, 1, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, true, true, true);
+                    ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, 1, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, sourceWeaponName, team, ExplosionSourceType.Rocket, true, true, true);
                 }
                 ResourceUtils.StealResources(hitPart, sourceVessel, thief);
                 Detonate(hit.point, false, hitPart);
@@ -637,7 +638,7 @@ namespace BDArmory.Bullets
                 {
                     hitPart.rb.AddForceAtPosition(impactVector.normalized * impulse, hit.point, ForceMode.Acceleration);
                 }
-                BDACompetitionMode.Instance.Scores.RegisterRocketStrike(sourceVesselName, hitPart.vessel.GetName());
+                BDACompetitionMode.Instance.Scores.RegisterRocketStrike(sourceVesselName, hitPart.vessel.GetName(), sourceWeaponName);
                 Detonate(hit.point, false, hitPart);
                 return true; //impulse rounds shouldn't penetrate/do damage
             }
@@ -757,7 +758,7 @@ namespace BDArmory.Bullets
                         ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker > 0 ? false : true, penTicker > 0 ? false : true, (cockpitPen > Mathf.Max(20 / anglemultiplier, 1)) ? true : false);
                     if (!explosive)
                     {
-                        BDACompetitionMode.Instance.Scores.RegisterRocketStrike(sourceVesselName, hitPart.vessel.GetName()); //if non-explosive hit, add rocketstrike, else ExplosionFX adds rocketstrike from HE detonation
+                        BDACompetitionMode.Instance.Scores.RegisterRocketStrike(sourceVesselName, hitPart.vessel.GetName(), sourceWeaponName); //if non-explosive hit, add rocketstrike, else ExplosionFX adds rocketstrike from HE detonation
                     }
                 }
                 ResourceUtils.StealResources(hitPart, sourceVessel, thief);
@@ -1056,14 +1057,14 @@ namespace BDArmory.Bullets
                                     }
                                 }
                             }
-                            ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, null, direction, -1, true, Hitpart: hitPart, sourceVelocity: airDetonation ? currentVelocity : default);
+                            ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, rocket.DisplayName, direction, -1, true, Hitpart: hitPart, sourceVelocity: airDetonation ? currentVelocity : default);
                         }
                         else
                         {
                             if (nuclear)
                                 NukeFX.CreateExplosion(pos, ExplosionSourceType.Rocket, sourceVesselName, rocket.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "", hitPart: hitPart, sourceVelocity: airDetonation ? currentVelocity : default);
                             else
-                                ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, null, direction, -1, false, rocketMass * 1000, -1, dmgMult, shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, hitPart, apMod, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)distanceFromStart : -1, sourceVelocity: airDetonation ? currentVelocity : default);
+                                ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, rocket.DisplayName, direction, -1, false, rocketMass * 1000, -1, dmgMult, shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, hitPart, apMod, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)distanceFromStart : -1, sourceVelocity: airDetonation ? currentVelocity : default);
                         }
                     }
                 }

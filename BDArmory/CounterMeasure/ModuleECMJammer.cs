@@ -2,6 +2,7 @@
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
 using System.Text;
+using UnityEngine;
 
 namespace BDArmory.CounterMeasure
 {
@@ -22,6 +23,12 @@ namespace BDArmory.CounterMeasure
         [KSPField] public bool alwaysOn = false;
 
         [KSPField] public bool signalSpam = true;
+
+        [KSPField] public bool ghostTargets = false; //spoof targets?
+
+        [KSPField] public int ghostTargetCount = 0; //how many
+
+        [KSPField] public float ghostOffset = 0; //spoofed target distance from jammer, meters
 
         [KSPField] public bool lockBreaker = true;
 
@@ -96,7 +103,7 @@ namespace BDArmory.CounterMeasure
                 isMissileECM = true;
                 Events["Toggle"].guiActive = false;
             }
-
+            if (alwaysOn && !isMissileECM) EnableJammer();
             gauge = (BDStagingAreaGauge)part.AddModule("BDStagingAreaGauge");
             GameEvents.onVesselCreate.Add(OnVesselCreate);
         }
@@ -218,6 +225,13 @@ namespace BDArmory.CounterMeasure
             }
             output.AppendLine($"Signal strength: {jammerStrength}");
             output.AppendLine($"(increases detectability!)");
+            if (ghostTargets)
+            {
+                output.AppendLine($"Generates False Targets");
+                output.AppendLine($"(increases detectability!)");
+                output.AppendLine($" - False targets: {ghostTargetCount}");
+                output.AppendLine($" - Target offset: {ghostOffset}m");
+            }
 
             return output.ToString();
         }

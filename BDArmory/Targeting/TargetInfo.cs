@@ -35,6 +35,7 @@ namespace BDArmory.Targeting
         public float radarJammingDistance;
         public bool alreadyScheduledRCSUpdate = false;
         public float radarMassAtUpdate = 0f;
+        public List<Vector3> radarGhostTargets = new List<Vector3>();
         public Vector3 bounds = Vector3.zero;
 
         public bool targetPartListNeedsUpdating = true; // Only update when needed — avoids excessive calling due to events.

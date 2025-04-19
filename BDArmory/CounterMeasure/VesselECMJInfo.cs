@@ -5,6 +5,7 @@ using UnityEngine;
 using BDArmory.Utils;
 using BDArmory.Targeting;
 using BDArmory.Radar;
+using BDArmory.Extensions;
 
 namespace BDArmory.CounterMeasure
 {
@@ -136,7 +137,8 @@ namespace BDArmory.CounterMeasure
             float rcsrCount = 0;
 
             float rcsOverride = -1;
-
+            int ghostTargets = 0;
+            List<Vector3> tempGhosts = new List<Vector3>();
             List<ModuleECMJammer>.Enumerator jammer = jammers.GetEnumerator();
             while (jammer.MoveNext())
             {
@@ -156,6 +158,21 @@ namespace BDArmory.CounterMeasure
                     rcsrTotal *= jammer.Current.rcsReductionFactor;
                     rcsrCount++;
                     if (rcsOverride < jammer.Current.rcsOverride) rcsOverride = jammer.Current.rcsOverride;
+                }
+                if (jammer.Current.ghostTargets)
+                {
+                    for (int g = 0; g < jammer.Current.ghostTargetCount; g++)
+                    {
+                        var heading = 360f * ghostTargets / Mathf.Max(1, jammer.Current.ghostTargetCount);
+                        var direction = (Quaternion.AngleAxis(heading, jammer.Current.transform.forward) * jammer.Current.transform.up).ProjectOnPlanePreNormalized(jammer.Current.transform.forward).normalized;
+                        Vector3 position = (jammer.Current.transform.position - jammer.Current.vessel.CoM) + jammer.Current.ghostOffset * direction;
+                        //this is outputting correct offset on Launched vessels, or laoded vessels. Spawned vessels end up with offsets ~65km away
+                        ++ghostTargets;
+                        tempGhosts.Add(position);
+                        Debug.Log($"[ECMDebug]: Setting up GhostTarget on {jammer.Current.vessel.GetName()}, with a total offset of {position.x},{position.y},{position.z}m from CoM.");
+
+                        //TODO - diminishing returns/max ghostTargets to prevent someone from bolting on a dozen 8 ghosttarget jammers and giving themselves 108 spoofed targets or similar silliness
+                    }
                 }
             }
             jammer.Dispose();
@@ -191,6 +208,10 @@ namespace BDArmory.CounterMeasure
             // Use clamp to prevent RCS reduction resulting in increased lockbreak factor, which negates value of RCS reduction)
             ti.radarLockbreakFactor = (ti.radarRCSReducedSignature == 0) ? 0f :
                 Mathf.Max(Mathf.Clamp01(ti.radarRCSReducedSignature / ti.radarModifiedSignature) * (1 - (totalLBstrength / ti.radarRCSReducedSignature / 100)), 0); // 0 is minimum lockbreak factor
+
+            ti.radarGhostTargets.Clear();
+            ti.radarGhostTargets = tempGhosts;
+            Debug.Log($"[ECMDebug]: jammer on {vessel.GetName()} active! Generating {ti.radarGhostTargets.Count} ghost targets!");
         }
         void OnFixedUpdate()
         {

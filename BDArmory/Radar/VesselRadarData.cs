@@ -1776,7 +1776,7 @@ namespace BDArmory.Radar
             int replaceIndex = -1;
             for (int i = 0; i < displayedTargets.Count; i++)
             {
-                if (displayedTargets[i].vessel == rData.vessel)
+                if (displayedTargets[i].vessel == rData.vessel && displayedTargets[i].targetData.positionOffset == rData.targetData.positionOffset)
                 {
                     if (displayedTargets[i].locked && !_locked)
                     {

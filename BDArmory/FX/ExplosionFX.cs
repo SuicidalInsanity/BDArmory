@@ -355,8 +355,7 @@ namespace BDArmory.FX
                                             if (BDACompetitionMode.Instance.Scores.RegisterMissileHit(SourceVesselName, damagedVesselName, 1))
                                                 registered = true;
                                             break;
-                                        case ExplosionSourceType.Bullet:
-                                            if (isReportingWeapon)
+                                        case ExplosionSourceType.Bullet:                                            
                                                 registered = true;
                                             break;
                                     }
@@ -401,7 +400,7 @@ namespace BDArmory.FX
             }
             if (explosionEventsVesselsHit.Count > 0)
             {
-                if (!BDArmorySettings.REPORT_DAMAGE_NOT_PARTS_HIT)
+                if (!BDArmorySettings.REPORT_DAMAGE_NOT_PARTS_HIT && !BDArmorySettings.MINIMALIST_COMP_STATUS)
                 {
                     string message = "";
                     foreach (var vesselName in explosionEventsVesselsHit.Keys)
@@ -436,10 +435,13 @@ namespace BDArmory.FX
                     switch (ExplosionSource)
                     {
                         case ExplosionSourceType.Rocket:
-                            BDACompetitionMode.Instance.Scores.RegisterRocketStrike(SourceVesselName, vesselName);
+                            BDACompetitionMode.Instance.Scores.RegisterRocketStrike(SourceVesselName, vesselName, SourceWeaponName);
                             break;
                         case ExplosionSourceType.Missile:
-                            BDACompetitionMode.Instance.Scores.RegisterMissileStrike(SourceVesselName, vesselName);
+                            BDACompetitionMode.Instance.Scores.RegisterMissileStrike(SourceVesselName, vesselName, SourceWeaponName);
+                            break;
+                        case ExplosionSourceType.Bullet:
+                            BDACompetitionMode.Instance.Scores.RegisterBulletHit(SourceVesselName, vesselName, SourceWeaponName, travelDistance);
                             break;
                     }
                 }
@@ -733,7 +735,7 @@ namespace BDArmory.FX
             }
 
             // Do a separate check here for events being empty so we can report asap.
-            if (BDArmorySettings.REPORT_DAMAGE_NOT_PARTS_HIT && isReportingWeapon && explosionEvents.Count == 0 && totalDamageApplied.Count > 0)
+            if (BDArmorySettings.REPORT_DAMAGE_NOT_PARTS_HIT && !BDArmorySettings.MINIMALIST_COMP_STATUS && isReportingWeapon && explosionEvents.Count == 0 && totalDamageApplied.Count > 0)
             {
                 // Debug.Log($"DEBUG dmg: {string.Join(", ", totalDamageApplied.Select(kvp => $"{kvp.Key}:{kvp.Value:0}"))}, parts: {string.Join(", ", totalPartsHit.Select(kvp => $"{kvp.Key}:{kvp.Value}"))}");
                 List<string> debrisNames = ["Debris", "Plane", "Ship", "Probe"]; // Any others?
