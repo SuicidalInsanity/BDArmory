@@ -376,7 +376,7 @@ namespace BDArmory.Bullets
             {
                 sourceVesselName = null;
             }
-            sourceWeaponName = sourceWeapon ? sourceWeapon.FindModuleImplementing<ModuleWeapon>().WeaponName : bullet.DisplayName;
+            sourceWeaponName = sourceWeapon ? sourceWeapon.FindModuleImplementing<ModuleWeapon>().OriginalShortName : bullet.DisplayName;
             if (caliber >= BDArmorySettings.APS_THRESHOLD) //if (caliber > 60)
             {
                 BDATargetManager.FiredBullets.Add(this);
