@@ -4190,6 +4190,14 @@ namespace BDArmory.UI
                                 BDACompetitionMode.Instance.StartCompetitionMode(BDArmorySettings.COMPETITION_DISTANCE, BDArmorySettings.COMPETITION_START_DESPITE_FAILURES);
                             if (BDArmorySettings.COMPETITION_CLOSE_SETTINGS_ON_COMPETITION_START) CloseSettingsWindow();
                         }
+                        if (BDArmorySettings.MINIMALIST_COMP_STATUS)
+                        {
+                            if (GUI.Button(SLineRect(++line), "Begin Non-Comp Kill Reporting"))
+                            {
+                                    BDACompetitionMode.Instance.nextUpdateTick = Planetarium.GetUniversalTime() + 1;
+                                    BDACompetitionMode.Instance.ResetCompetitionStuff(); // initialize scoring.
+                            }
+                        }
                     }
                 }
             }
