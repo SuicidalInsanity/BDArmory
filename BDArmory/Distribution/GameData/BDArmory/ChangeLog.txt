@@ -1,11 +1,12 @@
 ﻿IMPROVEMENTS / FIXES
--Bullets/rockets now properly report bulletname
 -Bullets with proximity fuzes that detonate near a target and do damage, but don't physically hit now register as a bullet hit for scoring.
 -Add Minimalist competition UI that only reports Warthunder style attacker:weapon:victim updates to the marquee.
--Add missile subsystem targeting to IR/Laser/GPS/Radar* missiles.
+-Fix AI trying to aim multimissilelauncher pods based on MML launch orientation, not MML aiming transform.
+-Add missile subsystem targeting to IR/Laser/GPS/INS missiles.
 	-IR missiles fired against a singular target with multiple missile targets > 1 will have each missile target a separate heat source, if available
 	-Laser/GPS missiles can now engage multiple targets at the same time, if sufficient target cams on craft; each target requires a dedicated cam.
 	-Laser/GPS missiles respect the CoM/Engines/Command/Weapons/Mass/Random advanced targeting setting, and will lock on to the indicated part instead of CoM, if non-CoM targeting is activated.
+	-AntiRad missiles now capable of multitargeting individual radars, if more than one present and active on a vessel, if max missiles targets > 1.
 	-ECM Jammers can now generate false/ghost targets to spoof enemy radar locks
 	-Radar missiles fired at a singular target with multiple missile targets > 1 will distribute missiles amongst Locks present on target vessel (real and false) to increase probability of getting a missile through.
 	-ECM Jammers have new fields 'ghostTargets = True/false' - Sets if Jammer generates false target locks for enemy radar

@@ -6,6 +6,7 @@ using BDArmory.Utils;
 using BDArmory.Targeting;
 using BDArmory.Radar;
 using BDArmory.Extensions;
+using BDArmory.Settings;
 
 namespace BDArmory.CounterMeasure
 {
@@ -169,7 +170,7 @@ namespace BDArmory.CounterMeasure
                         //this is outputting correct offset on Launched vessels, or laoded vessels. Spawned vessels end up with offsets ~65km away
                         ++ghostTargets;
                         tempGhosts.Add(position);
-                        Debug.Log($"[ECMDebug]: Setting up GhostTarget on {jammer.Current.vessel.GetName()}, with a total offset of {position.x},{position.y},{position.z}m from CoM.");
+                        if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.VesselECMJInfo]: Setting up GhostTarget on {jammer.Current.vessel.GetName()}, with a total offset of {position.x},{position.y},{position.z}m from CoM.");
 
                         //TODO - diminishing returns/max ghostTargets to prevent someone from bolting on a dozen 8 ghosttarget jammers and giving themselves 108 spoofed targets or similar silliness
                     }
@@ -211,7 +212,7 @@ namespace BDArmory.CounterMeasure
 
             ti.radarGhostTargets.Clear();
             ti.radarGhostTargets = tempGhosts;
-            Debug.Log($"[ECMDebug]: jammer on {vessel.GetName()} active! Generating {ti.radarGhostTargets.Count} ghost targets!");
+            if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.VesselECMJInfo]: jammer on {vessel.GetName()} active! Generating {ti.radarGhostTargets.Count} ghost targets!");
         }
         void OnFixedUpdate()
         {
