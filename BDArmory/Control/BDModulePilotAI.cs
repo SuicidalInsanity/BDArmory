@@ -2277,7 +2277,7 @@ namespace BDArmory.Control
                             finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                         }
 
-                        if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget[weaponManager.firedMissiles].exists)
+                        if (missile.TargetingMode == MissileBase.TargetingModes.Heat && !weaponManager.heatTarget[0].exists)
                         {
                             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Attempting heat lock");
                             target += v.srf_velocity.normalized * 10; //TODO this should be based on heater boresight?
@@ -2288,7 +2288,7 @@ namespace BDArmory.Control
                         }
                         //Vector3 leadOffset = (missile.MissileReferenceTransform.position + (missile.MissileReferenceTransform.forward * distanceToTarget)) - (vesselTransform.position + (vesselTransform.up * distanceToTarget));
                         //target -= leadOffset; //correctly account for missiles mounted at an angle (important if heater to keep them pointed at heatsource and/or keep target within boresight)
-                        if (!missile.isMMG) target = Quaternion.FromToRotation(missile.MissileReferenceTransform.forward, vesselTransform.up) * (target - vesselTransform.position) + vesselTransform.position;
+                        if (!missile.isMMG) target = Quaternion.FromToRotation(missile.GetForwardTransform(), vesselTransform.up) * (target - vesselTransform.position) + vesselTransform.position;
                         angleToTarget = Vector3.Angle(vesselTransform.up, target - vesselTransform.position);
                         if (angleToTarget < 20f)
                         {

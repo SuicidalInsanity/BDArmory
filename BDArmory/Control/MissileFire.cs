@@ -531,7 +531,7 @@ namespace BDArmory.Control
         public bool hasAntiRadiationOrdinance;
         public RadarWarningReceiver.RWRThreatTypes[] antiradTargets;
         public bool antiRadTargetAcquired;
-        Vector3[] antiRadiationTarget;
+        List<Vector3> antiRadiationTarget;
         public bool laserPointDetected;
 
         ModuleTargetingCamera foundCam;
@@ -1268,6 +1268,7 @@ namespace BDArmory.Control
             //HEAT LOCKING
             heatTarget = new List<TargetSignatureData> { TargetSignatureData.noTarget };
             radarTarget = new List<TargetSignatureData>();
+            antiRadiationTarget = new List<Vector3>();
         }
 
         public void Start()
@@ -2935,7 +2936,7 @@ namespace BDArmory.Control
                             float attemptStartTime = Time.time;
                             float attemptDuration = targetScanInterval * 0.75f;
                             int targetNum = firedMissiles;
-                            if (antiRadiationTarget.Length > 0 && targetNum >= antiRadiationTarget.Length) targetNum -= antiRadiationTarget.Length * (int)Mathf.Floor((targetNum / antiRadiationTarget.Length));
+                            if (antiRadiationTarget.Count > 0 && targetNum >= antiRadiationTarget.Count) targetNum -= antiRadiationTarget.Count * (int)Mathf.Floor((targetNum / antiRadiationTarget.Count));
                             while (Time.time - attemptStartTime < attemptDuration && (!antiRadTargetAcquired || !AntiRadDistanceCheck()))
                                 yield return wait;
 
@@ -5017,7 +5018,8 @@ namespace BDArmory.Control
                             }
                         }
                         heatTarget = new List<TargetSignatureData> { TargetSignatureData.noTarget }; //clear holdover targets when switching targets
-                        antiRadiationTarget = new Vector3[(int)multiMissileTgtNum];
+                        antiRadiationTarget.Clear();
+                        antiRadiationTarget.Add(Vector3.zero);
                     }
                 }
                 using (List<TargetInfo>.Enumerator target = BDATargetManager.TargetList(Team).GetEnumerator())
@@ -7580,7 +7582,7 @@ namespace BDArmory.Control
         void SearchForRadarSource()
         {
             antiRadTargetAcquired = false;
-            antiRadiationTarget = new Vector3[(int)multiMissileTgtNum];
+            antiRadiationTarget.Clear();
             if (rwr && rwr.rwrEnabled)
             {
                 MissileBase missile = CurrentMissile;
@@ -7606,7 +7608,7 @@ namespace BDArmory.Control
                 }
                 tempTargets.OrderBy(kvp => kvp.Value).ToList();
                 tempTargets.Reverse();
-                antiRadiationTarget = tempTargets.Keys.ToArray();
+                antiRadiationTarget = tempTargets.Keys.ToList();
 
                 //Debug.Log($"antiradTgt count: antiRad target found: {rwr.pingsData[i].vessel.vesselName}")
             }
@@ -7702,8 +7704,7 @@ namespace BDArmory.Control
                 else
                 {
                     heatTarget = new List<TargetSignatureData> { BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(currMissile.MissileReferenceTransform.position + (50 * currMissile.GetForwardTransform()), direction), TargetSignatureData.noTarget, scanRadius, currMissile.heatThreshold, currMissile.targetCoM, currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, this, targetMissile != null ? targetMissile : guardMode ? currentTarget : null, IFF: currMissile.hasIFF) };
-                }
-                Debug.Log($"[MissileFire: SearchForHeatTarget] heatTarget.count: {heatTarget.Count}");
+                }                
             }
         }
 
@@ -7849,12 +7850,12 @@ namespace BDArmory.Control
                                 List<TargetSignatureData> possibleTargets = vesselRadarData.GetLockedTargets();
                                 for (int i = 0; i < possibleTargets.Count; i++)
                                 {
-                                    if (possibleTargets[i].vessel == targetVessel)
+                                    if (possibleTargets[i].vessel == targetVessel) //import positionOffset as a way of iding which lock to use? 'if (possibleTargets[i].vessel = targetVessel && potentialTargets[i].positionOffset = offset)
                                     {
                                         radarTarget.Add(possibleTargets[i]); 
                                     }
                                 }
-                                Debug.Log($"[RadarSubsystemTargeting] STDTM possible targets: {radarTarget.Count}");
+                                //Debug.Log($"[RadarSubsystemTargeting] STDTM possible targets: {radarTarget.Count}");
                                 int targetNum = firedMissiles;
                                 if (targetNum >= radarTarget.Count && radarTarget.Count > 0) targetNum -= radarTarget.Count * (int)Mathf.Floor((targetNum / radarTarget.Count));
                                 ml.radarTarget = radarTarget[targetNum]; 
@@ -7876,7 +7877,7 @@ namespace BDArmory.Control
                 case MissileBase.TargetingModes.AntiRad:
                     {
                         int targetNum = firedMissiles;
-                        if (targetNum >= antiRadiationTarget.Length && antiRadiationTarget.Length > 0) targetNum -= antiRadiationTarget.Length * (int)Mathf.Floor((targetNum / antiRadiationTarget.Length));
+                        if (targetNum >= antiRadiationTarget.Count && antiRadiationTarget.Count > 0) targetNum -= antiRadiationTarget.Count * (int)Mathf.Floor((targetNum / antiRadiationTarget.Count));
                         if (antiRadTargetAcquired && antiRadiationTarget[targetNum] != Vector3.zero)
                         {
                             ml.TargetAcquired = true;
@@ -9733,7 +9734,7 @@ namespace BDArmory.Control
         {
             if (!guardTarget) return false;
             int targetNum = firedMissiles;
-            if (targetNum >= antiRadiationTarget.Length && antiRadiationTarget.Length > 0) targetNum -= antiRadiationTarget.Length * (int)Mathf.Floor((targetNum / antiRadiationTarget.Length));
+            if (targetNum >= antiRadiationTarget.Count && antiRadiationTarget.Count > 0) targetNum -= antiRadiationTarget.Count * (int)Mathf.Floor((targetNum / antiRadiationTarget.Count));
             return (VectorUtils.WorldPositionToGeoCoords(antiRadiationTarget[targetNum], vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(guardTarget.CoM, vessel.mainBody)).sqrMagnitude < Mathf.Max(400, 0.013f * (float)guardTarget.srfSpeed * (float)guardTarget.srfSpeed);
         }
 
