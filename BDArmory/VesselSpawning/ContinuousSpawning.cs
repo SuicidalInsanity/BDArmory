@@ -509,7 +509,7 @@ namespace BDArmory.VesselSpawning
 
         public static void SaveWeights()
         {
-            ConfigNode fileNode = ConfigNode.Load(BDArmorySettings.settingsConfigURL);
+            ConfigNode fileNode = ConfigNode.Load(ScoreWindow.scoreWeightsURL) ?? new ConfigNode();
 
             if (!fileNode.HasNode("CtsScoreWeights"))
             {
@@ -522,13 +522,13 @@ namespace BDArmory.VesselSpawning
             {
                 settings.SetValue(kvp.Key, kvp.Value.ToString(), true);
             }
-            fileNode.Save(BDArmorySettings.settingsConfigURL);
+            fileNode.Save(ScoreWindow.scoreWeightsURL);
         }
 
         public static void LoadWeights()
         {
-            ConfigNode fileNode = ConfigNode.Load(BDArmorySettings.settingsConfigURL);
-            if (!fileNode.HasNode("CtsScoreWeights")) return;
+            ConfigNode fileNode = ConfigNode.Load(ScoreWindow.scoreWeightsURL);
+            if (fileNode == null || !fileNode.HasNode("CtsScoreWeights")) return;
             ConfigNode settings = fileNode.GetNode("CtsScoreWeights");
 
             foreach (var key in weights.Keys.ToList())

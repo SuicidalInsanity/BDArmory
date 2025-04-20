@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace BDArmory.UI
         #region Fields
         public static ScoreWindow Instance;
         public bool _ready = false;
+        public static string scoreWeightsURL = Path.GetFullPath(Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BDArmory/PluginData/score_weights.cfg"));
 
         int _buttonSize = 24;
         static int _guiCheckIndexScores = -1;

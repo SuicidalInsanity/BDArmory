@@ -509,7 +509,7 @@ namespace BDArmory.Competition
 
         public static void SaveWeights()
         {
-            ConfigNode fileNode = ConfigNode.Load(BDArmorySettings.settingsConfigURL);
+            ConfigNode fileNode = ConfigNode.Load(ScoreWindow.scoreWeightsURL) ?? new ConfigNode();
 
             if (!fileNode.HasNode("ScoreWeights"))
             {
@@ -522,13 +522,13 @@ namespace BDArmory.Competition
             {
                 settings.SetValue(kvp.Key, kvp.Value.ToString(), true);
             }
-            fileNode.Save(BDArmorySettings.settingsConfigURL);
+            fileNode.Save(ScoreWindow.scoreWeightsURL);
         }
 
         public static void LoadWeights()
         {
-            ConfigNode fileNode = ConfigNode.Load(BDArmorySettings.settingsConfigURL);
-            if (!fileNode.HasNode("ScoreWeights")) return;
+            ConfigNode fileNode = ConfigNode.Load(ScoreWindow.scoreWeightsURL);
+            if (fileNode == null || !fileNode.HasNode("ScoreWeights")) return;
 
             ConfigNode settings = fileNode.GetNode("ScoreWeights");
 
