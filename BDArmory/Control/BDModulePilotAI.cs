@@ -4546,18 +4546,15 @@ namespace BDArmory.Control
             }
             else if (command == PilotCommands.Attack)
             {
-                if (targetVessel != null)
-                {
-                    ReleaseCommand(false);
-                    return;
-                }
-                else if (weaponManager == null || weaponManager.underAttack || weaponManager.underFire)
+                if (targetVessel != null || weaponManager == null) // Found a target or lost our WM.
                 {
                     ReleaseCommand(false);
                     return;
                 }
                 else
                 {
+                    if (weaponManager.underAttack || weaponManager.underFire) // Switch to Free to allow combat behaviours, but continue flying towards the attack point for now.
+                        ReleaseCommand(false);
                     SetStatus("Attack");
                     FlyOrbit(s, assignedPositionGeo, 2500, maxSpeed, ClockwiseOrbit);
                 }

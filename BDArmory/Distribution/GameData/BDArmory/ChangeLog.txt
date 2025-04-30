@@ -1,6 +1,7 @@
 ﻿IMPROVEMENTS / FIXES
 -Bullets with proximity fuzes that detonate near a target and do damage, but don't physically hit now register as a bullet hit for scoring.
 -Add Minimalist competition UI that only reports Warthunder style attacker:weapon:victim updates to the marquee.
+-Add Ammo gauges for CM dispensers.
 -Fix AI trying to aim multimissilelauncher pods based on MML launch orientation, not MML aiming transform.
 -Add missile subsystem targeting to IR/Laser/GPS/INS missiles.
 	-IR missiles fired against a singular target with multiple missile targets > 1 will have each missile target a separate heat source, if available
@@ -12,7 +13,13 @@
 	-ECM Jammers have new fields 'ghostTargets = True/false' - Sets if Jammer generates false target locks for enemy radar
 		'ghostTargetCount = n' - number of false targets the jammer will generate.
 		'ghostOffset = n' - distance false target will be generated from jammer. 
+-Remove maximum engagement range (default 5km) check for bombs.
+-Fix turrets tracking wrong point when a radar lock is active, but the turret is not slaved to the radar.
 
+
+
+1.10.0.0
+IMPROVEMENTS / FIXES
 - General:
 	- Fix colliders on the AWACS Radar when using legless variant.
 	- Update the logic for syncing advanced 'Game Difficulty' settings to respect custom G-limit settings.

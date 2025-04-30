@@ -22,6 +22,7 @@ using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
 using BDArmory.WeaponMounts;
 using static BDArmory.Bullets.PooledBullet;
+using static BDArmory.Control.MissileFire;
 
 namespace BDArmory.Weapons
 {
@@ -5136,29 +5137,31 @@ namespace BDArmory.Weapons
                     visRange = (visualTargetVessel.transform.position - transform.position).sqrMagnitude < weaponManager.guardRange * weaponManager.guardRange;
                 }
                 //moving radar aiming/turret slaving sections ahead of legacy, else they'll never proc outside of manual control or very short visual range settings
-                if (weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked) //would only apply if fixed gun, else VRD would slave the weapon and the above block applies
+                if (weaponManager.vesselRadarData && weaponManager.vesselRadarData.locked && weaponManager.slavingTurrets) //would only apply if fixed gun, else VRD would slave the weapon and the above block applies
                 {
-                    if (!(weaponManager.slavingTurrets && turret)) //slaving fixed guns to target, turrets done later
+                    if (!turret) //slaving fixed guns to target, turrets done later
                     {
                         bool isVessel = weaponManager.slavedTarget.vessel != null;
                         if (!isVessel || !(visRange && RadarUtils.GetVesselChaffFactor(weaponManager.slavedTarget.vessel) < 1f))
                         {
                             slaved = true;
                             targetRadius = isVessel ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
-                            targetPosition = weaponManager.slavedPosition; //set fixed gun radar targeting to primary radar lock (which is presumably the active weaponManager.GuardTarget)                           
+                            targetPosition = isVessel ? weaponManager.slavedPosition : visualTargetVessel != null ? visualTargetVessel.CoM : Vector3.zero; //set fixed gun radar targeting to primary radar lock (which is presumably the active weaponManager.GuardTarget)                           
                             targetVelocity = isVessel ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - BDKrakensbane.FrameVelocityV3f);
                             if (isVessel)
                             {
                                 targetAcceleration = weaponManager.slavedTarget.vessel.acceleration;
                                 targetIsLandedOrSplashed = weaponManager.slavedTarget.vessel.LandedOrSplashed;
+                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon - fixed gun {shortName} using radar targeting vs {weaponManager.slavedTarget.vessel.GetName()}"); 
                             }
                             else
                             {
                                 targetAcceleration = weaponManager.slavedAcceleration;
                                 targetIsLandedOrSplashed = false;
+                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon - fixed gun {shortName} using radar targeting vs slavedTgtPos {weaponManager.slavedPosition.x},{weaponManager.slavedPosition.y}, {weaponManager.slavedPosition.z}");
                             }
                             targetAcquired = true;
-                            targetAcquisitionType = TargetAcquisitionType.Slaved;
+                            targetAcquisitionType = TargetAcquisitionType.Slaved;  
                             return;
                         }
                         /*
@@ -5184,7 +5187,7 @@ namespace BDArmory.Weapons
                         */
                     }
                     //else, we have turrets and some radar locks; can we target the former with the latter?
-                    if (weaponManager.slavingTurrets && turret)
+                    else
                     {
                         TargetSignatureData targetData = TargetSignatureData.noTarget;
                         List<TargetSignatureData> possibleTargets = weaponManager.vesselRadarData.GetLockedTargets();
@@ -5221,7 +5224,7 @@ namespace BDArmory.Weapons
                             {
                                 slaved = true;
                                 targetRadius = isVessel ? weaponManager.slavedTarget.vessel.GetRadius() : 35f;
-                                targetPosition = weaponManager.slavedPosition;
+                                targetPosition = isVessel ? weaponManager.slavedPosition : visualTargetVessel != null ? visualTargetVessel.CoM : Vector3.zero;
                                 //currently overriding multi-turret multi-targeting if enabled as all turrets slaved to WM's guardTarget/current active radarLock
                                 targetVelocity = isVessel ? weaponManager.slavedTarget.vessel.rb_velocity : (weaponManager.slavedVelocity - BDKrakensbane.FrameVelocityV3f);
                                 if (isVessel)
