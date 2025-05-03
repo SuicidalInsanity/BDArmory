@@ -364,6 +364,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool SHOW_SCORE_WINDOW = false;
         [BDAPersistentSettingsField] public static bool SCORES_PERSIST_UI = false;
         [BDAPersistentSettingsField] public static int SCORES_FONT_SIZE = 12;
+        [BDAPersistentSettingsField] public static int VS_NPC_SCORE_MOD = 2;
         #endregion
 
         #region Waypoints
