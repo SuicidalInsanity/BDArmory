@@ -65,7 +65,7 @@ namespace BDArmory.Targeting
         public bool CoMLock;
 
         public bool radarLock;
-        Vessel lockedVessel;
+        public Vessel lockedVessel;
         Part lockedPart;
 
         public bool guidingOrdinance = false;

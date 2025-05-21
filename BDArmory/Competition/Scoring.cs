@@ -172,7 +172,7 @@ namespace BDArmory.Competition
         /// <returns>true if successfully registered, false otherwise</returns>
         public bool RegisterBulletDamage(string attacker, string victim, float damage)
         {
-            if (!BDACompetitionMode.Instance.competitionIsActive) return false;
+            if (!BDACompetitionMode.Instance.competitionIsActive && !BDArmorySettings.MINIMALIST_COMP_STATUS) return false;
             if (damage <= 0 || attacker == null || victim == null || attacker == victim || !ScoreData.ContainsKey(attacker) || !ScoreData.ContainsKey(victim)) return false;
             if (ScoreData[victim].aliveState != AliveState.Alive) return false; // Ignore damage after the victim is dead.
             if (float.IsNaN(damage))
@@ -249,7 +249,7 @@ namespace BDArmory.Competition
         /// <returns></returns>
         public bool RegisterRocketHit(string attacker, string victim, int partsHit = 1)
         {
-            if (!BDACompetitionMode.Instance.competitionIsActive) return false;
+            if (!BDACompetitionMode.Instance.competitionIsActive && !BDArmorySettings.MINIMALIST_COMP_STATUS) return false;
             if (partsHit <= 0 || attacker == null || victim == null || attacker == victim || !ScoreData.ContainsKey(attacker) || !ScoreData.ContainsKey(victim)) return false;
             if (ScoreData[victim].aliveState != AliveState.Alive) return false; // Ignore hits after the victim is dead.
 
@@ -402,7 +402,7 @@ namespace BDArmory.Competition
         /// <returns>true if successfully registered, false otherwise</returns>
         public bool RegisterMissileHit(string attacker, string victim, int partsHit = 1)
         {
-            if (!BDACompetitionMode.Instance.competitionIsActive) return false;
+            if (!BDACompetitionMode.Instance.competitionIsActive && !BDArmorySettings.MINIMALIST_COMP_STATUS) return false;
             if (partsHit <= 0 || attacker == null || victim == null || attacker == victim || !ScoreData.ContainsKey(attacker) || !ScoreData.ContainsKey(victim)) return false;
             if (ScoreData[victim].aliveState != AliveState.Alive) return false; // Ignore hits after the victim is dead.
 

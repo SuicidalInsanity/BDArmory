@@ -1080,7 +1080,7 @@ namespace BDArmory.Control
                 if (sw != null) //we have a weapon set by bool SmartPick, or set by the last time this was called
                 {
                     var gun = sw.GetWeaponModule();
-                    if (gun == null || (gun.useThisWeaponForAim && (gun.ammoCount > 0 || BDArmorySettings.INFINITE_AMMO))) //it's a missile, or an aim-override enabled weapon with ammo
+                    if (gun == null || ((gun.useThisWeaponForAim || !(gun.isReloading || gun.isOverheated || gun.pointingAtSelf)) && (gun.ammoCount > 0 || BDArmorySettings.INFINITE_AMMO))) //it's a missile, or an aim-override enabled weapon with ammo
                         if (sw.GetPart().vessel == vessel) return sw;                        
                 }
                 sw = null; //weapon no longer on craft. Null in case below while loop doesn't find other weapons in the same group on craft.
