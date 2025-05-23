@@ -8275,90 +8275,93 @@ namespace BDArmory.Control
                     //passive missiles
                     if (results.foundHeatMissile || results.foundAntiRadiationMissile || results.foundGPSMissile)
                     {
-                        if (rwr && rwr.omniDetection)
+                        if (rwr)
                         {
-                            if (results.foundHeatMissile)
+                            if (rwr.omniDetection)
                             {
-                                FireFlares();
-                                FireOCM(true);
-                            }
-                            if (results.foundAntiRadiationMissile)
-                            {
-                                using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
-                                    while (rd.MoveNext())
-                                    {
-                                        if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
-                                            rd.Current.DisableRadar();
-                                    }
-                                _radarsEnabled = false;
-                                FireECM(0); //disable jammers
-                            }
-
-                            if (results.foundGPSMissile)
-                                FireECM(cmThreshold);
-                            //StartCoroutine(UnderAttackRoutine());
-                        }
-                        else //one passive missile is going to be indistinguishable from another, until it gets close enough to evaluate
-                        {
-                            if (vessel.LandedOrSplashed) //assume antirads against ground targets
-                            {
-                                if (radars.Count > 0)
+                                if (results.foundHeatMissile)
+                                {
+                                    FireFlares();
+                                    FireOCM(true);
+                                }
+                                if (results.foundAntiRadiationMissile)
                                 {
                                     using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                         while (rd.MoveNext())
                                         {
                                             if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
                                                 rd.Current.DisableRadar();
-                                            _radarsEnabled = false;
                                         }
+                                    _radarsEnabled = false;
+                                    FireECM(0); //disable jammers
                                 }
 
-                                if (incomingMissileDistance <= guardRange * 0.33f) //within ID range?
-                                {
-                                    if (results.foundGPSMissile)
-                                        FireECM(cmThreshold); //try to jam datalink to launcher/GPS
-                                    if (results.foundHeatMissile) //AtG heater!? Flares!
-                                    {
-                                        FireFlares();
-                                        FireOCM(true);
-                                    }
-                                }
+                                if (results.foundGPSMissile)
+                                    FireECM(cmThreshold);
+                                //StartCoroutine(UnderAttackRoutine());
                             }
-                            else //likely a heatseeker, but could be an AA HARM...
+                            else //one passive missile is going to be indistinguishable from another, until it gets close enough to evaluate
                             {
-                                if (incomingMissileDistance <= guardRange * 0.33f) //within ID range?
+                                if (vessel.LandedOrSplashed) //assume antirads against ground targets
                                 {
-                                    if (results.foundHeatMissile)
+                                    if (radars.Count > 0)
+                                    {
+                                        using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
+                                            while (rd.MoveNext())
+                                            {
+                                                if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
+                                                    rd.Current.DisableRadar();
+                                                _radarsEnabled = false;
+                                            }
+                                    }
+
+                                    if (incomingMissileDistance <= guardRange * 0.33f) //within ID range?
+                                    {
+                                        if (results.foundGPSMissile)
+                                            FireECM(cmThreshold); //try to jam datalink to launcher/GPS
+                                        if (results.foundHeatMissile) //AtG heater!? Flares!
+                                        {
+                                            FireFlares();
+                                            FireOCM(true);
+                                        }
+                                    }
+                                }
+                                else //likely a heatseeker, but could be an AA HARM...
+                                {
+                                    if (incomingMissileDistance <= guardRange * 0.33f) //within ID range?
+                                    {
+                                        if (results.foundHeatMissile)
+                                        {
+                                            FireFlares();
+                                            FireOCM(true);
+                                        }
+                                        else if (results.foundGPSMissile)
+                                        {
+                                            FireECM(cmThreshold);
+                                        }
+                                        else //it's an Antirad!? Uh-oh, blip radar!
+                                        {
+                                            if (radars.Count > 0)
+                                            {
+                                                using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
+                                                    while (rd.MoveNext())
+                                                    {
+                                                        if (rd.Current != null && rd.Current.DynamicRadar || DynamicRadarOverride)
+                                                            rd.Current.DisableRadar();
+                                                    }
+                                                _radarsEnabled = false;
+                                            }
+                                            FireECM(0);//uh oh, blip ECM!
+                                        }
+                                    }
+                                    else //assume heater
                                     {
                                         FireFlares();
                                         FireOCM(true);
                                     }
-                                    else if (results.foundGPSMissile)
-                                    {
-                                        FireECM(cmThreshold);
-                                    }
-                                    else //it's an Antirad!? Uh-oh, blip radar!
-                                    {
-                                        if (radars.Count > 0)
-                                        {
-                                            using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
-                                                while (rd.MoveNext())
-                                                {
-                                                    if (rd.Current != null && rd.Current.DynamicRadar || DynamicRadarOverride)
-                                                        rd.Current.DisableRadar();
-                                                }
-                                            _radarsEnabled = false;
-                                        }
-                                        FireECM(0);//uh oh, blip ECM!
-                                    }
                                 }
-                                else //assume heater
-                                {
-                                    FireFlares();
-                                    FireOCM(true);
-                                }
+                                //StartCoroutine(UnderAttackRoutine());
                             }
-                            //StartCoroutine(UnderAttackRoutine());
                         }
                     }
                 }
@@ -8383,7 +8386,7 @@ namespace BDArmory.Control
                             FireDecoys();
                         }
                     }
-                    if (results.foundRadarMissile) //standin for active sonar
+                    if (rwr && results.foundRadarMissile) //standin for active sonar
                     {
                         FireBubbles();
                         FireECM(10);

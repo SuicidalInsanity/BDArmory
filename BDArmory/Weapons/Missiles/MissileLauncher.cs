@@ -2401,7 +2401,9 @@ namespace BDArmory.Weapons.Missiles
                 part.dragModel = Part.DragModel.DEFAULT;
                 useSimpleDragTemp = false;
             }
-            if (missileCOL) missileCOL.enabled = true;
+            var childColliders = part.GetComponentsInChildren<Collider>(includeInactive: false);
+            foreach (var col in childColliders)
+                col.enabled = true;
 
         }
         IEnumerator BoostRoutine()
