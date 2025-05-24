@@ -13,6 +13,7 @@ using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
+using BDArmory.VesselSpawning;
 
 namespace BDArmory.Control
 {
@@ -545,7 +546,7 @@ namespace BDArmory.Control
             this.activeWaypointIndex = -1;
         }
 
-        public void SetWaypoints(List<Vector3> waypoints)
+        public void SetWaypoints(List<Vector3> waypoints, int currentWP = 0, int currentLap = 1)
         {
             if (waypoints == null || waypoints.Count == 0)
             {
@@ -556,8 +557,8 @@ namespace BDArmory.Control
             if (BDArmorySettings.DEBUG_AI) Debug.Log(string.Format("[BDArmory.BDGenericAIBase]: Set {0} waypoints", waypoints.Count));
             this.waypoints = waypoints;
             this.waypointCourseIndex = BDArmorySettings.WAYPOINT_COURSE_INDEX;
-            this.activeWaypointIndex = 0;
-            this.activeWaypointLap = 1;
+            this.activeWaypointIndex = currentWP;
+            this.activeWaypointLap = currentLap;
             this.waypointLapLimit = BDArmorySettings.WAYPOINT_LOOP_INDEX;
             var waypoint = waypoints[activeWaypointIndex];
             var terrainAltitude = FlightGlobals.currentMainBody.TerrainAltitude(waypoint.x, waypoint.y);
@@ -619,6 +620,16 @@ namespace BDArmory.Control
                 if (surfaceAI != null) surfaceAI.MaxSpeed = mSpeed > 0 ? mSpeed : originalMaxSpeed; 
                 //if (vtolAI != null) vtolAI.MaxSpeed = mSpeed > 0 ? mSpeed : originalMaxSpeed; //VTOL AI really needs expanding to actually include behavior beyond stationary hovering; could do WPs, but only if it has a fixed horizontal thrusters under IndependantThrottle...
                 //if (orbitalAI != null) orbitalAI.ManeuverSpeed = mSpeed > 0 ? mSpeed : originalMaxSpeed; //Don' think WPs would work, period, with an orbital reference frame?
+                if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 76)
+                {
+                    SpawnUtils.ApplyMutators(vessel, true); //apply random mutator on gate passage
+                                                            //mariokart-esque weighting based on overall position?
+                    var orderedWMs = LoadedVesselSwitcher.Instance.WeaponManagers.SelectMany(tm => tm.Value).ToList();
+                    int totalCraft = orderedWMs.Count;
+                    orderedWMs.Sort((mf1, mf2) => BDACompetitionMode.Instance.Scores.ScoreData[mf2.vessel.vesselName].totalWPReached.CompareTo(BDACompetitionMode.Instance.Scores.ScoreData[mf1.vessel.vesselName].totalWPReached));
+                    int place = orderedWMs.FindIndex(t => t.AI == weaponManager.AI);
+                    //would need several pools to shuffle through, based on placement. Or have one carefully ordered list, and have some sort of lograthmic modifier applied to the diceroll
+                }
             }
         }
 

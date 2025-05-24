@@ -16,6 +16,7 @@ using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
+using BDArmory.GameModes.Waypoints;
 
 namespace BDArmory.Competition
 {
@@ -2740,14 +2741,51 @@ namespace BDArmory.Competition
 
                         if (vessel.LandedOrSplashed)
                         {
-                            if (!vData.landedState)
+                            var surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
+                            if (surfaceAI != null)
                             {
-                                // was flying, is now landed
-                                vData.lastLandedTime = now;
-                                vData.landedState = true;
-                                if (vData.landedKillTimer == 0)
+                                if ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Land && vessel.Splashed || (vessel.horizontalSrfSpeed < surfaceAI.MaxSpeed / 10 && surfaceAI.currentStatusMode != BDModuleSurfaceAI.StatusMode.CollisionAvoidance)) //rover has gotten flipped/lost wheels and become immobilized/multiclassed to submarine
+                                    || ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water || surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Submarine) && vessel.Landed) //vessel beached
+                                    || (surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water && vessel.IsUnderwater())) //boat sunk
                                 {
-                                    vData.landedKillTimer = now;
+                                    if (!vData.landedState)
+                                    {
+                                        vData.lastLandedTime = now;
+                                        vData.landedState = true;
+                                        if (vData.landedKillTimer == 0)
+                                        {
+                                            vData.landedKillTimer = now;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    if (vData.landedState)
+                                    {
+                                        vData.lastLandedTime = now;
+                                        vData.landedState = false;
+                                    }
+                                    if (vData.landedKillTimer != 0)
+                                    {
+                                        // safely mobile for 15 seconds
+                                        if (now - vData.landedKillTimer > 15)
+                                        {
+                                            vData.landedKillTimer = 0;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (!vData.landedState)
+                                {
+                                    // was flying, is now landed
+                                    vData.lastLandedTime = now;
+                                    vData.landedState = true;
+                                    if (vData.landedKillTimer == 0)
+                                    {
+                                        vData.landedKillTimer = now;
+                                    }
                                 }
                             }
                         }
@@ -2822,25 +2860,10 @@ namespace BDArmory.Competition
                         vData.averageCount++;
                         if (vData.landedState && BDArmorySettings.COMPETITION_KILL_TIMER > 0)
                         {
-                            if (VesselModuleRegistry.GetBDModuleSurfaceAI(vessel, true) == null) // Ignore surface AI vessels for the kill timer.
+                            KillTimer[vesselName] = (int)(now - vData.landedKillTimer);
+                            if (now - vData.landedKillTimer > BDArmorySettings.COMPETITION_KILL_TIMER)
                             {
-                                KillTimer[vesselName] = (int)(now - vData.landedKillTimer);
-                                if (now - vData.landedKillTimer > BDArmorySettings.COMPETITION_KILL_TIMER)
-                                {
-                                    vesselsToKill.Add(mf.vessel);
-                                }
-                            }
-                            else
-                            {
-                                var surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
-                                if ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Land && vessel.Splashed) || ((surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water || surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Submarine) && vessel.Landed) || (surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water && vessel.IsUnderwater()))
-                                {
-                                    KillTimer[vesselName] = (int)(now - vData.landedKillTimer);
-                                    if (now - vData.landedKillTimer > BDArmorySettings.COMPETITION_KILL_TIMER)
-                                    {
-                                        vesselsToKill.Add(mf.vessel);
-                                    }
-                                }
+                                vesselsToKill.Add(mf.vessel);
                             }
                         }
                         if (vData.AltitudeKillTimer > 0 && BDArmorySettings.COMPETITION_KILL_TIMER > 0)
@@ -3035,6 +3058,13 @@ namespace BDArmory.Competition
                         }
                     }
                     deadOrAliveString += " :" + player + ": ";
+                    if (BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[player].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count)
+                    {
+                        if (CircularSpawning.Instance.GetSpawnedVesselURLs().TryGetValue(player, out string url))
+                        {
+                            SingleVesselSpawning.Instance.SpawnVessel(url, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE);
+                        }
+                    }
                 }
             }
             deadOrAlive = deadOrAliveString;
@@ -3143,6 +3173,13 @@ namespace BDArmory.Competition
                 if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
                 if (KillTimer.ContainsKey(vesselName)) KillTimer.Remove(vesselName);
                 VesselUtils.ForceDeadVessel(vessel);
+                if(BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[vesselName].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count)
+                {
+                    if (CircularSpawning.Instance.GetSpawnedVesselURLs().TryGetValue(vesselName, out string url))
+                    {
+                        SingleVesselSpawning.Instance.SpawnVessel(url, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE);
+                    }
+                }
             }
 
             if (!(BDArmorySettings.COMPETITION_NONCOMPETITOR_REMOVAL_DELAY > 60))

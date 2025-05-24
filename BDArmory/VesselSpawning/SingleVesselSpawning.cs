@@ -7,6 +7,7 @@ using BDArmory.Competition;
 using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.GameModes.Waypoints;
 
 namespace BDArmory.VesselSpawning
 {
@@ -66,8 +67,21 @@ namespace BDArmory.VesselSpawning
             var withInitialVelocity = airborne && BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY;
             VesselSpawnConfig vesselSpawnConfig = new VesselSpawnConfig(craftUrl, spawnPoint, direction, (float)altitude, initialPitch, airborne, spawnInOrbit);
 
-            // Spawn vessel.
-            yield return SpawnSingleVessel(vesselSpawnConfig);
+            if (BDArmorySettings.WAYPOINTS_MODE && BDACompetitionMode.Instance.competitionIsActive)
+            {
+                var waypoint = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[BDACompetitionMode.Instance.Scores.ScoreData[spawnedVesselURLs[craftUrl]].waypointsReached.Count - 1].location;
+                var nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[0].location;
+                spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z + terrainAltitude);
+                if (WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count > BDACompetitionMode.Instance.Scores.ScoreData[spawnedVesselURLs[craftUrl]].waypointsReached.Count - 1)
+                    nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[BDACompetitionMode.Instance.Scores.ScoreData[spawnedVesselURLs[craftUrl]].waypointsReached.Count].location;
+                // if multi-lap and/or at the end of the course, point towards G0, else point towards next gate
+                Vector3d nextGate = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWP.x, nextWP.y, nextWP.z + terrainAltitude);
+                direction = (nextGate - spawnPoint).normalized;
+                altitude = (BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoint.z : BDArmorySettings.WAYPOINTS_ALTITUDE) + (float)terrainAltitude;
+            }
+
+        // Spawn vessel.
+        yield return SpawnSingleVessel(vesselSpawnConfig);
             if (spawnFailureReason != SpawnFailureReason.None) yield break;
             var vessel = spawnedVessels[latestSpawnedVesselName];
             if (vessel == null)
@@ -78,7 +92,8 @@ namespace BDArmory.VesselSpawning
             var vesselName = vessel.vesselName;
 
             // Perform the standard post-spawn main sequence.
-            yield return PostSpawnMainSequence(vessel, airborne, withInitialVelocity);
+            yield return PostSpawnMainSequence(vessel, airborne, BDArmorySettings.WAYPOINTS_MODE && airborne ? true : BDArmorySettings.VESSEL_SPAWN_INITIAL_VELOCITY, false);
+            //if spawning a replacement WP racer at (gate) altitude, force spawn at idle speed
             if (spawnFailureReason != SpawnFailureReason.None) yield break;
 
             // If a competition is active, add them to it.

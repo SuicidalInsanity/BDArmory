@@ -835,7 +835,7 @@ namespace BDArmory.Control
                     else if (pathingWaypoints.Count > 1)
                         targetVelocity = (command == PilotCommands.Attack || command == PilotCommands.Waypoints) ? MaxSpeed : CruiseSpeed;
                     else
-                        targetVelocity = Mathf.Clamp((targetDirection.magnitude - targetRadius / 2) / 5f,
+                        targetVelocity = command == PilotCommands.Waypoints ? MaxSpeed : Mathf.Clamp((targetDirection.magnitude - targetRadius / 2) / 5f,
                         0, command == PilotCommands.Attack ? MaxSpeed : CruiseSpeed);
 
                     if (Vector3.Dot(targetDirection, vesselTransform.up) < 0 && !PoweredSteering) targetVelocity = 0;

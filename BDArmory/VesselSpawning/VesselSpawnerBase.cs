@@ -15,6 +15,7 @@ using BDArmory.UI;
 using BDArmory.Damage;
 using BDArmory.FX;
 using BDArmory.Weapons;
+using BDArmory.GameModes.Waypoints;
 
 namespace BDArmory.VesselSpawning
 {
@@ -825,6 +826,25 @@ namespace BDArmory.VesselSpawning
                         if (BDKrakensbane.IsActive) orbitVelocity -= BDKrakensbane.FrameVelocityV3f;
                         vessel.SetWorldVelocity(orbitVelocity);
                     }
+                    if (BDArmorySettings.WAYPOINTS_MODE && BDACompetitionMode.Instance.competitionIsActive && BDACompetitionMode.Instance.Scores.ScoreData[vessel.GetName()].deathTime > 0)
+                    {
+                        //re-initialize Waypoint stuff
+                        var pilot = weaponManager.AI as BDGenericAIBase;
+                        if (pilot != null)
+                        {
+                            var waypoints = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints;
+                            var mappedWaypoints = BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoints.Select(e => e.location).ToList() : waypoints.Select(wp => new Vector3(wp.location.x, wp.location.y, BDArmorySettings.WAYPOINTS_ALTITUDE)).ToList();
+
+                            pilot.SetWaypoints(mappedWaypoints, BDACompetitionMode.Instance.Scores.ScoreData[vessel.GetName()].totalWPReached, Mathf.CeilToInt(BDACompetitionMode.Instance.Scores.ScoreData[vessel.GetName()].totalWPReached / waypoints.Count));
+                            foreach (var kerbal in VesselModuleRegistry.GetKerbalEVAs(vessel))
+                            {
+                                if (kerbal == null) continue;
+                                // Remove drag from EVA kerbals on seats.
+                                kerbal.part.dragModel = Part.DragModel.SPHERICAL; // Use the spherical drag model for which the min/max drag values work properly.
+                                kerbal.part.ShieldedFromAirstream = true;
+                            }
+                        }
+                    }
                 }
                 if (weaponManager.guardMode)
                 {
@@ -944,6 +964,7 @@ namespace BDArmory.VesselSpawning
             {
                 BDACompetitionMode.Instance.Scores.AddPlayer(vessel);
             }
+            BDACompetitionMode.Instance.Scores.ScoreData[vesselName].aliveState = AliveState.Alive;
             if (ContinuousSpawning.Instance.vesselsSpawningContinuously)
             {
                 if (!ContinuousSpawning.Instance.continuousSpawningScores.ContainsKey(vesselName))
@@ -970,7 +991,7 @@ namespace BDArmory.VesselSpawning
 
             // Enable guard mode if a competition is active.
             if (BDACompetitionMode.Instance.competitionIsActive && !weaponManager.guardMode) weaponManager.ToggleGuardMode();
-            weaponManager.AI.ReleaseCommand();
+            if (!BDArmorySettings.WAYPOINTS_MODE) weaponManager.AI.ReleaseCommand();
             weaponManager.ForceScan();
 
             if (ContinuousSpawning.Instance.vesselsSpawningContinuously)

@@ -835,9 +835,7 @@ namespace BDArmory.UI
                             TournamentCoordinator.Instance.StopForEach();
                         }
                         float spawnLatitude, spawnLongitude;
-                        List<Waypoint> course; //adapt to how the spawn locations are displayed/selected 
-                                               //add new GUI window for waypoint course creation; new name entry field for course, waypoints, save button to save WP coords
-                                               //Spawn button to spawn in WP (+ WP visualizer); movement buttons/widget for moving Wp around (+ fineness slider to set increment amount); have these display to a numeric field for numfield editing instead?
+                        List<Waypoint> course;
                         spawnLatitude = (float)WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].spawnPoint.x;
                         spawnLongitude = (float)WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].spawnPoint.y;
                         course = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints;
