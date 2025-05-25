@@ -56,6 +56,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
         public static List<WayPointTracing> Ghosts = new List<WayPointTracing>();
 
         public static string ModelPath = "BDArmory/Models/WayPoint/model";
+        public bool runningWaypoints = false;
 
         public WaypointFollowingStrategy(List<Waypoint> waypoints)
         {
@@ -63,6 +64,11 @@ namespace BDArmory.Competition.OrchestrationStrategies
         }
 
         float liftMultiplier = 0;
+
+        public void UpdatePilots()
+        {
+            pilots = BDACompetitionMode.Instance.GetAllPilots().Select(p => VesselModuleRegistry.GetModule<BDGenericAIBase>(p.vessel)).ToList();
+        }
 
         public IEnumerator Execute(BDAScoreClient client, BDAScoreService service)
         {
@@ -78,7 +84,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
             yield return new WaitWhile(() => BDACompetitionMode.Instance.competitionStarting);
             yield return new WaitWhile(() => BDACompetitionMode.Instance.pinataAlive);
             PrepareCompetition();
-
+            runningWaypoints = true;
             // Configure the pilots' waypoints.
             var mappedWaypoints = BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoints.Select(e => e.location).ToList() : waypoints.Select(wp => new Vector3(wp.location.x, wp.location.y, BDArmorySettings.WAYPOINTS_ALTITUDE)).ToList();
             BDACompetitionMode.Instance.competitionStatus.Add($"Starting waypoints competition {BDACompetitionMode.Instance.CompetitionID}.");
@@ -96,7 +102,6 @@ namespace BDArmory.Competition.OrchestrationStrategies
                     kerbal.part.ShieldedFromAirstream = true;
                 }
             }
-
             // Wait for the pilots to complete the course.
             var startedAt = Planetarium.GetUniversalTime();
             if (BDArmorySettings.WAYPOINT_GUARD_INDEX != -1)
@@ -109,7 +114,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
                 yield return new WaitWhile(() => pilots.Any(pilot => pilot != null && pilot.weaponManager != null && pilot.IsRunningWaypoints && (pilot.TakingOff || (checkLandedOrSplashed[pilot] && !pilot.vessel.LandedOrSplashed))));
             }
             var endedAt = Planetarium.GetUniversalTime();
-
+            runningWaypoints = false;
             BDACompetitionMode.Instance.competitionStatus.Add("Waypoints competition finished. Scores:");
             foreach (var player in BDACompetitionMode.Instance.Scores.Players)
             {
@@ -128,7 +133,6 @@ namespace BDArmory.Competition.OrchestrationStrategies
 
                 Debug.Log(string.Format("[BDArmory.WaypointFollowingStrategy]: Finished {0}, elapsed={1:0.00}, count={2}, deviation={3:0.00}", player, elapsedTime, waypointCount, deviation));
             }
-
             CleanUp();
         }
 
@@ -143,6 +147,7 @@ namespace BDArmory.Competition.OrchestrationStrategies
                 char T = (char)(Convert.ToUInt16('A') + BDATournament.Instance.currentHeat);
                 pilots[0].weaponManager.SetTeam(BDTeam.Get(T.ToString()));
             }
+            BDACompetitionMode.Instance.WFS = this;
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 55)
             {
                 liftMultiplier = PhysicsGlobals.LiftMultiplier;
@@ -221,6 +226,13 @@ namespace BDArmory.Competition.OrchestrationStrategies
             }
         }
 
+        IEnumerator PilotSyncronizer()
+        {
+            yield return new WaitWhile(() => pilots.Any(pilot => pilot == null && pilot.weaponManager == null)); //someone died, respawns enabled, reset pilotlist
+            pilots = BDACompetitionMode.Instance.GetAllPilots().Select(p => VesselModuleRegistry.GetModule<BDGenericAIBase>(p.vessel)).ToList();
+
+        }
+
         public void CleanUp()
         {
             if (BDACompetitionMode.Instance.competitionIsActive) BDACompetitionMode.Instance.StopCompetition(); // Competition is done, so stop it and do the rest of the book-keeping.
@@ -229,6 +241,8 @@ namespace BDArmory.Competition.OrchestrationStrategies
                 PhysicsGlobals.LiftMultiplier = liftMultiplier;
                 liftMultiplier = 0;
             }
+            BDACompetitionMode.Instance.WFS = null;
+            runningWaypoints = false;
         }
     }
 

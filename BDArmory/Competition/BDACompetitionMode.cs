@@ -17,6 +17,7 @@ using BDArmory.Utils;
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
 using BDArmory.GameModes.Waypoints;
+using BDArmory.Competition.OrchestrationStrategies;
 
 namespace BDArmory.Competition
 {
@@ -51,6 +52,7 @@ namespace BDArmory.Competition
         float lastMinAlt;
         private string deadOrAlive = "";
         static HashSet<string> outOfAmmo = new HashSet<string>(); // outOfAmmo register for tracking which planes are out of ammo.
+        public WaypointFollowingStrategy WFS;
 
         // Action groups
         public static Dictionary<int, KSPActionGroup> KM_dictAG = new Dictionary<int, KSPActionGroup> {
@@ -3056,15 +3058,28 @@ namespace BDArmory.Competition
                             if (BDArmorySettings.MUTATOR_LIST.Count > 0 && canAssignMutator) ApplyOnKillMutator(player);
                             else Debug.Log($"[BDArmory.BDACompetitionMode]: Mutator mode, but no assigned mutators! Can't apply mutator on Kill!");
                         }
-                    }
-                    deadOrAliveString += " :" + player + ": ";
-                    if (BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[player].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count)
-                    {
-                        if (CircularSpawning.Instance.GetSpawnedVesselURLs().TryGetValue(player, out string url))
+                        if (BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[player].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count) //Don't respawn craft after they've passed the finish line
                         {
-                            SingleVesselSpawning.Instance.SpawnVessel(url, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE);
+                            Debug.Log($"[BDArmory.BDACompetitionMode]: WP Racer destroyed after completing {Scores.ScoreData[player].totalWPReached} of {WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count} gates. Respawning");
+                            if (CircularSpawning.Instance.GetSpawnedVesselURLs().TryGetValue(player, out string url))
+                            {
+                                int lastGate = Scores.ScoreData[player].waypointsReached.Count - 1;
+                                if (lastGate < 0) lastGate = 0;
+                                var waypoint = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[lastGate].location;
+                                var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z);
+                                var nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[0].location;
+                                if (WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count > lastGate)
+                                    nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[lastGate + 1].location;
+                                // if multi-lap and/or at the end of the course, point towards G0, else point towards next gate
+                                Vector3d nextGate = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWP.x, nextWP.y, nextWP.z);
+                                var direction = (nextGate - spawnPoint).normalized;
+                                float altitude = 5 + BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoint.z : BDArmorySettings.WAYPOINTS_ALTITUDE;
+
+                                StartCoroutine(SingleVesselSpawning.Instance.SpawnVessel(url, waypoint.x, waypoint.y, altitude, initialDirection: direction));
+                            }
                         }
                     }
+                    deadOrAliveString += " :" + player + ": ";
                 }
             }
             deadOrAlive = deadOrAliveString;
@@ -3173,11 +3188,24 @@ namespace BDArmory.Competition
                 if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
                 if (KillTimer.ContainsKey(vesselName)) KillTimer.Remove(vesselName);
                 VesselUtils.ForceDeadVessel(vessel);
-                if(BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[vesselName].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count)
+                if (BDArmorySettings.WAYPOINTS_MODE && BDArmorySettings.VESSEL_SPAWN_CONTINUE_SINGLE_SPAWNING && Scores.ScoreData[vesselName].totalWPReached < WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count) //Don't respawn craft after they've passed the finish line
                 {
+                    Debug.Log($"[BDArmory.BDACompetitionMode]: WP racer immobilized after completing {Scores.ScoreData[vesselName].totalWPReached} of {WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count} gates. Respawning");
                     if (CircularSpawning.Instance.GetSpawnedVesselURLs().TryGetValue(vesselName, out string url))
                     {
-                        SingleVesselSpawning.Instance.SpawnVessel(url, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, BDArmorySettings.VESSEL_SPAWN_ALTITUDE);
+                        int lastGate = Scores.ScoreData[vesselName].waypointsReached.Count - 1;
+                        if (lastGate < 0) lastGate = 0;
+                        var waypoint = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[lastGate].location;
+                        var spawnPoint = FlightGlobals.currentMainBody.GetWorldSurfacePosition(waypoint.x, waypoint.y, waypoint.z);
+                        var nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[0].location;
+                        if (WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints.Count > lastGate)
+                            nextWP = WaypointCourses.CourseLocations[BDArmorySettings.WAYPOINT_COURSE_INDEX].waypoints[lastGate + 1].location;
+                        // if multi-lap and/or at the end of the course, point towards G0, else point towards next gate
+                        Vector3d nextGate = FlightGlobals.currentMainBody.GetWorldSurfacePosition(nextWP.x, nextWP.y, nextWP.z);
+                        var direction = (nextGate - spawnPoint).normalized;
+                        float altitude = 5 + BDArmorySettings.WAYPOINTS_ALTITUDE < 0 ? waypoint.z : BDArmorySettings.WAYPOINTS_ALTITUDE;
+                        Debug.Log($"[BDArmory.BDACompetitionMode]: input coords: {waypoint.x}, {waypoint.y}");
+                        StartCoroutine(SingleVesselSpawning.Instance.SpawnVessel(url, waypoint.x, waypoint.y, altitude, initialDirection: direction));
                     }
                 }
             }

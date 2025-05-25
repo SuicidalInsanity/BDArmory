@@ -16,6 +16,7 @@ using BDArmory.Weapons.Missiles;
 using BDArmory.Weapons;
 using BDArmory.Damage;
 using BDArmory.FX;
+using BDArmory.GameModes.Waypoints;
 
 namespace BDArmory.VesselSpawning
 {

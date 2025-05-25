@@ -412,9 +412,9 @@ namespace BDArmory.Radar
                 MissileBase missile = ti.MissileBaseModule;
                 if (missile != null)
                 {
-                    if (missile.ActiveRadar)
-                        ti.radarBaseSignature = RCS_MISSILES;
-                    else
+                    //if (missile.ActiveRadar)
+                    //    ti.radarBaseSignature = RCS_MISSILES; //...Why? That's the RWR's job, not radar.
+                    //else
                         ti.radarBaseSignature = missile.missileRadarCrossSection;
 
                     ti.radarBaseSignatureNeedsUpdate = false;

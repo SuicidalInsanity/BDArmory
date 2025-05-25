@@ -249,7 +249,7 @@ namespace BDArmory.VesselSpawning
         protected IEnumerator SpawnSingleVessel(VesselSpawnConfig vesselSpawnConfig)
         {
             ++vesselsSpawningCount;
-
+            Debug.Log($"[BDArmory.VesselSpawnerBase]: starting SpawnSingleVessel");
             Vessel vessel;
             Vector3d craftGeoCoords;
             var radialUnitVector = (vesselSpawnConfig.position - FlightGlobals.currentMainBody.transform.position).normalized;
@@ -272,7 +272,7 @@ namespace BDArmory.VesselSpawning
                 LogMessage("Failed to spawn craft " + craftName);
                 yield break; // Note: this doesn't cancel spawning.
             }
-            else if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Initial spawn of {vessel.vesselName} succeeded.", false);
+            else if (BDArmorySettings.DEBUG_SPAWNING) LogMessage($"Initial spawn of {vessel.vesselName} succeeded at {vesselSpawnConfig.position.x}({craftGeoCoords.x}), {vesselSpawnConfig.position.y}({craftGeoCoords.y}) at {vesselSpawnConfig.altitude}({craftGeoCoords.z}) alt.", false);
             vessel.Landed = false; // Tell KSP that it's not landed so KSP doesn't mess with its position.
             if (vesselSpawnConfig.reuseURLVesselName && spawnedVesselURLs.ContainsValue(vesselSpawnConfig.craftURL))
             {
@@ -965,6 +965,7 @@ namespace BDArmory.VesselSpawning
                 BDACompetitionMode.Instance.Scores.AddPlayer(vessel);
             }
             BDACompetitionMode.Instance.Scores.ScoreData[vesselName].aliveState = AliveState.Alive;
+            if (BDArmorySettings.WAYPOINTS_MODE && BDACompetitionMode.Instance.WFS != null && BDACompetitionMode.Instance.WFS.runningWaypoints) BDACompetitionMode.Instance.WFS.UpdatePilots();
             if (ContinuousSpawning.Instance.vesselsSpawningContinuously)
             {
                 if (!ContinuousSpawning.Instance.continuousSpawningScores.ContainsKey(vesselName))
