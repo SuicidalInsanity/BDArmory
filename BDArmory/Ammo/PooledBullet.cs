@@ -134,7 +134,6 @@ namespace BDArmory.Bullets
         public string plumeModelPath;
         public string debrisModelPath;
         public string blastSoundPath;
-        //public bool homing = false;
         public bool beehive = false;
         public string subMunitionType;
         public bool EMP = false;
@@ -146,6 +145,11 @@ namespace BDArmory.Bullets
         //mutator Param
         public bool stealResources;
         public float dmgMult = 1;
+
+        //Special params
+        float hurtDiameter = 1;
+        float cordiumDuration = -1;
+        List<Collider> beamColliders = new List<Collider>();
 
         Vector3 startPosition;
         public float detonationRange = 5f;
@@ -226,7 +230,7 @@ namespace BDArmory.Bullets
             overlapSphereColliders ??= new Collider[1000];
             allHits ??= [];
             vesselsInRange ??= [];
-            rayLength ??= [];
+            rayLength ??= [];            
         }
 
         void OnEnable()
@@ -319,13 +323,32 @@ namespace BDArmory.Bullets
                 bulletFX.transform.SetParent(gameObject.transform);
                 bulletTrail[1] = bulletFX.AddOrGetComponent<LineRenderer>();
             }
+            cordiumDuration = Mathf.CeilToInt(cordiumDuration);
+            if (beamColliders.Count < cordiumDuration)
+            {
+                for (int c = 0; c < cordiumDuration - beamColliders.Count; c++)
+                {
+                    var col = gameObject.AddComponent<CapsuleCollider>();
+                    col.center = Vector3.zero;
+                    col.direction = 2; //Z-Axis direction
+                    col.isTrigger = true;
+                    col.transform.localScale = Vector3.one;
+                    beamColliders.Add(col);
+                }
+            }
+            foreach (var col in beamColliders)
+            {
+                col.enabled = false;
+            }
 
             if (!shaderInitialized)
             {
                 shaderInitialized = true;
                 bulletShader = BDAShaderLoader.BulletShader;
             }
-
+            int maxSmoke = 5;
+            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration), 5);
+            if (maxSmoke > 5) smokePositions = new Vector3[maxSmoke];
             // Note: call SetTracerPosition() after enabling the bullet and making adjustments to it's position.
             if (!wasInitiated)
             {
@@ -357,6 +380,7 @@ namespace BDArmory.Bullets
             else
             {
                 bulletTrail[1].enabled = false;
+                cordiumDuration = -1;
             }
 
             tracerStartWidth *= 2f;
@@ -2281,6 +2305,19 @@ namespace BDArmory.Bullets
                     BDACompetitionMode.Instance.competitionStatus.Add(msg);
                 }
             }
+            if (cordiumDuration > 0)
+            {
+                StartCoroutine(DelayedKillBullet());
+                bulletTrail[0].enabled = false;
+                PooledBulletManager.RemoveBullet(this);
+            }
+            else
+                gameObject.SetActive(false);
+        }
+
+        IEnumerator DelayedKillBullet()
+        {
+            yield return new WaitForSecondsFixed(timeAlive - timeToLiveUntil);
             gameObject.SetActive(false);
         }
 
@@ -2335,7 +2372,9 @@ namespace BDArmory.Bullets
                 }
                 timeAlive -= 1;
             }
-            smokePositions[4] = currentPosition;
+            int maxSmoke = 4;
+            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration), 4);
+            smokePositions[maxSmoke] = currentPosition;
             if (BDKrakensbane.IsActive)
             {
                 Vector3 offset = BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
@@ -2344,7 +2383,15 @@ namespace BDArmory.Bullets
             }
             //if (Vector3.Distance(startPosition, currPosition) > 1000) smokePositions[0] = currPosition - ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * 1000);
             bulletTrail[0].SetPositions(linePositions);
-            if (bulletTrail[1].enabled) bulletTrail[1].SetPositions(smokePositions);
+            if (bulletTrail[1].enabled)
+            {
+                bulletTrail[1].SetPositions(smokePositions);
+                if (cordiumDuration > 0)
+                {
+                    //need to get all point pairs, get distance between them, and config one of beamCollider's colliders to stretch between each point pair
+                    //Also need to add some onCollisionEnter stuff for the AoE damage
+                }
+            }
         }
 
         void FadeColor()
