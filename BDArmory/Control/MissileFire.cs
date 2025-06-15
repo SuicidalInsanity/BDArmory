@@ -5253,7 +5253,7 @@ namespace BDArmory.Control
                 CycleWeapon(0);
                 SetTarget(null);
 
-                if (vesselRadarData && vesselRadarData.locked && missilesAway.Count == 0) // Don't unlock targets while we've got missiles in the air.
+                if (weaponArray.Length > 0 && vesselRadarData && vesselRadarData.locked && missilesAway.Count == 0) // Don't unlock targets while we've got missiles in the air.
                 {
                     vesselRadarData.UnlockAllTargets();
                 }
@@ -6169,10 +6169,10 @@ namespace BDArmory.Control
                                     }
                                     if (distance < ((EngageableWeapon)item.Current).engageRangeMin || firedMissiles >= maxMissilesOnTarget || (unguidedWeapon && distance > ((EngageableWeapon)item.Current).engageRangeMax / 10))
                                         candidateTDPS *= -1f; // if within min range, negatively weight weapon - allows weapon to still be selected if all others lost/out of ammo
-                                    if ((!vessel.LandedOrSplashed) || ((distance > gunRange) && (vessel.LandedOrSplashed))) // If we're not airborne, we want to prioritize guns
+                                    if ((!vessel.LandedOrSplashed) || (distance > gunRange && vessel.LandedOrSplashed)) // If we're not airborne, we want to prioritize guns
                                     {
                                         if (distance <= gunRange && candidateTDPS < 1 && targetWeapon != null) continue; //missiles are within min range/can't lock, don't replace existing gun if in gun range
-                                        if (targetWeaponPriority < candidatePriority) //use priority gun
+                                        if (targetWeaponPriority < candidatePriority) //use priority weapon
                                         {
                                             targetWeapon = item.Current;
                                             targetWeaponTDPS = candidateTDPS;
