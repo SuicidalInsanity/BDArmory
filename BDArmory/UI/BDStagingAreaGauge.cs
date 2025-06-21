@@ -4,6 +4,7 @@ using UnityEngine;
 
 using BDArmory.Settings;
 using BDArmory.Utils;
+using static BDArmory.CounterMeasure.CMDropper;
 
 namespace BDArmory.UI
 {
@@ -74,7 +75,7 @@ namespace BDArmory.UI
             }
         }
 
-        public void UpdateCMMeter(float cmLevel)
+        public void UpdateCMMeter(float cmLevel, CountermeasureTypes type)
         {
             if (BDArmorySettings.SHOW_AMMO_GAUGES && !BDArmorySettings.INFINITE_ORDINANCE)
             {
@@ -86,7 +87,7 @@ namespace BDArmory.UI
                     }
                     if (cmGauge == null)
                     {
-                        cmGauge = InitCMGauge(AmmoName);
+                        cmGauge = InitCMGauge(AmmoName, type);
                     }
                     cmGauge?.SetValue(cmLevel, 0, 1);
                 }
@@ -199,7 +200,7 @@ namespace BDArmory.UI
             return v;
         }
         
-        private ProtoStageIconInfo InitCMGauge(string ammoName) //thanks DYJ
+        private ProtoStageIconInfo InitCMGauge(string ammoName, CountermeasureTypes type)
         {
             EnsureStagingIcon();
             ProtoStageIconInfo a = part.stackIcon.DisplayInfo();
@@ -207,11 +208,32 @@ namespace BDArmory.UI
             if (a != null)
             {
                 a.SetMsgBgColor(XKCDColors.Silver);
-                a.SetMsgTextColor(XKCDColors.Brick);
-                //a.SetMessage("Ammunition");
                 a.SetMessage($"{ammoName}");
                 a.SetProgressBarBgColor(XKCDColors.DarkGrey);
-                a.SetProgressBarColor(XKCDColors.Brick);
+                switch (type)
+                {
+                    case CountermeasureTypes.Flare:
+                        a.SetProgressBarColor(XKCDColors.Brick);
+                        a.SetMsgTextColor(XKCDColors.Brick);
+                        break;
+                    case CountermeasureTypes.Chaff:
+                        a.SetProgressBarColor(XKCDColors.Grey);
+                        a.SetMsgTextColor(XKCDColors.Grey);
+                        break;
+                    case CountermeasureTypes.Smoke:
+                        a.SetProgressBarColor(XKCDColors.Brown);
+                        a.SetMsgTextColor(XKCDColors.Brown);
+                        break;
+                    case CountermeasureTypes.Bubbles:
+                        a.SetProgressBarColor(XKCDColors.TealGreen);
+                        a.SetMsgTextColor(XKCDColors.TealGreen);
+                        break;
+                    case CountermeasureTypes.Decoy:
+                        a.SetProgressBarColor(XKCDColors.DarkBlue);
+                        a.SetMsgTextColor(XKCDColors.DarkBlue);
+                        break;
+
+                }
             }
             return a;
         }

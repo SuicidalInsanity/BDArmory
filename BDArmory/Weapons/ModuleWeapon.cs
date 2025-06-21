@@ -22,7 +22,6 @@ using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
 using BDArmory.WeaponMounts;
 using static BDArmory.Bullets.PooledBullet;
-using static BDArmory.Control.MissileFire;
 
 namespace BDArmory.Weapons
 {
@@ -566,6 +565,14 @@ namespace BDArmory.Weapons
         bool hasCharged = false;
         [KSPField]
         public float chargeHoldLength = 1;
+
+        [KSPField]
+        public float cordiumDuration = -1;
+        [KSPField]
+        public float hurtDiameter = 0;
+        [KSPField]
+        public float cordiumDPS = 0;
+
         [KSPField]
         public string bulletDragTypeName = "AnalyticEstimate"; // deprecated, we now entirely rely on bulletInfo
         public BulletDragTypes bulletDragType;
@@ -2314,7 +2321,7 @@ namespace BDArmory.Weapons
                                     bulletDrop, (isAPS && delayTime > -1) ? delayTime - Time.time : Mathf.Max(maxTargetingRange, defaultDetonationRange) / bulletVelocity * 1.1f,
                                     iTime, detonationRange, bulletTimeToCPA,
                                     isAPS, isAPS ? tgtRocket : null, isAPS ? tgtShell : null, resourceSteal, instagib ? -1 : dmgMultiplier, bulletDmgMult,
-                                    true, 0f, 0f, fireTransform.forward, false, maxDeviation, targetV, guidance, true);
+                                    true, 0f, 0f, fireTransform.forward, false, maxDeviation, targetV, guidance, true, cordiumDuration, hurtDiameter, cordiumDPS);
 
                                 //heat
                                 heat += heatPerShot;

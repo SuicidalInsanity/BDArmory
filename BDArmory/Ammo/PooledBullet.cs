@@ -15,6 +15,7 @@ using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
+using BDArmory.Control;
 
 namespace BDArmory.Bullets
 {
@@ -43,7 +44,11 @@ namespace BDArmory.Bullets
                 // Perform the various stages that pooled bullets go through in blocks to hopefully reduce physics sync delays.
                 // Bullets should get deactivated and removed from activeBullets if they die.
                 var bullets = activeBullets.ToList(); // Pre-convert to a list and skip null bullets. This avoids moving subprojectiles from flak rounds.
-                foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled) bullet.PreCollisions();
+                foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled)
+                    {
+                        bullet.PreCollisions();
+                        bullet.setSmokePosition();
+                    }
                 Physics.SyncTransforms(); Physics.autoSyncTransforms = false; // Sync the physics, then prevent any auto-syncing while we run our collision checks.
                 foreach (var bullet in bullets) if (bullet != null && bullet.isActiveAndEnabled) bullet.DoCollisions(); // All the Physics calls occur here.
                 Physics.autoSyncTransforms = autoSync; // Re-enable auto-syncing.
@@ -147,9 +152,10 @@ namespace BDArmory.Bullets
         public float dmgMult = 1;
 
         //Special params
-        float hurtDiameter = 1;
-        float cordiumDuration = -1;
-        List<Collider> beamColliders = new List<Collider>();
+        public float hurtDiameter = 1;
+        public float cordiumDuration = -1;
+        public float cordiumDPS = 0;
+        List<CapsuleCollider> beamColliders = new List<CapsuleCollider>();
 
         Vector3 startPosition;
         public float detonationRange = 5f;
@@ -158,6 +164,7 @@ namespace BDArmory.Bullets
         float randomWidthScale = 1;
         LineRenderer[] bulletTrail;
         public float timeAlive = 0;
+        private int timeAliveOffset = 0;
         public float timeToLiveUntil;
         Light lightFlash;
         bool wasInitiated;
@@ -240,6 +247,7 @@ namespace BDArmory.Bullets
             startPosition = currentPosition;
             currentSpeed = currentVelocity.magnitude; // this is the velocity used for drag estimations (only), use total velocity, not muzzle velocity
             timeAlive = 0;
+            timeAliveOffset = 0;
             armingTime = isSubProjectile ? 0 : 1.5f * ((beehive ? BlastPhysicsUtils.CalculateBlastRange(tntMass) : detonationRange) / bulletVelocity); //beehive rounds have artifically large detDists; only need explosive radius arming check
             fuzeTriggered = false;
             if (HEType != PooledBulletTypes.Slug)
@@ -323,23 +331,6 @@ namespace BDArmory.Bullets
                 bulletFX.transform.SetParent(gameObject.transform);
                 bulletTrail[1] = bulletFX.AddOrGetComponent<LineRenderer>();
             }
-            cordiumDuration = Mathf.CeilToInt(cordiumDuration);
-            if (beamColliders.Count < cordiumDuration)
-            {
-                for (int c = 0; c < cordiumDuration - beamColliders.Count; c++)
-                {
-                    var col = gameObject.AddComponent<CapsuleCollider>();
-                    col.center = Vector3.zero;
-                    col.direction = 2; //Z-Axis direction
-                    col.isTrigger = true;
-                    col.transform.localScale = Vector3.one;
-                    beamColliders.Add(col);
-                }
-            }
-            foreach (var col in beamColliders)
-            {
-                col.enabled = false;
-            }
 
             if (!shaderInitialized)
             {
@@ -347,8 +338,8 @@ namespace BDArmory.Bullets
                 bulletShader = BDAShaderLoader.BulletShader;
             }
             int maxSmoke = 5;
-            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration), 5);
-            if (maxSmoke > 5) smokePositions = new Vector3[maxSmoke];
+            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration), 1); 
+            smokePositions = new Vector3[maxSmoke];
             // Note: call SetTracerPosition() after enabling the bullet and making adjustments to it's position.
             if (!wasInitiated)
             {
@@ -382,7 +373,24 @@ namespace BDArmory.Bullets
                 bulletTrail[1].enabled = false;
                 cordiumDuration = -1;
             }
-
+            cordiumDuration = Mathf.CeilToInt(cordiumDuration);
+            if (beamColliders.Count < cordiumDuration)
+            {
+                for (int c = 0; c < cordiumDuration - beamColliders.Count; c++)
+                {
+                    var col = gameObject.AddComponent<CapsuleCollider>();
+                    col.center = Vector3.zero;
+                    col.direction = 2; //Z-Axis direction
+                    col.isTrigger = true;
+                    col.transform.localScale = Vector3.one;
+                    col.radius = hurtDiameter;
+                    beamColliders.Add(col);
+                }
+            }
+            foreach (var col in beamColliders)
+            {
+                col.enabled = false;
+            }
             tracerStartWidth *= 2f;
             tracerEndWidth *= 2f;
 
@@ -936,6 +944,7 @@ namespace BDArmory.Bullets
             {
                 return true;
             }
+            if (bulletHit.hit.collider.isTrigger) return true;
             Part hitPart;
             KerbalEVA hitEVA;
             try
@@ -1875,7 +1884,7 @@ namespace BDArmory.Bullets
             return bulletMass / ((bulletDragArea / 1000000f) * 0.295f); // mm^2 to m^2
         }
 
-        public static void FireBullet(BulletInfo bulletType, int projectileCount,
+        public static void FireBullet(BulletInfo bulletType, int projectileCount, 
             SourceInfo sourceInfo, GraphicsInfo graphicsInfo, NukeInfo nukeInfo,
             bool drop, float TTL, float timestep, float detRange, float detTime,
             bool isAPSP = false, PooledRocket targetRocket = null, PooledBullet targetShell = null,
@@ -1884,7 +1893,8 @@ namespace BDArmory.Bullets
             Vector3 subPVelorDir = default, bool isSubP = false,
             float maxDeviation = -1f,
             Vessel tgtVessel = null, float guidance = 0f,
-            bool registerShot = false)
+            bool registerShot = false,
+            float cordiumDuration = -1, float hurtDiameter = 0, float cordiumDPS = 0)
         {
             if (ModuleWeapon.bulletPool == null)
             {
@@ -1910,7 +1920,11 @@ namespace BDArmory.Bullets
                 PooledBullet pBullet = firedBullet.GetComponent<PooledBullet>();
 
                 pBullet.currentPosition = sourceInfo.position;
-
+                if (hurtDiameter > 0)
+                {
+                    Vector3 worldUp = VectorUtils.GetUpDirection(pBullet.transform.position);
+                    pBullet.transform.rotation = Quaternion.LookRotation(subPVelorDir, worldUp); 
+                }
                 pBullet.caliber = bulletType.caliber;
                 pBullet.bulletVelocity = bulletType.bulletVelocity + additionalVel;
                 pBullet.bulletMass = bulletType.bulletMass;
@@ -2014,6 +2028,14 @@ namespace BDArmory.Bullets
                 pBullet.guidanceRange = bulletType.guidanceRange;
                 pBullet.isSubProjectile = isSubP;
                 pBullet.isAPSprojectile = isAPSP;
+
+                if (cordiumDuration > 0)
+                {
+                    pBullet.cordiumDuration = cordiumDuration;
+                    pBullet.hurtDiameter = hurtDiameter;
+                    pBullet.cordiumDPS = cordiumDPS;
+                }
+
                 pBullet.gameObject.SetActive(true);
 
                 if (registerShot)
@@ -2022,6 +2044,7 @@ namespace BDArmory.Bullets
                 if (!addSourcePartVel)
                 {
                     pBullet.SetTracerPosition();
+                    pBullet.setSmokePosition();
                     if (pBullet.CheckBulletCollisions(timestep)) continue; // Bullet immediately hit something and died.
                     if (!pBullet.hasRicocheted) pBullet.MoveBullet(timestep); // Move the bullet the remaining part of the frame.
                     pBullet.currentPosition += (TimeWarp.fixedDeltaTime - timestep) * BDKrakensbane.FrameVelocityV3f; // Re-adjust for Krakensbane.
@@ -2041,8 +2064,26 @@ namespace BDArmory.Bullets
                     }
                     pBullet.timeAlive = timestep;
                     pBullet.SetTracerPosition();
+                    pBullet.setSmokePosition();
                     pBullet.currentPosition += TimeWarp.fixedDeltaTime * (sourceInfo.weapon.rb.velocity + BDKrakensbane.FrameVelocityV3f); // Account for velocity off-loading after visuals are done.
                 }
+            }
+        }
+
+        void OnGUI()
+        {
+            if (!BDArmorySettings.DEBUG_LINES) return;
+
+            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 10f, 2, Color.blue);
+            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10f, 1, Color.red);
+            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 10f, 1, Color.green);
+            Vector3 previousPos = startPosition;
+            for (int c = 1; c < smokePositions.Length - 1; c++) //c = 1, because c0 = startposition
+            {
+                float height = Vector3.Distance(smokePositions[c], previousPos);
+                if (height < 1) continue;
+                GUIUtils.DrawLineBetweenWorldPositions(beamColliders[c - 1].transform.position, beamColliders[c - 1].transform.position + beamColliders[c - 1].transform.forward * height, 4, Color.green);
+                previousPos = smokePositions[c];
             }
         }
 
@@ -2352,16 +2393,26 @@ namespace BDArmory.Bullets
             {
                 linePositions[1] = currentPosition - tracerLength * tracerDirection.normalized;
             }
-            linePositions[0] = currentPosition;
+            linePositions[0] = currentPosition;            
+            if (BDKrakensbane.IsActive)
+            {
+                Vector3 offset = BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                for (int i = 0; i < linePositions.Length; ++i) linePositions[i] -= offset;
+            }
+            //if (Vector3.Distance(startPosition, currPosition) > 1000) smokePositions[0] = currPosition - ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * 1000);
+            bulletTrail[0].SetPositions(linePositions);
+        }
+        public void setSmokePosition()
+        {
             smokePositions[0] = startPosition;
             for (int i = 0; i < smokePositions.Length - 1; i++)
             {
-                if (timeAlive < i)
+                if (timeAlive - timeAliveOffset < i)
                 {
                     smokePositions[i] = currentPosition;
                 }
             }
-            if (timeAlive > smokePositions.Length)
+            if ((timeAlive - timeAliveOffset) > smokePositions.Length)
             {
                 //smokePositions[0] = smokePositions[1];
                 startPosition = smokePositions[1]; //Start position isn't used for anything else, so modifying shouldn't be an issue. Vestigial value from some deprecated legacy function?
@@ -2370,30 +2421,54 @@ namespace BDArmory.Bullets
                     smokePositions[i] = smokePositions[i + 1];
                     //have it so each sec interval after timeAlive > smokePositions.length, have smokePositions[i] = smokePosition[i+1]if i < = smokePosition.length - 1;
                 }
-                timeAlive -= 1;
+                timeAliveOffset++;
             }
             int maxSmoke = 4;
-            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration), 4);
+            if (cordiumDuration > 0) maxSmoke = Math.Max(Mathf.CeilToInt(cordiumDuration - 1), 4);
+
             smokePositions[maxSmoke] = currentPosition;
             if (BDKrakensbane.IsActive)
             {
                 Vector3 offset = BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
-                for (int i = 0; i < linePositions.Length; ++i) linePositions[i] -= offset;
                 for (int i = 0; i < smokePositions.Length; ++i) smokePositions[i] -= offset;
             }
-            //if (Vector3.Distance(startPosition, currPosition) > 1000) smokePositions[0] = currPosition - ((currentVelocity - FlightGlobals.ActiveVessel.Velocity()).normalized * 1000);
-            bulletTrail[0].SetPositions(linePositions);
             if (bulletTrail[1].enabled)
             {
                 bulletTrail[1].SetPositions(smokePositions);
                 if (cordiumDuration > 0)
                 {
-                    //need to get all point pairs, get distance between them, and config one of beamCollider's colliders to stretch between each point pair
-                    //Also need to add some onCollisionEnter stuff for the AoE damage
+                    Vector3 previousPos = startPosition;
+                    Vector3 worldUp = VectorUtils.GetUpDirection(transform.position);
+                    for (int c = 1; c < smokePositions.Length - 1; c++) //c = 1, because c0 = startposition
+                    {
+                        float height = Vector3.Distance(smokePositions[c], previousPos);
+                        if (height < 1) continue; //timeAlive < this smokepoint, hasn't been set yet
+                        beamColliders[c - 1].enabled = true;
+                        beamColliders[c - 1].transform.position = smokePositions[c];
+                        beamColliders[c - 1].transform.rotation = Quaternion.LookRotation((smokePositions[c - 1] - smokePositions[c]), worldUp);
+                        beamColliders[c - 1].height = height;
+                        beamColliders[c - 1].center = new Vector3(0, 0, height / 2);
+                        previousPos = smokePositions[c];
+                    }
+                    //add some check so this only procs for the active segment of the beam (The latest set smokePosition point) so it doesn't keep Setting colliders for mid-tracer sections that are going to be static for a few sec?
                 }
             }
         }
+        void OnTriggerStay(Collider other)
+        {
+            //hitting parts
+            Part hitPart = null;
 
+            hitPart = other.gameObject.GetComponentUpwards<Part>();
+            Debug.Log($"Trigger Collider Stay");
+            if (hitPart != null)
+            {                
+                Debug.Log($"[BDArmory.CordiumTracer]: {hitPart.partInfo.title} entered HurtBox, applying {cordiumDPS * TimeWarp.fixedDeltaTime} damage");
+                hitPart.AddDamage(cordiumDPS * TimeWarp.fixedDeltaTime);
+                //Mitigated by armor?
+            }
+            //DOT buildingdamage?
+        }
         void FadeColor()
         {
             Vector4 endColorV = new Vector4(projectileColor.r, projectileColor.g, projectileColor.b, projectileColor.a);

@@ -294,6 +294,11 @@ namespace BDArmory.Control
             groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
             UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
         public bool divebombing = false;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Ground Attack Angle", //Max Altitude
+    groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
+    UI_FloatRange(minValue = 10, maxValue = 90, stepIncrement = 2.5f, scene = UI_Scene.All)]
+        public float diveAngle = 45;
         #endregion
 
         #region Speeds
@@ -1336,6 +1341,15 @@ namespace BDArmory.Control
         }
         void ToggleMaxAltitude(BaseField field = null, object obj = null)
         {
+            maxAltitudeEnabled = divebombing;
+            var maxAltitudeField = Fields["diveAngle"];
+            maxAltitudeField.guiActive = divebombing;
+            maxAltitudeField.guiActiveEditor = divebombing;
+            if (!divebombing)
+                StartCoroutine(FixAltitudesSectionLayout());
+        }
+        void ToggleBombingAngle(BaseField field = null, object obj = null)
+        {
             maxAltitudeEnabled = maxAltitudeToggle;
             var maxAltitudeField = Fields["maxAltitude"];
             maxAltitudeField.guiActive = maxAltitudeToggle;
@@ -1502,9 +1516,14 @@ namespace BDArmory.Control
             var maxAltitudeToggleField = Fields["maxAltitudeToggle"];
             maxAltitudeToggleField.guiActive = false;
             maxAltitudeToggleField.guiActiveEditor = false;
+            var maxBombAngleField = Fields["diveAngle"];
+            maxBombAngleField.guiActive = false;
+            maxBombAngleField.guiActiveEditor = false;
             yield return null;
             maxAltitudeToggleField.guiActive = true;
             maxAltitudeToggleField.guiActiveEditor = true;
+            maxBombAngleField.guiActive = true;
+            maxBombAngleField.guiActiveEditor = true;
         }
 
         void SetupSliderResolution()
@@ -2330,7 +2349,7 @@ namespace BDArmory.Control
                             if (!divebombing || missile.GetWeaponClass() == WeaponClasses.SLW) //don't divebomb w/ torpedoes
                             {
                                 steerMode = SteerModes.Manoeuvering; //steer to aim bombs(not guns). Manoeuvering is a lot more stable.
-                                if (angleToTarget < 45f)
+                                if (angleToTarget < 60f)
                                 {
                                     if (missile.GetWeaponClass() == WeaponClasses.SLW)
                                     {
@@ -2360,7 +2379,9 @@ namespace BDArmory.Control
                             else
                             {
                                 target = AIUtils.PredictPosition(v, weaponManager.bombAirTime); //actively diving towards target, use real-Time drop time vs estimate for static alt
-                                if (distanceToTarget < defaultAltitude * 2) finalBombingAlt = (v.LandedOrSplashed ? minAltitude : (float)v.altitude + missile.GetBlastRadius() * 2); //dive towards target. Distance trigger in MissileFire may need some tweaking; currently must be under this + 500 to drop bombs
+                                //if (distanceToTarget < defaultAltitude * 2) 
+                                if (angleToTarget > diveAngle)
+                                    finalBombingAlt = (v.LandedOrSplashed ? minAltitude : (float)v.altitude + missile.GetBlastRadius() * 2); //dive towards target. Distance trigger in MissileFire may need some tweaking; currently must be under this + 500 to drop bombs
                                 target += finalBombingAlt * upDirection;
                             }
                         }
@@ -3003,7 +3024,12 @@ namespace BDArmory.Control
                 localExtendDistance = Mathf.Max(extendDistanceAirToAir, extendRequestMinDistance);
                 extendVector = vessel.transform.position - requestedExtendTpos;
             }
-            else return true; // Ignore non-airborne targets for now. Currently, requests are only made for air-to-air targets and for dropping bombs.
+            else
+            {
+                //return true; // Ignore non-airborne targets for now. Currently, requests are only made for air-to-air targets and for dropping bombs.
+                extendVector = vessel.Velocity().ProjectOnPlanePreNormalized(upDirection); //have bombing runs extend past target instaed of looping/U-Turning
+            }
+
             return extendVector.sqrMagnitude < localExtendDistance * localExtendDistance; // Extend from position is further than the extend distance.
         }
 

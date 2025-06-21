@@ -15,7 +15,9 @@
 		'ghostOffset = n' - distance false target will be generated from jammer. 
 -Remove maximum engagement range (default 5km) check for bombs.
 -Fix turrets tracking wrong point when a radar lock is active, but the turret is not slaved to the radar.
-
+-Fix Minimalist Marquee from reporting GM instead of last damaging attacker in killfeed on vessels that are landed too long, etc
+-Implement AoE damage bullet trails, via new fields 'cordiumDPS', 'cordiumDuration', 'hurtDiameter' in ModuleWeapon
+-Fix NRE issue with CM gauges
 
 
 1.10.0.0

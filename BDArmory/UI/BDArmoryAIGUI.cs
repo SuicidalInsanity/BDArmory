@@ -471,6 +471,7 @@ namespace BDArmory.UI
                             nameof(AI.minAltitude),
                             nameof(AI.maxAltitude),
                             nameof(AI.bombingAltitude),
+                            nameof(AI.diveAngle),
 
                             nameof(AI.maxSpeed),
                             nameof(AI.takeOffSpeed),
@@ -1238,6 +1239,10 @@ namespace BDArmory.UI
                                     AI.divebombing = GUI.Toggle(ToggleButtonRects(altLines, 0, 2, contentWidth), AI.divebombing,
 StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Hard Min Altitude"
                                     altLines += 1.25f;
+                                    if (AI.divebombing)
+                                    {
+                                        altLines = ContentEntry(ContentType.FloatSlider, altLines, contentWidth, ref AI.diveAngle, nameof(AI.diveAngle), "DiveAngle", $"{AI.diveAngle:0}");
+                                    }
                                     GUI.EndGroup();
                                     sectionHeights[Section.Altitude] = Mathf.Lerp(sectionHeight, altLines, 0.15f);
                                     altLines += 0.1f;

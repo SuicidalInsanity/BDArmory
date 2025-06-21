@@ -62,6 +62,8 @@ namespace BDArmory.CounterMeasure
         private BDStagingAreaGauge gauge;
         private int cmCount = 0;
         private int maxCMCount = 1;
+        VesselCMDropperInfo vesselCMs;
+
 
         [KSPAction("#LOC_BDArmory_FireCountermeasure")]
         public void AGDropCM(KSPActionParam param)
@@ -134,8 +136,9 @@ namespace BDArmory.CounterMeasure
                 {
                     SetupAudio();
                 }
-                gauge = (BDStagingAreaGauge)part.AddModule("BDStagingAreaGauge");
-                gauge.AmmoName = countermeasureType;
+                EnsureVesselCMs();
+                vesselCMs.AddCMDropper(this);
+
                 PartResource cmResource = GetCMResource();
                 if (cmResource != null)
                 {
@@ -178,18 +181,10 @@ namespace BDArmory.CounterMeasure
         public override void OnUpdate()
         {
             if (audioSource)
-            {
-                if (vessel.isActiveVessel)
-                {
-                    audioSource.dopplerLevel = 0;
-                    gauge.UpdateCMMeter((float)((cmCount >= 1 ? cmCount : 0) / maxCMCount));
-                }
-                else
-                {
-                    audioSource.dopplerLevel = 1;
-                }
-            }            
-        }
+                audioSource.dopplerLevel = vessel.isActiveVessel ? 0 : 1;
+            if (vessel.isActiveVessel && maxCMCount > 0 && gauge != null)
+                gauge.UpdateCMMeter((cmCount >= 1 ? cmCount : 0) / (float)maxCMCount, cmType);
+            }
 
         void FireParticleEffects()
         {
@@ -594,7 +589,19 @@ namespace BDArmory.CounterMeasure
                 }
             }
         }
+        void EnsureVesselCMs()
+        {
+            if (!vesselJammer || vesselJammer.vessel != vessel)
+            {
+                vesselJammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
+                if (!vesselJammer)
+                {
+                    vesselJammer = vessel.gameObject.AddComponent<VesselECMJInfo>();
+                }
+            }
 
+            vesselJammer.DelayedCleanJammerList();
+        }
         // RMB info in editor
         public override string GetInfo()
         {

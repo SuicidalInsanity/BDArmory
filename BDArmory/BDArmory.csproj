@@ -167,6 +167,7 @@
     <Compile Include="CounterMeasure\CMSmoke.cs" />
     <Compile Include="CounterMeasure\ModuleCloakingDevice.cs" />
     <Compile Include="CounterMeasure\ModuleECMJammer.cs" />
+    <Compile Include="CounterMeasure\VesselCMDropperInfo.cs" />
     <Compile Include="CounterMeasure\VesselChaffInfo.cs" />
     <Compile Include="CounterMeasure\VesselCloakInfo.cs" />
     <Compile Include="CounterMeasure\VesselECMJInfo.cs" />

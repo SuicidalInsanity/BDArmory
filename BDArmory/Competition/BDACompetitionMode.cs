@@ -1396,7 +1396,7 @@ namespace BDArmory.Competition
                 }
                 Scores.RegisterDeath(vesselName, GMKillReason.GM);
                 if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + killReason);
-                else competitionStatus.Add($"GM;{killReason};{vesselName}");
+                else competitionStatus.Add($"{killerName};{killReason};{vesselName}");
             }
             if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
             VesselUtils.ForceDeadVessel(vessel);
@@ -2269,12 +2269,19 @@ namespace BDArmory.Competition
             if (vesselCount > 2 && worstVessel != null)
             {
                 var vesselName = worstVessel.GetName();
+                var killerName = "";
                 if (Scores.Players.Contains(vesselName))
                 {
-                    Scores.ScoreData[vesselName].lastPersonWhoDamagedMe = "GM";
+                    killerName = Scores.ScoreData[vesselName].lastPersonWhoDamagedMe;
+                    if (killerName == "")
+                    {
+                        Scores.ScoreData[vesselName].lastPersonWhoDamagedMe = "Killed by GM"; // only do this if it's not already damaged
+                        killerName = "Killed By GM";
+                    }
+                    Scores.RegisterDeath(vesselName, GMKillReason.GM);
+                    if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + " was killed by the GM for being too slow.");
+                    else competitionStatus.Add($"{killerName};Too Slow;{vesselName}");
                 }
-                Scores.RegisterDeath(vesselName, GMKillReason.GM);
-                competitionStatus.Add(vesselName + " was killed by the GM for being too slow.");
                 if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: GM killing " + vesselName + " for being too slow.");
                 VesselUtils.ForceDeadVessel(worstVessel);
             }
@@ -2918,7 +2925,7 @@ namespace BDArmory.Competition
                                 }
                                 Scores.RegisterDeath(vesselName, GMKillReason.GM);
                                 if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + " no fly zone!");
-                                else competitionStatus.Add($"GM;No Fly Zone!;{vesselName}");
+                                else competitionStatus.Add($"{killerName};No Fly Zone!;{vesselName}");
                                 if (BDArmorySettings.DEBUG_COMPETITION) Debug.Log("[BDArmory.BDACompetitionMode:" + CompetitionID.ToString() + "]: " + vesselName + ":REMOVED:" + killerName);
                                 if (KillTimer.ContainsKey(vesselName)) KillTimer.Remove(vesselName);
                                 VesselUtils.ForceDeadVessel(vessel);
@@ -3238,11 +3245,11 @@ namespace BDArmory.Competition
                     if (killerName == "")
                     {
                         Scores.ScoreData[vesselName].lastPersonWhoDamagedMe = "Landed Too Long"; // only do this if it's not already damaged
-                        killerName = "Landed Too Long";
+                        killerName = BDArmorySettings.MINIMALIST_COMP_STATUS ? "Ground" : "Landed Too Long";
                     }
                     Scores.RegisterDeath(vesselName, GMKillReason.LandedTooLong);
                     if (!BDArmorySettings.MINIMALIST_COMP_STATUS) competitionStatus.Add(vesselName + " was landed too long.");
-                    else competitionStatus.Add($"Ground;Landed Too Long;{vesselName}");
+                    else competitionStatus.Add($"{killerName};Landed Too Long;{vesselName}");
                     if (BDArmorySettings.MUTATOR_MODE && BDArmorySettings.MUTATOR_APPLY_KILL && BDArmorySettings.MUTATOR_LIST.Count > 0)
                         ApplyOnKillMutator(vesselName); // Apply mutators for LandedTooLong kills, which count as assists.
                 }
