@@ -2450,6 +2450,7 @@ namespace BDArmory.Control
                             if (distanceToTarget > weapon.engageRangeMax)
                             {
                                 target = FlightPosition(target, Mathf.Min(defaultAltitude, weapon.engageRangeMax / 2f)); // Clamp target minAlt to give at most a 30° dive slope.
+                                //use bombing alt here?
                             }
                             else
                             {

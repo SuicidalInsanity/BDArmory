@@ -59,7 +59,8 @@ namespace BDArmory.CounterMeasure
 
         VesselChaffInfo vci;
 
-        private BDStagingAreaGauge gauge;
+        public BDStagingAreaGauge gauge;
+        public bool hasGauge = false;
         private int cmCount = 0;
         private int maxCMCount = 1;
         VesselCMDropperInfo vesselCMs;
@@ -178,13 +179,16 @@ namespace BDArmory.CounterMeasure
             }
         }
 
-        public override void OnUpdate()
+        void Update()
         {
             if (audioSource)
                 audioSource.dopplerLevel = vessel.isActiveVessel ? 0 : 1;
-            if (vessel.isActiveVessel && maxCMCount > 0 && gauge != null)
-                gauge.UpdateCMMeter((cmCount >= 1 ? cmCount : 0) / (float)maxCMCount, cmType);
+            if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && vessel.IsControllable)
+            {
+                if (vessel.isActiveVessel && hasGauge)
+                    gauge.UpdateCMMeter((cmCount >= 1 ? cmCount : 0) / (float)maxCMCount, cmType);
             }
+        }
 
         void FireParticleEffects()
         {
@@ -591,16 +595,16 @@ namespace BDArmory.CounterMeasure
         }
         void EnsureVesselCMs()
         {
-            if (!vesselJammer || vesselJammer.vessel != vessel)
+            if (!vesselCMs || vesselCMs.vessel != vessel)
             {
-                vesselJammer = vessel.gameObject.GetComponent<VesselECMJInfo>();
-                if (!vesselJammer)
+                vesselCMs = vessel.gameObject.GetComponent<VesselCMDropperInfo>();
+                if (!vesselCMs)
                 {
-                    vesselJammer = vessel.gameObject.AddComponent<VesselECMJInfo>();
+                    vesselCMs = vessel.gameObject.AddComponent<VesselCMDropperInfo>();
                 }
             }
 
-            vesselJammer.DelayedCleanJammerList();
+            vesselCMs.DelayedCleanList();
         }
         // RMB info in editor
         public override string GetInfo()

@@ -2,6 +2,7 @@
 using BDArmory.Radar;
 using BDArmory.Settings;
 using BDArmory.Targeting;
+using BDArmory.UI;
 using BDArmory.Utils;
 using System.Collections;
 using System.Collections.Generic;
@@ -14,7 +15,11 @@ namespace BDArmory.CounterMeasure
         List<CMDropper> droppers;
         public Vessel vessel;
         bool cleaningRequired = false;
-
+        bool hasChaffGauge = false;
+        bool hasFlareGauge = false;
+        bool hasSmokegauce = false;
+        bool hasDecoyfauge = false;
+        bool hasBubbleGauge = false;
         void Start()
         {
             if (!Setup())
@@ -26,19 +31,10 @@ namespace BDArmory.CounterMeasure
             GameEvents.onVesselCreate.Add(OnVesselCreate);
             GameEvents.onPartJointBreak.Add(OnPartJointBreak);
             GameEvents.onPartDie.Add(OnPartDie);
-            StartCoroutine(DelayedStart());
+            StartCoroutine(DelayedCleanListRoutine());
         }
 
 
-        IEnumerator DelayedStart()
-        {
-            yield return new WaitForFixedUpdate();
-            yield return new WaitForFixedUpdate();
-            foreach (CMDropper p in droppers)
-            {
-                if (p.countermeasureType)
-            }
-        }
         bool Setup()
         {
             if (!HighLogic.LoadedSceneIsFlight) return false;
@@ -83,7 +79,7 @@ namespace BDArmory.CounterMeasure
                 droppers.Add(CM);
             }
 
-            UpdateJammerStrength()
+            DelayedCleanList();
         }
 
         public void RemoveCMDropper(CMDropper CM)
@@ -101,7 +97,16 @@ namespace BDArmory.CounterMeasure
         {
             cleaningRequired = true;
         }
+        void OnFixedUpdate()
+        {
+            if (UI.BDArmorySetup.GameIsPaused) return;
 
+            if (cleaningRequired)
+            {
+                StartCoroutine(DelayedCleanListRoutine());
+                cleaningRequired = false;
+            }
+        }
         IEnumerator DelayedCleanListRoutine()
         {
             var wait = new WaitForFixedUpdate();
@@ -119,7 +124,64 @@ namespace BDArmory.CounterMeasure
                 Destroy(this);
             }
             droppers.RemoveAll(j => j == null);
-            droppers.RemoveAll(j => j.vessel != vessel);
+            droppers.RemoveAll(j => j.vessel != vessel); //cull destroyed CM boxes, if any, refresh Gauges on remainder
+            foreach (CMDropper p in droppers)
+            {
+                Debug.Log($"[BDArmory.VesselCMDropperInfo] gauge setup for {p.part.partInfo.title}");
+                switch (p.cmType)
+                {
+                    case CMDropper.CountermeasureTypes.Flare:
+                        {
+                            if (hasFlareGauge || p.hasGauge) break;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Flares";
+                            hasFlareGauge = true;
+                            p.hasGauge = true;
+                        }
+                        break;
+                    case CMDropper.CountermeasureTypes.Chaff:
+                        {
+                            if (hasChaffGauge || p.hasGauge) break;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Chaff";
+                            hasChaffGauge = true;
+                            p.hasGauge = true;
+                        }
+                        break;
+                    case CMDropper.CountermeasureTypes.Smoke:
+                        {
+                            if (hasSmokegauce || p.hasGauge) break;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Smoke";
+                            hasSmokegauce = true;
+                            p.hasGauge = true;
+                        }
+                        break;
+                    case CMDropper.CountermeasureTypes.Decoy:
+                        {
+                            if (hasDecoyfauge || p.hasGauge) break;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Decoys";
+                            hasDecoyfauge = true;
+                            p.hasGauge = true;
+                        }
+                        break;
+                    case CMDropper.CountermeasureTypes.Bubbles:
+                        {
+                            if (hasBubbleGauge || p.hasGauge) break;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Bubbles";
+                            p.hasGauge = true;
+                            hasBubbleGauge = true;
+                        }
+                        break;
+                }
+            }
+            hasChaffGauge = false;
+            hasFlareGauge = false;
+            hasSmokegauce = false;
+            hasDecoyfauge = false;
+            hasBubbleGauge = false;
         }
     }
 }
