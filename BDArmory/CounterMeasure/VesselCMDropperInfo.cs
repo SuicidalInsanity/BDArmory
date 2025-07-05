@@ -127,7 +127,6 @@ namespace BDArmory.CounterMeasure
             droppers.RemoveAll(j => j.vessel != vessel); //cull destroyed CM boxes, if any, refresh Gauges on remainder
             foreach (CMDropper p in droppers)
             {
-                Debug.Log($"[BDArmory.VesselCMDropperInfo] gauge setup for {p.part.partInfo.title}");
                 switch (p.cmType)
                 {
                     case CMDropper.CountermeasureTypes.Flare:

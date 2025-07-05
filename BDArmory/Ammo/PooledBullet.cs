@@ -155,6 +155,7 @@ namespace BDArmory.Bullets
         public float hurtDiameter = 1;
         public float cordiumDuration = -1;
         public float cordiumDPS = 0;
+        public float textureScale = 0.1f;
         List<CapsuleCollider> beamColliders = new List<CapsuleCollider>();
 
         Vector3 startPosition;
@@ -363,7 +364,7 @@ namespace BDArmory.Bullets
                 bulletTrail[1].material.SetColor("_TintColor", smokeColor);
                 bulletTrail[1].material.SetFloat("_Lum", 0.5f);
                 bulletTrail[1].textureMode = LineTextureMode.Tile;
-                bulletTrail[1].material.SetTextureScale("_MainTex", new Vector2(0.1f, 1));
+                bulletTrail[1].material.SetTextureScale("_MainTex", new Vector2(textureScale, 1));
                 bulletTrail[1].shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 bulletTrail[1].receiveShadows = false;
                 bulletTrail[1].enabled = true;
@@ -474,7 +475,9 @@ namespace BDArmory.Bullets
             if (tracerLuminance > 1 && bulletTrail[1].enabled)
             {
                 float fade = Mathf.Lerp(0.75f, 0.05f, 0.07f);
-                smokeColor.a = fade;
+                if (cordiumDuration < 0) smokeColor.a = fade;
+                else fade = Mathf.Lerp(cordiumDuration, 0.05f, 0.02f);
+
                 bulletTrail[1].material.SetColor("_TintColor", smokeColor);
                 bulletTrail[1].material.SetTextureOffset("_MainTex", new Vector2(-timeAlive / 3, 0));
                 if (fade <= 0.05f) bulletTrail[1].enabled = false;
@@ -1884,7 +1887,7 @@ namespace BDArmory.Bullets
             return bulletMass / ((bulletDragArea / 1000000f) * 0.295f); // mm^2 to m^2
         }
 
-        public static void FireBullet(BulletInfo bulletType, int projectileCount, 
+        public static void FireBullet(BulletInfo bulletType, int projectileCount,
             SourceInfo sourceInfo, GraphicsInfo graphicsInfo, NukeInfo nukeInfo,
             bool drop, float TTL, float timestep, float detRange, float detTime,
             bool isAPSP = false, PooledRocket targetRocket = null, PooledBullet targetShell = null,
@@ -1894,7 +1897,7 @@ namespace BDArmory.Bullets
             float maxDeviation = -1f,
             Vessel tgtVessel = null, float guidance = 0f,
             bool registerShot = false,
-            float cordiumDuration = -1, float hurtDiameter = 0, float cordiumDPS = 0)
+            float cordiumDuration = -1, float hurtDiameter = 0, float cordiumDPS = 0, float beamScalar = 0.1f)
         {
             if (ModuleWeapon.bulletPool == null)
             {
@@ -1966,6 +1969,7 @@ namespace BDArmory.Bullets
                 pBullet.tracerLuminance = graphicsInfo.tracerLuminance;
                 pBullet.tracerDeltaFactor = graphicsInfo.tracerDeltaFactor;
                 if (!string.IsNullOrEmpty(graphicsInfo.smokeTexturePath)) pBullet.smokeTexturePath = graphicsInfo.smokeTexturePath;
+                pBullet.textureScale = beamScalar;
                 pBullet.bulletDrop = drop;
 
                 if (bulletType.tntMass > 0)
@@ -2074,9 +2078,9 @@ namespace BDArmory.Bullets
         {
             if (!BDArmorySettings.DEBUG_LINES) return;
 
-            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 10f, 2, Color.blue);
-            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10f, 1, Color.red);
-            GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 10f, 1, Color.green);
+            //GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 10f, 2, Color.blue);
+            //GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10f, 1, Color.red);
+            //GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 10f, 1, Color.green);
             Vector3 previousPos = startPosition;
             for (int c = 1; c < smokePositions.Length - 1; c++) //c = 1, because c0 = startposition
             {
@@ -2359,6 +2363,7 @@ namespace BDArmory.Bullets
         IEnumerator DelayedKillBullet()
         {
             yield return new WaitForSecondsFixed(timeAlive - timeToLiveUntil);
+            bulletTrail[1].enabled = false;
             gameObject.SetActive(false);
         }
 
@@ -2449,6 +2454,7 @@ namespace BDArmory.Bullets
                         beamColliders[c - 1].height = height;
                         beamColliders[c - 1].center = new Vector3(0, 0, height / 2);
                         previousPos = smokePositions[c];
+                        Debug.Log($"[BDArmory.PooledBullet] setting smokePos {c - 1}; X1:{smokePositions[c - 1].x:F1},X2:{smokePositions[c].x:F1}; Y1:{smokePositions[c - 1].y:F1},Y2:{smokePositions[c].y:F1}; Z1:{smokePositions[c - 1].z:F1},Z2:{smokePositions[c].z:F1}, length: {height}");
                     }
                     //add some check so this only procs for the active segment of the beam (The latest set smokePosition point) so it doesn't keep Setting colliders for mid-tracer sections that are going to be static for a few sec?
                 }
@@ -2463,7 +2469,8 @@ namespace BDArmory.Bullets
             Debug.Log($"Trigger Collider Stay");
             if (hitPart != null)
             {                
-                Debug.Log($"[BDArmory.CordiumTracer]: {hitPart.partInfo.title} entered HurtBox, applying {cordiumDPS * TimeWarp.fixedDeltaTime} damage");
+                if (hitPart.vessel != sourceVessel)
+                //Debug.Log($"[BDArmory.CordiumTracer]: {hitPart.partInfo.title} entered HurtBox, applying {cordiumDPS * TimeWarp.fixedDeltaTime} damage");
                 hitPart.AddDamage(cordiumDPS * TimeWarp.fixedDeltaTime);
                 //Mitigated by armor?
             }
