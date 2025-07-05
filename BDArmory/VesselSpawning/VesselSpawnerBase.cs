@@ -940,7 +940,7 @@ namespace BDArmory.VesselSpawning
             var vesselName = vessel.vesselName;
             // If a competition is active, update the scoring structure.
             bool competitionStartingOrStarted = BDACompetitionMode.Instance.competitionStarting || BDACompetitionMode.Instance.competitionIsActive;
-            if (competitionStartingOrStarted && !BDACompetitionMode.Instance.Scores.Players.Contains(vesselName))
+            if ((competitionStartingOrStarted || BDArmorySettings.MINIMALIST_COMP_STATUS) && !BDACompetitionMode.Instance.Scores.Players.Contains(vesselName))
             {
                 BDACompetitionMode.Instance.Scores.AddPlayer(vessel);
             }

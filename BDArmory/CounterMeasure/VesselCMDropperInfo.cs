@@ -1,9 +1,4 @@
-﻿using BDArmory.Extensions;
-using BDArmory.Radar;
-using BDArmory.Settings;
-using BDArmory.Targeting;
-using BDArmory.UI;
-using BDArmory.Utils;
+﻿using BDArmory.UI;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +15,8 @@ namespace BDArmory.CounterMeasure
         bool hasSmokegauce = false;
         bool hasDecoyfauge = false;
         bool hasBubbleGauge = false;
+        public Dictionary <CMDropper.CountermeasureTypes, int> cmCounts;
+        public Dictionary<CMDropper.CountermeasureTypes, int> cmMaxCounts;
         void Start()
         {
             if (!Setup())
@@ -31,6 +28,7 @@ namespace BDArmory.CounterMeasure
             GameEvents.onVesselCreate.Add(OnVesselCreate);
             GameEvents.onPartJointBreak.Add(OnPartJointBreak);
             GameEvents.onPartDie.Add(OnPartDie);
+            GameEvents.onVesselPartCountChanged.Add(OnVesselPartCountChanged);
             StartCoroutine(DelayedCleanListRoutine());
         }
 
@@ -45,6 +43,18 @@ namespace BDArmory.CounterMeasure
                 return false;
             }
             if (droppers is null) droppers = new List<CMDropper>();
+            cmCounts = new Dictionary<CMDropper.CountermeasureTypes, int>();
+            cmMaxCounts = new Dictionary<CMDropper.CountermeasureTypes, int>();
+            cmCounts.Add(CMDropper.CountermeasureTypes.Flare, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Chaff, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Smoke, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Bubbles, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Decoy, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Flare, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Chaff, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Smoke, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Bubbles, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Decoy, 0);
             return true;
         }
 
@@ -54,6 +64,7 @@ namespace BDArmory.CounterMeasure
             GameEvents.onVesselCreate.Remove(OnVesselCreate);
             GameEvents.onPartJointBreak.Remove(OnPartJointBreak);
             GameEvents.onPartDie.Remove(OnPartDie);
+            GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
         }
 
         void AboutToBeDestroyed()
@@ -64,6 +75,7 @@ namespace BDArmory.CounterMeasure
         void OnPartDie() => OnPartDie(null);
         void OnPartDie(Part p) => cleaningRequired = true;
         void OnVesselCreate(Vessel v) => cleaningRequired = true;
+        void OnVesselPartCountChanged(Vessel v) => cleaningRequired = true;
         void OnPartJointBreak(PartJoint j, float breakForce) => cleaningRequired = true;
 
         public void AddCMDropper(CMDropper CM)
@@ -118,60 +130,91 @@ namespace BDArmory.CounterMeasure
         void CleanList()
         {
             vessel = GetComponent<Vessel>();
-
             if (!vessel)
             {
                 Destroy(this);
             }
             droppers.RemoveAll(j => j == null);
             droppers.RemoveAll(j => j.vessel != vessel); //cull destroyed CM boxes, if any, refresh Gauges on remainder
+            cmCounts.Clear();
+            cmMaxCounts.Clear();
+            cmCounts.Add(CMDropper.CountermeasureTypes.Flare, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Chaff, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Smoke, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Bubbles, 0);
+            cmCounts.Add(CMDropper.CountermeasureTypes.Decoy, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Flare, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Chaff, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Smoke, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Bubbles, 0);
+            cmMaxCounts.Add(CMDropper.CountermeasureTypes.Decoy, 0);
             foreach (CMDropper p in droppers)
             {
                 switch (p.cmType)
                 {
                     case CMDropper.CountermeasureTypes.Flare:
                         {
-                            if (hasFlareGauge || p.hasGauge) break;
-                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                            p.gauge.AmmoName = "Flares";
-                            hasFlareGauge = true;
-                            p.hasGauge = true;
+                            if (!(hasFlareGauge || p.hasGauge))
+                            {
+                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                                p.gauge.AmmoName = "Flares";
+                                hasFlareGauge = true;
+                                p.hasGauge = true;
+                            }
+                            cmCounts[p.cmType] += p.cmCount;
+                            cmMaxCounts[p.cmType] += p.maxCMCount;
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Chaff:
                         {
-                            if (hasChaffGauge || p.hasGauge) break;
-                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                            p.gauge.AmmoName = "Chaff";
-                            hasChaffGauge = true;
-                            p.hasGauge = true;
+                            if (!(hasChaffGauge || p.hasGauge))
+                            {
+                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                                p.gauge.AmmoName = "Chaff";
+                                hasChaffGauge = true;
+                                p.hasGauge = true;
+                            }
+                            cmCounts[p.cmType] += p.cmCount;
+                            cmMaxCounts[p.cmType] += p.maxCMCount;
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Smoke:
                         {
-                            if (hasSmokegauce || p.hasGauge) break;
-                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                            p.gauge.AmmoName = "Smoke";
-                            hasSmokegauce = true;
-                            p.hasGauge = true;
+                            if (!(hasSmokegauce || p.hasGauge))
+                            {
+                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                                p.gauge.AmmoName = "Smoke";
+                                hasSmokegauce = true;
+                                p.hasGauge = true;
+                            }
+                            cmCounts[p.cmType] += p.cmCount;
+                            cmMaxCounts[p.cmType] += p.maxCMCount;
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Decoy:
                         {
-                            if (hasDecoyfauge || p.hasGauge) break;
-                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                            p.gauge.AmmoName = "Decoys";
-                            hasDecoyfauge = true;
-                            p.hasGauge = true;
+                            if (!(hasDecoyfauge || p.hasGauge))
+                            {
+                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                                p.gauge.AmmoName = "Decoys";
+                                hasDecoyfauge = true;
+                                p.hasGauge = true;
+                            }
+                            cmCounts[p.cmType] += p.cmCount;
+                            cmMaxCounts[p.cmType] += p.maxCMCount;
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Bubbles:
                         {
-                            if (hasBubbleGauge || p.hasGauge) break;
-                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                            p.gauge.AmmoName = "Bubbles";
-                            p.hasGauge = true;
-                            hasBubbleGauge = true;
+                            if (!(hasBubbleGauge || p.hasGauge))
+                            {
+                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                                p.gauge.AmmoName = "Bubbles";
+                                p.hasGauge = true;
+                                hasBubbleGauge = true;
+                            }   
+                            cmCounts[p.cmType] += p.cmCount;
+                            cmMaxCounts[p.cmType] += p.maxCMCount;
                         }
                         break;
                 }

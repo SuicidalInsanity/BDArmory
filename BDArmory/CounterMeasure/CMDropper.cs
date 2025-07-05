@@ -61,8 +61,8 @@ namespace BDArmory.CounterMeasure
 
         public BDStagingAreaGauge gauge;
         public bool hasGauge = false;
-        private int cmCount = 0;
-        private int maxCMCount = 1;
+        public int cmCount = 0;
+        public int maxCMCount = 1;
         VesselCMDropperInfo vesselCMs;
 
 
@@ -186,7 +186,9 @@ namespace BDArmory.CounterMeasure
             if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && !vessel.packed && vessel.IsControllable)
             {
                 if (vessel.isActiveVessel && hasGauge)
-                    gauge.UpdateCMMeter((cmCount >= 1 ? cmCount : 0) / (float)maxCMCount, cmType);
+                {
+                    gauge.UpdateCMMeter((vesselCMs.cmCounts[cmType] >= 1 ? (float)vesselCMs.cmCounts[cmType] : 0) / (float)vesselCMs.cmMaxCounts[cmType], cmType);
+                }
             }
         }
 
@@ -332,7 +334,7 @@ namespace BDArmory.CounterMeasure
                 PartResource cmResource = GetCMResource();
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
-                cmCount--;
+                vesselCMs.cmCounts[cmType]--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -360,7 +362,7 @@ namespace BDArmory.CounterMeasure
                 PartResource cmResource = GetCMResource();
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
-                cmCount--;
+                vesselCMs.cmCounts[cmType]--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -386,7 +388,7 @@ namespace BDArmory.CounterMeasure
                 PartResource smokeResource = GetCMResource();
                 if (smokeResource == null || !(smokeResource.amount >= 1)) return false;
                 smokeResource.amount--;
-                cmCount--;
+                vesselCMs.cmCounts[cmType]--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -429,7 +431,7 @@ namespace BDArmory.CounterMeasure
                 PartResource cmResource = GetCMResource();
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
-                cmCount--;
+                vesselCMs.cmCounts[cmType]--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -457,7 +459,7 @@ namespace BDArmory.CounterMeasure
                 PartResource bubbleResource = GetCMResource();
                 if (bubbleResource == null || !(bubbleResource.amount >= 1)) return false;
                 bubbleResource.amount--;
-                cmCount--;
+                vesselCMs.cmCounts[cmType]--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);

@@ -685,7 +685,7 @@ namespace BDArmory.UI
                         }
                         BDACompetitionMode.Instance.Scores.RegisterDeath(vd.vesselName, GMKillReason.BigRedButton); // Indicate that it was us who killed it.
                         if(!BDArmorySettings.MINIMALIST_COMP_STATUS) BDACompetitionMode.Instance.competitionStatus.Add($"{vd.vesselName} {(BDArmorySettings.HALL_OF_SHAME_LIST.Contains(vd.vesselName) ? " (HoS)" : "")} was killed by the BIG RED BUTTON.");
-                        else BDACompetitionMode.Instance.competitionStatus.Add($"GM;Big Red Button;{vd.vesselName} {(BDArmorySettings.HALL_OF_SHAME_LIST.Contains(vd.vesselName) ? " (HoS)" : "")}");
+                        else BDACompetitionMode.Instance.competitionStatus.Add($"{scoreData.lastPersonWhoDamagedMe};Big Red Button;{vd.vesselName} {(BDArmorySettings.HALL_OF_SHAME_LIST.Contains(vd.vesselName) ? " (HoS)" : "")}");
                     }
                     VesselUtils.ForceDeadVessel(vd.wm.vessel);
                 }

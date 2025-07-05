@@ -1339,16 +1339,15 @@ namespace BDArmory.Control
             field.onFieldChanged = ToggleMaxAltitude;
             ToggleMaxAltitude();
         }
-        void ToggleMaxAltitude(BaseField field = null, object obj = null)
+        void ToggleBombingAngle(BaseField field = null, object obj = null)
         {
-            maxAltitudeEnabled = divebombing;
-            var maxAltitudeField = Fields["diveAngle"];
-            maxAltitudeField.guiActive = divebombing;
-            maxAltitudeField.guiActiveEditor = divebombing;
+            var diveAngleField = Fields["diveAngle"];
+            diveAngleField.guiActive = divebombing;
+            diveAngleField.guiActiveEditor = divebombing;
             if (!divebombing)
                 StartCoroutine(FixAltitudesSectionLayout());
         }
-        void ToggleBombingAngle(BaseField field = null, object obj = null)
+        void ToggleMaxAltitude(BaseField field = null, object obj = null)
         {
             maxAltitudeEnabled = maxAltitudeToggle;
             var maxAltitudeField = Fields["maxAltitude"];
@@ -2423,7 +2422,7 @@ namespace BDArmory.Control
                         }
                         else
                         {
-                            if (distanceToTarget > 3500f || angleToTarget > 90f || vessel.srfSpeed < takeOffSpeed)
+                            if (distanceToTarget > Mathf.Max(3500, weaponManager.currentGun.engageRangeMax * 2) || angleToTarget > 90f || vessel.srfSpeed < takeOffSpeed)
                             {
                                 finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                             }

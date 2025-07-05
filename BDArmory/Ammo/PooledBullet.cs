@@ -2466,7 +2466,7 @@ namespace BDArmory.Bullets
             Part hitPart = null;
 
             hitPart = other.gameObject.GetComponentUpwards<Part>();
-            Debug.Log($"Trigger Collider Stay");
+
             if (hitPart != null)
             {                
                 if (hitPart.vessel != sourceVessel)
