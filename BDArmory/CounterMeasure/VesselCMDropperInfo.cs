@@ -9,13 +9,12 @@ namespace BDArmory.CounterMeasure
     {
         List<CMDropper> droppers;
         public Vessel vessel;
-        bool cleaningRequired = false;
         bool hasChaffGauge = false;
         bool hasFlareGauge = false;
         bool hasSmokegauce = false;
-        bool hasDecoyfauge = false;
+        bool hasDecoyGauge = false;
         bool hasBubbleGauge = false;
-        public Dictionary <CMDropper.CountermeasureTypes, int> cmCounts;
+        public Dictionary<CMDropper.CountermeasureTypes, int> cmCounts;
         public Dictionary<CMDropper.CountermeasureTypes, int> cmMaxCounts;
         void Start()
         {
@@ -73,10 +72,19 @@ namespace BDArmory.CounterMeasure
         }
 
         void OnPartDie() => OnPartDie(null);
-        void OnPartDie(Part p) => cleaningRequired = true;
-        void OnVesselCreate(Vessel v) => cleaningRequired = true;
-        void OnVesselPartCountChanged(Vessel v) => cleaningRequired = true;
-        void OnPartJointBreak(PartJoint j, float breakForce) => cleaningRequired = true;
+        void OnPartDie(Part p)
+        {
+            StartCoroutine(DelayedCleanListRoutine());
+        }
+        void OnVesselCreate(Vessel v) => StartCoroutine(DelayedCleanListRoutine());
+        void OnVesselPartCountChanged(Vessel v)
+        {
+            StartCoroutine(DelayedCleanListRoutine());
+        }
+        void OnPartJointBreak(PartJoint j, float breakForce)
+        {
+            StartCoroutine(DelayedCleanListRoutine());
+        }
 
         public void AddCMDropper(CMDropper CM)
         {
@@ -103,21 +111,16 @@ namespace BDArmory.CounterMeasure
             }
 
             droppers.Remove(CM);
+            CleanList();
         }
 
         public void DelayedCleanList()
         {
-            cleaningRequired = true;
+            StartCoroutine(DelayedCleanListRoutine());
         }
         void OnFixedUpdate()
         {
             if (UI.BDArmorySetup.GameIsPaused) return;
-
-            if (cleaningRequired)
-            {
-                StartCoroutine(DelayedCleanListRoutine());
-                cleaningRequired = false;
-            }
         }
         IEnumerator DelayedCleanListRoutine()
         {
@@ -150,71 +153,74 @@ namespace BDArmory.CounterMeasure
             cmMaxCounts.Add(CMDropper.CountermeasureTypes.Decoy, 0);
             foreach (CMDropper p in droppers)
             {
+                if (p.vessel != this.vessel) continue;
+                cmCounts[p.cmType] += p.cmCount;
+                cmMaxCounts[p.cmType] += p.maxCMCount;
                 switch (p.cmType)
                 {
                     case CMDropper.CountermeasureTypes.Flare:
                         {
-                            if (!(hasFlareGauge || p.hasGauge))
+                            if (hasFlareGauge || p.hasGauge)
                             {
-                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                                p.gauge.AmmoName = "Flares";
-                                hasFlareGauge = true;
-                                p.hasGauge = true;
+                                hasFlareGauge = true; 
+                                break; 
                             }
-                            cmCounts[p.cmType] += p.cmCount;
-                            cmMaxCounts[p.cmType] += p.maxCMCount;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Flares";
+                            p.hasGauge = true;
+                            hasFlareGauge = true;                           
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Chaff:
                         {
-                            if (!(hasChaffGauge || p.hasGauge))
+                            if (hasChaffGauge || p.hasGauge)
                             {
-                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                                p.gauge.AmmoName = "Chaff";
                                 hasChaffGauge = true;
-                                p.hasGauge = true;
+                                break;
                             }
-                            cmCounts[p.cmType] += p.cmCount;
-                            cmMaxCounts[p.cmType] += p.maxCMCount;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Chaff";
+                            p.hasGauge = true;
+                            hasChaffGauge = true;                            
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Smoke:
                         {
-                            if (!(hasSmokegauce || p.hasGauge))
+                            if (hasSmokegauce || p.hasGauge)
                             {
-                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                                p.gauge.AmmoName = "Smoke";
                                 hasSmokegauce = true;
-                                p.hasGauge = true;
+                                break;
                             }
-                            cmCounts[p.cmType] += p.cmCount;
-                            cmMaxCounts[p.cmType] += p.maxCMCount;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Smoke";
+                            p.hasGauge = true;
+                            hasSmokegauce = true;                            
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Decoy:
                         {
-                            if (!(hasDecoyfauge || p.hasGauge))
+                            if (hasDecoyGauge || p.hasGauge)
                             {
-                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                                p.gauge.AmmoName = "Decoys";
-                                hasDecoyfauge = true;
-                                p.hasGauge = true;
+                                hasDecoyGauge = true;
+                                break;
                             }
-                            cmCounts[p.cmType] += p.cmCount;
-                            cmMaxCounts[p.cmType] += p.maxCMCount;
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Decoys";
+                            p.hasGauge = true;
+                            hasDecoyGauge = true;                           
                         }
                         break;
                     case CMDropper.CountermeasureTypes.Bubbles:
                         {
-                            if (!(hasBubbleGauge || p.hasGauge))
+                            if (hasBubbleGauge || p.hasGauge)
                             {
-                                p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
-                                p.gauge.AmmoName = "Bubbles";
-                                p.hasGauge = true;
                                 hasBubbleGauge = true;
-                            }   
-                            cmCounts[p.cmType] += p.cmCount;
-                            cmMaxCounts[p.cmType] += p.maxCMCount;
+                                break;
+                            }
+                            p.gauge = (BDStagingAreaGauge)p.part.AddModule("BDStagingAreaGauge");
+                            p.gauge.AmmoName = "Bubbles";
+                            p.hasGauge = true;
+                            hasBubbleGauge = true;
                         }
                         break;
                 }
@@ -222,7 +228,7 @@ namespace BDArmory.CounterMeasure
             hasChaffGauge = false;
             hasFlareGauge = false;
             hasSmokegauce = false;
-            hasDecoyfauge = false;
+            hasDecoyGauge = false;
             hasBubbleGauge = false;
         }
     }

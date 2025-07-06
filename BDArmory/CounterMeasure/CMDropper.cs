@@ -167,6 +167,7 @@ namespace BDArmory.CounterMeasure
         {
             BDArmorySetup.OnVolumeChange -= UpdateVolume;
             GameEvents.onVesselsUndocking.Remove(OnVesselsUndocking);
+            vesselCMs.RemoveCMDropper(this);
         }
 
         void OnVesselsUndocking(Vessel v1, Vessel v2)
@@ -335,6 +336,7 @@ namespace BDArmory.CounterMeasure
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
                 vesselCMs.cmCounts[cmType]--;
+                cmCount--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -363,6 +365,7 @@ namespace BDArmory.CounterMeasure
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
                 vesselCMs.cmCounts[cmType]--;
+                cmCount--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -389,6 +392,7 @@ namespace BDArmory.CounterMeasure
                 if (smokeResource == null || !(smokeResource.amount >= 1)) return false;
                 smokeResource.amount--;
                 vesselCMs.cmCounts[cmType]--;
+                cmCount--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -432,6 +436,7 @@ namespace BDArmory.CounterMeasure
                 if (cmResource == null || !(cmResource.amount >= 1)) return false;
                 cmResource.amount--;
                 vesselCMs.cmCounts[cmType]--;
+                cmCount--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
@@ -460,6 +465,7 @@ namespace BDArmory.CounterMeasure
                 if (bubbleResource == null || !(bubbleResource.amount >= 1)) return false;
                 bubbleResource.amount--;
                 vesselCMs.cmCounts[cmType]--;
+                cmCount--;
             }
             audioSource.pitch = UnityEngine.Random.Range(0.9f, 1.1f);
             audioSource.PlayOneShot(cmSound);
