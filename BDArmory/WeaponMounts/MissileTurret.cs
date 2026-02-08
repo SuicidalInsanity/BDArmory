@@ -94,6 +94,7 @@ namespace BDArmory.WeaponMounts
         [KSPField] public bool deployBlocksYaw = false; // Turret must deploy before yawing, turret must return to yaw standby position to stow/"undeploy".
         [KSPField] public bool deployBlocksPitch = false; // Turret must deploy before pitching, turret must return to pitch standby position to stow/"undeploy".
         public bool isReloading = false;
+        float _reloadUntil = 0;
         [KSPField] public bool startsDeployed = false; //Turret starts in deployed position and only uses deploy anim for relaoding. TODO: proper reload anim support for turrets independent of deployAnim
 
         //animation
@@ -122,6 +123,35 @@ namespace BDArmory.WeaponMounts
             }
         }
         MissileFire _weaponManager;
+
+        public float DeployIfBlocking(bool yaw)
+        {
+            // If not blocking, return 0 without doing anything
+            if (!(yaw ? deployBlocksYaw : deployBlocksPitch)) return 0;
+
+            bool reloadBlock = deployBlocksReload && isReloading;
+
+            // If no deploy animation or deployed and not reloading
+            if (!(hasDeployAnimation && (deployAnimState.normalizedTime < 1 || reloadBlock))) return 0;
+
+            // If not blocked by reload
+            if (!reloadBlock)
+            {
+                if (deployAnimRoutine != null)
+                {
+                    StopCoroutine(deployAnimRoutine);
+                }
+
+                deployAnimRoutine = StartCoroutine(DeployAnimation(true));
+
+                return deployAnimState.length - deployAnimState.time;
+            }
+            else
+            {
+                // If blocked by reload, return time that reload completes at
+                return _reloadUntil - Time.fixedDeltaTime;
+            }
+        }
 
         IEnumerator DeployAnimation(bool forward)
         {
@@ -152,6 +182,8 @@ namespace BDArmory.WeaponMounts
 
                 deployAnimState.normalizedTime = 0;
             }
+
+            turret.SetDeployFlag(!deployBlocksYaw || forward, !deployBlocksPitch || forward);
 
             deployAnimState.speed = 0;
         }
@@ -483,7 +515,7 @@ namespace BDArmory.WeaponMounts
         public void SlavedAim()
         {
             if (pausingAfterShot) return;
-            bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || isReloading);
+            bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || (deployBlocksReload && isReloading));
 
             turret.AimToTarget(slavedTargetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw), IsCurrentWMMissile());
         }
@@ -493,9 +525,11 @@ namespace BDArmory.WeaponMounts
             // Deploy must block reload and a deploy animation must exist before we block the turret
             if (!(deployBlocksReload && hasDeployAnimation)) return;
 
+            _reloadUntil = Time.fixedDeltaTime + duration;
+
             // We only block if the respective toggle is also enabled
-            if (deployBlocksPitch && turret.pitchAxisManager) turret.pitchAxisManager.SetTurretBlock(duration);
-            if (deployBlocksYaw && turret.yawAxisManager) turret.yawAxisManager.SetTurretBlock(duration);
+            if (deployBlocksPitch && turret.pitchAxisManager) turret.pitchAxisManager.SetTurretBlock(_reloadUntil);
+            if (deployBlocksYaw && turret.yawAxisManager) turret.yawAxisManager.SetTurretBlock(_reloadUntil);
         }
 
         const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
@@ -540,7 +574,7 @@ namespace BDArmory.WeaponMounts
                                  FlightCamera.fetch.mainCamera.transform.position;
             }
 
-            bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || isReloading);
+            bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || (deployBlocksReload && isReloading));
             turret.AimToTarget(targetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw), IsCurrentWMMissile());
         }
 

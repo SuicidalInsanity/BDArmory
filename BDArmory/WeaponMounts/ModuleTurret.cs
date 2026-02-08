@@ -29,7 +29,9 @@ namespace BDArmory.WeaponMounts
         public MissileTurret turretMissile = null;
 
         public TurretAxisManager yawAxisManager = null;
+        public int yawAxisIndex = 0;
         public TurretAxisManager pitchAxisManager = null;
+        public int pitchAxisIndex = 0;
 
         [KSPField] public int turretPriority = 0;
 
@@ -85,13 +87,13 @@ namespace BDArmory.WeaponMounts
 
             if (yawTransform)
             {
-                yawAxisManager = new TurretAxisManager();
+                yawAxisManager = part.gameObject.AddComponent<TurretAxisManager>();
                 yawAxisManager.AddTurrets(part, true, yawTransform);
             }
 
             if (pitchTransform)
             {
-                pitchAxisManager = new TurretAxisManager();
+                pitchAxisManager = part.gameObject.AddComponent<TurretAxisManager>();
                 pitchAxisManager.AddTurrets(part, true, pitchTransform);
             }
 
@@ -254,12 +256,12 @@ namespace BDArmory.WeaponMounts
             }
         }
 
-        public void AimToTarget(Vector3 targetPosition, bool pitch = true, bool yaw = true, bool forced = false)
+        public void AimToTarget(Vector3 targetPosition, bool pitch = true, bool yaw = true, bool activeWeap = false)
         {
-            AimInDirection(targetPosition - _referenceTransform.position, pitch, yaw, forced);
+            AimInDirection(targetPosition - _referenceTransform.position, pitch, yaw, activeWeap);
         }
 
-        public void AimInDirection(Vector3 targetDirection, bool pitch = true, bool yaw = true, bool forced = false)
+        public void AimInDirection(Vector3 targetDirection, bool pitch = true, bool yaw = true, bool activeWeap = false)
         {
             if (!(pitch || yaw)) return;
 
@@ -272,7 +274,7 @@ namespace BDArmory.WeaponMounts
             Vector3 pitchComponent;
 
             // Perform the yaw axis manager check here, as we can skip all the calculations if false
-            if (yawTransform && (!yawAxisManager || yawAxisManager.CheckTurret(this, false, forced)))
+            if (yawTransform && (!yawAxisManager || yawAxisManager.CheckTurret(this, false, activeWeap)))
             {
                 yawNormal = yawTransform.up;
                 yawComponent = targetDirection.ProjectOnPlanePreNormalized(yawNormal);
@@ -315,7 +317,7 @@ namespace BDArmory.WeaponMounts
             float targetPitchAngle;
 
             // Perform the pitch axis manager check here, as we can skip all the calculations if false
-            if (pitchTransform && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, false, forced)))
+            if (pitchTransform && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, false, activeWeap)))
             {
                 float pitchError = (float)Vector3d.Angle(pitchComponent, yawNormal) - (float)Vector3d.Angle(_referenceTransform.forward, yawNormal);
                 float currentPitch = -pitchTransform.localEulerAngles.x.ToAngle(); // from current rotation transform
@@ -541,6 +543,26 @@ namespace BDArmory.WeaponMounts
         {
             standbyLocalRotation = Quaternion.AngleAxis(yawStandbyAngle, Vector3.up);
             if (yawTransform != null) yawTransform.localRotation = standbyLocalRotation;
+        }
+
+        public float DeployIfBlocking(bool yaw)
+        {
+            if (turretWeapon)
+            {
+                return turretWeapon.DeployIfBlocking();
+            }
+            if (turretMissile)
+            {
+                return turretMissile.DeployIfBlocking(yaw);
+            }
+
+            return 0;
+        }
+
+        public void SetDeployFlag(bool yaw, bool pitch)
+        {
+            if (yawAxisManager) yawAxisManager.SetTurretFlag(!yaw, yawAxisIndex);
+            if (pitchAxisManager) pitchAxisManager.SetTurretFlag(!pitch, pitchAxisIndex);
         }
 
         public bool turretEnabled()

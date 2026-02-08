@@ -4507,7 +4507,7 @@ namespace BDArmory.Weapons
                 {
                     turret.smoothRotation = false;
                 }
-                turret.AimToTarget(finalAimTarget, forced: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
+                turret.AimToTarget(finalAimTarget, activeWeap: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
                 turret.smoothRotation = origSmooth;
             }
             for (int i = 0; i < customTurret.Count; i++)
@@ -6265,6 +6265,26 @@ namespace BDArmory.Weapons
             guiStatusString = weaponState.ToString();
         }
 
+        public float DeployIfBlocking()
+        {
+            // If no deploy anim or deploy state, the turret is ready regardless
+            if (!(hasDeployAnim && deployState)) return 0;
+
+            if (hasReloadAnim && isReloading) // If reloading, return how long it'll take for the reload to complete
+            {
+                return reloadState.length - reloadState.time;
+            }
+
+            // If currently deploying
+            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time;
+
+            // Otherwise, weapon is either shutting down or inactive, thus requiring startup routine
+            StopShutdownStartupRoutines();
+            startupRoutine = StartCoroutine(StartupRoutine(true));
+
+            return deployState.length;
+        }
+
         IEnumerator StartupRoutine(bool calledByReload = false, bool secondaryFiring = false)
         {
             if (hasReloadAnim && isReloading) //wait for reload to finish before shutting down
@@ -6292,6 +6312,12 @@ namespace BDArmory.Weapons
                 else
                     weaponState = WeaponStates.EnabledForSecondaryFiring;
             }
+
+            if (turret)
+            {
+                turret.SetDeployFlag(true, true);
+            }
+
             UpdateGUIWeaponState();
             UpdateOffsetWeapon(); // Re-calculate offset/non-centerline weapon corrections on weapon selection
             BDArmorySetup.Instance.UpdateCursorState();
@@ -6355,6 +6381,10 @@ namespace BDArmory.Weapons
             {
                 weaponState = WeaponStates.Disabled;
                 UpdateGUIWeaponState();
+            }
+            if (turret)
+            {
+                turret.SetDeployFlag(false, false);
             }
         }
         IEnumerator ReloadRoutine()

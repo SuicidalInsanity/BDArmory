@@ -3,6 +3,7 @@ using BDArmory.Weapons;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace BDArmory.WeaponMounts
@@ -22,6 +23,10 @@ namespace BDArmory.WeaponMounts
 
         bool _sortingTurretList = false;
 
+        bool _yaw = false;
+
+        int _blockedTurrets = 0; // Bitmask used for determining which turrets are blocked
+
         IEnumerator SortTurretListRoutine()
         {
             _sortingTurretList = true;
@@ -33,6 +38,18 @@ namespace BDArmory.WeaponMounts
                 // We want them sorted from greatest to least
                 return t2.turretPriority.CompareTo(t1.turretPriority);
             });
+
+            for (int i = 0; i < turrets.Count; i++)
+            {
+                if (_yaw)
+                {
+                    turrets[i].yawAxisIndex = i;
+                }
+                else
+                {
+                    turrets[i].pitchAxisIndex = i;
+                }
+            }
 
             _sortingTurretList = false;
         }
@@ -47,28 +64,38 @@ namespace BDArmory.WeaponMounts
 
         public void AddTurrets(Part part, bool yaw, Transform axisTransform)
         {
-            using (List<ModuleTurret>.Enumerator turr = part.FindModulesImplementing<ModuleTurret>().GetEnumerator())
-                while (turr.MoveNext())
+            _yaw = yaw;
+            List<ModuleTurret> turr = part.FindModulesImplementing<ModuleTurret>();
+            ModuleTurret currTurret;
+
+            // Pre-allocate list
+            turrets = new List<ModuleTurret>(turrets.Count);
+            _blockedTurrets = 0;
+
+            for (int i = 0; i < turr.Count; i++)
+            { 
+                if ((currTurret = turr[i]) == null) continue;
+                if (turrets.Contains(currTurret)) continue;
+
+                currTurret.SetupTransforms();
+
+                if ((_yaw ? currTurret.yawTransform : currTurret.pitchTransform) == axisTransform)
                 {
-                    if (turr.Current == null) continue;
-                    if (turrets.Contains(turr.Current)) continue;
+                    turrets.Add(currTurret);
 
-                    turr.Current.SetupTransforms();
-
-                    if ((yaw ? turr.Current.yawTransform : turr.Current.pitchTransform) == axisTransform)
+                    if (_yaw)
                     {
-                        turrets.Add(turr.Current);
-
-                        if (yaw)
-                        {
-                            turr.Current.yawAxisManager = this;
-                        }
-                        else
-                        {
-                            turr.Current.pitchAxisManager = this;
-                        }
+                        currTurret.yawAxisManager = this;
                     }
+                    else
+                    {
+                        currTurret.pitchAxisManager = this;
+                    }
+
+                    // Default the turret to blocked, resolve it later when checking
+                    _blockedTurrets |= 1 << i;
                 }
+            }
 
             // If there's no turrets somehow, or there's only one turret and there's no need to manage it, delete this
             if (turrets.Count <= 1)
@@ -81,10 +108,27 @@ namespace BDArmory.WeaponMounts
 
         // While the commanding weapon can get replaced when timeOfLastMoveCommand > Time.fixedTime
         // the turret can only move when timeOfLastMoveCommand < Time.fixedTime
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool CanMove()
         {
             if (timeOfLastMoveCommand > Time.fixedTime)
             {
+                return false;
+            }
+
+            if (_blockedTurrets != 0)
+            {
+                float currBlockedTime = 0;
+                for (int i = 0; i < turrets.Count; i++)
+                {
+                    if ((_blockedTurrets & (1 << i)) != 0)
+                    {
+                        float tempTime = turrets[i].DeployIfBlocking(_yaw);
+                        if (tempTime > currBlockedTime) currBlockedTime = tempTime;
+                    }
+                }
+
+                if (currBlockedTime > timeOfLastMoveCommand) timeOfLastMoveCommand = currBlockedTime;
                 return false;
             }
 
@@ -93,7 +137,7 @@ namespace BDArmory.WeaponMounts
             return true;
         }
 
-        public bool CheckTurret(ModuleTurret t, bool returning, bool forced = false)
+        public bool CheckTurret(ModuleTurret t, bool returning, bool activeWeap = false)
         {
             // Special case, where we've previously confirmed all turrets were disabled
             if (currTurretIndex < 0)
@@ -102,7 +146,7 @@ namespace BDArmory.WeaponMounts
                 // NOTE: returning does NOT include missile reload Return()!
                 if (!returning)
                 {
-                    currTurretIndex = turrets.IndexOf(t);
+                    currTurretIndex = GetTurretIndex(t);
                 }
 
                 // And return CanMove()
@@ -135,16 +179,25 @@ namespace BDArmory.WeaponMounts
                 return CanMove();
             }
 
-            // If we're forcing the movement, E.G. weapon is current weapon, or we're slavedGuard
-            if (forced)
-            {
-                currTurretIndex = turrets.IndexOf(t);
-                return CanMove();
-            }
-
             // If the current turret is the turret trying to move, and it's not returning, allow it to do so
             if (currTurret == t)
             {
+                return CanMove();
+            }
+
+            // If we're forcing the movement, E.G. we're the current weapon or we're in slavedGuard
+            if (activeWeap)
+            {
+                // If there's a turret, check if it has higher priority, and if it is also part of the
+                // current weapon set, if so, then prioritize that
+                if (currTurret && currTurret.turretPriority > t.turretPriority &&
+                    ((currTurret.turretWeapon && currTurret.turretWeapon.IsCurrentWMWeapon()) ||
+                    (currTurret.turretMissile && currTurret.turretMissile.IsCurrentWMMissile())))
+                {
+                    return false;
+                }
+
+                currTurretIndex = GetTurretIndex(t);
                 return CanMove();
             }
 
@@ -169,8 +222,11 @@ namespace BDArmory.WeaponMounts
                 else
                 {
                     // If the priority of the current turret is lower than t's, then we must check
-                    // the list starting from the highest priority turret, which doubles as a
-                    // IndexOf operation
+                    // the list starting from the highest priority turret. While this is technically
+                    // less efficient in the case where t is the highest priority turret active, and
+                    // there are higher priority turrets than t that are not active, this does prevent
+                    // repeated replacements of currTurretIndex and incorrectly prioritized turret
+                    // movements
                     startIndex = 0;
                 }
 
@@ -178,8 +234,7 @@ namespace BDArmory.WeaponMounts
                 // as the priority -> enabled return path is faster than checking what's below
 
                 // No overriding current weapon / missile or slavedGuard
-                if ((currTurret.turretWeapon && currTurret.turretWeapon.IsCurrentWMWeapon()) ||
-                    (currTurret.turretMissile && currTurret.turretMissile.IsCurrentWMMissile()))
+                if (IsCurrentWMTurr(currTurret))
                 {
                     return false;
                 }
@@ -195,7 +250,6 @@ namespace BDArmory.WeaponMounts
 
                 // If the highest priority turret currently enabled is
                 // our own turret, set currTurretIndex to it, and return CanMove()
-                // This is essentially like calling IndexOf
                 if (turrets[i] == t)
                 {
                     currTurretIndex = i;
@@ -213,14 +267,43 @@ namespace BDArmory.WeaponMounts
 
             // This *shouldn't* happen but if somehow everything breaks,
             // set currTurretIndex to t's index and return CanMove()
-            currTurretIndex = turrets.IndexOf(t);
+            currTurretIndex = GetTurretIndex(t);
             return CanMove();
         }
 
-        // Block axis from moving, E.G. for missile turret reloading
-        public void SetTurretBlock(float duration)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetTurretIndex(ModuleTurret t)
         {
-            timeOfLastMoveCommand = Time.fixedTime + duration;
+            return _yaw ? t.yawAxisIndex : t.pitchAxisIndex;
+        }
+
+        // Block axis from moving, E.G. for missile turret reloading
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetTurretBlock(float time)
+        {
+            if (timeOfLastMoveCommand < time)
+            {
+                timeOfLastMoveCommand = time;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsCurrentWMTurr(ModuleTurret t)
+        {
+            return (t.turretWeapon && t.turretWeapon.IsCurrentWMWeapon()) || (t.turretMissile && t.turretMissile.IsCurrentWMMissile());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetTurretFlag(bool blocked, int index)
+        {
+            if (blocked)
+            {
+                _blockedTurrets |= 1 << index;
+            }
+            else
+            {
+                _blockedTurrets &= ~(1 << index);
+            }
         }
     }
 }
