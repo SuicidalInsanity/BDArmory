@@ -1950,6 +1950,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (vessel.isActiveVessel) gauge.UpdateReloadMeter(reloadTimer);
                 reloadInProgress = true;
+                if (turret)
+                {
+                    turret.SetReloadBlock(reloadableRail.reloadTime);
+                }
                 yield return new WaitForSecondsFixed(reloadableRail.reloadTime);
                 reloadInProgress = false;
                 launched = false;

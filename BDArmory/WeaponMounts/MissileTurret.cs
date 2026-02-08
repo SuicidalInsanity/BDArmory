@@ -112,7 +112,7 @@ namespace BDArmory.WeaponMounts
         //special
         [KSPField] public bool activeMissileOnly = false;
 
-        MissileFire WeaponManager
+        public MissileFire WeaponManager
         {
             get
             {
@@ -279,7 +279,7 @@ namespace BDArmory.WeaponMounts
             bool pitch = !turretEnabled || (deployBlocksPitch && deployBlocksReload);
             bool yaw = !turretEnabled || (deployBlocksYaw && deployBlocksReload);
 
-            while (turret != null && !turret.ReturnTurret(pitch, yaw))
+            while (turret != null && !turret.ReturnTurret(pitch, yaw, isReloading))
             {
                 UpdateMissilePositions();
                 yield return new WaitForFixedUpdate();
@@ -321,6 +321,7 @@ namespace BDArmory.WeaponMounts
                     if (tur.Current == null) continue;
                     if (tur.Current.turretID != turretID) continue;
                     turret = tur.Current;
+                    turret.turretMissile = this;
                     break;
                 }
                 tur.Dispose();
@@ -469,12 +470,32 @@ namespace BDArmory.WeaponMounts
             }
         }
 
+        public bool IsCurrentWMMissile()
+        {
+            MissileFire wm;
+            if (!(wm = WeaponManager)) return false;
+
+            if (!wm.CurrentMissile) return false;
+
+            return slavedGuard || wm.CurrentMissile.GetPartName() == activeMissile.GetPartName();
+        }
+
         public void SlavedAim()
         {
             if (pausingAfterShot) return;
             bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || isReloading);
 
-            turret.AimToTarget(slavedTargetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw));
+            turret.AimToTarget(slavedTargetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw), IsCurrentWMMissile());
+        }
+
+        public void SetReloadBlock(float duration)
+        {
+            // Deploy must block reload and a deploy animation must exist before we block the turret
+            if (!(deployBlocksReload && hasDeployAnimation)) return;
+
+            // We only block if the respective toggle is also enabled
+            if (deployBlocksPitch && turret.pitchAxisManager) turret.pitchAxisManager.SetTurretBlock(duration);
+            if (deployBlocksYaw && turret.yawAxisManager) turret.yawAxisManager.SetTurretBlock(duration);
         }
 
         const int mouseAimLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels);
@@ -520,7 +541,7 @@ namespace BDArmory.WeaponMounts
             }
 
             bool deployCond = hasDeployAnimation && (deployAnimState.normalizedTime < 1 || isReloading);
-            turret.AimToTarget(targetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw));
+            turret.AimToTarget(targetPosition, !(deployCond && deployBlocksPitch), !(deployCond && deployBlocksYaw), IsCurrentWMMissile());
         }
 
         public void UpdateMissileChildren()

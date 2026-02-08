@@ -1673,6 +1673,7 @@ namespace BDArmory.Weapons
                     if (turr.Current.turretID != turretID) continue;
                     turret = turr.Current;
                     turret.SetReferenceTransform(fireTransforms[0]);
+                    turret.turretWeapon = this;
                     break;
                 }
             if (yawRange == 0 && maxPitch == minPitch)
@@ -2064,6 +2065,16 @@ namespace BDArmory.Weapons
                         }
                     }
             }
+        }
+
+        public bool IsCurrentWMWeapon()
+        {
+            MissileFire wm;
+            if (!(wm = WeaponManager)) return false;
+
+            if (wm.selectedWeapon == null) return false;
+
+            return GetShortName() == wm.selectedWeapon.GetShortName();
         }
 
         void FAOCos(BaseField field, object obj)
@@ -4496,7 +4507,7 @@ namespace BDArmory.Weapons
                 {
                     turret.smoothRotation = false;
                 }
-                turret.AimToTarget(finalAimTarget); //no aimbot turrets when target out of sight
+                turret.AimToTarget(finalAimTarget, forced: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
                 turret.smoothRotation = origSmooth;
             }
             for (int i = 0; i < customTurret.Count; i++)
