@@ -8463,7 +8463,7 @@ namespace BDArmory.Control
                         {
                             ml.lockedCamera = foundCam;
                             ml.TargetAcquired = true;
-                            if (guardMode && guardTarget != null && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude < 10 * 10) validTarget = true; //*highly* unlikely laser-guided missiles used for missile interception, so leaving these guardTarget
+                            if (guardMode && (targetVessel ? targetVessel : (targetVessel = guardTarget)) && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude < 10 * 10) validTarget = true;
                         }
                         else
                         {
@@ -8564,7 +8564,10 @@ namespace BDArmory.Control
                                 }
                             }
                             else
+                            {
                                 ml.radarTarget = vesselRadarData.lockedTargetData.targetData;
+                            }
+
                             ml.vrd = vesselRadarData;
                             vesselRadarData.LastMissile = ml;
 
@@ -8595,6 +8598,10 @@ namespace BDArmory.Control
                 case MissileBase.TargetingModes.None:
                     {
                         ml.TargetAcquired = true;
+                        if (guardMode && null == targetVessel)
+                        {
+                            targetVessel = guardTarget;
+                        }
                         validTarget = true;
                         break;
                     }
@@ -8703,6 +8710,10 @@ namespace BDArmory.Control
                     {
                         if (ml.GetWeaponClass() == WeaponClasses.Bomb)
                         {
+                            if (guardMode && null == targetVessel)
+                            {
+                                targetVessel = guardTarget;
+                            }
                             validTarget = true;
                         }
                         break;
