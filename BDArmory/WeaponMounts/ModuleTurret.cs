@@ -6,6 +6,7 @@ using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
+using System.Collections.Generic;
 
 namespace BDArmory.WeaponMounts
 {
@@ -54,6 +55,7 @@ namespace BDArmory.WeaponMounts
          UI_FloatRange(minValue = -90f, maxValue = 90f, stepIncrement = 0.5f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.None)]
         public float yawStandbyAngle = 0;
         Quaternion standbyLocalRotation;// = Quaternion.identity;
+        bool _yawStandbyAngleEnabled = true;
 
         [KSPField(isPersistant = true)] public float minPitchLimit = 400;
         [KSPField(isPersistant = true)] public float maxPitchLimit = 400;
@@ -85,16 +87,22 @@ namespace BDArmory.WeaponMounts
 
             SetupTweakables();
 
-            if (yawTransform)
+            if (yawTransform && !yawAxisManager)
             {
                 yawAxisManager = part.gameObject.AddComponent<TurretAxisManager>();
-                yawAxisManager.AddTurrets(part, true, yawTransform);
+                if (!yawAxisManager.AddTurrets(part, true, yawTransform))
+                {
+                    yawAxisManager = null;
+                }
             }
 
-            if (pitchTransform)
+            if (pitchTransform && !pitchAxisManager)
             {
                 pitchAxisManager = part.gameObject.AddComponent<TurretAxisManager>();
-                pitchAxisManager.AddTurrets(part, true, pitchTransform);
+                if (!pitchAxisManager.AddTurrets(part, false, pitchTransform))
+                {
+                    pitchAxisManager = null;
+                }
             }
 
             if (!string.IsNullOrEmpty(audioPath) && (yawSpeedDPS != 0 || pitchSpeedDPS != 0))
@@ -369,40 +377,38 @@ namespace BDArmory.WeaponMounts
             float deltaTime = Time.fixedDeltaTime;
 
             float yawOffset;
+            // Are we yawing? Is there a yawTransform? Are we actually yawed?
+            // The last check is important as it allows us to skip the CheckTurret check, which causes turrets that were stowed to redeploy
+            bool checkYaw = yaw && yawTransform && !(yawTransform.localRotation == standbyLocalRotation);
             
-            // If we're yawing, there's a yawTransform, and there's no axis manager or the axis manager allows the movement...
-            if (yaw && yawTransform && (!yawAxisManager || yawAxisManager.CheckTurret(this, !reloading)))
+            // If we're yawing, there's a yawTransform, we're yawed, and there's no axis manager or the axis manager allows the movement...
+            if (checkYaw && (!yawAxisManager || yawAxisManager.CheckTurret(this, !reloading)))
             {
                 yawOffset = Quaternion.Angle(yawTransform.localRotation, standbyLocalRotation);
             }
             else
             {
                 yawOffset = 0;
-                // Only in the case where we have no yawTransform should yaw flip from true to false
-                // If !yaw -> yaw should remain false
-                // If axis manager check fails, yaw should remain true so that we check if the yaw
-                // axis has returned to the home position
-                yaw &= yawTransform;
+                yaw = false;
             }
 
             float pitchOffset;
+            // Are we pitching? Is there a pitchTransform? Are we actually pitched?
+            // The last check is important as it allows us to skip the CheckTurret check, which causes turrets that were stowed to redeploy
+            bool checkPitch = pitch && pitchTransform && !(pitchTransform.localRotation == Quaternion.identity);
 
-            // If we're pitching, there's a pitchTransform, and there's no axis manager or the axis manager allows the movement...
-            if (pitch && pitchTransform && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, !reloading)))
+            // If we're pitching, there's a pitchTransform, we're pitched, and there's no axis manager or the axis manager allows the movement...
+            if (checkPitch && (!pitchAxisManager || pitchAxisManager.CheckTurret(this, !reloading)))
             {
                 pitchOffset = VectorUtils.Angle(pitchTransform.forward, yawTransform ? yawTransform.forward : baseTransform.forward);
             }
             else
             {
                 pitchOffset = 0;
-                // Only in the case where we have no pitchTransform should pitch flip from true to false
-                // If !pitch -> pitch should remain false
-                // If axis manager check fails, pitch should remain true so that we check if the pitch
-                // axis has returned to the home position
-                pitch &= pitchTransform;
+                pitch = false;
             }
 
-            if (!(pitch || yaw)) return true;
+            if (!(checkPitch || checkYaw)) return true;
 
             float yawSpeed;
             float pitchSpeed;
@@ -429,7 +435,7 @@ namespace BDArmory.WeaponMounts
                 pitchTransform.localRotation = Quaternion.RotateTowards(pitchTransform.localRotation, Quaternion.identity, pitchSpeed * linPitchMult);
             }
 
-            return (!yaw || yawTransform.localRotation == standbyLocalRotation) && (!pitch || pitchTransform.localRotation == Quaternion.identity);
+            return (!checkYaw || yawTransform.localRotation == standbyLocalRotation) && (!checkPitch || pitchTransform.localRotation == Quaternion.identity);
         }
 
         public bool TargetInRange(Vector3 targetPosition, float maxDistance, float thresholdDegrees = 0)
@@ -523,9 +529,20 @@ namespace BDArmory.WeaponMounts
         void OnStandbyAngleChanged(BaseField field = null, object obj = null)
         {
             SetStandbyAngle();
+            PropagateStandbyAngle();
             foreach (Part symmetryPart in part.symmetryCounterparts)
             {
-                ModuleTurret symmetryTurret = symmetryPart.FindModuleImplementing<ModuleTurret>();
+                ModuleTurret symmetryTurret = null;
+                
+                List<ModuleTurret> turrets = symmetryPart.FindModulesImplementing<ModuleTurret>();
+                for (int i = 0; i < turrets.Count; i++)
+                {
+                    if (turrets[i] == null) continue;
+                    if (turrets[i].turretID == turretID) symmetryTurret = turrets[i];
+                }
+
+                if (!symmetryTurret) continue;
+
                 if (part.symMethod == SymmetryMethod.Mirror)
                 {
                     symmetryTurret.yawStandbyAngle = -yawStandbyAngle;
@@ -536,13 +553,28 @@ namespace BDArmory.WeaponMounts
                 }
 
                 symmetryTurret.SetStandbyAngle();
+                symmetryTurret.PropagateStandbyAngle();
             }
         }
 
-        void SetStandbyAngle()
+        void PropagateStandbyAngle()
+        {
+            if (yawAxisManager)
+            {
+                yawAxisManager.SetYawStandbyAngle(this, yawStandbyAngle);
+            }
+        }
+
+        public void SetStandbyAngle()
         {
             standbyLocalRotation = Quaternion.AngleAxis(yawStandbyAngle, Vector3.up);
-            if (yawTransform != null) yawTransform.localRotation = standbyLocalRotation;
+            if (yawTransform != null && _yawStandbyAngleEnabled) yawTransform.localRotation = standbyLocalRotation;
+        }
+
+        public void DisableYawStandbyAngle()
+        {
+            Fields["yawStandbyAngle"].guiActiveEditor = false;
+            _yawStandbyAngleEnabled = false;
         }
 
         public float DeployIfBlocking(bool yaw)
@@ -559,10 +591,20 @@ namespace BDArmory.WeaponMounts
             return 0;
         }
 
-        public void SetDeployFlag(bool yaw, bool pitch)
+        public void SetDeployFlag(bool yawEnabled, bool pitchEnabled)
         {
-            if (yawAxisManager) yawAxisManager.SetTurretFlag(!yaw, yawAxisIndex);
-            if (pitchAxisManager) pitchAxisManager.SetTurretFlag(!pitch, pitchAxisIndex);
+            if (yawAxisManager) yawAxisManager.SetTurretFlag(!yawEnabled, yawAxisIndex);
+            if (pitchAxisManager) pitchAxisManager.SetTurretFlag(!pitchEnabled, pitchAxisIndex);
+        }
+
+        public void SetYawDeployFlag(bool yawEnabled)
+        {
+            if (yawAxisManager) yawAxisManager.SetTurretFlag(!yawEnabled, yawAxisIndex);
+        }
+
+        public void SetPitchDeployFlag(bool pitchEnabled)
+        {
+            if (pitchAxisManager) pitchAxisManager.SetTurretFlag(!pitchEnabled, pitchAxisIndex);
         }
 
         public bool turretEnabled()

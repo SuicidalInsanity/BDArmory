@@ -126,13 +126,30 @@ namespace BDArmory.WeaponMounts
 
         public float DeployIfBlocking(bool yaw)
         {
+            if (!hasDeployAnimation)
+            {
+                turret.SetDeployFlag(true, true);
+                return 0;
+            }
+
             // If not blocking, return 0 without doing anything
-            if (!(yaw ? deployBlocksYaw : deployBlocksPitch)) return 0;
+            if (!(yaw ? deployBlocksYaw : deployBlocksPitch))
+            {
+                if (yaw)
+                {
+                    turret.SetYawDeployFlag(true);
+                }
+                else
+                {
+                    turret.SetPitchDeployFlag(true);
+                }
+                return 0;
+            }
 
             bool reloadBlock = deployBlocksReload && isReloading;
 
             // If no deploy animation or deployed and not reloading
-            if (!(hasDeployAnimation && (deployAnimState.normalizedTime < 1 || reloadBlock))) return 0;
+            if (!(deployAnimState.normalizedTime < 1 || reloadBlock)) return 0;
 
             // If not blocked by reload
             if (!reloadBlock)
@@ -167,12 +184,18 @@ namespace BDArmory.WeaponMounts
                 }
 
                 deployAnimState.normalizedTime = 1;
+
+                // Unblock turret
+                turret.SetDeployFlag(true, true);
             }
             else
             {
                 deployAnimState.speed = 0;
 
                 yield return new WaitWhileFixed(() => pausingAfterShot);
+
+                // Block turret prior to undeploy
+                turret.SetDeployFlag(!deployBlocksYaw, !deployBlocksPitch);
 
                 while (deployAnimState.normalizedTime > 0)
                 {
@@ -182,8 +205,6 @@ namespace BDArmory.WeaponMounts
 
                 deployAnimState.normalizedTime = 0;
             }
-
-            turret.SetDeployFlag(!deployBlocksYaw || forward, !deployBlocksPitch || forward);
 
             deployAnimState.speed = 0;
         }

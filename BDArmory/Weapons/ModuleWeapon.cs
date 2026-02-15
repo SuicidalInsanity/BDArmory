@@ -6268,7 +6268,11 @@ namespace BDArmory.Weapons
         public float DeployIfBlocking()
         {
             // If no deploy anim or deploy state, the turret is ready regardless
-            if (!(hasDeployAnim && deployState)) return 0;
+            if (!(hasDeployAnim && deployState))
+            {
+                turret.SetDeployFlag(true, true);
+                return 0;
+            }
 
             if (hasReloadAnim && isReloading) // If reloading, return how long it'll take for the reload to complete
             {
@@ -6370,6 +6374,12 @@ namespace BDArmory.Weapons
             }
             if (hasDeployAnim && deployState != null)
             {
+                // Block turret prior to undeploy
+                if (turret)
+                {
+                    turret.SetDeployFlag(false, false);
+                }
+
                 deployState.enabled = true;
                 deployState.speed = -1;
                 yield return new WaitWhileFixed(() => deployState.normalizedTime > 0);
@@ -6381,10 +6391,6 @@ namespace BDArmory.Weapons
             {
                 weaponState = WeaponStates.Disabled;
                 UpdateGUIWeaponState();
-            }
-            if (turret)
-            {
-                turret.SetDeployFlag(false, false);
             }
         }
         IEnumerator ReloadRoutine()
