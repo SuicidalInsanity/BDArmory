@@ -3999,6 +3999,16 @@ namespace BDArmory.Weapons
             if (part.isActiveAndEnabled) shutdownRoutine = StartCoroutine(ShutdownRoutine());
         }
 
+        public void ReturnWeapon()
+        {
+            if (!disabledStates.Contains(weaponState))
+                return;
+
+            StopShutdownStartupRoutines();
+
+            if (part.isActiveAndEnabled) shutdownRoutine = StartCoroutine(ShutdownRoutine());
+        }
+
         HashSet<WeaponStates> standbyStates = new HashSet<WeaponStates> { WeaponStates.Standby, WeaponStates.PoweringUp, WeaponStates.Locked };
         public void StandbyWeapon()
         {

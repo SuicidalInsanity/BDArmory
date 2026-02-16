@@ -161,6 +161,8 @@ namespace BDArmory.WeaponMounts
 
                 deployAnimRoutine = StartCoroutine(DeployAnimation(true));
 
+                hasReturned = false;
+
                 return deployAnimState.length - deployAnimState.time;
             }
             else

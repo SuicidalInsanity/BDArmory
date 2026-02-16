@@ -591,6 +591,18 @@ namespace BDArmory.WeaponMounts
             return 0;
         }
 
+        public void StowTurret()
+        {
+            if (turretWeapon)
+            {
+                turretWeapon.ReturnWeapon();
+            }
+            if (turretMissile)
+            {
+                turretMissile.ReturnTurret();
+            }
+        }
+
         public void SetDeployFlag(bool yawEnabled, bool pitchEnabled)
         {
             if (yawAxisManager) yawAxisManager.SetTurretFlag(!yawEnabled, yawAxisIndex);

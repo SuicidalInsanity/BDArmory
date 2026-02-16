@@ -178,6 +178,21 @@ namespace BDArmory.WeaponMounts
             if (currBlockedTime > timeOfLastMoveCommand) timeOfLastMoveCommand = currBlockedTime;
         }
 
+        public void StowTurrets()
+        {
+            if (currTurretIndex >= 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < turrets.Count; i++)
+            {
+                if (turrets[i] == null) continue;
+
+                turrets[i].StowTurret();
+            }
+        }
+
         public bool CheckTurret(ModuleTurret t, bool returning, bool activeWeap = false)
         {
             // Special case, where we've previously confirmed all turrets were disabled
