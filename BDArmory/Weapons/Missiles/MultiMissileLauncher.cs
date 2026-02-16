@@ -192,11 +192,6 @@ namespace BDArmory.Weapons.Missiles
                 missileLauncher.reloadableRail = missileSpawner;
                 missileLauncher.hasAmmo = true;
                 missileLauncher.multiLauncher = this;
-                missileLauncher.MissileReferenceTransform = part.FindModelTransform("missileTransform");
-                if (!missileLauncher.MissileReferenceTransform)
-                {
-                    missileLauncher.MissileReferenceTransform = launchTransforms[0];
-                }
 
                 if (isClusterMissile)
                 {
@@ -228,6 +223,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     Fields["clusterMissileTriggerDist"].guiActive = false;
                     Fields["clusterMissileTriggerDist"].guiActiveEditor = false;
+                    missileLauncher.MissileReferenceTransform = launchTransforms[0];
                 }
                 Fields["salvoSize"].guiActive = setSalvoSize;
                 Fields["salvoSize"].guiActiveEditor = setSalvoSize;
