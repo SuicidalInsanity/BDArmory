@@ -126,7 +126,21 @@ namespace BDArmory.WeaponMounts
                     lastTurretDirection = baseTransform.InverseTransformDirection(pitchTransform ? pitchTransform.forward : yawTransform.forward);
                 }
 
-                maxAudioRotRate = Mathf.Min(yawSpeedDPS, pitchSpeedDPS);
+                audioRotationRate = 0;
+                //maxAudioRotRate = Mathf.Min(yawSpeedDPS, pitchSpeedDPS);
+                maxAudioRotRate = Mathf.Min(yawTransform ? yawSpeedDPS : float.MaxValue, pitchTransform ? pitchSpeedDPS : float.MaxValue);
+
+                // If one of the two values is zero, try to salvage things
+                if (maxAudioRotRate <= 0)
+                {
+                    maxAudioRotRate = Mathf.Max(yawTransform ? yawSpeedDPS : -1, pitchTransform ? pitchSpeedDPS : -1);
+                }
+
+                // If all else fails, default to 90 DPS
+                if (maxAudioRotRate == float.MaxValue || maxAudioRotRate <= 0)
+                {
+                    maxAudioRotRate = 90;
+                }
 
                 hasAudio = true;
             }
