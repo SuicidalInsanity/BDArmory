@@ -220,7 +220,7 @@ namespace BDArmory.UI
                 float size = 40;
                 UpdateStyles();
                 float minDistanceSqr = BDTISettings.DISTANCE_THRESHOLD * BDTISettings.DISTANCE_THRESHOLD;
-                float maxDistanceSqr = BDTISettings.MAX_DISTANCE_THRESHOLD * BDTISettings.MAX_DISTANCE_THRESHOLD;
+                float maxDistanceSqr = BDTISettings.MAX_DISTANCE_THRESHOLD >= BDArmorySettings.MAX_GUARD_VISUAL_RANGE ? float.MaxValue : BDTISettings.MAX_DISTANCE_THRESHOLD * BDTISettings.MAX_DISTANCE_THRESHOLD;
                 using var vessel = FlightGlobals.Vessels.GetEnumerator();
                 while (vessel.MoveNext())
                 {
