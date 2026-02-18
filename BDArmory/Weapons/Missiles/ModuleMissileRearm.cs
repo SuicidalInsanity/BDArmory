@@ -15,10 +15,10 @@ namespace BDArmory.Weapons.Missiles
 {
     public class ModuleMissileRearm : PartModule, IPartMassModifier, IPartCostModifier
     {
-        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? ammoCount : ammoCount - 1), 0) * missileMass;
+        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileMass;
 
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? ammoCount : ammoCount - 1), 0) * missileCost;
+        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileCost;
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         private float missileMass = 0;
