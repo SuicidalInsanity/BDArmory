@@ -163,11 +163,11 @@ namespace BDArmory.Radar
             if (HighLogic.LoadedSceneIsFlight)
             {
                 pingsData = new RWRSignatureData[dataCount];
-                MWSData = new RWRSignatureData[dataCount];
+                MWSData = new RWRSignatureData[2 *dataCount];
                 //pingWorldPositions = new Vector3[dataCount];
                 RWRSignatureData.ResetRWRSDArray(ref pingsData);
-                launchWarnings = new RWRSignatureData[dataCount]; //new List<TargetSignatureData>();
-                missileLockData = new RWRSignatureData[dataCount];
+                launchWarnings = new RWRSignatureData[2 * dataCount]; //new List<TargetSignatureData>();
+                missileLockData = new RWRSignatureData[2 * dataCount];
 
                 rwrIconLabelStyle = new GUIStyle();
                 rwrIconLabelStyle.alignment = TextAnchor.MiddleCenter;
@@ -424,7 +424,7 @@ namespace BDArmory.Radar
 
         IEnumerator MissileLockLifeRoutine(int index)
         {
-            yield return new WaitForSecondsFixed(RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME);
+            yield return new WaitForSecondsFixed(RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME - Time.fixedDeltaTime);
             missileLockData[index] = RWRSignatureData.noTarget;
             // Data expiring
             // Decrement size and move the head over
