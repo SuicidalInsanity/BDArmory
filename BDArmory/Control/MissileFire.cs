@@ -9837,16 +9837,18 @@ namespace BDArmory.Control
                                 }
 
                                 // Look for a better way to do this...
-                                SearchForHeatTarget(currMissile, PDMslTgts[MissileID]);
+                                //SearchForHeatTarget(currMissile, PDMslTgts[MissileID]);
+                                Vector3 missilePos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
+                                TargetSignatureData currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget, 0.5f * currMissile.lockedSensorFOV, currMissile.heatThreshold, currMissile.frontAspectHeatModifier, currMissile.uncagedLock, currMissile.targetCoM, currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity, this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
 
                                 // If no heat target -> we're probably out of view
-                                if (!heatTarget.exists)
+                                if (!currHeatTarget.exists)
                                 {
                                     continue;
                                 }
 
                                 // If we get decoyed -> we're gonna need a better missile, so skip this one
-                                if (heatTarget.isDecoy)
+                                if (currHeatTarget.isDecoy)
                                 {
                                     // Write down the missile type that failed to lock
                                     //if (logging)
@@ -9857,7 +9859,7 @@ namespace BDArmory.Control
                                 }
 
                                 // If we haven't gotten a heat target, continue
-                                if (heatTarget.vessel != targetVessel)
+                                if (currHeatTarget.vessel != targetVessel)
                                 {
                                     continue;
                                 }
@@ -9882,9 +9884,8 @@ namespace BDArmory.Control
                     //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
                     bool turreted = false;
                     MissileTurret mT = null;
-                    if (launcher && (launcher.missileTurret || launcher.multiLauncher && launcher.multiLauncher.turret))
+                    if (launcher && (mT = launcher.missileTurret ? launcher.missileTurret : launcher.multiLauncher.turret))
                     {
-                        mT = launcher.missileTurret ? launcher.missileTurret : launcher.multiLauncher.turret;
                         if (!MslTurrets.Contains(mT))
                         {
                             turreted = true;
@@ -9895,7 +9896,7 @@ namespace BDArmory.Control
                             mT.SlavedAim();
                         }
                     }
-                    if (currMissile.customTurret.Count> 0)
+                    if (currMissile.customTurret.Count > 0)
                     {
                         for (int i = 0; i < currMissile.customTurret.Count; i++)
                         {
