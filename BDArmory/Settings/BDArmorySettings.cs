@@ -209,6 +209,8 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float ARMOR_MASS_MOD = 1f;                   //Armor mass multiplier
         [BDAPersistentSettingsField] public static bool KERBAL_ERA = true;
         [BDAPersistentSettingsField] public static float HMDCost = 2000f;
+        [BDAPersistentSettingsField] public static float LASER_ATM_GAMMA = 0.000341f;                // Transmission factor for laser in atmosphere. Gives 250W on target (melts metal) at 512km from 1MW laser at 65kft altitude, based on https://en.wikipedia.org/wiki/Boeing_YAL-1#Intercept_sequence. Also gives ~0.425 scaling at 2.5km (prior scaling factor)
+        [BDAPersistentSettingsField] public static float LASER_WATER_GAMMA = 0.38f;                  // Transmission factor for laser in water. 15% at 5m, ~2% at 10m, ~0% at 100m
         #endregion
 
         #region FX
