@@ -3089,7 +3089,7 @@ namespace BDArmory.Weapons
                     if (loadedvessels.Current == vessel) continue;
                     float distance = (loadedvessels.Current.CoM - fireTransforms[0].transform.position).magnitude;
                     if (distance > maxTargetingRange) continue;
-                    initialDamage = MicrowaveDamage(laserDamage, tanAngle, distance, microwaveDirectivity);
+                    initialDamage = MicrowaveDamage(laserDamage, microwaveDirectivity, distance);
 
                     if (electroLaser)
                     {
@@ -3262,11 +3262,11 @@ namespace BDArmory.Weapons
         }
 
         // Adjusts microwwave damage based on tanAngle, distance, firing and directivity (gain)
-        private float MicrowaveDamage(float baseDamage, float tanAngle, float distance, float directivity)
+        private float MicrowaveDamage(float baseDamage, float directivity, float distance)
         {
             float wavelength = 0.124913524166667f; // 2.4 GHz wavelength, 299792458f / 2400000000
-            float sqrTerm = wavelength / (4 * Mathf.PI * distance);
-            float finalDamage = Mathf.Min(directivity * (sqrTerm * sqrTerm), 100f * baseDamage); // Clamp max damage at very short ranges, https://en.wikipedia.org/wiki/Friis_transmission_equation
+            float sqrTerm = wavelength / (4 * Mathf.PI * Mathf.Max(distance, 1f));
+            float finalDamage = baseDamage * Mathf.Min(directivity * (sqrTerm * sqrTerm), 1000f); // Clamp max damage at very short ranges, https://en.wikipedia.org/wiki/Friis_transmission_equation
             return finalDamage;
         }
 
