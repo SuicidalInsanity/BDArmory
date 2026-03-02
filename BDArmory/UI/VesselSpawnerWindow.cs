@@ -445,8 +445,8 @@ namespace BDArmory.UI
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Teams")}:  ({numberOfTeams})", leftLabel); // Number of teams.
                 BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS, 0f, 11f));
 
-                GUI.Label(SLeftSliderRect(++line), $"Default Kerbal Suit: {(KerbalSuitSelector.KerbalSuit)BDArmorySettings.VESSEL_SPAWN_DEFAULT_KERBAL_SUIT}", leftLabel); // Default Kerbal Suit
-                BDArmorySettings.VESSEL_SPAWN_DEFAULT_KERBAL_SUIT = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_DEFAULT_KERBAL_SUIT, 0f, 4f));
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_KerbalSuitTypeOverride")}: {(KerbalSuitSelector.KerbalSuit)BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE}", leftLabel); // Default Kerbal Suit
+                BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE, -1f, 4f));
 
                 GUI.Label(SLeftRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnFilesLocation")} (AutoSpawn{Path.DirectorySeparatorChar}): ", leftLabel); // Craft files location
                 BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION = GUI.TextField(SRightRect(line), BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION);
