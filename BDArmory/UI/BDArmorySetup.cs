@@ -3186,6 +3186,7 @@ namespace BDArmory.UI
                         BDArmorySettings.APS_THRESHOLD = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.APS_THRESHOLD, 1f, 356f));
                     }
                     BDArmorySettings.IGNORE_TERRAIN_CHECK = GUI.Toggle(SLeftRect(++line), BDArmorySettings.IGNORE_TERRAIN_CHECK, StringUtils.Localize("#LOC_BDArmory_Settings_IGNORE_TERRAIN_CHECK")); // Ignore Terrain Check
+                    BDArmorySettings.ALLOW_RETREAT_IF_ORBITING = GUI.Toggle(SRightRect(line), BDArmorySettings.ALLOW_RETREAT_IF_ORBITING, StringUtils.Localize("#LOC_BDArmory_Settings_RETREAT_IF_ORBITING")); // Allow retreat if orbiting.
                     BDArmorySettings.CHECK_WATER_TERRAIN = GUI.Toggle(SLeftRect(++line), BDArmorySettings.CHECK_WATER_TERRAIN, StringUtils.Localize("#LOC_BDArmory_Settings_CHECK_WATER_TERRAIN")); // Check Water
                     BDArmorySettings.RADAR_NOTCHING = GUI.Toggle(SLeftRect(++line), BDArmorySettings.RADAR_NOTCHING, StringUtils.Localize("#LOC_BDArmory_Settings_RADAR_NOTCHING")); // Radar Notching Toggle
                     if (BDArmorySettings.RADAR_NOTCHING)

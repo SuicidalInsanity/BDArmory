@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 
 using BDArmory.Control;
+using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.Weapons;
 
@@ -271,6 +272,8 @@ namespace BDArmory.VesselSpawning
                         KerbalRoster.SetExperienceLevel(crewMember, KerbalRoster.GetExperienceMaxLevel()); // Make them experienced.
                         crewMember.isBadass = true; // Make them bad-ass (likes nearby explosions).
                         crewMember.courage = 0.5f;
+                        var kerbalSuit = part.FindModuleImplementing<KerbalSuitSelector>();
+                        crewMember.suit = kerbalSuit != null ? kerbalSuit.Suit : ProtoCrewMember.KerbalSuit.Default;
 
                         // Add them to the part
                         part.AddCrewmemberAt(crewMember, part.protoModuleCrew.Count);

@@ -5,6 +5,8 @@ using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
+using BDArmory.Control;
+using BDArmory.Extensions;
 
 namespace BDArmory.UI
 {
@@ -220,7 +222,7 @@ namespace BDArmory.UI
                 float size = 40;
                 UpdateStyles();
                 float minDistanceSqr = BDTISettings.DISTANCE_THRESHOLD * BDTISettings.DISTANCE_THRESHOLD;
-                float maxDistanceSqr = BDTISettings.MAX_DISTANCE_THRESHOLD >= BDArmorySettings.MAX_GUARD_VISUAL_RANGE ? float.MaxValue : BDTISettings.MAX_DISTANCE_THRESHOLD * BDTISettings.MAX_DISTANCE_THRESHOLD;
+                float maxDistanceSqr = BDTISettings.MAX_DISTANCE_THRESHOLD == 0 ? float.MaxValue : BDTISettings.MAX_DISTANCE_THRESHOLD * BDTISettings.MAX_DISTANCE_THRESHOLD;
                 using var vessel = FlightGlobals.Vessels.GetEnumerator();
                 while (vessel.MoveNext())
                 {
@@ -509,5 +511,12 @@ namespace BDArmory.UI
             }
             return icon;
         }
+
+        /// <summary>
+        /// A public accessor for other mods to get access to the team color.
+        /// </summary>
+        /// <param name="wm"></param>
+        /// <returns></returns>
+        public Color GetTeamColor(MissileFire wm) => BDTISetup.Instance.ColorAssignments.GetValueOrDefault(wm.Team.Name, Color.gray);
     }
 }

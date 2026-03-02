@@ -126,7 +126,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
             this.enabled = true;
             this.part.force_activate();
             MultiMissileLauncher MML = part.FindModuleImplementing<MultiMissileLauncher>();
-            if (MML == null || MML && MML.isClusterMissile) MissileName = part.name;
+            if (MML == null || MML && MML.isClusterMissile && !MML.isLaunchedClusterMissile) MissileName = part.name;
             if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
                 StartCoroutine(GetMissileValues(MML));
             //GameEvents.onEditorShipModified.Add(ShipModified);
@@ -179,7 +179,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                 }
             if (missilePart == null)
             {
-                Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part on {part.partInfo.name}");
+                Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part ({MissileName}) on {part.partInfo.name}");
                 missileCost = 0;
                 missileMass = 0;
                 yield break;

@@ -157,6 +157,10 @@ namespace BDArmory.Weapons.Missiles
                   UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.Editor)]
         public float decoupleSpeed = 0;
 
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_useSymCounterpart"),//Direction: 
+    UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//False--True
+        public bool useSymCounterpart = false; //have symmetrically placed parts fire along with this part as part of salvo?
+
         [KSPField]
         public float clearanceRadius = 0.14f;
 
@@ -403,6 +407,8 @@ namespace BDArmory.Weapons.Missiles
         float[] rcsFiredTimes;
         KSPParticleEmitter[] rcsTransforms;
 
+        public bool SymTwinlaunch = true;
+        
         private bool OldInfAmmo = false;
         private bool StartSetupComplete = false;
 
@@ -1326,6 +1332,12 @@ namespace BDArmory.Weapons.Missiles
                     Fields["DetonateAtMinimumDistance"].guiActiveEditor = true;
                 }
             }
+
+            if (weaponClass == WeaponClasses.Bomb)
+            {
+                Fields["useSymCounterpart"].guiActiveEditor = true;
+            }
+
             ParseAntiRadTargetTypes();
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -1429,6 +1441,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 Destroy(vesselReferenceTransform.gameObject);
             }
+            if (lockedCamera != null) lockedCamera.guidingOrdnance = false;
         }
         void OnEditorPartPlaced(Part p)
         {
@@ -1640,6 +1653,37 @@ namespace BDArmory.Weapons.Missiles
                 }
                 else
                 {
+                    if (weaponClass == WeaponClasses.Bomb && useSymCounterpart)
+                    {
+                        if (SymTwinlaunch)
+                        {
+                            SymTwinlaunch = false;
+                            MissileFire.TargetData targetData = TargetAcquired ? new MissileFire.TargetData(targetGPSCoords, TimeOfLastINS, INStimetogo) : null;
+                            List<MissileLauncher> symBombs = new List<MissileLauncher>();
+                            using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
+                                while (pSym.MoveNext())
+                                {
+                                    if (pSym.Current == null) continue;
+                                    if (pSym.Current != part && pSym.Current.vessel == vessel)
+                                    {
+                                        var ml = pSym.Current.FindModuleImplementing<MissileBase>();
+                                        if (ml == null) continue;
+                                        if (FiredByWM != null) FiredByWM.SendTargetDataToMissile(ml, targetVessel != null ? targetVessel.Vessel : null, false, targetData, true);
+                                        MissileLauncher launcher = ml as MissileLauncher;
+                                        if (launcher != null)
+                                        {
+                                            if (launcher.HasFired || launcher.launched) continue;
+                                            launcher.SymTwinlaunch = false;
+                                            symBombs.Add(launcher);                                            
+                                        }
+                                    }
+                                }
+                            foreach (MissileLauncher bomb in symBombs)
+                            {
+                                bomb.FireMissile();
+                            }
+                        }
+                    }
                     TimeFired = Time.time;
                     part.decouple(0);
                     part.Unpack();
@@ -2636,7 +2680,7 @@ namespace BDArmory.Weapons.Missiles
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, (2f * RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME), this, pingRWR);
+                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                         float sqrThresh = terminalGuidanceDistance * terminalGuidanceDistance * 2.25f; // (terminalGuidanceDistance * 1.5f)^2
 
                         //float smallestAngle = maxOffBoresight;
@@ -2682,9 +2726,9 @@ namespace BDArmory.Weapons.Missiles
                             terminalGuidanceActive = true;
 
                             if (weaponClass == WeaponClasses.SLW)
-                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.Torpedo, 2f, vessel);
+                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                             else
-                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, 2f, vessel);
+                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
                             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Pitbull! Radar missileBase has gone active.  Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
                         }
@@ -3977,6 +4021,7 @@ namespace BDArmory.Weapons.Missiles
                     if (light.Current == null) continue;
                     light.Current.intensity = 0;
                 }
+            if (lockedCamera) lockedCamera.guidingOrdnance = false;
         }
 
         public void DestroyMissile()

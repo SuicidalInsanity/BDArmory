@@ -581,18 +581,19 @@ namespace BDArmory.Control
                 }
 
                 ++activeWaypointIndex;
-                if (activeWaypointIndex >= waypoints.Count && activeWaypointLap > waypointLapLimit)
-                {
-                    if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]: Waypoints complete");
-                    waypoints = null;
-                    ReleaseCommand();
-                    if (BDArmorySettings.WAYPOINT_GUARD_INDEX >= 0 && !weaponManager.guardMode) weaponManager.guardMode = true;
-                    return;
-                }
-                else if (activeWaypointIndex >= waypoints.Count && activeWaypointLap <= waypointLapLimit)
+                if (activeWaypointIndex >= waypoints.Count)
                 {
                     activeWaypointIndex = 0;
                     activeWaypointLap++;
+
+                    if (activeWaypointLap > waypointLapLimit)
+                    {
+                        if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]: Waypoints complete");
+                        waypoints = null;
+                        ReleaseCommand();
+                        if (BDArmorySettings.WAYPOINT_GUARD_INDEX >= 0 && !weaponManager.guardMode) weaponManager.guardMode = true;
+                        return;
+                    }
                 }
                 UpdateWaypoint(); // Call ourselves again for the new waypoint to follow.
                 //Modify AI maxSpeed if the gate we just pased has a speed limit

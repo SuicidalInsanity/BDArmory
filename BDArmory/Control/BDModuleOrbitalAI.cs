@@ -1858,7 +1858,7 @@ namespace BDArmory.Control
                         Vector3.Dot(-engine.thrustTransforms[0].forward, vesselTransform.forward) > 0.5f ||
                         Vector3.Dot(-engine.thrustTransforms[0].forward, vesselTransform.forward) < -0.5f)
                         rcsEngines.Add(engine); //grab engines pointing sideways. Not grabbing fore/aft engines since while those would impart some torque,
-                                                //ship design is generally going to be long and anrrow, so torque imparted would be minimal while adding noticable forward/reverse vel
+                                                //ship design is generally going to be long and narrow, so torque imparted would be minimal while adding noticable forward/reverse vel
                     if (engine.MaxThrustOutputVac(true) > 0) //just in case someone has mounted jets to the side of their space cruiser for some reason
                     {
                         engine.Activate();

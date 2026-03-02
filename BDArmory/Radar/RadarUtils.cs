@@ -73,7 +73,8 @@ namespace BDArmory.Radar
         internal const float RCS_MISSILES = 999f;                    //default rcs value for missiles if not configured in the part config
         internal const float RWR_PING_RANGE_FACTOR = 2.0f;
         internal const float RADAR_IGNORE_DISTANCE_SQR = 100f;
-        internal const float ACTIVE_MISSILE_PING_PERISTS_TIME = 0.2f;
+        internal const float ACTIVE_MISSILE_PING_PERSIST_TIME = 0.4f;
+        internal const float LAUNCH_PING_PERSIST_TIME = 2f;         // Should be long enough to cover missile launching and turning to target
         internal const float MISSILE_DEFAULT_LOCKABLE_RCS = 5f;
         internal const float MISSILE_DEFAULT_GATE_RCS = 0.05f;
 
@@ -1799,9 +1800,9 @@ namespace BDArmory.Radar
                         if (pingRWR && distance < missile.activeRadarRange * RWR_PING_RANGE_FACTOR)
                         {
                             if (missile.GetWeaponClass() == WeaponClasses.SLW)
-                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERISTS_TIME, missile.vessel);
+                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                             else
-                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERISTS_TIME, missile.vessel);
+                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                         }
                     }
                 }
@@ -2128,7 +2129,7 @@ namespace BDArmory.Radar
 
                 //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
                 if (distance < radar.radarMaxDistanceLockTrack * RWR_PING_RANGE_FACTOR)
-                    RadarWarningReceiver.PingRWR(lockedVessel, ray.origin, radar.rwrType, ACTIVE_MISSILE_PING_PERISTS_TIME, radar.vessel);
+                    RadarWarningReceiver.PingRWR(lockedVessel, ray.origin, radar.rwrType, ACTIVE_MISSILE_PING_PERSIST_TIME, radar.vessel);
 
                 return true;
             }
@@ -2410,10 +2411,10 @@ namespace BDArmory.Radar
                                 }
 
                                 // No MWS/visual detection, check RWR
-                                if (missileBase.TargetingMode != MissileBase.TargetingModes.Radar || // Must be radar missile
+                                if ((missileBase.TargetingMode != MissileBase.TargetingModes.Radar) || // Must be radar missile
                                     ((missileBase.ActiveRadar || missileBase.radarLOALSearching) && // if active radar
                                     ((missileBase.activeRadarRange * missileBase.activeRadarRange * 4f < vesselDistanceSqr) || !RWR.IsRadarMissileDetected(loadedvessels.Current))) || // Active radar must be within range and detected
-                                    !missileBase.vrd) // Or if SARH, must have an active SARH track, note strictly speaking there's more nuance to be had here with regards to detection, but we want AI to know that they've been launched at
+                                    (!missileBase.ActiveRadar && !missileBase.vrd)) // Or if SARH, must have an active SARH track, note strictly speaking there's more nuance to be had here with regards to detection, but we want AI to know that they've been launched at
                                     continue;
                                 //if (VectorUtils.Angle(missileBase.GetForwardTransform(), -vesselDirection) > missileBase.maxOffBoresight) continue; // TODO: Profile this at some point to see if it's faster than checking RWR...
                             }

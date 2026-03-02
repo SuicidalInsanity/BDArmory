@@ -374,19 +374,12 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
-        /// A more accurate Angle that is maintains precision down to an angle of 1e-5
-        /// (as compared to (float)Vector3d.Angle) instead of the 1e-2 that Vector3.Angle gives.
-        /// Additionally, it's around 30% faster than Vector3.Angle and 12% faster than (float)Vector3d(from, to).
-        /// </summary>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Angle(Vector3 from, Vector3 to) => Angle((Vector3d)from, (Vector3d)to);
-
-        /// <summary>
-        /// Vector3d version of VectorUtils.Angle(), to take advantage of that faster execution time,
-        /// given that some of the references to VectorUtils.Angle() have both inputs as Vector3ds
+        /// A more accurate Angle that maintains precision down to an angle of 1e-5
+        /// instead of the 1e-2 that Vector3.Angle gives (as compared to (float)Vector3d.Angle).
+        /// Additionally, it's around 30% faster than Vector3.Angle.
+        /// 
+        /// Note: When called with Vector3 inputs, the inputs are automatically cast to Vector3d
+        /// with insignificant overhead, so explicit overloads aren't necessary.
         /// </summary>
         /// <param name="from"></param>
         /// <param name="to"></param>
@@ -403,26 +396,6 @@ namespace BDArmory.Utils
             double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / Math.Sqrt(num), -1.0, 1.0);
             return (float)(Math.Acos(num2) * RadToDeg);
         }
-
-        /// <summary>
-        /// Partial Vector3d version of VectorUtils.Angle(), to take advantage of that faster execution time,
-        /// given that some of the references to VectorUtils.Angle() have one of the inputs as a Vector3d.
-        /// </summary>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Angle(Vector3 from, Vector3d to) => Angle((Vector3d)from, to);
-
-        /// <summary>
-        /// Partial Vector3d version of VectorUtils.Angle(), to take advantage of that faster execution time,
-        /// given that some of the references to VectorUtils.Angle() have one of the inputs as a Vector3d.
-        /// </summary>
-        /// <param name="from"></param>
-        /// <param name="to"></param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Angle(Vector3d from, Vector3 to) => Angle(from, (Vector3d)to);
 
         /// <summary>
         /// Get angle between two pre-normalized vectors.
@@ -443,54 +416,6 @@ namespace BDArmory.Utils
             double num2 = BDAMath.Clamp(Vector3d.Dot(from, to), -1d, 1d);
             return (float)(Math.Acos(num2) * RadToDeg);
         }
-
-        /// <summary>
-        /// Get angle between two pre-normalized vectors.
-        /// 
-        /// This implementation assumes that the input vectors are already normalized,
-        /// skipping such checks and normalization that Vector3.Angle does.
-        /// IMPORTANT NOTE: Unlike Vector3.Angle(), this returns 90° if one or both
-        /// vectors are zero vectors! Vector3.Angle() returns 0° instead.
-        /// If this behavior is undesireable, the "AnglePreNormalized" function which takes
-        /// in the two original vectors and their magnitudes should be used instead.
-        /// </summary>
-        /// <param name="from">First vector.</param>
-        /// <param name="to">Second vector.</param>
-        /// <returns>The angle between the two vectors.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3 from, Vector3 to) => AnglePreNormalized((Vector3d)from, (Vector3d)to);
-
-        /// <summary>
-        /// Get angle between two pre-normalized vectors.
-        /// 
-        /// This implementation assumes that the input vectors are already normalized,
-        /// skipping such checks and normalization that Vector3.Angle does.
-        /// IMPORTANT NOTE: Unlike Vector3.Angle(), this returns 90° if one or both
-        /// vectors are zero vectors! Vector3.Angle() returns 0° instead.
-        /// If this behavior is undesireable, the "AnglePreNormalized" function which takes
-        /// in the two original vectors and their magnitudes should be used instead.
-        /// </summary>
-        /// <param name="from">First vector.</param>
-        /// <param name="to">Second vector.</param>
-        /// <returns>The angle between the two vectors.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3 from, Vector3d to) => AnglePreNormalized((Vector3d)from, to);
-
-        /// <summary>
-        /// Get angle between two pre-normalized vectors.
-        /// 
-        /// This implementation assumes that the input vectors are already normalized,
-        /// skipping such checks and normalization that Vector3.Angle does.
-        /// IMPORTANT NOTE: Unlike Vector3.Angle(), this returns 90° if one or both
-        /// vectors are zero vectors! Vector3.Angle() returns 0° instead.
-        /// If this behavior is undesireable, the "AnglePreNormalized" function which takes
-        /// in the two original vectors and their magnitudes should be used instead.
-        /// </summary>
-        /// <param name="from">First vector.</param>
-        /// <param name="to">Second vector.</param>
-        /// <returns>The angle between the two vectors.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3d from, Vector3 to) => AnglePreNormalized(from, (Vector3d)to);
 
         /// <summary>
         /// Get angle between two vectors, with known magnitudes.

@@ -156,7 +156,7 @@ namespace BDArmory.Damage
         public bool ArmorPanel = false;
 
         //Part vars
-        private float partMass = 0f;
+        private float partMass { get { return field * _tweakScaleMassMultiplier; } set; } = 0f; // Account for TweakScale messing with the part mass.
         public Vector3 partSize;
         [KSPField(isPersistant = true)]
         public float maxSupportedArmor = -1; //upper cap on armor per part, overridable in MM/.cfg
@@ -196,6 +196,7 @@ namespace BDArmory.Damage
         private bool _hullConfigured = false;
         private bool _hpConfigured = false;
         private bool _finished_setting_up = false;
+        private float _tweakScaleMassMultiplier = 1;
         public bool Ready => (_finished_setting_up || !HighLogic.LoadedSceneIsFlight) && _hpConfigured && _hullConfigured && _armorConfigured;
         public string Why
         {
@@ -539,7 +540,7 @@ namespace BDArmory.Damage
                 else
                     sizeAdjust = 0.5f; //armor on one side, otherwise will have armor thickness on both sides of the panel, nonsensical + double weight
             }
-            if (armorVolume < 0 || HighLogic.LoadedSceneIsEditor && isProcPart) //make this persistant to get around diffeences in part bounds between SPH/Flight. Also reset if in editor and a procpart to account for resizing
+            if (armorVolume < 0 || HighLogic.LoadedSceneIsEditor && isProcPart) //make this persistant to get around differences in part bounds between SPH/Flight. Also reset if in editor and a procpart to account for resizing
             {
                 armorVolume =  // thickness * armor mass; moving it to Start since it only needs to be calc'd once
                     ((((partSize.x * partSize.y) * 2) + ((partSize.x * partSize.z) * 2) + ((partSize.y * partSize.z) * 2)) * sizeAdjust);  //mass * surface area approximation of a cylinder, where H/W are unknown
@@ -728,9 +729,11 @@ namespace BDArmory.Damage
                 }
                 CalculateDryCost(); //recalc if modify event added a fueltank -resource swap, etc
                 HullMassAdjust = oldHullMassAdjust; // Put the HullmassAdjust back so we can test against it when we update the hull mass.
+                float tweakScaleMassMultiplier = _tweakScaleMassMultiplier;
+                _tweakScaleMassMultiplier = part.GetTweakScaleMultiplier(); // Update our copy of the TweakScale mass multiplier.
                 if (oldPartMass != partMass)
                 {
-                    if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}");
+                    if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}, tweakScaleMassMultiplier {tweakScaleMassMultiplier}->{_tweakScaleMassMultiplier}");
                     if (isProcPart || isProcWheel || isVariantPart)
                     {
                         calcPartSize();
@@ -903,7 +906,6 @@ namespace BDArmory.Damage
                             // if (BDArmorySettings.DEBUG_LABELS) Debug.Log("[BDArmory.HitpointTracker]: " + part.name + " structural Volume: " + structuralVolume + "; density: " + density);
                             //3. final calculations
                             hitpoints = structuralMass * hitpointMultiplier * 0.333f;
-
                         }
                         /*
                         else //revised HP calc, commented out for now until we get feedback on new method and decide to switch over
@@ -1077,13 +1079,24 @@ namespace BDArmory.Damage
                         hitpoints = maxHitPoints * HullInfo.materials[hullType].healthMod;
                         //hitpoints = Mathf.Round(hitpoints); // / HpRounding) * HpRounding;
 
+                        // Scale HP quadratically with TweakScale's mass multiplier (same as non-custom parts).
+                        float tweakScaleFactor = _tweakScaleMassMultiplier * _tweakScaleMassMultiplier;
+                        var hpThreshold = Mathf.Max(BDArmorySettings.HP_THRESHOLD, hitpoints); // Apply scaling over the custom default value or BDA's threshold.
+                        hitpoints *= tweakScaleFactor;
+                        if (BDArmorySettings.HP_THRESHOLD >= 100 && hitpoints > hpThreshold)
+                        {
+                            var scale = hpThreshold / (Mathf.Exp(1) - 1);
+                            hitpoints = Mathf.Min(hitpoints, hpThreshold * Mathf.Log(hitpoints / scale + 1));
+                        }
+                        hitpoints = Mathf.Round(hitpoints);
+
                         if (isProcWing && ProceduralWing.CheckForB9ProcWing() && ProceduralWing.CheckForPWModule())
                         {
                             armorVolume = ProceduralWing.GetPWingArea(part);
                             ArmorModified(null, null);
                         }
 
-                        if (BDArmorySettings.DEBUG_ARMOR && maxHitPoints <= 0 && Hitpoints != hitpoints) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated HP: {Hitpoints}->{hitpoints} at time {Time.time}");
+                        if (BDArmorySettings.DEBUG_ARMOR && Hitpoints != hitpoints) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated HP: {Hitpoints}->{hitpoints} at time {Time.time}");
                     }
                 }
                 else
@@ -1273,7 +1286,7 @@ namespace BDArmory.Damage
                     maxSupportedArmor = ArmorThickness;
                 }
             }
-			if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
+            if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
             {
                 maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
             }
@@ -1484,7 +1497,7 @@ namespace BDArmory.Damage
                 UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
                 if (isProcWing)
                     maxSupportedArmor = ProceduralWing.getPwingThickness(part);
-				if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
+                if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
                     maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
                 }
@@ -1572,7 +1585,6 @@ namespace BDArmory.Damage
             }
 
             if (OldHullType != HullTypeNum || (BDArmorySettings.RESET_HULL || BDArmorySettings.LEGACY_ARMOR))
-
             {
                 if ((HullTypeNum - 1) > HullInfo.materialNames.Count || (BDArmorySettings.RESET_HULL || BDArmorySettings.LEGACY_ARMOR)) //in case of trying to load a craft using a mod hull type that isn't installed and having a hullTypeNum larger than the index size
                 {
@@ -1612,9 +1624,10 @@ namespace BDArmory.Damage
             hullRadarReturnFactor = hullInfo.radarMod;
             hullType = hullInfo.name;
             CalculateRCSreduction();
-            float partCost = part.partInfo.cost + part.partInfo.variant.Cost;
-            if (hullInfo.costMod < 1) HullCostAdjust = Mathf.Max((partCost - (float)resourceCost) * hullInfo.costMod, partCost - (1000 - (hullInfo.costMod * 1000))) - (partCost - (float)resourceCost);//max of 1000 funds discount on cheaper materials
-            else HullCostAdjust = Mathf.Min((partCost - (float)resourceCost) * hullInfo.costMod, (partCost - (float)resourceCost) + (hullInfo.costMod * 1000)) - (partCost - (float)resourceCost); //Increase costs if costMod => 1                                                                                                                                                             
+            float dryCost = part.GetTweakScaleDryCost(); // Use the TweakScale DryCost if available.
+            if (dryCost == 0) dryCost = part.partInfo.cost + part.partInfo.variant.Cost - (float)resourceCost;
+            if (hullInfo.costMod < 1) HullCostAdjust = Mathf.Max(dryCost * hullInfo.costMod, dryCost - (1000 - hullInfo.costMod * 1000)) - dryCost; //max of 1000 funds discount on cheaper materials
+            else HullCostAdjust = Mathf.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
             //this returns cost of base variant, yielding part variant that are discounted by 50% or 500 of base variant cost, not current variant. method to get currently selected variant?
 
             if (OldHullType != HullTypeNum || OldHullMassAdjust != HullMassAdjust)

@@ -501,24 +501,53 @@ namespace BDArmory.Extensions
         }
 
         private static bool tweakScaleChecked = false;
-        private static bool tweakScaleInstalled = false;
+        private static bool tweakScaleInstalled
+        {
+            get
+            {
+                if (!tweakScaleChecked) CheckTweakScaleInstalled();
+                return field;
+            }
+            set;
+        }
+        private static void CheckTweakScaleInstalled()
+        {
+            foreach (var assy in AssemblyLoader.loadedAssemblies)
+                if (assy.assembly.FullName.Contains("TweakScale"))
+                    tweakScaleInstalled = true;
+            tweakScaleChecked = true;
+        }
         public static float GetTweakScaleMultiplier(this Part part)
         {
             float scaleMultiplier = 1f;
-            if (!tweakScaleChecked)
-            {
-                foreach (var assy in AssemblyLoader.loadedAssemblies)
-                    if (assy.assembly.FullName.Contains("TweakScale"))
-                        tweakScaleInstalled = true;
-                tweakScaleChecked = true;
-            }
             if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
             {
                 var tweakScaleModule = part.Modules["TweakScale"];
-                scaleMultiplier = tweakScaleModule.Fields["currentScale"].GetValue<float>(tweakScaleModule) /
-                                  tweakScaleModule.Fields["defaultScale"].GetValue<float>(tweakScaleModule);
+                var currentScale = tweakScaleModule.Fields["currentScale"].GetValue<float>(tweakScaleModule);
+                var defaultScale = tweakScaleModule.Fields["defaultScale"].GetValue<float>(tweakScaleModule);
+                scaleMultiplier = currentScale / defaultScale;
             }
             return scaleMultiplier;
+        }
+        public static float GetTweakScaleMassMultiplier(this Part part)
+        {
+            float massMultiplier = 1f;
+            if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
+            {
+                var tweakScaleModule = part.Modules["TweakScale"];
+                massMultiplier = tweakScaleModule.Fields["MassScale"].GetValue<float>(tweakScaleModule);
+            }
+            return massMultiplier;
+        }
+        public static float GetTweakScaleDryCost(this Part part)
+        {
+            float dryCost = 0;
+            if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
+            {
+                var tweakScaleModule = part.Modules["TweakScale"];
+                dryCost = tweakScaleModule.Fields["DryCost"].GetValue<float>(tweakScaleModule);
+            }
+            return dryCost;
         }
 
         public static bool IsAero(this Part part)

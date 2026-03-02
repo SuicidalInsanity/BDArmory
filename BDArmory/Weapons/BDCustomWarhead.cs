@@ -61,7 +61,6 @@ namespace BDArmory.Weapons
                         true, _warheadType.projectileTTL + (detTime < 0.0f ? 0.0f : detTime), TimeWarp.fixedDeltaTime, detRange, detTime,
                         false, null, null, false, 1f, bulletDmgMult,
                         true, currentSpeed, 0f, transform.up, true, maxDeviation);
-
         }
 
         protected override void WarheadSpecificSetup()

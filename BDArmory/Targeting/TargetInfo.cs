@@ -64,7 +64,8 @@ namespace BDArmory.Targeting
             {
                 if (!vessel) return false;
                 if (
-                    (vessel.situation == Vessel.Situations.LANDED ||
+                    (vessel.situation == Vessel.Situations.PRELAUNCH || // Newly spawned
+                    vessel.situation == Vessel.Situations.LANDED ||
                     vessel.situation == Vessel.Situations.SPLASHED) && // Boats should be included
                     !isUnderwater //refrain from shooting subs with missiles
                     )

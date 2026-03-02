@@ -532,6 +532,11 @@ namespace BDArmory.Control
            UI_FloatRange(minValue = 0f, maxValue = 4f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float vesselCollisionAvoidanceStrength = 2f; // 2° per frame (100°/s).
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinObstacleMass", advancedTweakable = true,//Min obstacle mass
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 100f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
+        public float AvoidMass = 0f;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_StandoffDistance", advancedTweakable = true, //Min Approach Distance
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 1000f, stepIncrement = 50f, scene = UI_Scene.All)]
@@ -731,6 +736,7 @@ namespace BDArmory.Control
         };
         Dictionary<string, (float, float, float)> altSemiLogValues = new Dictionary<string, (float, float, float)> {
             { nameof(evasionMinRangeThreshold), (1f, 1000000f, 1f) },
+            { nameof(AvoidMass), (10f, 1000000f, 2f) },
         };
 
         void TurnItUpToEleven(BaseField _field = null, object _obj = null)
@@ -980,7 +986,7 @@ namespace BDArmory.Control
         Vector3 upDirection = Vector3.up;
 
         #region Status / Steer Mode
-        enum StatusMode { Free, Orbiting, Engaging, Evading, Extending, TerrainAvoidance, CollisionAvoidance, RammingSpeed, TakingOff, GainingAltitude, Custom }
+        enum StatusMode { Free, Orbiting, Engaging, Evading, Extending, TerrainAvoidance, CollisionAvoidance, RammingSpeed, TakingOff, GainingAltitude, Retreating, Custom }
         StatusMode currentStatusMode = StatusMode.Free;
         StatusMode lastStatusMode = StatusMode.Free;
         protected override void SetStatus(string status)
@@ -996,6 +1002,7 @@ namespace BDArmory.Control
             else if (status.StartsWith("Gain Alt")) currentStatusMode = StatusMode.GainingAltitude;
             else if (status.StartsWith("Terrain")) currentStatusMode = StatusMode.TerrainAvoidance;
             else if (status.StartsWith("AvoidCollision")) currentStatusMode = StatusMode.CollisionAvoidance;
+            else if (status.StartsWith("Retreating")) currentStatusMode = StatusMode.Retreating;
             else currentStatusMode = StatusMode.Custom;
         }
 
@@ -1163,6 +1170,9 @@ namespace BDArmory.Control
         Vessel incomingMissileVessel;
         enum KinematicEvasionStates { None, ToTarget, Crank, Notch, TurnAway, NotchDive }
         KinematicEvasionStates kinematicEvasionState = KinematicEvasionStates.None;
+
+        // Retreating
+        bool retreating = false;
         #endregion
 
         #region Speed Controller / Steering / Altitude
@@ -2058,7 +2068,7 @@ namespace BDArmory.Control
                 if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDModulePilotAI]: " + vessel.vesselName + " is no longer inhibiting gain alt");
             }
 
-            if (!hardMinAltitude && !gainAltInhibited && belowMinAltitude && (isBombing || currentStatusMode == StatusMode.Engaging || currentStatusMode == StatusMode.Evading || currentStatusMode == StatusMode.RammingSpeed) && !vessel.InNearVacuum())
+            if (!gainAltInhibited && belowMinAltitude && (!hardMinAltitude && (isBombing || currentStatusMode == StatusMode.Engaging || currentStatusMode == StatusMode.Evading) || currentStatusMode == StatusMode.RammingSpeed) && !vessel.InNearVacuum())
             { // Vessel went below minimum altitude while "Engaging", "Bombing", "Evading" or "Ramming speed!", enable the gain altitude inhibitor.
                 gainAltInhibited = true;
                 if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDModulePilotAI]: " + vessel.vesselName + " was " + currentStatus + " and went below min altitude, inhibiting gain alt.");
@@ -2163,7 +2173,7 @@ namespace BDArmory.Control
 
             Vector3 vesselTransformPosition = vesselTransform.position;
 
-            // If we're currently evading or a threat is significant and we're not ramming.
+            // If we're currently evading or a threat is significant.
             if ((evasiveTimer < minimumEvasionTime && evasiveTimer != 0) || threatRating < evasionThreshold)
             {
                 if (evasiveTimer < minimumEvasionTime)
@@ -2210,7 +2220,7 @@ namespace BDArmory.Control
             }
             else if (!extending && weaponManager && targetVessel != null && targetVessel.transform != null)
             {
-                evasiveTimer = 0;
+                // Check if we need to extend.
                 if (!targetVessel.LandedOrSplashed)
                 {
                     Vector3 targetVesselRelPos = targetVessel.CoM - vesselTransformPosition;
@@ -2253,7 +2263,7 @@ namespace BDArmory.Control
 
                 if (!extending)
                 {
-                    if (weaponManager.HasWeaponsAndAmmo() || !RamTarget(s, targetVessel)) // If we're out of ammo, see if we can ram someone, otherwise, behave as normal.
+                    if (weaponManager.HasWeaponsAndAmmo()) // Let's shoot something.
                     {
                         ramming = false;
                         SetStatus("Engaging");
@@ -2261,43 +2271,70 @@ namespace BDArmory.Control
                         FlyToTargetVessel(s, targetVessel);
                         return;
                     }
-                }
-            }
-            else
-            {
-                evasiveTimer = 0;
-                if (!extending)
-                {
-                    if (ResumeCommand())
+                    else if (RamTarget(s, targetVessel)) // If we're out of ammo, see if we can ram someone.
                     {
-                        UpdateCommand(s);
                         return;
                     }
-                    SetStatus("Orbiting");
-                    FlyOrbit(s, assignedPositionGeo, 2000, idleSpeed, ClockwiseOrbit);
+                    // Otherwise, fall back to orbiting below.
+                }
+            }
+            if (!extending)
+            {
+                // Under fire while orbiting => retreat away from the threat for a bit.
+                if (BDArmorySettings.ALLOW_RETREAT_IF_ORBITING && weaponManager != null && (retreating || weaponManager.underFire && weaponManager.incomingThreatVessel != null && weaponManager.incomingMissDistance < 2 * vessel.GetRadius() + evasionThreshold))
+                {
+                    Vector3 flyTo;
+                    if (weaponManager.incomingThreatVessel != null)
+                    {
+                        flyTo = vessel.CoM + (vessel.CoM - weaponManager.incomingThreatVessel.CoM).ProjectOnPlanePreNormalized(upDirection).normalized * 4000; // Aim for 4km away.
+                        flyTo += (float)(defaultAltitude - BodyUtils.GetRadarAltitudeAtPos(flyTo)) * upDirection; // Aim for the default altitude.
+                        assignedPositionWorld = flyTo; // Update the orbiting position for once we've finished retreating.
+                    }
+                    else
+                    {
+                        flyTo = assignedPositionWorld;
+                    }
+                    var distanceSqr = (flyTo - vessel.CoM).sqrMagnitude;
+                    if (distanceSqr > 9e6f) // But stop retreating once within 3km of the target position (orbit radius is 2km, so this ought to give a smoother transition).
+                    {
+                        retreating = true;
+                        var retreatDistance = BDAMath.Sqrt(distanceSqr) - 3000;
+                        SetStatus($"Retreating {Mathf.Min(retreatDistance, 1000):0}{(retreatDistance >= 1000 ? "+" : "")}m");
+                        AdjustThrottle(maxSpeed, false);
+                        FlyToPosition(s, flyTo);
+                        return;
+                    }
+                }
+                retreating = false;
+                if (ResumeCommand())
+                {
+                    UpdateCommand(s);
                     return;
                 }
+                SetStatus("Orbiting");
+                FlyOrbit(s, assignedPositionGeo, 2000, idleSpeed, ClockwiseOrbit);
+                return;
             }
 
             if (CheckExtend())
             {
                 weaponManager.ForceScan();
-                evasiveTimer = 0;
                 FlyExtend(s, lastExtendTargetPosition);
                 return;
             }
         }
 
-        bool PredictCollisionWithVessel(Vessel v, float maxTime, out Vector3 badDirection)
+        bool PredictCollisionWithVessel(Vessel v, float maxTime, out Vector3 badDirection, float ignoreMinDistanceSqr)
         {
             var weaponManager = WeaponManager;
             if (vessel == null || v == null || v == (weaponManager != null ? weaponManager.incomingMissileVessel : null)
+                || v.GetTotalMass() < AvoidMass
+                || (vessel.CoM - v.CoM).sqrMagnitude < ignoreMinDistanceSqr //something within vessel radius, no chance to evade at this point. Should cover parasite fighters detaching/debris stuck on something
                 || (v.rootPart != null && v.rootPart.FindModuleImplementing<MissileBase>() != null)) //evasive will handle avoiding missiles
             {
                 badDirection = Vector3.zero;
                 return false;
             }
-
             // Adjust some values for asteroids.
             var targetRadius = v.GetRadius();
             var threshold = collisionAvoidanceThreshold + targetRadius; // Add the target's average radius to the threshold.
@@ -4098,13 +4135,15 @@ namespace BDArmory.Control
         bool FlyAvoidOthers(FlightCtrlState s) // Check for collisions with other vessels and try to avoid them.
         {
             if (vesselCollisionAvoidanceStrength == 0 || collisionAvoidanceThreshold == 0) return false;
+            float ignoreMinDistanceSqr = vessel.GetRadius();
+            ignoreMinDistanceSqr *= ignoreMinDistanceSqr;
             if (currentlyAvoidedVessel != null) // Avoidance has been triggered.
             {
                 SetStatus("AvoidCollision");
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Avoiding Collision");
 
                 // Monitor collision avoidance, adjusting or stopping as necessary.
-                if (currentlyAvoidedVessel != null && PredictCollisionWithVessel(currentlyAvoidedVessel, vesselCollisionAvoidanceLookAheadPeriod * 1.2f, out collisionAvoidDirection)) // *1.2f for hysteresis.
+                if (currentlyAvoidedVessel != null && PredictCollisionWithVessel(currentlyAvoidedVessel, vesselCollisionAvoidanceLookAheadPeriod * 1.2f, out collisionAvoidDirection, ignoreMinDistanceSqr)) // *1.2f for hysteresis.
                 {
                     FlyAvoidVessel(s);
                     return true;
@@ -4132,7 +4171,7 @@ namespace BDArmory.Control
                         if (vs.Current == null) continue;
                         if (vs.Current.vesselType == VesselType.Debris) continue; // Ignore debris on the first pass.
                         if (vs.Current == vessel || vs.Current.Landed) continue;
-                        if (!PredictCollisionWithVessel(vs.Current, vesselCollisionAvoidanceLookAheadPeriod, out Vector3 collisionAvoidDir)) continue;
+                        if (!PredictCollisionWithVessel(vs.Current, vesselCollisionAvoidanceLookAheadPeriod, out Vector3 collisionAvoidDir, ignoreMinDistanceSqr)) continue;
                         if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType))
                         {
                             var ibdaiControl = vs.Current.ActiveController().AI;
@@ -4155,7 +4194,7 @@ namespace BDArmory.Control
                         if (vs.Current == null) continue;
                         if (vs.Current.vesselType != VesselType.Debris) continue; // Only consider debris on the second pass.
                         if (vs.Current == vessel || vs.Current.Landed) continue;
-                        if (!PredictCollisionWithVessel(vs.Current, vesselCollisionAvoidanceLookAheadPeriod, out Vector3 collisionAvoidDir)) continue;
+                        if (!PredictCollisionWithVessel(vs.Current, vesselCollisionAvoidanceLookAheadPeriod, out Vector3 collisionAvoidDir, ignoreMinDistanceSqr)) continue;
                         var collisionTargetSize = vs.Current.vesselSize.sqrMagnitude;
                         if (collisionTargetSize < collisionTargetLargestSize) continue; // Avoid the largest debris object.
                         vesselCollision = true;
@@ -4887,7 +4926,7 @@ namespace BDArmory.Control
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransformPos + (0.05f * vesselTransform.right), vesselTransformPos + (0.05f * vesselTransform.right) + angVelRollTarget, 2, Color.green);
 
             Vector3 vesseltPos = vessel.transform.position; // Not quite sure if there's a difference between this and vesselTransform.position
-            
+
             if (avoidingTerrain)
             {
                 GUIUtils.DrawLineBetweenWorldPositions(vesseltPos, terrainAlertDebugPos, 2, Color.cyan);

@@ -197,7 +197,7 @@ namespace BDArmory.UI
             return GetModuleTargeting(parentOnly, ml.GetForwardTransform(), ml.MissileReferenceTransform.position, ml.maxOffBoresight, ml.vessel, ml.SourceVessel, team);
         }
 
-        private static ModuleTargetingCamera GetModuleTargeting(bool parentOnly, Vector3 missilePosition, Vector3 position, float maxOffBoresight, Vessel vessel, Vessel sourceVessel, BDTeam team)
+        private static ModuleTargetingCamera GetModuleTargeting(bool parentOnly, Vector3 missileForward, Vector3 MissilePosition, float maxOffBoresight, Vessel vessel, Vessel sourceVessel, BDTeam team)
         {
             ModuleTargetingCamera finalCam = null;
             float smallestAngle = 360;
@@ -211,12 +211,11 @@ namespace BDArmory.UI
                 if (parentOnly && !(cam.Current.vessel == vessel || cam.Current.vessel == sourceVessel)) continue;
                 if (!cam.Current.cameraEnabled || !cam.Current.groundStabilized || !cam.Current.surfaceDetected ||
                     cam.Current.gimbalLimitReached) continue;
-
-                float angle = VectorUtils.Angle(missilePosition, cam.Current.groundTargetPosition - position);
+                float angle = VectorUtils.Angle(missileForward, cam.Current.groundTargetPosition - MissilePosition);
                 float tgtRadius = Mathf.Max(wm.currentTarget ? wm.currentTarget.Vessel.GetRadius() : 20, 20);
                 if (!(angle < maxOffBoresight) || !(angle < smallestAngle) ||
                     !CanSeePosition(cam.Current.groundTargetPosition, vessel.transform.position,
-                        (vessel.transform.position + missilePosition), tgtRadius)) continue;
+                        MissilePosition, tgtRadius)) continue;
 
                 smallestAngle = angle;
                 finalCam = cam.Current;

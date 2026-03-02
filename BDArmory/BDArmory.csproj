@@ -237,6 +237,7 @@
     <Compile Include="ModIntegration\ReflectionUtils.cs" />
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
+    <Compile Include="Modules\KerbalSuitSelector.cs" />
     <Compile Include="Modules\ModuleMovingPart.cs" />
     <Compile Include="Modules\ModuleHMD.cs" />
     <Compile Include="Modules\ModuleSelfSealingTank.cs" />

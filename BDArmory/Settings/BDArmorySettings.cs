@@ -95,6 +95,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool SHOW_CATEGORIES = true;
         [BDAPersistentSettingsField] public static bool IGNORE_TERRAIN_CHECK = false;
         [BDAPersistentSettingsField] public static bool CHECK_WATER_TERRAIN = false;
+        [BDAPersistentSettingsField] public static bool ALLOW_RETREAT_IF_ORBITING = true; // Allow retreating if under fire while orbiting.
         [BDAPersistentSettingsField] public static bool RADAR_NOTCHING = false;
         [BDAPersistentSettingsField] public static bool RADAR_ALLOW_SURFACE_WARFARE = true;
         [BDAPersistentSettingsField] public static float RADAR_NOTCHING_FACTOR = 1f;
@@ -357,6 +358,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_START_COMPETITION_AUTOMATICALLY = false; // Automatically start a competition after spawning succeeds.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_INITIAL_VELOCITY = false;     // Set planes at their idle speed after dropping them at the start of a competition.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_CS_FOLLOWS_CENTROID = false;  // The continuous spawning spawn point follows the brawl centroid with bias back to the original spawn point.
+        [BDAPersistentSettingsField] public static int VESSEL_SPAWN_DEFAULT_KERBAL_SUIT = 0;
         #endregion
 
         #region Vessel Mover settings
