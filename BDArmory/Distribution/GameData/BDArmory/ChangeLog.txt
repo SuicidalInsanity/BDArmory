@@ -4,6 +4,7 @@
 	- Fix HP and cost scaling of parts when TweakScale is installed.
 - UI:
 	- Updated German localisation from EzBro.
+	- Updated Japanese localisation from Taka005.
 	- Fix infolink explanation of Extend Abort Time / Extend Min Gain Rate.
 	- BDA UI Icon draw distance (MAX_DISTANCE_THRESHOLD) no longer clamped to a max of MAX_GUARD_VISUAL_RANGE.
 	- Add an option (and MM patch) to specify the Kerbal Suit to use for kerbals in BDA spawns. (Default is settable in the vessel spawner window.)
