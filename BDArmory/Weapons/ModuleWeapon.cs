@@ -806,8 +806,13 @@ namespace BDArmory.Weapons
         //Used for scaling laser damage down based on distance.
         [KSPField]
         public float tanAngle = 0.0001f;
-        //Angle of divergeance/2. Theoretical minimum value calculated using θ = (1.22 L/RL)/2,
-        //where L is laser's wavelength and RL is the radius of the mirror (=gun).
+        //Tan of angle of divergeance. tan(θ) = λ/A,
+        //where λ is laser's wavelength and A is the diameter of the laser at source (aperture size)
+        //Used for scaling laser damage down based on distance.
+        [KSPField]
+        public float aperture = 5f;
+        //Aperture, diameter of the laser at source. A = λ/tan(θ),
+        //where λ is laser's wavelength and tan(θ) is tan of angle of divergence
         private float microwaveDirectivity; // Directivity (gain) for microwave weapons, calculated from tanAngle variable
 
         //audioclip paths
@@ -2737,7 +2742,7 @@ namespace BDArmory.Weapons
                             KerbalEVA eva = hit.collider.gameObject.GetComponentUpwards<KerbalEVA>();
                             Part p = eva ? eva.part : hit.collider.gameObject.GetComponentInParent<Part>();
                             float distance = hit.distance;
-                            initialDamage = (laserDamage > 0) ? LaserDamage(laserDamage, tanAngle, distance, tf.position, hit.point) : laserDamage;
+                            initialDamage = (laserDamage > 0) ? LaserDamage(laserDamage, tanAngle, aperture, distance, tf.position, hit.point) : laserDamage;
                             if (p && p.vessel && p.vessel != vessel)
                             {
                                 if (instagib)
@@ -3026,7 +3031,7 @@ namespace BDArmory.Weapons
         }
 
         // Adjusts laser damage based on tanAngle, distance, firing and hit points
-        private float LaserDamage(float laserDamage, float tanAngle, float distance, Vector3 firingPoint, Vector3 hitPoint)
+        private float LaserDamage(float laserDamage, float tanAngle, float aperture, float distance, Vector3 firingPoint, Vector3 hitPoint)
         {
             bool underwater = FlightGlobals.currentMainBody.ocean && FlightGlobals.getAltitudeAtPos(firingPoint) < 0 || FlightGlobals.currentMainBody.ocean && FlightGlobals.getAltitudeAtPos(hitPoint) < 0;
             float firingDensity = (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(firingPoint), FlightGlobals.getExternalTemperature(firingPoint));
@@ -3036,8 +3041,8 @@ namespace BDArmory.Weapons
             float gamma = underwater ? BDArmorySettings.LASER_WATER_GAMMA : BDArmorySettings.LASER_ATM_GAMMA;
             float normDensity = underwater ? 1f : Mathf.Max(0f, atmDensity / 1.225f);
             float transmission = Mathf.Exp(-gamma * distance * normDensity);
-            float angularSpread = tanAngle * distance; //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
-            return laserDamage * transmission / (1 + Mathf.PI * angularSpread * angularSpread);
+            float sqrTerm = (1 + 2f * distance * tanAngle / aperture); //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
+            return laserDamage * transmission / (sqrTerm * sqrTerm);
         }
 
         //Conic AoE 'beam' for AoE beam weapons - tractor beams, microwave EMP, heatrays, etc.
@@ -3261,12 +3266,10 @@ namespace BDArmory.Weapons
                 }
         }
 
-        // Adjusts microwwave damage based on tanAngle, distance, firing and directivity (gain)
+        // Adjusts microwave damage based on tanAngle, distance, firing and directivity (gain)
         private float MicrowaveDamage(float baseDamage, float directivity, float distance)
         {
-            float wavelength = 0.124913524166667f; // 2.4 GHz wavelength, 299792458f / 2400000000
-            float sqrTerm = wavelength / (4 * Mathf.PI * Mathf.Max(distance, 1f));
-            float finalDamage = baseDamage * Mathf.Min(directivity * (sqrTerm * sqrTerm), 1000f); // Clamp max damage at very short ranges, https://en.wikipedia.org/wiki/Friis_transmission_equation
+            float finalDamage = baseDamage / (1 + 4 * Mathf.PI / directivity * distance * distance); // Behaves like old lasers with lower tanAngle values, behaves more like microwave with higher tanAngle values
             return finalDamage;
         }
 
@@ -6165,7 +6168,7 @@ namespace BDArmory.Weapons
                 if (delayTime < 0)
                 {
                     delayTime = rocket != null ? 0.5f : (shell.bulletMass * (1 - Mathf.Clamp(shell.tntMass / shell.bulletMass, 0f, 0.95f) / 2)); //for shells, laser delay time is based on shell mass/HEratio. The heavier the shell, the more mass to burn through. Don't expect to stop sabots via laser APS
-                    delayTime /= LaserDamage(laserDamage, tanAngle, targetDistance, part.rb.position, targetPosition) / 100f;
+                    delayTime /= LaserDamage(laserDamage, tanAngle, aperture, targetDistance, part.rb.position, targetPosition) / 100f;
                     if (delayTime < TimeWarp.fixedDeltaTime) delayTime = 0;
                 }
                 yield return new WaitForSeconds(delayTime);
