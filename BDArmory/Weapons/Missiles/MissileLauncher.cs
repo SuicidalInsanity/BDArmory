@@ -2676,7 +2676,7 @@ namespace BDArmory.Weapons.Missiles
                         ActiveRadar = true;
                         updateRadarCS = true;
 
-                        bool pingRWR = Time.time - lastRWRPing > (RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME);
+                        bool pingRWR = Time.time - lastRWRPing > (RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME);
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);

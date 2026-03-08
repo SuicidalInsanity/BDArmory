@@ -113,7 +113,7 @@ namespace BDArmory.WeaponMounts
         //special
         [KSPField] public bool activeMissileOnly = false;
 
-        public MissileFire WeaponManager
+        MissileFire WeaponManager
         {
             get
             {
