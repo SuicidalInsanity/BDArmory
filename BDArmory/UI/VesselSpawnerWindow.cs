@@ -13,6 +13,7 @@ using BDArmory.Utils;
 using BDArmory.VesselSpawning.SpawnStrategies;
 using BDArmory.VesselSpawning;
 using BDArmory.Extensions;
+using BDArmory.Modules;
 
 namespace BDArmory.UI
 {
@@ -444,6 +445,9 @@ namespace BDArmory.UI
                 GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Teams")}:  ({numberOfTeams})", leftLabel); // Number of teams.
                 BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_NUMBER_OF_TEAMS, 0f, 11f));
 
+                GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_KerbalSuitTypeOverride")}: {(KerbalSuitSelector.KerbalSuit)BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE}", leftLabel); // Default Kerbal Suit
+                BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE, -1f, 4f));
+
                 GUI.Label(SLeftRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_SpawnFilesLocation")} (AutoSpawn{Path.DirectorySeparatorChar}): ", leftLabel); // Craft files location
                 BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION = GUI.TextField(SRightRect(line), BDArmorySettings.VESSEL_SPAWN_FILES_LOCATION);
 
@@ -711,13 +715,12 @@ namespace BDArmory.UI
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentDelayBetweenHeats")}: ({BDArmorySettings.TOURNAMENT_DELAY_BETWEEN_HEATS}s)", leftLabel); // Delay between heats
                     BDArmorySettings.TOURNAMENT_DELAY_BETWEEN_HEATS = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_DELAY_BETWEEN_HEATS, 0f, 15f));
 
-                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentTimeWarpBetweenRounds")}: ({
-                        BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS switch {
-                            0 => StringUtils.Localize("#LOC_BDArmory_Generic_Off"),
-                            -5 => StringUtils.Localize("#LOC_BDArmory_Settings_TournamentTimeWarpDaylight"),
-                            _ => $"{BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS}min"
-                        }
-                    })", leftLabel); // TimeWarp Between Rounds
+                    GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentTimeWarpBetweenRounds")}: ({BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS switch
+                    {
+                        0 => StringUtils.Localize("#LOC_BDArmory_Generic_Off"),
+                        -5 => StringUtils.Localize("#LOC_BDArmory_Settings_TournamentTimeWarpDaylight"),
+                        _ => $"{BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS}min"
+                    }})", leftLabel); // TimeWarp Between Rounds
                     BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS, -5f, 360f), 5);
 
                     GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_TournamentStyle")}: ({tournamentStyle})", leftLabel); // Tournament Style
@@ -1070,8 +1073,8 @@ namespace BDArmory.UI
                             new CircularSpawnConfig(
                                 new SpawnConfig(
                                     BDArmorySettings.VESSEL_SPAWN_WORLDINDEX,
-                                    BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x, 
-                                    BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y, 
+                                    BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.x,
+                                    BDArmorySettings.VESSEL_SPAWN_GEOCOORDS.y,
                                     BDArmorySettings.VESSEL_SPAWN_ALTITUDE_,
                                     killEverythingFirst: true,
                                     assignTeams: BDArmorySettings.VESSEL_SPAWN_REASSIGN_TEAMS,

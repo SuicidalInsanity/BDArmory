@@ -4,8 +4,10 @@
 	- Fix HP and cost scaling of parts when TweakScale is installed.
 - UI:
 	- Updated German localisation from EzBro.
+	- Updated Japanese localisation from Taka005.
 	- Fix infolink explanation of Extend Abort Time / Extend Min Gain Rate.
 	- BDA UI Icon draw distance (MAX_DISTANCE_THRESHOLD) no longer clamped to a max of MAX_GUARD_VISUAL_RANGE.
+	- Add an option (and MM patch) to allow specifying the Kerbal Suit kerbals spawn with in crewed parts. Adds an override in the vessel spawner window for BDA spawns.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
