@@ -806,14 +806,18 @@ namespace BDArmory.Weapons
         //Used for scaling laser damage down based on distance.
         [KSPField]
         public float tanAngle = 0.0001f;
-        //Tan of angle of divergeance. tan(θ) = λ/A,
-        //where λ is laser's wavelength and A is the diameter of the laser at source (aperture size)
+        // Tan of angle of divergeance. tan(θ) = λ/A,
+        // where λ is laser's wavelength and A is the diameter of the laser at source (aperture size)
+        // E.g., for optical wavelength lasers with an aperture of 0.1m, a 450nm blue laser would have tanAngle=0.0000045 and a 700nm red laser would have tanAngle=0.000007.
+        
+        private float microwaveDirectivity; // Directivity (gain) for microwave weapons, calculated from tanAngle variable
+        // Recommended tanAngle for microwave beams is in the range 0.002 — 0.0001 for a directivity in the range 1M — 400M
+        
         //Used for scaling laser damage down based on distance.
         [KSPField]
         public float aperture = 5f;
-        //Aperture, diameter of the laser at source. A = λ/tan(θ),
-        //where λ is laser's wavelength and tan(θ) is tan of angle of divergence
-        private float microwaveDirectivity; // Directivity (gain) for microwave weapons, calculated from tanAngle variable
+        // Aperture, diameter of the laser at source. A = λ/tan(θ),
+        // where λ is laser's wavelength and tan(θ) is tan of angle of divergence
 
         //audioclip paths
         [KSPField]

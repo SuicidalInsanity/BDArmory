@@ -44,9 +44,9 @@
 	- Lasers:
 		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance. 
 		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
-		- New, more realistic damage drop off over distance for lasers and microwave weapons (conicAoE=true). See ABL.cfg for details.
+		- New, more realistic damage drop off over distance for lasers and microwave weapons (conicAoE=true) due to laser/beam spreading. See ABL.cfg for details.
 		- Add aperture configuration value to laser configuration options. See ABL.cfg for details.
-		- Apply distance attenuation to electro-lasers, heat rays, and HE pulse lasers.
+		- Apply distance and atmospheric attenuation to electro-lasers, heat rays, and HE pulse lasers.
 	- Missiles:
 		- Fix graphical glitch where Helmet Mounted Display/Sight appearing in WM modules despite there not being a cockpit with a HMD.
 		- Fix NREs that would occur when a CLOS missile has its guiding targeting pod destroyed.
