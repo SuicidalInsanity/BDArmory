@@ -210,13 +210,13 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool KERBAL_ERA = true;
         [BDAPersistentSettingsField] public static float HMDCost = 2000f;
         [BDAPersistentSettingsField] public static float LASER_ATM_GAMMA = 0.000158f;                // Transmission factor for laser in atmosphere. ~75% transmission over 1800m. Based on Figure 6: https://www.mdpi.com/2073-4433/12/7/918
-        [BDAPersistentSettingsField] public static float LASER_WATER_GAMMA = 0.151f;                  // Transmission factor for laser in water. 15% at 10m, ~3% at 20m, ~0% at 30m. Based on transmittance (c, Table 2) coefficient for clear water https://www.mdpi.com/1424-8220/25/10/3057. 
+        [BDAPersistentSettingsField] public static float LASER_WATER_GAMMA = 0.151f;                  // Transmission factor for laser in water. 15% at 10m, ~3% at 20m, ~0% at 30m. Based on transmittance (c, Table 2) coefficient for clear water https://www.mdpi.com/1424-8220/25/10/3057.
         #endregion
 
         #region FX
         [BDAPersistentSettingsField] public static bool FIRE_FX_IN_FLIGHT = false;
         [BDAPersistentSettingsField] public static int MAX_FIRES_PER_VESSEL = 10;                 //controls fx for penetration only for landed or splashed //this is only for physical missile collisons into fueltanks - SI
-        [BDAPersistentSettingsField] public static float FIRELIFETIME_IN_SECONDS = 90f;           //controls fx for penetration only for landed or splashed 
+        [BDAPersistentSettingsField] public static float FIRELIFETIME_IN_SECONDS = 90f;           //controls fx for penetration only for landed or splashed
         #endregion
 
         #region Radar settings
