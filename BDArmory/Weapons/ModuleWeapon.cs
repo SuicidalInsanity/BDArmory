@@ -814,7 +814,7 @@ namespace BDArmory.Weapons
         
         //Used for scaling laser damage down based on distance.
         [KSPField]
-        public float aperture = 5f;
+        public float aperture = 1f;
         // Aperture, diameter of the laser at source. A = λ/tan(θ),
         // where λ is laser's wavelength and tan(θ) is tan of angle of divergence
 
