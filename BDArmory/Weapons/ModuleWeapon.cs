@@ -214,6 +214,7 @@ namespace BDArmory.Weapons
         public PooledRocket tgtRocket = null;
         Vector3 closestTarget = Vector3.zero;
         Vector3 tgtVelocity = Vector3.zero;
+        float penetrationDepth = 0;
 
         private int targetID = 0;
         bool targetAcquired;
@@ -6140,26 +6141,43 @@ namespace BDArmory.Weapons
                         yield break; //simulate inaccuracy, decreasing as incoming projectile gets closer
                     }
                 }
+                float HERatio = 1 - Mathf.Clamp(shell.tntMass / shell.bulletMass, 0f, 0.95f);
                 delayTime = eWeaponType == WeaponTypes.Ballistic ? (targetDistance / (bulletVelocity + (targetVelocity - part.rb.velocity).magnitude)) : (eWeaponType == WeaponTypes.Rocket ? (targetDistance / ((targetDistance / predictedFlightTime) + (targetVelocity - part.rb.velocity).magnitude)) : -1);
                 if (delayTime < 0)
                 {
-                    delayTime = rocket != null ? 0.5f : (shell.bulletMass * (1 - Mathf.Clamp(shell.tntMass / shell.bulletMass, 0f, 0.95f) / 2)); //for shells, laser delay time is based on shell mass/HEratio. The heavier the shell, the more mass to burn through. Don't expect to stop sabots via laser APS
+                    delayTime = rocket != null ? 0.5f : (shell.bulletMass * (HERatio / 2)); //for shells, laser delay time is based on shell mass/HEratio. The heavier the shell, the more mass to burn through. Don't expect to stop sabots via laser APS
                     var angularSpread = tanAngle * targetDistance;
                     delayTime /= ((laserDamage / (1 + Mathf.PI * angularSpread * angularSpread) * 0.425f) / 100);
                     if (delayTime < TimeWarp.fixedDeltaTime) delayTime = 0;
                 }
                 yield return new WaitForSeconds(delayTime);
+                bool tgtDestroyed = false;
+                bool tgtdeflected = false;
                 if (shell != null)
                 {
-                    if (shell.tntMass > 0)
+                    //Hit cases:
+                    //HE APS vs HE tgtShell: can APS pen tgtShell? (e.g. this vs naval arty?) Y destroy shell, N deflect (impact, force of detonation, tgtshell now deformed and tumbling, etc
+                    //AP APS vs HE tgtshell: deflect tgtshell based on velocity/mass, if tgtshell is at most 2x size of APSshell, detonate; something something slamming into the fuze
+                    //AP APS vs slug tgtShell: deflect tgtShell based on velocity/mass
+                    //HE APS vs Slug tgtShell: can APS pen tgtShell? higher threshold, would need to pen almost to center, but same as above
+                    if (shell.tntMass > 0) //HE tgtshells
                     {
-                        shell.hasDetonated = true;
-                        ExplosionFx.CreateExplosion(shell.transform.position, shell.tntMass, shell.explModelPath, shell.explSoundPath, ExplosionSourceType.Bullet, shell.caliber, null, shell.sourceVesselName, null, null, default, -1, false, shell.bulletMass, -1, 1, sourceVelocity: shell.currentVelocity);
-                        shell.KillBullet();
-                        tgtShell = null;
-                        if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Detonated Incoming Projectile!");
+                        if (tntMass > 0 || eWeaponType == WeaponTypes.Laser)// APS using HE bullet/rocket
+                        {
+                            if (penetrationDepth * 1.3f > ((shell.caliber / 2) * HERatio)) //pendepth * fudgefactor to account relative velocity/impact speed vs shell radius, modified my HE filler amount
+                                tgtDestroyed = true;
+                            else
+                                tgtdeflected = true;
+                        }
+                        else //APS using slug ammo
+                        {
+                            if (tgtShell.caliber <= caliber * 2) //abstraction; something something APS round slamming into the fuze as it impacts
+                                tgtDestroyed = true;
+                            else
+                                tgtdeflected = true;
+                        }
                     }
-                    else
+                    else //solid slug tgtShells
                     {
                         if (eWeaponType == WeaponTypes.Laser)
                         {
@@ -6167,24 +6185,17 @@ namespace BDArmory.Weapons
                             tgtShell = null;
                             if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Vaporized Incoming Projectile!");
                         }
-                        else
+                        else if (tntMass > 0)// APS using HE bullet/rocket
                         {
-                            if (tntMass <= 0) //e.g. APS flechettes vs sabot
-                            {
-                                shell.bulletMass -= bulletMass;
-                                shell.currentVelocity = VectorUtils.GaussianDirectionDeviation(shell.currentVelocity, ((shell.bulletMass * shell.currentVelocity.magnitude) / (bulletMass * bulletVelocity)));
-                                //shell.caliber = //have some modification of caliber to sim knocking round off-prograde?
-                                //Thing is, something like a sabot liable to have lever action work upon it, spin it so it now hits on it's side instead of point first, but a heavy arty shell you have both substantially greater mass to diflect, and lesser increase in caliber from perpendicular hit - sabot from point on to side on is like a ~10x increase, a 208mm shell is like 1.2x 
-                                //there's also the issue of gross modification of caliber in this manner if the shell receives multiple impacts from APS interceptors before it hits; would either need to be caliber = x, which isn't appropraite for heavy shells that would not be easily knocked off course, or caliber +=, which isn't viable for sabots
-                                //easiest way would just have the APS interceptor destroy the incoming round, regardless; and just accept the occasional edge cases like a flechetteammo APS being able to destroy AP naval shells instead of tickling them and not much else
-                            }
+                            if (penetrationDepth * 1.3f > (shell.caliber / 2) && Mathf.Clamp(tntMass / shell.bulletMass, 0f, 0.95f) > 0.05f) //can APS pen to center + have enough HE to shatter tgtshell?
+                                tgtDestroyed = true;
                             else
-                            {
-                                shell.KillBullet();
-                                tgtShell = null;
-                                if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Exploded Incoming Projectile!");
-                            }
+                                tgtdeflected = true;
                         }
+                        else //APS using slug ammo
+                        {
+                            tgtdeflected = true;
+                        }                        
                     }
                 }
                 else
@@ -6196,6 +6207,20 @@ namespace BDArmory.Weapons
                     }
                     rocket.gameObject.SetActive(false);
                     tgtRocket = null;
+                }
+                if (tgtDestroyed)
+                {
+                    shell.hasDetonated = true;
+                    ExplosionFx.CreateExplosion(shell.transform.position, shell.tntMass, shell.explModelPath, shell.explSoundPath, ExplosionSourceType.Bullet, shell.caliber, null, shell.sourceVesselName, null, null, default, -1, false, shell.bulletMass, -1, 1, sourceVelocity: shell.currentVelocity);
+                    shell.KillBullet();
+                    tgtShell = null;
+                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Detonated Incoming Projectile!");
+                }
+                if (tgtdeflected)
+                {
+                    shell.bulletMass -= bulletMass;
+                    shell.currentVelocity = VectorUtils.GaussianDirectionDeviation(shell.currentVelocity, ((shell.bulletMass * shell.currentVelocity.magnitude) / (bulletMass * bulletVelocity)));
+                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Deflected Incoming Projectile!");
                 }
             }
             else
@@ -6603,6 +6628,7 @@ namespace BDArmory.Weapons
         }
         public void ParseAmmoStats()
         {
+            penetrationDepth = 0;
             if (eWeaponType == WeaponTypes.Ballistic)
             {
                 bulletInfo = bulletInfoList[currentTypeIndex];
@@ -6700,6 +6726,7 @@ namespace BDArmory.Weapons
                     }
                 }
                 electroLaser = bulletInfo.EMP; //borrowing electrolaser bool, should really rename it empWeapon
+                penetrationDepth = ProjectileUtils.CalculatePenetration(caliber, bulletVelocity, bulletMass, bulletInfo.apBulletMod, muParam1: bulletInfo.sabot ? 0.9470311374f : 0.656060636f, muParam2: bulletInfo.sabot ? 1.555757746f : 1.20190930f, muParam3: bulletInfo.sabot ? 2.753715499f : 1.77791929f, sabot: bulletInfo.sabot);
             }
             if (eWeaponType == WeaponTypes.Rocket)
             {
@@ -6784,6 +6811,8 @@ namespace BDArmory.Weapons
                 choker = rocketInfo.choker;
                 incendiary = rocketInfo.incendiary;
                 SetupRocketPool(currentType, rocketModelPath);
+                penetrationDepth = ProjectileUtils.CalculatePenetration(caliber, (thrust / rocketMass) * thrustTime, rocketMass, 0.75f, muParam1: 0.9470311374f, muParam2: 1.555757746f, muParam3: 2.753715499f, sabot: true);
+
             }
             PAWRefresh();
             SetInitialDetonationDistance();
