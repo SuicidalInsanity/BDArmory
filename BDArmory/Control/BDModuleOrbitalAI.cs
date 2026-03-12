@@ -1363,7 +1363,7 @@ namespace BDArmory.Control
                     EngageableWeapon engageableWeapon = currentWeapon as EngageableWeapon;
                     minRange = Mathf.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
                     maxRange = engageableWeapon.GetEngagementRangeMax();
-                    usingProjectile = weaponManager.selectedWeapon.GetWeaponClass() != WeaponClasses.Missile;
+                    usingProjectile = weaponManager.selectedWeapon.GetWeaponClass() != (WeaponClasses.Missile | WeaponClasses.Bomb | WeaponClasses.SLW);
                     if (usingProjectile)
                     {
                         missileTryLaunchTime = 0f;

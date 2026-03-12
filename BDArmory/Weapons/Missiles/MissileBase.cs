@@ -715,7 +715,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
 
         public abstract Vector3 GetForwardTransform();
 
-        public abstract float GetKinematicTime();
+        public abstract float GetKinematicTime(float minSpeed, out float thrustTime);
 
         public abstract float GetKinematicSpeed();
 

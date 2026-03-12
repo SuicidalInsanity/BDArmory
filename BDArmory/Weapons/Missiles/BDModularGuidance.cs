@@ -1873,20 +1873,23 @@ namespace BDArmory.Weapons.Missiles
             return GetTransform(ForwardTransformAxis);
         }
 
-        public override float GetKinematicTime()
+        public override float GetKinematicTime(float minSpeed, out float thrustTime)
         {
+            thrustTime = 0f;
             if (!_missileIgnited) return -1f;
 
-            float missileKinematicTime = (float)vessel.VesselDeltaV.TotalBurnTime;
+            thrustTime = (float)vessel.VesselDeltaV.TotalBurnTime;
+            float missileKinematicTime = thrustTime;
+
             if (!vessel.InVacuum())
             {
-                float drag = vessel.parts.Sum(x => x.dragScalar);
+                float dragArea = vessel.parts.Sum(x => x.dragScalar);
                 float speed = (float)vessel.srfSpeed;
                 float mass = (float)vessel.totalMass;
-                float dragTerm = 0.008f * mass * drag * 0.5f * (float)vessel.atmDensity;
-                float minSpeed = GetKinematicSpeed();
+                float dragTerm = 0.008f * mass * dragArea * speed * speed * 0.5f * (float)vessel.atmDensity;
+                float dragTermMinSpeed = 0.008f * mass * dragArea * minSpeed * minSpeed * 0.5f * (float)vessel.atmDensity;
                 if (speed > minSpeed)
-                    missileKinematicTime += mass / (minSpeed * dragTerm) - mass / (speed * dragTerm); ; // Add time for missile to slow down to min speed
+                    missileKinematicTime += mass * (speed - minSpeed) / ((dragTerm + dragTermMinSpeed) / 2f); // Add time for missile to slow down to min speed
             }
 
             return missileKinematicTime;

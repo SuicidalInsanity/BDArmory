@@ -4034,16 +4034,17 @@ namespace BDArmory.Weapons.Missiles
                 return MissileReferenceTransform.forward;
         }
 
-        public override float GetKinematicTime()
+        public override float GetKinematicTime(float minSpeed, out float thrustTime)
         {
             // Get time at which the missile is traveling at the GetKinematicSpeed() speed
+            thrustTime = 0f;
             if (!launched) return -1f;
 
-            float missileKinematicTime = boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex;
+            thrustTime = boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex;
+            float missileKinematicTime = thrustTime;
             if (!vessel.InVacuum())
             {
                 float speed = currentThrust > 0 ? optimumAirspeed : (float)vessel.srfSpeed;
-                float minSpeed = GetKinematicSpeed();
                 if (speed > minSpeed)
                 {
                     float airDensity = (float)vessel.atmDensity;
@@ -4060,9 +4061,9 @@ namespace BDArmory.Weapons.Missiles
                         FloatCurve dragCurve = MissileGuidance.DefaultDragCurve;
                         float dragCd = dragCurve.Evaluate(AoA);
                         float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
-                        dragTerm = 0.5f * airDensity * currDragArea * dragMultiplier * dragCd;
-                        float dragTermMinSpeed = 0.5f * airDensity * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
-                        t = part.mass / (minSpeed * dragTermMinSpeed) - part.mass / (speed * dragTerm);
+                        dragTerm = 0.5f * airDensity * speed * speed * currDragArea * dragMultiplier * dragCd;
+                        float dragTermMinSpeed = 0.5f * airDensity * minSpeed * minSpeed * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
+                        t = part.mass * (speed - minSpeed) / ((dragTerm + dragTermMinSpeed) / 2f);
                     }
                     missileKinematicTime += t; // Add time for missile to slow down to min speed
                 }
@@ -4075,8 +4076,8 @@ namespace BDArmory.Weapons.Missiles
         {
             if (vessel.InVacuum() || weaponClass != WeaponClasses.Missile) return 0f;
 
-            // Get speed at which the missile is only capable of pulling a 2G turn at maxAoA
-            float Gs = 2f;
+            // Get speed at which the missile is only capable of pulling a 4G turn at maxAoA
+            float Gs = 4f;
 
             FloatCurve liftCurve = MissileGuidance.DefaultLiftCurve;
             float bodyGravity = (float)PhysicsGlobals.GravitationalAcceleration * (float)vessel.orbit.referenceBody.GeeASL;
