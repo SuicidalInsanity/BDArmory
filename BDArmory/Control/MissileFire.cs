@@ -9316,7 +9316,7 @@ namespace BDArmory.Control
 
                     if (multiTargetNum > 1)
                     {
-                        if (weapon.Current.turret && (weapon.Current.maxPitch > weapon.Current.minPitch || weapon.Current.yawRange > 0))
+                        if ((weapon.Current.turret && (weapon.Current.maxPitch > weapon.Current.minPitch || weapon.Current.yawRange > 0)) || weapon.Current.customTurret.Count > 0)
                         {
                             if (TurretID >= Mathf.Min((targetsAssigned.Count), multiTargetNum))
                             {
@@ -9327,7 +9327,8 @@ namespace BDArmory.Control
                                 if (((weapon.Current.engageAir && targetsAssigned[TurretID].isFlying) ||
                                     (weapon.Current.engageGround && targetsAssigned[TurretID].isLandedOrSurfaceSplashed) ||
                                     (weapon.Current.engageSLW && targetsAssigned[TurretID].isUnderwater)) //check engagement envelope
-                                    && TargetInTurretRange(weapon.Current.turret, 7, targetsAssigned[TurretID].Vessel.CoM, weapon.Current))
+                                    && weapon.Current.turret? TargetInTurretRange(weapon.Current.turret, 7, targetsAssigned[TurretID].Vessel.CoM, weapon.Current) : 
+                                    TargetInCustomTurretRange(weapon.Current, 7, targetsAssigned[TurretID].Vessel.CoM))
                                 {
                                     weapon.Current.visualTargetVessel = targetsAssigned[TurretID].Vessel; // if target within turret fire zone, assign
                                     firedTargets.Add(targetsAssigned[TurretID]);
@@ -9341,7 +9342,8 @@ namespace BDArmory.Control
                                             if ((weapon.Current.engageAir && !item.Current.isFlying) ||
                                             (weapon.Current.engageGround && !item.Current.isLandedOrSurfaceSplashed) ||
                                             (weapon.Current.engageSLW && !item.Current.isUnderwater)) continue;
-                                            if (TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current))
+                                            if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current)) ||
+                                                (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, item.Current.Vessel.CoM)))
                                             {
                                                 weapon.Current.visualTargetVessel = item.Current.Vessel;
                                                 firedTargets.Add(item.Current);
@@ -9359,7 +9361,8 @@ namespace BDArmory.Control
                             {
                                 if (weapon.Current.engageMissile)
                                 {
-                                    if (TargetInTurretRange(weapon.Current.turret, 7, missilesAssigned[MissileTgtID].Vessel.CoM, weapon.Current))
+                                    if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, missilesAssigned[MissileTgtID].Vessel.CoM, weapon.Current)) ||
+    (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, missilesAssigned[MissileTgtID].Vessel.CoM)))
                                     {
                                         weapon.Current.visualTargetVessel = missilesAssigned[MissileTgtID].Vessel; // if target within turret fire zone, assign
                                         firedTargets.Add(missilesAssigned[MissileTgtID]);
@@ -9370,7 +9373,8 @@ namespace BDArmory.Control
                                             while (item.MoveNext())
                                             {
                                                 if (item.Current.Vessel == null) continue;
-                                                if (TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current))
+                                                if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current)) ||
+                                                    (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, item.Current.Vessel.CoM)))
                                                 {
                                                     weapon.Current.visualTargetVessel = item.Current.Vessel;
                                                     firedTargets.Add(item.Current);
