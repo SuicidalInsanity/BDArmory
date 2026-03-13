@@ -9747,6 +9747,8 @@ namespace BDArmory.Control
 
                 Vessel targetVessel = PDMslTgts[MissileID].Vessel;
                 float targetDist = Vector3.Distance(vessel.CoM, targetVessel.CoM);
+                inLaserRange = maxTargetingLaserRange > targetDist;
+                inARHRange = pointDefenseMissileMaxARH > targetDist;
 
                 //if (logging)
                 //    Debug.Log($"[PD Missile Debug - {vessel.GetName()}] PDMslTgt size: {PDMslTgts.Count}; missile count: {missileCount}");
