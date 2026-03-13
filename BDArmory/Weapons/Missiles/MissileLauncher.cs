@@ -1337,6 +1337,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 Fields["useSymCounterpart"].guiActiveEditor = true;
             }
+            else
+            {
+                Fields["useSymCounterpart"].guiActiveEditor = false;
+            }
 
             ParseAntiRadTargetTypes();
             GUIUtils.RefreshAssociatedWindows(part);

@@ -497,6 +497,10 @@ namespace BDArmory.Radar
                                                                      true, RWRThreatTypes.MissileLaunch, vSource, RadarUtils.LAUNCH_PING_PERSIST_TIME);
                     ++_launchWarningsSize;
                 }
+                else
+                {
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Missile Launch Warning buffer full! Unable to add missile: {(vSource ? vSource.GetDisplayName() : "null")}");
+                }
                 PlayWarningSound(RWRThreatTypes.MissileLaunch);
 
                 if (weaponManager.guardMode)
@@ -540,6 +544,10 @@ namespace BDArmory.Radar
                                                                      true, type, vSource, RadarUtils.LAUNCH_PING_PERSIST_TIME);
                     ++_launchWarningsSize;
                 }
+                else
+                {
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Missile Launch Warning buffer full! Unable to add missile: {(vSource ? vSource.GetDisplayName() : "null")}");
+                }
                 PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
                 return;
             }
@@ -558,6 +566,7 @@ namespace BDArmory.Radar
                 // If at capacity, exit out
                 if (_missileLockSize == missileLockData.Length)
                 {
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Missile lock buffer full! Unable to add missile: {(vSource ? vSource.GetDisplayName() : "null")}");
                     PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
                     return;
                 }
