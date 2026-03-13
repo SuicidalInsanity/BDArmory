@@ -6100,7 +6100,7 @@ namespace BDArmory.Weapons
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Visual;
                     if (wm.slavingTurrets && turret) slaved = false;
-                    if (BDArmorySettings.DEBUG_WEAPONS)
+                    if (BDArmorySettings.DEBUG_APS)
                     {
                         Debug.Log("[BDArmory.ModuleWeapon] tgtVelocity: " + tgtVelocity + "; tgtPosition: " + targetPosition + "; tgtAccel: " + targetAcceleration);
                         Debug.Log($"[BDArmory.ModuleWeapon - {(vessel != null ? vessel.GetName() : "null")}] Lead Offset: {fixedLeadOffset}, FinalAimTgt: {finalAimTarget}, tgt CosAngle {targetCosAngle}, wpn CosAngle {targetAdjustedMaxCosAngle}, Wpn Autofire: {autoFire}");
@@ -6183,7 +6183,7 @@ namespace BDArmory.Weapons
                         {
                             shell.KillBullet();
                             tgtShell = null;
-                            if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Vaporized Incoming Projectile!");
+                            if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Vaporized Incoming Projectile!");
                         }
                         else if (tntMass > 0)// APS using HE bullet/rocket
                         {
@@ -6214,13 +6214,13 @@ namespace BDArmory.Weapons
                     ExplosionFx.CreateExplosion(shell.transform.position, shell.tntMass, shell.explModelPath, shell.explSoundPath, ExplosionSourceType.Bullet, shell.caliber, null, shell.sourceVesselName, null, null, default, -1, false, shell.bulletMass, -1, 1, sourceVelocity: shell.currentVelocity);
                     shell.KillBullet();
                     tgtShell = null;
-                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Detonated Incoming Projectile!");
+                    if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Detonated Incoming Projectile!");
                 }
                 if (tgtdeflected)
                 {
                     shell.bulletMass -= bulletMass;
                     shell.currentVelocity = VectorUtils.GaussianDirectionDeviation(shell.currentVelocity, ((shell.bulletMass * shell.currentVelocity.magnitude) / (bulletMass * bulletVelocity)));
-                    if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Deflected Incoming Projectile!");
+                    if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Deflected Incoming Projectile!");
                 }
             }
             else

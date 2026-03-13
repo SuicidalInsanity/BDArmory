@@ -121,6 +121,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DEBUG_OTHER = false;                 //internal debugging
         [BDAPersistentSettingsField] public static bool DEBUG_ARMOR = false;                 //armor and HP
         [BDAPersistentSettingsField] public static bool DEBUG_WEAPONS = false;               //Debug messages for guns/rockets/lasers and their projectiles
+        [BDAPersistentSettingsField] public static bool DEBUG_APS = false;                   //Debug messages for point defense weapons
         [BDAPersistentSettingsField] public static bool DEBUG_MISSILES = false;              //Missile launch, tracking and targeting debug labels
         [BDAPersistentSettingsField] public static bool DEBUG_DAMAGE = false;                //Explosions and battle damage logging
         [BDAPersistentSettingsField] public static bool DEBUG_AI = false;                    //AI debugging
