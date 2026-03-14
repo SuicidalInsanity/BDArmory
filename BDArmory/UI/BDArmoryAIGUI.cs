@@ -851,8 +851,8 @@ namespace BDArmory.UI
                             var (min, max, rounding, sigFig, withZero, reducedPrecisionAtMin) = GetFieldLimits(fieldName);
                             if (!cacheSemiLogLimits.ContainsKey(fieldName)) { cacheSemiLogLimits[fieldName] = null; }
                             var cache = cacheSemiLogLimits[fieldName];
-                            if (value != (value = GUIUtils.HorizontalSemiLogSlider(SettingSliderRect(line, width), value, min, max, sigFig, withZero, reducedPrecisionAtMin, ref cache)) && rounding > 0)
-                                value = BDAMath.RoundToUnit(value, rounding);
+                            value = GUIUtils.HorizontalSemiLogSlider(SettingSliderRect(line, width), value, min, max, sigFig, withZero, reducedPrecisionAtMin, ref cache);
+                            // Rounding is built into GUIUtils.HorizontalSemiLogSlider.
                         }
                         else
                         {

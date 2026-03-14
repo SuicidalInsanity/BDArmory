@@ -601,12 +601,13 @@ namespace BDArmory.Utils
         /// <returns></returns>
         public static float HorizontalSemiLogSlider(Rect rect, float value, float minValue, float maxValue, float sigFig, bool withZero, bool reducedPrecisionAtMin, ref (float, float)[] cache)
         {
-            if (cache == null || cache.Length != 3)
+            if (cache == null || cache.Length != 4)
             {
                 cache = [
-                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)),
-                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)),
-                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin))
+                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Current slider value
+                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Min slider value
+                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Max slider value
+                    (sigFig, Mathf.Pow(10f, 1 - sigFig)) // Slider rounding
                 ];
             }
             else
@@ -614,9 +615,11 @@ namespace BDArmory.Utils
                 if (value != cache[0].Item1) cache[0] = (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (minValue != cache[1].Item1) cache[1] = (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (maxValue != cache[2].Item1) cache[2] = (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
+                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - sigFig));
             }
             float sliderValue = cache[0].Item2;
-            if (sliderValue != (sliderValue = GUI.HorizontalSlider(rect, sliderValue, cache[1].Item2, cache[2].Item2)))
+            float sliderRounding = cache[3].Item2;
+            if (sliderValue != (sliderValue = BDAMath.RoundToUnit(GUI.HorizontalSlider(rect, sliderValue, cache[1].Item2, cache[2].Item2), sliderRounding)))
             {
                 cache[0] = (value, sliderValue);
                 return UI_FloatSemiLogRange.FromSliderValue(sliderValue, minValue, sigFig, withZero, reducedPrecisionAtMin);

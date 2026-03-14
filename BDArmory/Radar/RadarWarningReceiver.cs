@@ -104,9 +104,6 @@ namespace BDArmory.Radar
         private float audioSourceRepeatDelay;
         private const float audioSourceRepeatDelayTime = 0.5f;
 
-        //float lastTimePinged = 0;
-        const float minPingInterval = 0.12f;
-        const float pingPersistTime = 1;
 
         const int dataCount = 12;
 
@@ -359,6 +356,7 @@ namespace BDArmory.Radar
 
         public RWRSignatureData GetNextRadarMissile()
         {
+            CleanMissileLocks();
             if (_missileLockIndexer >= missileLockData.Length)
                 _missileLockIndexer = 0;
 
@@ -367,6 +365,7 @@ namespace BDArmory.Radar
 
         public bool IsRadarMissileDetected(Vessel v)
         {
+            CleanMissileLocks();
             int index = _missileLockHead;
             for (int i = 0; i < _missileLockSize; i++)
             {
@@ -396,6 +395,7 @@ namespace BDArmory.Radar
 
         public bool IsVesselDetected(Vessel v)
         {
+            CleanPings();
             for (int i = 0; i < pingsData.Length; i++)
             {
                 // Should account for the noTarget values as well as those have vessel == null
@@ -407,6 +407,7 @@ namespace BDArmory.Radar
 
         public RWRSignatureData GetVesselDetected(Vessel v)
         {
+            CleanPings();
             RWRSignatureData target;
             for (int i = 0; i < pingsData.Length; i++)
             {
@@ -416,50 +417,50 @@ namespace BDArmory.Radar
             return RWRSignatureData.noTarget;
         }
 
-        IEnumerator PingLifeRoutine(int index, float lifeTime)
+        private void CleanPings()
         {
-            yield return new WaitForSecondsFixed(Mathf.Clamp(lifeTime - 0.04f, minPingInterval, lifeTime));
-            pingsData[index] = RWRSignatureData.noTarget;
+            float currentTime = Time.time;
+            for (int i = 0; i < pingsData.Length; i++)
+            {
+                if (pingsData[i].exists && currentTime >= pingsData[i].expirationTime)
+                {
+                    pingsData[i] = RWRSignatureData.noTarget;
+                }
+            }
         }
 
-        IEnumerator MissileLockLifeRoutine(int index)
+        private void CleanMissileLocks()
         {
-            yield return new WaitForSecondsFixed(RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME);
-            missileLockData[index] = RWRSignatureData.noTarget;
-            // Data expiring
-            // Decrement size and move the head over
-            --_missileLockSize;
-            ++_missileLockHead;
-            // Wrap around
-            if (_missileLockHead >= missileLockData.Length)
-                _missileLockHead -= missileLockData.Length;
+            float currentTime = Time.time;
+            while (_missileLockSize > 0)
+            {
+                int idx = _missileLockHead;
+                if (missileLockData[idx].exists && currentTime < missileLockData[idx].expirationTime)
+                    break;
+
+                missileLockData[idx] = RWRSignatureData.noTarget;
+                ++_missileLockHead;
+                if (_missileLockHead >= missileLockData.Length)
+                    _missileLockHead = 0;
+                --_missileLockSize;
+            }
         }
 
-        IEnumerator LaunchWarningRoutine(RWRSignatureData data)
+        private void CleanLaunchWarnings()
         {
-            // If at capacity, exit out
-            if (_launchWarningsSize == launchWarnings.Length)
-                yield break;
+            float currentTime = Time.time;
+            while (_launchWarningsSize > 0)
+            {
+                int idx = _launchWarningsHead;
+                if (launchWarnings[idx].exists && currentTime < launchWarnings[idx].expirationTime)
+                    break;
 
-            // Get the current index
-            int currIndex = _launchWarningsHead + _launchWarningsSize;
-            // Basically modulo (though I think this should tell the
-            // compiler that it doesn't need to check the bounds)
-            if (currIndex >= launchWarnings.Length)
-                currIndex -= launchWarnings.Length;
-
-            // Set data
-            launchWarnings[currIndex] = data;
-            // Increment size
-            ++_launchWarningsSize;
-            yield return new WaitForSecondsFixed(2);
-            // Data expiring
-            // Decrement size and move the head over
-            --_launchWarningsSize;
-            ++_launchWarningsHead;
-            // Wrap around
-            if (_launchWarningsHead >= launchWarnings.Length)
-                _launchWarningsHead -= launchWarnings.Length;
+                launchWarnings[idx] = RWRSignatureData.noTarget;
+                ++_launchWarningsHead;
+                if (_launchWarningsHead >= launchWarnings.Length)
+                    _launchWarningsHead = 0;
+                --_launchWarningsSize;
+            }
         }
 
         void ReceiveLaunchWarning(Vector3 source, Vector3 direction, bool radar, Vessel vSource)
@@ -477,10 +478,18 @@ namespace BDArmory.Radar
             //if ((weaponManager && weaponManager.guardMode) && (sqrDist > (weaponManager.guardRange * weaponManager.guardRange))) return; //doesn't this clamp the RWR to visual view range, not radar/RWR range?
             if ((radar || sqrDist < RWRMWSRange * RWRMWSRange) && sqrDist > 10000f && VectorUtils.Angle(direction, currPos - source) < 15f)
             {
-                StartCoroutine(
-                    LaunchWarningRoutine(new RWRSignatureData(source,
-                        RadarUtils.WorldToRadar(source, referenceTransform, RwrDisplayRect, rwrDisplayRange),
-                        true, RWRThreatTypes.MissileLaunch, vSource)));
+                CleanLaunchWarnings();
+                if (_launchWarningsSize < launchWarnings.Length)
+                {
+                    int currIndex = _launchWarningsHead + _launchWarningsSize;
+                    if (currIndex >= launchWarnings.Length)
+                        currIndex -= launchWarnings.Length;
+
+                    launchWarnings[currIndex] = new RWRSignatureData(source,
+                                                                     RadarUtils.WorldToRadar(source, referenceTransform, RwrDisplayRect, rwrDisplayRange),
+                                                                     true, RWRThreatTypes.MissileLaunch, vSource, RadarUtils.LAUNCH_PING_PERSIST_TIME);
+                    ++_launchWarningsSize;
+                }
                 PlayWarningSound(RWRThreatTypes.MissileLaunch);
 
                 if (weaponManager.guardMode)
@@ -511,10 +520,18 @@ namespace BDArmory.Radar
 
             if (type == RWRThreatTypes.MissileLaunch || type == RWRThreatTypes.Torpedo)
             {
-                StartCoroutine(
-                    LaunchWarningRoutine(new RWRSignatureData(source,
-                        RadarUtils.WorldToRadar(source, referenceTransform, RwrDisplayRect, rwrDisplayRange),
-                        true, type, vSource)));
+                CleanLaunchWarnings();
+                if (_launchWarningsSize < launchWarnings.Length)
+                {
+                    int currIndex = _launchWarningsHead + _launchWarningsSize;
+                    if (currIndex >= launchWarnings.Length)
+                        currIndex -= launchWarnings.Length;
+
+                    launchWarnings[currIndex] = new RWRSignatureData(source,
+                                                                     RadarUtils.WorldToRadar(source, referenceTransform, RwrDisplayRect, rwrDisplayRange),
+                                                                     true, type, vSource, RadarUtils.LAUNCH_PING_PERSIST_TIME);
+                    ++_launchWarningsSize;
+                }
                 PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
                 return;
             }
@@ -531,6 +548,7 @@ namespace BDArmory.Radar
                 }
 
                 // If at capacity, exit out
+                CleanMissileLocks();
                 if (_missileLockSize == missileLockData.Length)
                 {
                     PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
@@ -545,23 +563,24 @@ namespace BDArmory.Radar
                     currIndex -= missileLockData.Length;
 
                 // Set data
-                missileLockData[currIndex] = new RWRSignatureData(source, currPos, true, type, vSource);
+                missileLockData[currIndex] = new RWRSignatureData(source, currPos, true, type, vSource, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME);
                 // Increment size
                 ++_missileLockSize;
-
-                StartCoroutine(MissileLockLifeRoutine(currIndex));
 
                 PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
 
                 return;
             }
 
+            CleanPings();
+
             int openIndex = -1;
+            float sqrThresh = BDArmorySettings.LOGARITHMIC_RADAR_DISPLAY ? 100f : 900f;
             for (int i = 0; i < pingsData.Length; i++)
             {
                 RWRSignatureData tempPing = pingsData[i];
 
-                if (!tempPing.exists)
+                if (!pingsData[i].exists)
                 {
                     // as soon as we have an open index, break
                     openIndex = i;
@@ -569,20 +588,18 @@ namespace BDArmory.Radar
                 }
                 
                 // Consider swapping this to a vessel check, since we know the vessel anyways.
-                if (tempPing.exists && 
-                    (tempPing.pingPosition - currPos).sqrMagnitude < (BDArmorySettings.LOGARITHMIC_RADAR_DISPLAY ? 100f : 900f))    //prevent ping spam
+                if ((pingsData[i].pingPosition - currPos).sqrMagnitude < sqrThresh)
                     break;
             }
 
             if (openIndex >= 0)
             {
-                pingsData[openIndex] = new RWRSignatureData(source, currPos, true, type, vSource);
+                pingsData[openIndex] = new RWRSignatureData(source, currPos, true, type, vSource, persistTime);
                 //pingWorldPositions[openIndex] = source; //FIXME source is improperly defined
                 if (weaponManager.hasAntiRadiationOrdnance)
                 {
                     BDATargetManager.ReportVessel(AIUtils.VesselClosestTo(source), weaponManager); // Report RWR ping as target for anti-rads
                 } //MissileFire RWR-vessel checks are all (RWR ping position - guardtarget.CoM).Magnitude < 20*20?, could we simplify the more complex vessel aquistion function used here?
-                StartCoroutine(PingLifeRoutine(openIndex, persistTime));
 
                 PlayWarningSound(type, (source - vessel.CoM).sqrMagnitude);
             }
@@ -658,6 +675,10 @@ namespace BDArmory.Radar
 
         internal void WindowRwr(int windowID)
         {
+            CleanPings();
+            CleanMissileLocks();
+            CleanLaunchWarnings();
+
             GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectRwr.width - 18, 30));
             if (GUI.Button(new Rect(BDArmorySetup.WindowRectRwr.width - 18, 2, 16, 16), "X", GUI.skin.button))
             {
@@ -672,13 +693,13 @@ namespace BDArmory.Radar
 
             for (int i = 0; i < pingsData.Length; i++)
             {
-                RWRSignatureData currPing = pingsData[i];
+                ref RWRSignatureData currPing = ref pingsData[i];
+                if (!currPing.exists) continue;
                 Vector2 pingPosition = currPing.pingPosition;
                 //pingPosition = Vector2.MoveTowards(displayRect.center, pingPosition, displayRect.center.x - (pingSize/2));
                 Rect pingRect = new Rect(pingPosition.x - (pingSize / 2), pingPosition.y - (pingSize / 2), pingSize,
                     pingSize);
 
-                if (!currPing.exists) continue;
                 if (currPing.signalType == RWRThreatTypes.MissileLock || currPing.signalType == RWRThreatTypes.MWS)
                 {
                     GUI.DrawTexture(pingRect, rwrMissileTexture, ScaleMode.StretchToFill, true);
@@ -707,10 +728,8 @@ namespace BDArmory.Radar
             }
 
             // Tell the compiler to not worry about bounds checking
-            for (int i = 0; i < MWSData.Length; i++)
+            for (int i = 0; i < MWSSlots; i++)
             {
-                // Actual end of for loop
-                if (i + 1 > MWSSlots) break;
                 Vector2 pingPosition = MWSData[i].pingPosition;
                 //pingPosition = Vector2.MoveTowards(displayRect.center, pingPosition, displayRect.center.x - (pingSize/2));
                 Rect pingRect = new Rect(pingPosition.x - (pingSize / 2), pingPosition.y - (pingSize / 2), pingSize,
@@ -760,10 +779,7 @@ namespace BDArmory.Radar
 
         public static void PingRWR(Vessel v, Vector3 source, RWRThreatTypes type, float persistTime, Vessel vSource)
         {
-            if (OnRadarPing != null)
-            {
-                OnRadarPing(v, source, type, persistTime, vSource);
-            }
+            OnRadarPing?.Invoke(v, source, type, persistTime, vSource);
         }
 
         public static void PingRWR(Ray ray, float fov, RWRThreatTypes type, float persistTime, Vessel vSource)
@@ -796,6 +812,7 @@ namespace BDArmory.Radar
         public RadarWarningReceiver.RWRThreatTypes signalType;
         public Vector2 pingPosition;
         public Vessel vessel;
+        public float expirationTime;
 
         public bool Equals(RWRSignatureData other)
         {
@@ -817,7 +834,7 @@ namespace BDArmory.Radar
             }
         }
 
-        public RWRSignatureData(Vector3 _position, Vector2 _pingPosition, bool _exists, RadarWarningReceiver.RWRThreatTypes _signalType, Vessel _vessel)
+        public RWRSignatureData(Vector3 _position, Vector2 _pingPosition, bool _exists, RadarWarningReceiver.RWRThreatTypes _signalType, Vessel _vessel, float lifeTime = RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME)
         {
             geoPos = VectorUtils.WorldPositionToGeoCoords(_position, FlightGlobals.currentMainBody);
             exists = _exists;
@@ -825,6 +842,7 @@ namespace BDArmory.Radar
             signalType = _signalType;
             pingPosition = _pingPosition;
             vessel = _vessel;
+            expirationTime = _exists ? Time.time + 1.5f * lifeTime : -1f; // Add a cushion to lifeTime so that ping does not expire before next ping comes
         }
 
         public RWRSignatureData()
@@ -835,15 +853,10 @@ namespace BDArmory.Radar
             signalType = RadarWarningReceiver.RWRThreatTypes.None;
             pingPosition = Vector2.zero;
             vessel = null;
+            expirationTime = -1f;
         }
 
-        public static RWRSignatureData noTarget
-        {
-            get
-            {
-                return new RWRSignatureData();
-            }
-        }
+        public static RWRSignatureData noTarget => new RWRSignatureData();
 
         public static void ResetRWRSDArray(ref RWRSignatureData[] tsdArray)
         {

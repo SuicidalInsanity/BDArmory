@@ -427,11 +427,10 @@ namespace BDArmory.Control
         {
             get
             {
-                if (_AI == null || !_AI.pilotEnabled || _AI.vessel != vessel) _AI = vessel.ActiveController().AI;
-                return _AI;
+                if (field == null || !field.pilotEnabled || field.vessel != vessel) field = vessel.ActiveController().AI;
+                return field;
             }
         }
-        IBDAIControl _AI;
         // Use: "var pilotAI = PilotAI;" to get a local copy for repeated use. If multiple types are needed in the same block, use the switch pattern in ActiveController.
         BDModulePilotAI PilotAI { get { var ai = AI; return ai != null && ai.pilotEnabled && ai.aiType == AIType.PilotAI ? ai as BDModulePilotAI : null; } }
         BDModuleSurfaceAI SurfaceAI { get { var ai = AI; return ai != null && ai.pilotEnabled && ai.aiType == AIType.SurfaceAI ? ai as BDModuleSurfaceAI : null; } }
