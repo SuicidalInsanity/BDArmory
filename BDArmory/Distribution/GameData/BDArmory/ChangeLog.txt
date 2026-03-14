@@ -29,6 +29,9 @@
 	- Turrets:
 		- Added "baseTransformName" field to turrets, while this was previously unclear, the parent transform of yawTransform was previously being used to determine the turret's center of rotation and the orientation of its axes. This has now been made into an explicit field to allow modders to better control this behavior. Unless specified, the transform will be set to the parent of the yawTransform.
 		- Made turret code more failure tolerant, and capable of dealing with cases where yawTransform and/or pitchTransform are missing. IMPORTANT NOTE: A turret lacking a yawTransform and/or pitchTransform will NOT function properly, it will try to work around it, but the modder should fix this issue ASAP!
+	- Active rotection Systems:
+		- Target shells now need to be within a certain size/APS needs to pass penetration depth check to destroy larger shells; no more destroying battleship shells with standard anti-tankshell APS.
+		- APS debugging moved to new Debug Pointdefense toggle.
 	- Explosions:
 		- Re-implemented the shaped charge unfocusing/squeezing mechanic, where as the shaped charge jet penetrates armor, it loses coherence and diameter.
 		- Add spall to shaped charge damage calculations, shaped charge now carries along a % of the spall it produces as it penetrates causing additional damage.
@@ -52,11 +55,13 @@
 		- Fix IR missiles not turning towards a target they lost track of.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
-    - Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+    		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
-      - Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+      			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+			- Custom turrets now compatible with turret multi-targeting		
+			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
 	- Competition
 		- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard Aftter Gate is disabled.
