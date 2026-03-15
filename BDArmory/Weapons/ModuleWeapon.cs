@@ -276,12 +276,11 @@ namespace BDArmory.Weapons
         {
             get
             {
-                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-                    _weaponManager = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return _weaponManager;
+                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return field;
             }
         }
-        MissileFire _weaponManager;
 
         public bool pointingAtSelf; //true if weapon is pointing at own vessel
         bool userFiring;
@@ -409,7 +408,7 @@ namespace BDArmory.Weapons
 
         #region KSPFields
 
-        [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_WeaponName", guiActiveEditor = true), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name 
+        [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_WeaponName", guiActiveEditor = true), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name
         public string WeaponDisplayName;
 
         public string WeaponName;
@@ -807,8 +806,18 @@ namespace BDArmory.Weapons
         //Used for scaling laser damage down based on distance.
         [KSPField]
         public float tanAngle = 0.0001f;
-        //Angle of divergeance/2. Theoretical minimum value calculated using θ = (1.22 L/RL)/2,
-        //where L is laser's wavelength and RL is the radius of the mirror (=gun).
+        // Tan of angle of divergeance. tan(θ) = λ/A,
+        // where λ is laser's wavelength and A is the diameter of the laser at source (aperture size)
+        // E.g., for optical wavelength lasers with an aperture of 0.1m, a 450nm blue laser would have tanAngle=0.0000045 and a 700nm red laser would have tanAngle=0.000007.
+
+        private float microwaveDirectivity; // Directivity (gain) for microwave weapons, calculated from tanAngle variable
+        // Recommended tanAngle for microwave beams is in the range 0.002 — 0.0001 for a directivity in the range 1M — 400M
+
+        //Used for scaling laser damage down based on distance.
+        [KSPField]
+        public float aperture = 1f;
+        // Aperture, diameter of the laser at source. A = λ/tan(θ),
+        // where λ is laser's wavelength and tan(θ) is tan of angle of divergence
 
         //audioclip paths
         [KSPField]
@@ -847,7 +856,7 @@ namespace BDArmory.Weapons
         public bool proximityDetonation = false;
         //public bool airDetonationTiming = true;
 
-        [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_DefaultDetonationRange", guiActiveEditor = false)]//Fuzed Detonation Range 
+        [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_DefaultDetonationRange", guiActiveEditor = false)]//Fuzed Detonation Range
         public float defaultDetonationRange = 3500; // maxairDetrange works for altitude fuzing, use this for VT fuzing
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ProximityFuzeRadius"), UI_FloatRange(minValue = 0f, maxValue = 300f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
@@ -1296,7 +1305,7 @@ namespace BDArmory.Weapons
                 }
             }
 
-            if (!(isChaingun || eWeaponType == WeaponTypes.Rocket))//disable rocket RoF slider for non rockets 
+            if (!(isChaingun || eWeaponType == WeaponTypes.Rocket))//disable rocket RoF slider for non rockets
             {
                 Fields["roundsPerMinute"].guiActiveEditor = false;
             }
@@ -1715,7 +1724,7 @@ namespace BDArmory.Weapons
                         }
                         minP += servo.Current.minPitch;
                         maxP += servo.Current.maxPitch;
-                    }                
+                    }
                 customYaw = yaw;
                 customMinPitch = minP;
                 customMaxPitch = maxP;
@@ -2373,7 +2382,7 @@ namespace BDArmory.Weapons
         #endregion KSP Events
         //some code organization
         //Ballistics
-        #region Guns 
+        #region Guns
         private void Fire()
         {
             if (BDArmorySetup.GameIsPaused)
@@ -2680,7 +2689,7 @@ namespace BDArmory.Weapons
                 if (!useRippleFire || !pulseLaser || fireState.Length == 1 || (useRippleFire && i == barrelIndex))
                 {
                     float damage = 0;
-                    float initialDamage = laserDamage * 0.425f;
+                    float initialDamage = laserDamage;
                     Transform tf = fireTransforms[i];
                     LineRenderer lr = laserRenderers[i];
                     Vector3 rayDirection = tf.forward;
@@ -2736,9 +2745,10 @@ namespace BDArmory.Weapons
 
                             KerbalEVA eva = hit.collider.gameObject.GetComponentUpwards<KerbalEVA>();
                             Part p = eva ? eva.part : hit.collider.gameObject.GetComponentInParent<Part>();
+                            float distance = hit.distance;
+                            initialDamage = (laserDamage > 0) ? LaserDamage(laserDamage, tanAngle, aperture, distance, tf.position, hit.point) : laserDamage;
                             if (p && p.vessel && p.vessel != vessel)
                             {
-                                float distance = hit.distance;
                                 if (instagib)
                                 {
                                     p.AddInstagibDamage();
@@ -2750,12 +2760,12 @@ namespace BDArmory.Weapons
                                     {
                                         if (electroLaser)
                                         {
-                                            //Due to Electrolasers/lightning bolts being a point source, and no guarantee that a craft is homogeneous material for armor/hull, calculating 
+                                            //Due to Electrolasers/lightning bolts being a point source, and no guarantee that a craft is homogeneous material for armor/hull, calculating
                                             //the path electricity would take to get to craft electrics to affect them is going to be a mess one way or another
                                             /////////////////////////////////////////////////
                                             if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(p.vessel.vesselType))
                                             {
-                                                float EMPDamage = laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
+                                                float EMPDamage = initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
                                                 Part closestCommand = null;
                                                 float distToCommandSqr = float.PositiveInfinity; //lets find out which command part is closest to the hit
                                                 Vector3 commandDir = Vector3.zero;
@@ -2885,10 +2895,7 @@ namespace BDArmory.Weapons
                                         HitpointTracker armor = p.GetComponent<HitpointTracker>();
                                         if (laserDamage > 0)
                                         {
-                                            var angularSpread = tanAngle * distance; //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
-                                            initialDamage = laserDamage / (1 + Mathf.PI * angularSpread * angularSpread) * 0.425f;
-
-                                            if (armor != null)// technically, lasers shouldn't do damage until armor gone, but that would require localized armor tracking instead of the monolithic model currently used                                              
+                                            if (armor != null)// technically, lasers shouldn't do damage until armor gone, but that would require localized armor tracking instead of the monolithic model currently used
                                             {
                                                 damage = (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime)) * Mathf.Clamp((1 - (BDAMath.Sqrt(armor.Diffusivity * (armor.Density / 1000)) * armor.Armor) / initialDamage), 0.005f, 1); //old calc lacked a clamp, could potentially become negative damage
                                             }  //clamps laser damage to not go negative, allow some small amount of bleedthrough - ~30 Be/Steel will negate ABL, ~62 Ti, 42 DU
@@ -2928,7 +2935,7 @@ namespace BDArmory.Weapons
                                                 //    p.rb.AddForceAtPosition((tf.position - p.transform.position).normalized * (float)Impulse, p.transform.position, ForceMode.Impulse);
                                                 //}
                                                 if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Impulse of {Impulse} Applied to {p.vessel.GetName()}");
-                                                //if (laserDamage == 0) 
+                                                //if (laserDamage == 0)
                                                 damage += Impulse / 100;
                                             }
                                         }
@@ -2949,7 +2956,7 @@ namespace BDArmory.Weapons
                                                 ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                 ME.duration += duration;
                                                 if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {p.vessel.GetName()}: {massAdjustment}t added");
-                                                //if (laserDamage == 0) 
+                                                //if (laserDamage == 0)
                                                 damage += massAdjustment * 100;
                                             }
                                         }
@@ -2986,13 +2993,11 @@ namespace BDArmory.Weapons
                             else
                             {
                                 if (electroLaser || HeatRay) continue;
-                                var angularSpread = tanAngle * hit.distance; //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
-                                initialDamage = laserDamage / (1 + Mathf.PI * angularSpread * angularSpread) * 0.425f;
                                 if (!BDArmorySettings.PAINTBALL_MODE) ProjectileUtils.CheckBuildingHit(hit, initialDamage, pulseLaser);
                                 if (HEpulses)
                                 {
                                     ExplosionFx.CreateExplosion(hit.point,
-                                                   (laserDamage / 10000),
+                                                   (initialDamage / 10000),
                                                    explModelPath, explSoundPath, ExplosionSourceType.Bullet, 1, null, vessel.vesselName, null);
                                 }
                             }
@@ -3012,7 +3017,7 @@ namespace BDArmory.Weapons
                         if (HEpulses)
                         {
                             ExplosionFx.CreateExplosion(tf.position + rayDirection * raycastDistance,
-                                           (laserDamage / 10000),
+                                           (initialDamage / 10000),
                                            explModelPath, explSoundPath, ExplosionSourceType.Bullet, 1, null, vessel.vesselName, null);
                         }
                     }
@@ -3029,6 +3034,21 @@ namespace BDArmory.Weapons
             }
         }
 
+        // Adjusts laser damage based on tanAngle, distance, firing and hit points
+        private float LaserDamage(float laserDamage, float tanAngle, float aperture, float distance, Vector3 firingPoint, Vector3 hitPoint)
+        {
+            bool underwater = FlightGlobals.currentMainBody.ocean && FlightGlobals.getAltitudeAtPos(firingPoint) < 0 || FlightGlobals.currentMainBody.ocean && FlightGlobals.getAltitudeAtPos(hitPoint) < 0;
+            float firingDensity = (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(firingPoint), FlightGlobals.getExternalTemperature(firingPoint));
+            float hitDensity = (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(hitPoint), FlightGlobals.getExternalTemperature(hitPoint));
+            float atmDensity = (firingDensity + hitDensity) / 2f; // Average densities instead of complicated integral along firing path
+
+            float gamma = underwater ? BDArmorySettings.LASER_WATER_GAMMA : BDArmorySettings.LASER_ATM_GAMMA;
+            float normDensity = underwater ? 1f : Mathf.Max(0f, atmDensity / 1.225f);
+            float transmission = Mathf.Exp(-gamma * distance * normDensity);
+            float sqrTerm = (1 + 2f * distance * tanAngle / aperture); //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
+            return laserDamage * transmission / (sqrTerm * sqrTerm);
+        }
+
         //Conic AoE 'beam' for AoE beam weapons - tractor beams, microwave EMP, heatrays, etc.
         private void MicrowaveBeam(string vesselname)
         {
@@ -3042,7 +3062,7 @@ namespace BDArmory.Weapons
             }
             WeaponFX();
             float damage = 0;
-            float initialDamage = laserDamage * 0.425f;
+            float initialDamage = laserDamage;
             var beamLength = engageRangeMax / 1000;
             var beamAngle = Mathf.Tan(beamFOV * Mathf.Deg2Rad) * beamLength; //assumes a default 1km long, 45deg angle cone model
                                                                              //Also, TOD - add conic AoE ingo to the GetInfo weapon infocard
@@ -3067,19 +3087,18 @@ namespace BDArmory.Weapons
                     if (VesselModuleRegistry.IgnoredVesselTypes.Contains(loadedvessels.Current.vesselType)) continue;
 
                     if (Vector3.Angle(loadedvessels.Current.CoM - fireTransforms[0].transform.position, fireTransforms[0].forward) > beamFOV / 2f) continue;
-                    if (loadedvessels.Current.IsUnderwater()) continue; //would microwaves work underwater...?
+                    if (loadedvessels.Current.IsUnderwater()) continue; // Microwaves don't work underwater
                     if (!friendlyFire) //don't affect friendly targets. Something something phased array dynamic beam shaping
                     {
                         var wms = VesselModuleRegistry.GetModule<MissileFire>(loadedvessels.Current);
                         if (wms == null || wms.Team == WeaponManager.Team) continue;
                     }
-                    if (!loadedvessels.Current.Splashed && vessel.IsUnderwater()) //not sure if a water transition should serve as a barrier, but easily commented out
+                    if (!loadedvessels.Current.Splashed && vessel.IsUnderwater()) //water transition is barrier
                         continue;
                     if (loadedvessels.Current == vessel) continue;
                     float distance = (loadedvessels.Current.CoM - fireTransforms[0].transform.position).magnitude;
                     if (distance > maxTargetingRange) continue;
-                    var angularSpread = tanAngle * distance; //Scales down the damage based on the increased surface area of the area being hit by the laser. Think flashlight on a wall.
-                    initialDamage = (laserDamage * 0.425f) / (1 + Mathf.PI * angularSpread * angularSpread);
+                    initialDamage = MicrowaveDamage(laserDamage, microwaveDirectivity, distance);
 
                     if (electroLaser)
                     {
@@ -3108,7 +3127,7 @@ namespace BDArmory.Weapons
                                 if (partHit == null) continue;
                                 if (ProjectileUtils.IsIgnoredPart(partHit)) continue;
 
-                                //AoE EMP field EMP damage mitigation - -1 EMP damage per mm of conductive armor/5t of conductive hull mass per part occluding command part from emission source         
+                                //AoE EMP field EMP damage mitigation - -1 EMP damage per mm of conductive armor/5t of conductive hull mass per part occluding command part from emission source
                                 var Armor = partHit.FindModuleImplementing<HitpointTracker>();
                                 if (Armor != null && partHit.Rigidbody != null)
                                 {
@@ -3160,7 +3179,7 @@ namespace BDArmory.Weapons
                                             HitpointTracker armor = hitPart.GetComponent<HitpointTracker>();
                                             if (laserDamage > 0)
                                             {
-                                                if (armor != null)// technically, lasers shouldn't do damage until armor gone, but that would require localized armor tracking instead of the monolithic model currently used                                              
+                                                if (armor != null)// technically, lasers shouldn't do damage until armor gone, but that would require localized armor tracking instead of the monolithic model currently used
                                                 {
                                                     damage = (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime)) * Mathf.Clamp((1 - (BDAMath.Sqrt(armor.Diffusivity * (armor.Density / 1000)) * armor.Armor) / initialDamage), 0.005f, 1); //old calc lacked a clamp, could potentially become negative damage
                                                 }  //clamps laser damage to not go negative, allow some small amount of bleedthrough - ~30 Be/Steel will negate ABL, ~62 Ti, 42 DU
@@ -3179,7 +3198,7 @@ namespace BDArmory.Weapons
                                             if (HEpulses)
                                             {
                                                 ExplosionFx.CreateExplosion(h.point,
-                                                               (laserDamage / 10000),
+                                                               (initialDamage / 10000),
                                                                explModelPath, explSoundPath, ExplosionSourceType.Bullet, 1, null, vessel.vesselName, null, Hitpart: hitPart);
                                             }
                                             if (HeatRay)
@@ -3219,7 +3238,7 @@ namespace BDArmory.Weapons
                                                     ME.massMod += (massAdjustment * TimeWarp.fixedDeltaTime);
                                                     ME.duration += duration;
                                                     if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Gravitic Buildup Applied to {hitPart.vessel.GetName()}: {massAdjustment}t added");
-                                                    //if (laserDamage == 0) 
+                                                    //if (laserDamage == 0)
                                                     damage += massAdjustment * 100;
                                                 }
                                             }
@@ -3251,6 +3270,13 @@ namespace BDArmory.Weapons
                 }
         }
 
+        // Adjusts microwave damage based on tanAngle, distance, firing and directivity (gain)
+        private float MicrowaveDamage(float baseDamage, float directivity, float distance)
+        {
+            float finalDamage = baseDamage / (1 + 4 * Mathf.PI / directivity * distance * distance); // Behaves like old lasers with lower tanAngle values, behaves more like microwave with higher tanAngle values
+            return finalDamage;
+        }
+
         public void SetupLaserSpecifics()
         {
             //chargeSound = SoundUtils.GetAudioClip(chargeSoundPath);
@@ -3260,6 +3286,7 @@ namespace BDArmory.Weapons
             }
             Color laserColor = GUIUtils.ParseColor255(projectileColor);
             laserColor.a = laserColor.a / 2;
+            microwaveDirectivity = 2f / (1 - Mathf.Cos(Mathf.Atan(tanAngle))); // Directivity for microwaves, based on conical beam https://en.wikipedia.org/wiki/Directivity#Relation_to_beam_width
             if (conicAoE)
             {
                 var cone = GameDatabase.Instance.GetModel(laserModelPath);
@@ -3604,8 +3631,8 @@ namespace BDArmory.Weapons
         void MakeRocketArray()
         {
             Transform rocketsTransform = part.FindModelTransform("rockets");// important to keep this seperate from the fireTransformName transform
-            int numOfRockets = rocketsTransform.childCount;     // due to rockets.Rocket_n being inconsistantly aligned 
-            rockets = new Transform[numOfRockets];              // (and subsequently messing up the aim() vestors) 
+            int numOfRockets = rocketsTransform.childCount;     // due to rockets.Rocket_n being inconsistantly aligned
+            rockets = new Transform[numOfRockets];              // (and subsequently messing up the aim() vestors)
             if (rocketPod)                                    // and this overwriting the previous fireTransFormName -> fireTransForms
             {
                 RoundsPerMag = numOfRockets;
@@ -4510,7 +4537,7 @@ namespace BDArmory.Weapons
 
         /// <summary>
         /// Run a trajectory simulation in the current frame.
-        /// 
+        ///
         /// Note: Since this is running in the current frame, for moving targets the trajectory appears to be off, but it's not.
         /// By the time the projectile arrives at the target, the target has moved to that point in the trajectory.
         /// </summary>
@@ -4674,7 +4701,7 @@ namespace BDArmory.Weapons
                                     Debug.Log("[BDArmory.ModuleWeapon]:NullReferenceException for Ballistic Hit: " + e.Message);
                                 }
                             }
-                            // else if (FlightGlobals.getAltitudeAtPos(simCurrPos) < 0) // Note: this prevents aiming below sea-level. 
+                            // else if (FlightGlobals.getAltitudeAtPos(simCurrPos) < 0) // Note: this prevents aiming below sea-level.
                             // {
                             //    bulletPrediction = simCurrPos;
                             //   break;
@@ -4756,7 +4783,7 @@ namespace BDArmory.Weapons
         /// <summary>
         /// Use the leapfrog numerical integrator for a ballistic trajectory simulation under the influence of just gravity.
         /// The leapfrog integrator is a second-order symplectic method.
-        /// 
+        ///
         /// Note: Use this to see the trajectory with collision detection, but use BallisticTrajectoryClosestApproachSimulation instead for targeting purposes.
         /// <param name="position"></param>
         /// <param name="velocity"></param>
@@ -4910,7 +4937,7 @@ namespace BDArmory.Weapons
 
         /// <summary>
         /// Solve the closest time to CPA via simulation for ballistic projectiles over long distances to account for varying gravity.
-        /// 
+        ///
         /// Both the bullet and target positions are integrated with leap-frog.
         /// This is consistent with how bullets are moved in PooledBullet.cs and, since it is second-order, is more accurate for larger timesteps than semi-implicit Euler (which is what Unity appears to be using).
         /// </summary>
@@ -5045,7 +5072,7 @@ namespace BDArmory.Weapons
                 // var maxAutoFireCosAngle2 = targetAdjustedMaxCosAngle;
                 safeToFire = CheckForFriendlies(fireTransform); //TODO - test why APS returning safeToFire = false
                 if (BDArmorySettings.BULLET_WATER_DRAG && eWeaponType == WeaponTypes.Ballistic && FlightGlobals.getAltitudeAtPos(fireTransforms[0].position) < 0)
-                    safeToFire = false; //don't fire guns underwater 
+                    safeToFire = false; //don't fire guns underwater
 
                 if (safeToFire)
                 {
@@ -6146,8 +6173,7 @@ namespace BDArmory.Weapons
                 if (delayTime < 0)
                 {
                     delayTime = rocket != null ? 0.5f : (shell.bulletMass * (HERatio / 2)); //for shells, laser delay time is based on shell mass/HEratio. The heavier the shell, the more mass to burn through. Don't expect to stop sabots via laser APS
-                    var angularSpread = tanAngle * targetDistance;
-                    delayTime /= ((laserDamage / (1 + Mathf.PI * angularSpread * angularSpread) * 0.425f) / 100);
+                    delayTime /= LaserDamage(laserDamage, tanAngle, aperture, targetDistance, part.rb.position, targetPosition) / 100f;
                     if (delayTime < TimeWarp.fixedDeltaTime) delayTime = 0;
                 }
                 yield return new WaitForSeconds(delayTime);
@@ -6758,7 +6784,7 @@ namespace BDArmory.Weapons
                         if (rocketInfo.flak)
                         {
                             guiAmmoTypeString += StringUtils.Localize("#LOC_BDArmory_Ammo_Flak") + " ";
-                            eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider 
+                            eFuzeType = BulletFuzeTypes.Flak; //fix rockets not getting detonation range slider
                         }
                         else if (rocketInfo.shaped)
                         {

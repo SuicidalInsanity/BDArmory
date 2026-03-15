@@ -899,13 +899,12 @@ namespace BDArmory.Utils
     ///   {
     ///       get
     ///       {
-    ///           if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-    ///               _weaponManager = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
-    ///           if (_weaponManager != null && _weaponManager.vessel != vessel) _weaponManager = null;
-    ///           return _weaponManager;
+    ///           if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+    ///               field = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
+    ///           if (field != null && field.vessel != vessel) field = null;
+    ///           return field;
     ///       }
     ///   }
-    ///   MissileFire _weaponManager;
     /// Note: Take a local copy if accessing it repeatedly without the possibility of it changing.
     /// Note: The secondary check is necessary if vessel is FlightGlobals.ActiveVessel due to the DeathCam switch delay while the vessel is being removed.
     ///   
@@ -914,11 +913,10 @@ namespace BDArmory.Utils
     ///   {
     ///     get
     ///     {
-    ///       if (_AI == null || !_AI.pilotEnabled || _AI.vessel != vessel) _AI = vessel.ActiveController().AI;
-    ///       return _AI;
+    ///       if (field == null || !field.pilotEnabled || field.vessel != vessel) field = vessel.ActiveController().AI;
+    ///       return field;
     ///     }
     ///   }
-    ///   IBDAIControl _AI;
     /// Note: Take a local copy if accessing it repeatedly without the possibility of it changing.
     ///   
     /// 3. Accessing a field of the active AI, depending on the AI's type:

@@ -680,7 +680,7 @@ namespace BDArmory.Radar
                 rwrType = (RadarWarningReceiver.RWRThreatTypes)rwrThreatType;
                 sonarMode = (SonarModes)sonarType;
                 if (rwrType == RadarWarningReceiver.RWRThreatTypes.Sonar)
-                    signalPersistTimeForRwr = RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME;
+                    signalPersistTimeForRwr = RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME;
                 else
                 {
                     signalPersistTimeForRwr = signalPersistTime / 2;

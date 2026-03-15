@@ -5,6 +5,8 @@ using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
+using BDArmory.Control;
+using BDArmory.Extensions;
 
 namespace BDArmory.UI
 {
@@ -509,5 +511,12 @@ namespace BDArmory.UI
             }
             return icon;
         }
+
+        /// <summary>
+        /// A public accessor for other mods to get access to the team color.
+        /// </summary>
+        /// <param name="wm"></param>
+        /// <returns></returns>
+        public Color GetTeamColor(MissileFire wm) => BDTISetup.Instance.ColorAssignments.GetValueOrDefault(wm.Team.Name, Color.gray);
     }
 }

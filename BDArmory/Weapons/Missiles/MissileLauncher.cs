@@ -2672,11 +2672,11 @@ namespace BDArmory.Weapons.Missiles
                         ActiveRadar = true;
                         updateRadarCS = true;
 
-                        bool pingRWR = Time.time - lastRWRPing > (2f * RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME);
+                        bool pingRWR = Time.time - lastRWRPing > (0.5f * RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME);
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, (2f * RadarUtils.ACTIVE_MISSILE_PING_PERISTS_TIME), this, pingRWR);
+                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                         float sqrThresh = terminalGuidanceDistance * terminalGuidanceDistance * 2.25f; // (terminalGuidanceDistance * 1.5f)^2
 
                         //float smallestAngle = maxOffBoresight;
@@ -2722,9 +2722,9 @@ namespace BDArmory.Weapons.Missiles
                             terminalGuidanceActive = true;
 
                             if (weaponClass == WeaponClasses.SLW)
-                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.Torpedo, 2f, vessel);
+                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
                             else
-                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, 2f, vessel);
+                                RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
                             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Pitbull! Radar missileBase has gone active.  Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
                         }
