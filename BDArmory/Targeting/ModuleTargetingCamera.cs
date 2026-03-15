@@ -167,12 +167,11 @@ namespace BDArmory.Targeting
         {
             get
             {
-                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-                    _weaponManager = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return _weaponManager;
+                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return field;
             }
         }
-        private MissileFire _weaponManager;
 
         [KSPEvent(guiName = "#LOC_BDArmory_Enable", guiActive = true, guiActiveEditor = false)]//Enable
         public void EnableButton()

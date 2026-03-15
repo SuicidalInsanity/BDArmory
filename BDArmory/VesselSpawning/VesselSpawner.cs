@@ -272,8 +272,12 @@ namespace BDArmory.VesselSpawning
                         KerbalRoster.SetExperienceLevel(crewMember, KerbalRoster.GetExperienceMaxLevel()); // Make them experienced.
                         crewMember.isBadass = true; // Make them bad-ass (likes nearby explosions).
                         crewMember.courage = 0.5f;
-                        var kerbalSuit = part.FindModuleImplementing<KerbalSuitSelector>();
-                        crewMember.suit = kerbalSuit != null ? kerbalSuit.Suit : ProtoCrewMember.KerbalSuit.Default;
+                        if (BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE >= 0) // Override the suit type
+                        {
+                            var kerbalSuit = part.FindModuleImplementing<KerbalSuitSelector>();
+                            if (kerbalSuit != null)
+                                kerbalSuit.SetSuit((KerbalSuitSelector.KerbalSuit)Mathf.Clamp(BDArmorySettings.VESSEL_SPAWN_KERBAL_SUIT_TYPE, 0, 4));
+                        }
 
                         // Add them to the part
                         part.AddCrewmemberAt(crewMember, part.protoModuleCrew.Count);
