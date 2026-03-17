@@ -7376,7 +7376,6 @@ namespace BDArmory.Control
                                         {
                                             candidateYield *= (candidateCluster * 2);
                                             if (targetWeaponPriority < candidatePriority) //use priority bomb
-                                            if (targetWeaponPriority < candidatePriority) //use priority bomb
                                             {
                                                 targetWeapon = item.Current;
                                                 targetBombYield = candidateYield;
