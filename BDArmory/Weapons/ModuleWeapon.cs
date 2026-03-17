@@ -6178,11 +6178,11 @@ namespace BDArmory.Weapons
                 }
                 yield return new WaitForSeconds(delayTime);
                 bool tgtDestroyed = false;
-                bool tgtdeflected = false;
+                bool tgtDeflected = false;
                 if (shell != null)
                 {
                     //Hit cases:
-                    //HE APS vs HE tgtShell: can APS pen tgtShell? (e.g. this vs naval arty?) Y destroy shell, N deflect (impact, force of detonation, tgtshell now deformed and tumbling, etc
+                    //HE APS vs HE tgtShell: can APS pen tgtShell? (e.g. this vs naval arty?) Y destroy shell, N deflect (impact, force of detonation, tgtshell now deformed and tumbling, etc)
                     //AP APS vs HE tgtshell: deflect tgtshell based on velocity/mass, if tgtshell is at most 2x size of APSshell, detonate; something something slamming into the fuze
                     //AP APS vs slug tgtShell: deflect tgtShell based on velocity/mass
                     //HE APS vs Slug tgtShell: can APS pen tgtShell? higher threshold, would need to pen almost to center, but same as above
@@ -6190,17 +6190,17 @@ namespace BDArmory.Weapons
                     {
                         if (tntMass > 0 || eWeaponType == WeaponTypes.Laser)// APS using HE bullet/rocket
                         {
-                            if (penetrationDepth * 1.3f > ((shell.caliber / 2) * HERatio)) //pendepth * fudgefactor to account relative velocity/impact speed vs shell radius, modified my HE filler amount
+                            if (penetrationDepth * 1.3f > ((shell.caliber / 2) * HERatio)) //pendepth * fudgefactor to account relative velocity/impact speed vs shell radius, modified by HE filler amount
                                 tgtDestroyed = true;
                             else
-                                tgtdeflected = true;
+                                tgtDeflected = true;
                         }
                         else //APS using slug ammo
                         {
                             if (tgtShell.caliber <= caliber * 2) //abstraction; something something APS round slamming into the fuze as it impacts
                                 tgtDestroyed = true;
                             else
-                                tgtdeflected = true;
+                                tgtDeflected = true;
                         }
                     }
                     else //solid slug tgtShells
@@ -6216,11 +6216,11 @@ namespace BDArmory.Weapons
                             if (penetrationDepth * 1.3f > (shell.caliber / 2) && Mathf.Clamp(tntMass / shell.bulletMass, 0f, 0.95f) > 0.05f) //can APS pen to center + have enough HE to shatter tgtshell?
                                 tgtDestroyed = true;
                             else
-                                tgtdeflected = true;
+                                tgtDeflected = true;
                         }
                         else //APS using slug ammo
                         {
-                            tgtdeflected = true;
+                            tgtDeflected = true;
                         }                        
                     }
                 }
@@ -6242,7 +6242,7 @@ namespace BDArmory.Weapons
                     tgtShell = null;
                     if (BDArmorySettings.DEBUG_APS) Debug.Log($"[BDArmory.ModuleWeapon] {part.partInfo.name} on {vessel.vesselName} Detonated Incoming Projectile!");
                 }
-                if (tgtdeflected)
+                if (tgtDeflected)
                 {
                     shell.bulletMass -= bulletMass;
                     shell.currentVelocity = VectorUtils.GaussianDirectionDeviation(shell.currentVelocity, ((shell.bulletMass * shell.currentVelocity.magnitude) / (bulletMass * bulletVelocity)));

@@ -2896,7 +2896,7 @@ namespace BDArmory.Control
                                 {
                                     ml.SetSlavedGuard(true);
 
-                                    float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, (360/mlauncher.missileTurret.turret.yawSpeedDPS));
                                     float angleThreshold = GetMissileTurretFireAngle(mlauncher);
                                     (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
                                     

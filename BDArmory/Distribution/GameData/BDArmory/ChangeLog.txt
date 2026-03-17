@@ -31,7 +31,7 @@
 	- Turrets:
 		- Added "baseTransformName" field to turrets, while this was previously unclear, the parent transform of yawTransform was previously being used to determine the turret's center of rotation and the orientation of its axes. This has now been made into an explicit field to allow modders to better control this behavior. Unless specified, the transform will be set to the parent of the yawTransform.
 		- Made turret code more failure tolerant, and capable of dealing with cases where yawTransform and/or pitchTransform are missing. IMPORTANT NOTE: A turret lacking a yawTransform and/or pitchTransform will NOT function properly, it will try to work around it, but the modder should fix this issue ASAP!
-	- Active rotection Systems:
+	- Active Protection Systems:
 		- Target shells now need to be within a certain size/APS needs to pass penetration depth check to destroy larger shells; no more destroying battleship shells with standard anti-tankshell APS.
 		- APS debugging moved to new Debug Pointdefense toggle.
 	- Explosions:
