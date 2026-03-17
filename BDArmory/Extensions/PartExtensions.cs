@@ -545,7 +545,12 @@ namespace BDArmory.Extensions
             if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
             {
                 var tweakScaleModule = part.Modules["TweakScale"];
-                dryCost = tweakScaleModule.Fields["DryCost"].GetValue<float>(tweakScaleModule);
+                var dryCostField = tweakScaleModule.Fields["DryCost"];
+                if (dryCostField == null)
+                {
+                    return -1;
+                }
+                dryCost = dryCostField.GetValue<float>(tweakScaleModule);
             }
             return dryCost;
         }

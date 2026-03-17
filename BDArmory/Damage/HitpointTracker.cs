@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -1625,7 +1625,19 @@ namespace BDArmory.Damage
             hullType = hullInfo.name;
             CalculateRCSreduction();
             float dryCost = part.GetTweakScaleDryCost(); // Use the TweakScale DryCost if available.
-            if (dryCost == 0) dryCost = part.partInfo.cost + part.partInfo.variant.Cost - (float)resourceCost;
+            switch (dryCost)
+            {
+                case 0:
+                    {
+                        dryCost = part.partInfo.cost + part.partInfo.variant.Cost - (float)resourceCost;
+                        break;
+                    }
+                case -1:
+                    {
+                        dryCost = (part.partInfo.cost + part.partInfo.variant.Cost) * part.GetTweakScaleMultiplier() - (float)resourceCost;
+                        break;
+                    }
+            }
             if (hullInfo.costMod < 1) HullCostAdjust = Mathf.Max(dryCost * hullInfo.costMod, dryCost - (1000 - hullInfo.costMod * 1000)) - dryCost; //max of 1000 funds discount on cheaper materials
             else HullCostAdjust = Mathf.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
             //this returns cost of base variant, yielding part variant that are discounted by 50% or 500 of base variant cost, not current variant. method to get currently selected variant?
