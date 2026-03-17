@@ -1,6 +1,4 @@
 using System;
-using BDArmory.Settings;
-using UnityEngine;
 
 namespace BDArmory.Modules
 {

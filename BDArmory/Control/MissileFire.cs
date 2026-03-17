@@ -1389,6 +1389,7 @@ namespace BDArmory.Control
         public override void OnLoad(ConfigNode node)
         {
             base.OnLoad(node);
+
             if (HighLogic.LoadedSceneIsFlight)
             {
                 rippleData = string.Empty;
@@ -1402,6 +1403,8 @@ namespace BDArmory.Control
 
         public override void OnAwake()
         {
+            base.OnAwake();
+
             clickSound = SoundUtils.GetAudioClip("BDArmory/Sounds/click");
             warningSound = SoundUtils.GetAudioClip("BDArmory/Sounds/warning");
             armOnSound = SoundUtils.GetAudioClip("BDArmory/Sounds/armOn");
@@ -1695,12 +1698,12 @@ namespace BDArmory.Control
 
         public override void OnUpdate()
         {
+            base.OnUpdate();
+
             if (!HighLogic.LoadedSceneIsFlight)
             {
                 return;
             }
-
-            base.OnUpdate();
 
             if (!IsPrimaryWM) return; // Don't do anything if we're not in control.
 
@@ -1970,7 +1973,7 @@ namespace BDArmory.Control
                                         {
                                             targetData = vesselRadarData.activeIRTarget(null, this, true);
                                         }
-                                            
+
 
                                         if (targetData.exists)
                                         {
@@ -2238,7 +2241,7 @@ namespace BDArmory.Control
 
         private void CalculateMissilesAway() //FIXME - add check for identically named vessels
         {
-            
+
             missilesAway.Clear();
             // int tempMissilesAway = 0;
             //firedMissiles = 0;
@@ -2349,6 +2352,7 @@ namespace BDArmory.Control
         public override void OnFixedUpdate()
         {
             base.OnFixedUpdate();
+
             if (vessel == null || !vessel.gameObject.activeInHierarchy) return;
             if (!IsPrimaryWM)
             {
@@ -2714,7 +2718,7 @@ namespace BDArmory.Control
             yield return new WaitForSecondsFixed(8);
             incomingMissileDistance = float.MaxValue;
             incomingMissileTime = float.MaxValue;
-        }        
+        }
 
         bool AimMissileTurret(Vessel targetVessel, MissileBase ml, float finalTime, bool lead, bool loft, float loftFac)
         {
@@ -2914,7 +2918,7 @@ namespace BDArmory.Control
                                     float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
                                     float angleThreshold = GetMissileTurretFireAngle(mlauncher);
                                     (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
-                                    
+
                                     while (AimMissileTurretAngle(targetVessel, ml, turretEndTime, true, loft, loftFac, angleThreshold))
                                     {
                                         yield return wait;
@@ -3933,7 +3937,7 @@ namespace BDArmory.Control
                 targetingAudioSource.pitch = 1;
                 if (targetingAudioSource.isPlaying)
                 {
-                    targetingAudioSource.Stop();                    
+                    targetingAudioSource.Stop();
                 }
             }
         }
@@ -6040,7 +6044,7 @@ namespace BDArmory.Control
                 skipRadarDetectionCheck = true;
                 return false;
             }
-            
+
             if ((vesselRadarData.lockedTargetData.vessel == targetVessel) || vesselRadarData.SwitchActiveLockedTarget(targetVessel))
             {
                 radarDetected = true;
@@ -6759,10 +6763,10 @@ namespace BDArmory.Control
                                         {
                                             // Note this doesn't consider flares...
                                             if (targetHeatSignature < 0)
-                                            { 
+                                            {
                                                 targetHeatSignature = BDATargetManager.GetVesselHeatTarget(targetVessel, targetDir * 50f + vessel.CoM, distance * distance);
                                             }
-                                            
+
                                             if (targetHeatSignature * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform.up, mlauncher.GetForwardTransform()) > 0.25f) ? mlauncher.frontAspectHeatModifier : 1) < heatThresh)
                                                 candidateTDPS *= 0.0001f; //Heatseeker, but IR sig is below missile threshold, skip to something else unless nothing else available
                                             //candidateTDPS *= 0.0001f; //Heatseeker, but IR sig is below missile threshold, skip to something else unless nothing else available
@@ -6801,7 +6805,7 @@ namespace BDArmory.Control
                                             }
                                         }
                                         if (antiRad && rwr && rwr.enabled)
-                                        { 
+                                        {
                                             if (!skipRWRCheck)
                                             {
                                                 CheckAntiRadStatus(targetVessel, out RWRTypes);
@@ -7506,7 +7510,7 @@ namespace BDArmory.Control
                                                         }
                                                     }
                                                 }
-                                                
+
                                                 if (Missile.TargetingMode == MissileBase.TargetingModes.Inertial)
                                                 {
                                                     if (!skipRadarDetectionCheck)
@@ -8315,7 +8319,7 @@ namespace BDArmory.Control
             if (rwr && rwr.rwrEnabled)
             {
                 float closestAngle = 360;
-                
+
                 if (!currMissile) return;
                 if (currMissile.TargetingMode != MissileBase.TargetingModes.AntiRad) return;
 
@@ -10472,7 +10476,7 @@ namespace BDArmory.Control
                             Debug.Log($"[BDArmory.MissileFire]: Checking turret range - target is INSIDE gimbal limits! signedAnglePitch: {signedAnglePitch}, minPitch: {servo.Current.minPitch}, maxPitch: {servo.Current.maxPitch}, tolerance: {tolerance}");
                         }
                     }
-                }  
+                }
             if (angleYaw < (yawRange / 2) + tolerance && withinPitchRange)
             {
                 return true;
