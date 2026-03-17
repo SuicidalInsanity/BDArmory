@@ -3449,6 +3449,7 @@ namespace BDArmory.Control
             var weaponManager = WeaponManager;
             if (weaponManager == null) return;
 
+            SetStatus("Evading");
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 debugString.AppendLine($"Evasive {evasiveTimer}s");
