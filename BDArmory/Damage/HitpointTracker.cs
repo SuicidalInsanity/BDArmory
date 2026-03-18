@@ -1634,7 +1634,7 @@ namespace BDArmory.Damage
                     }
                 case -1:
                     {
-                        dryCost = (part.partInfo.cost + part.partInfo.variant.Cost) * part.GetTweakScaleMultiplier() - (float)resourceCost;
+                        dryCost = (part.partInfo.cost + part.partInfo.variant.Cost) * part.GetTweakScaleMassMultiplier() - (float)resourceCost;
                         break;
                     }
             }
