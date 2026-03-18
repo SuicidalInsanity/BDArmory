@@ -1097,6 +1097,7 @@ namespace BDArmory.Utils
         {
             TimingManager.FixedUpdateRemove(TimingManager.TimingStage.Precalc, UpdateVesselType); // Do it only once.
             if (Vessel == null) return;
+            if (Vessel.vesselType == VesselType.EVA) return; // Don't mess with EVA kerbals as it breaks them.
             var origType = Vessel.vesselType;
             Vessel.StripTypeFromName();
             if (AI != null)

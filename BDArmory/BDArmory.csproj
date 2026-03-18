@@ -345,6 +345,7 @@
     <Compile Include="WeaponMounts\MissileTurret.cs" />
     <Compile Include="WeaponMounts\ModuleCustomTurret.cs" />
     <Compile Include="WeaponMounts\ModuleTurret.cs" />
+    <Compile Include="WeaponMounts\TurretAxisManager.cs" />
     <Compile Include="WeaponMounts\WMTurretGroup.cs" />
     <Compile Include="Weapons\BDCustomWarhead.cs" />
     <Compile Include="Weapons\BDWarheadBase.cs" />

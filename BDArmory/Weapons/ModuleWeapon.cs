@@ -1683,6 +1683,7 @@ namespace BDArmory.Weapons
                     if (turr.Current.turretID != turretID) continue;
                     turret = turr.Current;
                     turret.SetReferenceTransform(fireTransforms[0]);
+                    turret.turretWeapon = this;
                     break;
                 }
             if (yawRange == 0 && maxPitch == minPitch)
@@ -2074,6 +2075,16 @@ namespace BDArmory.Weapons
                         }
                     }
             }
+        }
+
+        public bool IsCurrentWMWeapon()
+        {
+            MissileFire wm;
+            if (!(wm = WeaponManager)) return false;
+
+            if (wm.selectedWeapon == null) return false;
+
+            return GetShortName() == wm.selectedWeapon.GetShortName();
         }
 
         void FAOCos(BaseField field, object obj)
@@ -4016,6 +4027,16 @@ namespace BDArmory.Weapons
             if (part.isActiveAndEnabled) shutdownRoutine = StartCoroutine(ShutdownRoutine());
         }
 
+        public void ReturnWeapon()
+        {
+            if (!disabledStates.Contains(weaponState))
+                return;
+
+            StopShutdownStartupRoutines();
+
+            if (part.isActiveAndEnabled) shutdownRoutine = StartCoroutine(ShutdownRoutine());
+        }
+
         HashSet<WeaponStates> standbyStates = new HashSet<WeaponStates> { WeaponStates.Standby, WeaponStates.PoweringUp, WeaponStates.Locked };
         public void StandbyWeapon()
         {
@@ -4524,7 +4545,7 @@ namespace BDArmory.Weapons
                 {
                     turret.smoothRotation = false;
                 }
-                turret.AimToTarget(finalAimTarget); //no aimbot turrets when target out of sight
+                turret.AimToTarget(finalAimTarget, activeWeap: IsCurrentWMWeapon()); //no aimbot turrets when target out of sight
                 turret.smoothRotation = origSmooth;
             }
             for (int i = 0; i < customTurret.Count; i++)
@@ -6305,6 +6326,30 @@ namespace BDArmory.Weapons
             guiStatusString = weaponState.ToString();
         }
 
+        public float DeployIfBlocking()
+        {
+            // If no deploy anim or deploy state, the turret is ready regardless
+            if (!(hasDeployAnim && deployState))
+            {
+                turret.SetDeployFlag(true, true);
+                return 0;
+            }
+
+            if (hasReloadAnim && isReloading) // If reloading, return how long it'll take for the reload to complete
+            {
+                return reloadState.length - reloadState.time;
+            }
+
+            // If currently deploying
+            if (deployState.enabled && deployState.speed > 0) return deployState.length - deployState.time;
+
+            // Otherwise, weapon is either shutting down or inactive, thus requiring startup routine
+            StopShutdownStartupRoutines();
+            startupRoutine = StartCoroutine(StartupRoutine(true));
+
+            return deployState.length;
+        }
+
         IEnumerator StartupRoutine(bool calledByReload = false, bool secondaryFiring = false)
         {
             if (hasReloadAnim && isReloading) //wait for reload to finish before shutting down
@@ -6332,6 +6377,12 @@ namespace BDArmory.Weapons
                 else
                     weaponState = WeaponStates.EnabledForSecondaryFiring;
             }
+
+            if (turret)
+            {
+                turret.SetDeployFlag(true, true);
+            }
+
             UpdateGUIWeaponState();
             UpdateOffsetWeapon(); // Re-calculate offset/non-centerline weapon corrections on weapon selection
             BDArmorySetup.Instance.UpdateCursorState();
@@ -6384,6 +6435,12 @@ namespace BDArmory.Weapons
             }
             if (hasDeployAnim && deployState != null)
             {
+                // Block turret prior to undeploy
+                if (turret)
+                {
+                    turret.SetDeployFlag(false, false);
+                }
+
                 deployState.enabled = true;
                 deployState.speed = -1;
                 yield return new WaitWhileFixed(() => deployState.normalizedTime > 0);

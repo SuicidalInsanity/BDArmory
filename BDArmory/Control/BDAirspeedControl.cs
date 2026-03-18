@@ -200,7 +200,7 @@ namespace BDArmory.Control
             float accelError = (actualCurrentAccel - estimatedCurrentAccel); // /2 -- why divide by 2 here?
             dragAccel = accelError;
 
-            possibleAccel += accel; // This assumes that the acceleration from engines is in the same direction as the original possibleAccel.
+            possibleAccel = accel - dragAccel; // This assumes that the acceleration from engines is in the same direction as the original possibleAccel.
             forceAfterburner = forceAfterburner || (afterburnerPriority == 100f);
             allowAfterburner = allowAfterburner && (afterburnerPriority != 0f);
 

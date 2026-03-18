@@ -1337,6 +1337,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 Fields["useSymCounterpart"].guiActiveEditor = true;
             }
+            else
+            {
+                Fields["useSymCounterpart"].guiActiveEditor = false;
+            }
 
             ParseAntiRadTargetTypes();
             GUIUtils.RefreshAssociatedWindows(part);
@@ -1994,6 +1998,10 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (vessel.isActiveVessel) gauge.UpdateReloadMeter(reloadTimer);
                 reloadInProgress = true;
+                if (turret)
+                {
+                    turret.SetReloadBlock(reloadableRail.reloadTime);
+                }
                 yield return new WaitForSecondsFixed(reloadableRail.reloadTime);
                 reloadInProgress = false;
                 launched = false;
@@ -2672,7 +2680,7 @@ namespace BDArmory.Weapons.Missiles
                         ActiveRadar = true;
                         updateRadarCS = true;
 
-                        bool pingRWR = Time.time - lastRWRPing > (0.5f * RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME);
+                        bool pingRWR = Time.time - lastRWRPing > (RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME);
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
@@ -4034,16 +4042,17 @@ namespace BDArmory.Weapons.Missiles
                 return MissileReferenceTransform.forward;
         }
 
-        public override float GetKinematicTime()
+        public override float GetKinematicTime(float minSpeed, out float kinematicRange)
         {
             // Get time at which the missile is traveling at the GetKinematicSpeed() speed
+            kinematicRange = 0f;
             if (!launched) return -1f;
 
-            float missileKinematicTime = boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex;
+            float missileKinematicTime = Mathf.Max(boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex, 0f);
             if (!vessel.InVacuum())
             {
-                float speed = currentThrust > 0 ? optimumAirspeed : (float)vessel.srfSpeed;
-                float minSpeed = GetKinematicSpeed();
+                float speed = GetBurnoutSpeed(out float burnoutRange);
+                kinematicRange = burnoutRange;
                 if (speed > minSpeed)
                 {
                     float airDensity = (float)vessel.atmDensity;
@@ -4052,18 +4061,19 @@ namespace BDArmory.Weapons.Missiles
                     if (useSimpleDrag)
                     {
                         dragTerm = (deployed ? deployedDrag : simpleDrag) * (0.008f * part.mass) * 0.5f * airDensity;
-                        t = part.mass / (minSpeed * dragTerm) - part.mass / (speed * dragTerm);
+                        t = part.mass * (speed - minSpeed) / ((dragTerm * speed * speed + dragTerm * minSpeed * minSpeed) / 2f);
                     }
                     else
                     {
                         float AoA = smoothedAoA.Value;
                         FloatCurve dragCurve = MissileGuidance.DefaultDragCurve;
-                        float dragCd = dragCurve.Evaluate(AoA);
+                        float dragCd = Mathf.Max(dragCurve.Evaluate(AoA), 0f);
                         float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
-                        dragTerm = 0.5f * airDensity * currDragArea * dragMultiplier * dragCd;
-                        float dragTermMinSpeed = 0.5f * airDensity * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
-                        t = part.mass / (minSpeed * dragTermMinSpeed) - part.mass / (speed * dragTerm);
+                        dragTerm = 0.5f * airDensity * speed * speed * currDragArea * dragMultiplier * dragCd;
+                        float dragTermMinSpeed = 0.5f * airDensity * minSpeed * minSpeed * currDragArea * dragMultiplier * dragCurve.Evaluate(Mathf.Min(30f, maxAoA)); // Max AoA or 29 deg (at kink in drag curve)
+                        t = part.mass * (speed - minSpeed) / ((dragTerm + dragTermMinSpeed) / 2f);
                     }
+                    kinematicRange += t * (speed + minSpeed) / 2f;
                     missileKinematicTime += t; // Add time for missile to slow down to min speed
                 }
             }
@@ -4075,8 +4085,8 @@ namespace BDArmory.Weapons.Missiles
         {
             if (vessel.InVacuum() || weaponClass != WeaponClasses.Missile) return 0f;
 
-            // Get speed at which the missile is only capable of pulling a 2G turn at maxAoA
-            float Gs = 2f;
+            // Get speed at which the missile is only capable of pulling a 4G turn at maxAoA
+            float Gs = 4f;
 
             FloatCurve liftCurve = MissileGuidance.DefaultLiftCurve;
             float bodyGravity = (float)PhysicsGlobals.GravitationalAcceleration * (float)vessel.orbit.referenceBody.GeeASL;
@@ -4084,6 +4094,44 @@ namespace BDArmory.Weapons.Missiles
             float kinematicSpeed = BDAMath.Sqrt((Gs * part.mass * bodyGravity) / (0.5f * (float)vessel.atmDensity * currLiftArea * liftMultiplier * liftCurve.Evaluate(maxAoA)));
 
             return Mathf.Min(kinematicSpeed, 0.5f * (float)vessel.speedOfSound);
+        }
+
+        public float GetBurnoutSpeed(out float burnoutRange)
+        {
+            burnoutRange = 0f;
+            if (vessel.InVacuum() || weaponClass != WeaponClasses.Missile) return 0f;
+            float currentSpeed = (float)vessel.srfSpeed;
+            if (MissileState == MissileStates.PostThrust) return currentSpeed;
+
+            float boostTimeLeft = Mathf.Max(boostTime + dropTime - TimeIndex, 0f);
+            float cruiseTimeLeft = Mathf.Max(boostTime + cruiseTime + cruiseDelay + dropTime - TimeIndex, 0f);
+            float boostAccel = thrust / part.mass;
+            float cruiseAccel = cruiseThrust / part.mass;
+
+            float clampSpeed = Mathf.Clamp(optimumAirspeed, currentSpeed, 2f * currentSpeed); // Don't let the below speeds get out of control, leads to unrealistically high drag estimates
+            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost and currentSpeed
+            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
+            
+            float airDensity = (float)vessel.atmDensity;
+            float boostDragAccel;
+            float cruiseDragAccel;
+            if (useSimpleDrag)
+            {
+                boostDragAccel = (deployed ? deployedDrag : simpleDrag) * (0.008f * part.mass) * 0.5f * airDensity * boostDragSpeed * boostDragSpeed / part.mass;
+                cruiseDragAccel = (deployed ? deployedDrag : simpleDrag) * (0.008f * part.mass) * 0.5f * airDensity * cruiseDragSpeed * cruiseDragSpeed / part.mass;
+            }
+            else
+            {
+                float AoA = smoothedAoA.Value;
+                FloatCurve dragCurve = MissileGuidance.DefaultDragCurve;
+                float dragCd = Mathf.Max(dragCurve.Evaluate(AoA), 0f);
+                float dragMultiplier = BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
+                boostDragAccel = 0.5f * airDensity * boostDragSpeed * boostDragSpeed * currDragArea * dragMultiplier * dragCd / part.mass;
+                cruiseDragAccel = 0.5f * airDensity * cruiseDragSpeed * cruiseDragSpeed * currDragArea * dragMultiplier * dragCd / part.mass;
+            }
+            burnoutRange = Mathf.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft * boostTimeLeft + Mathf.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft * cruiseTimeLeft + currentSpeed * (boostTimeLeft + cruiseTimeLeft);
+            
+            return Mathf.Max(boostAccel - boostDragAccel, 0f) * boostTimeLeft + Mathf.Max(cruiseAccel - cruiseDragAccel, 0f) * cruiseTimeLeft + currentSpeed;
         }
 
         protected override void PartDie(Part p)

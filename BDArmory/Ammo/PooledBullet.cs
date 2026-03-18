@@ -539,15 +539,22 @@ namespace BDArmory.Bullets
                         {
                             if (fuzeType == BulletFuzeTypes.Delay || fuzeType == BulletFuzeTypes.Penetrating)
                             {
-                                fuzeTriggered = true;
-                                delayedDetonationRoutine = StartCoroutine(DelayedDetonationRoutine());
+                                if (!fuzeTriggered)
+                                {
+                                    fuzeTriggered = true;
+                                    delayedDetonationRoutine = StartCoroutine(DelayedDetonationRoutine());
+                                }
                             }
                             else //if (fuzeType != BulletFuzeTypes.None)
                             {
                                 if (HEType != PooledBulletTypes.Slug)
+                                {
                                     ExplosionFx.CreateExplosion(currentPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, default, -1, false, bulletMass, -1, dmgMult);
+                                }
                                 if (nuclear)
+                                {
                                     NukeFX.CreateExplosion(currentPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "");
+                                }
                                 hasDetonated = true;
                                 if (BDArmorySettings.waterHitEffect && FlightGlobals.currentMainBody.ocean) FXMonger.Splash(currentPosition, caliber / 2);
                                 KillBullet();
@@ -1510,7 +1517,11 @@ namespace BDArmory.Bullets
                         // Should penetrating fuzes also get triggered here? I guess they should...
                         if (fuzeType == BulletFuzeTypes.Delay || fuzeType == BulletFuzeTypes.Penetrating)
                         {
-                            fuzeTriggered = true;
+                            if (!fuzeTriggered)
+                            {
+                                fuzeTriggered = true;
+                                delayedDetonationRoutine = StartCoroutine(DelayedDetonationRoutine());
+                            }
                         }
                     }
                 }

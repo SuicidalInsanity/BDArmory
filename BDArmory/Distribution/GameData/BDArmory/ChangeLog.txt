@@ -1,4 +1,4 @@
-﻿IMPROVEMENTS / FIXES
+IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.
@@ -21,17 +21,26 @@
 	- Fix AI weapon selection softlocking on AntiRad ordnance when no hostile radar sources present.
 	- Fix AI not respecting Max Missiles Per Target setting when dropping bombs.
 	- Fix Surface AI circling last waypoint when it finishes a WP race.
+	- Fix AI usage of radar-warning receiver not always being consistent, sometimes not "noticing" a radar missile fired at it.
+	- Point Defense AI:
+		- Fix PD usage of laser-guided, anti-radiation, and heat-seeking missiles.
 - Sensors:
   - Improvements to target camera target switching behavior, should no longer switch to a new target while current laser ordnance is still in the air.
   - Multiple target cam support, craft with multiple cams can now simultaneously engage multiple targets with laser ordnance, one per camera.
 	  - Under manual control the active camera can be cycled via the new < #n > buttons below the FOV controls.
   - Target Cameras now respect subsystem targeting options and will paint specific part(s) of a target craft if non-CoM targeting enabled.
   - Fix Laser missile LoS checks using vessel root instead of missile position for determining terrain occlusion of target.
+  - Radars will now set any newly locked targets as the current primary target (affecting their multi-lock FoV).
 - Weapons:
 	- Turrets:
 		- Added "baseTransformName" field to turrets, while this was previously unclear, the parent transform of yawTransform was previously being used to determine the turret's center of rotation and the orientation of its axes. This has now been made into an explicit field to allow modders to better control this behavior. Unless specified, the transform will be set to the parent of the yawTransform.
 		- Made turret code more failure tolerant, and capable of dealing with cases where yawTransform and/or pitchTransform are missing. IMPORTANT NOTE: A turret lacking a yawTransform and/or pitchTransform will NOT function properly, it will try to work around it, but the modder should fix this issue ASAP!
-	- Active Protection Systems:
+		- Added support for multiple turrets on a single axis. This allows for things like coaxial guns, and missile launchers mounted on turrets to function correctly.
+			- Any number of turrets can now use the same "yawTransform" or "pitchTransform".
+			- The currently selected weapon will always take priority over all other turrets using that axis.
+			- New "turretPriority" field that determines which turret is prioritized over others when none of the weapons using that axis are currently selected. HIGHER values are prioritized.
+			- For turrets with the same "turretPriority" value, the turret with the LOWEST "turretID" is prioritized (to allow support for older mods which were created prior to this feature being added).
+  - Active Protection Systems:
 		- Target shells now need to be within a certain size/APS needs to pass penetration depth check to destroy larger shells; no more destroying battleship shells with standard anti-tankshell APS.
 		- APS debugging moved to new Debug Pointdefense toggle.
 	- Explosions:
@@ -42,6 +51,10 @@
 		- Fix shaped charges applying kinetic damage without actually penetrating the part they hit.
 		- Apply missing explosion source multiplier for shaped charge kinetic damage and shrapnel.
 		- Rename incorrectly named "Implosive Damage Multiplier" setting to "Exp. Impulse Multiplier". This setting modifies the force with which explosions push vessels (the ones that aren't blown up at least...).
+	- Bullets:
+		- Fixed bullets which ricochet not activating their penetrating / delayed fuzes.
+	- Rockets:
+		- Fixed rockets sometimes not applying kinetic damage when they penetrate armor.
 	- Warheads:
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
 	- Bombs:
@@ -55,15 +68,18 @@
 	- Missiles:
 		- Fix graphical glitch where Helmet Mounted Display/Sight appearing in WM modules despite there not being a cockpit with a HMD.
 		- Fix NREs that would occur when a CLOS missile has its guiding targeting pod destroyed.
-		- Add CLOS missile control deadzone via "beamgDeadzone", the missile will ignore acceleration commands below this value (to simulate things like beam-width and manual missile control).
+		- Added CLOS missile control deadzones via "beamgDeadzone", the missile will ignore acceleration commands below this value (to simulate things like beam-width and manual missile control).
 		- Fix pronav and augpronav missiles not properly guiding on targets when launched from extreme off-boresight angles.
-		- Add arming delay to missiles with the "fuzeArmingDelay" field specifying the arming delay in seconds and the "impactFuzeArmingDelay" bool field specifying if the impact fuze should also have an arming delay.
-		- Add spinning missiles, missiles can now be given a spin using "spinRate", specifying the spin rate in revolutions per second (clockwise-positive when looking from behind the missile) and "spinAccel", a proportional control constant for missile's spin rate, higher values will mean the missile spins up faster. Note this value should be relatively small, by default it is 0.25.
+		- Added arming delay to missiles with the "fuzeArmingDelay" field specifying the arming delay in seconds and the "impactFuzeArmingDelay" bool field specifying if the impact fuze should also have an arming delay.
+		- Added spinning missiles, missiles can now be given a spin using "spinRate", specifying the spin rate in revolutions per second (clockwise-positive when looking from behind the missile) and "spinAccel", a proportional control constant for missile's spin rate, higher values will mean the missile spins up faster. Note this "spinAccel" should be a relatively small value, by default it is 0.25.
 		- Fix INS and GPS missiles fired from multi-missile launchers being fired towards (0, 0, 0) when dumbfired by the AI.
 		- Fix IR missiles not turning towards a target they lost track of.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
-    		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+    - Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+		- Multi-Missile Launchers:
+			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
+			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
