@@ -1081,6 +1081,7 @@ namespace BDArmory.Radar
                     }
                     lockedTargets.Add(attemptedLocks[i]);
                     currLocks = lockedTargets.Count;
+                    lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
                     if (BDArmorySettings.DEBUG_RADAR)
                         Debug.Log("[BDArmory.ModuleRadar]: - Acquired lock on target (" + (attemptedLocks[i].vessel != null ? attemptedLocks[i].vessel.name : null) + ")");

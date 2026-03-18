@@ -36,19 +36,18 @@ namespace BDArmory.Weapons.Missiles
         {
             get
             {
-                if (!_noWM && (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel))
+                if (!_noWM && (field == null || !field.IsPrimaryWM || field.vessel != vessel))
                 {
                     if (vessel && vessel.loaded)
                     {
-                        _weaponManager = vessel.ActiveController().WM;
-                        _noWM = _weaponManager == null;
+                        field = vessel.ActiveController().WM;
+                        _noWM = field == null;
                     }
-                    else _weaponManager = null;
+                    else field = null;
                 }
-                return _weaponManager;
+                return field;
             }
         }
-        MissileFire _weaponManager;
         bool _noWM = false; // If no WM is found the first time, don't check again.
 
         private readonly List<Part> _vesselParts = [];

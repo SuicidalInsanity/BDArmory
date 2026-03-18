@@ -237,6 +237,7 @@
     <Compile Include="ModIntegration\ReflectionUtils.cs" />
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
+    <Compile Include="Modules\KerbalSuitSelector.cs" />
     <Compile Include="Modules\ModuleMovingPart.cs" />
     <Compile Include="Modules\ModuleHMD.cs" />
     <Compile Include="Modules\ModuleSelfSealingTank.cs" />
@@ -344,6 +345,7 @@
     <Compile Include="WeaponMounts\MissileTurret.cs" />
     <Compile Include="WeaponMounts\ModuleCustomTurret.cs" />
     <Compile Include="WeaponMounts\ModuleTurret.cs" />
+    <Compile Include="WeaponMounts\TurretAxisManager.cs" />
     <Compile Include="WeaponMounts\WMTurretGroup.cs" />
     <Compile Include="Weapons\BDCustomWarhead.cs" />
     <Compile Include="Weapons\BDWarheadBase.cs" />
