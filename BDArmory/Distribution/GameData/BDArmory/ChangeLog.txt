@@ -2,12 +2,16 @@ IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.
+	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
+	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
 	- Fix infolink explanation of Extend Abort Time / Extend Min Gain Rate.
 	- BDA UI Icon draw distance (MAX_DISTANCE_THRESHOLD) no longer clamped to a max of MAX_GUARD_VISUAL_RANGE.
 	- Add an option (and MM patch) to allow specifying the Kerbal Suit kerbals spawn with in crewed parts. Adds an override in the vessel spawner window for BDA spawns.
+	- New 'localizedName' field for armor material configs.
+	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -40,9 +44,9 @@ IMPROVEMENTS / FIXES
 			- The currently selected weapon will always take priority over all other turrets using that axis.
 			- New "turretPriority" field that determines which turret is prioritized over others when none of the weapons using that axis are currently selected. HIGHER values are prioritized.
 			- For turrets with the same "turretPriority" value, the turret with the LOWEST "turretID" is prioritized (to allow support for older mods which were created prior to this feature being added).
-  - Active Protection Systems:
+	- Active Protection Systems:
 		- Target shells now need to be within a certain size/APS needs to pass penetration depth check to destroy larger shells; no more destroying battleship shells with standard anti-tankshell APS.
-		- APS debugging moved to new Debug Pointdefense toggle.
+		- APS debugging moved to new Debug PointDefense toggle.
 	- Explosions:
 		- Re-implemented the shaped charge unfocusing/squeezing mechanic, where as the shaped charge jet penetrates armor, it loses coherence and diameter.
 		- Add spall to shaped charge damage calculations, shaped charge now carries along a % of the spall it produces as it penetrates causing additional damage.
@@ -87,9 +91,9 @@ IMPROVEMENTS / FIXES
 			- Custom turrets now compatible with turret multi-targeting		
 			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
-	- Competition:
-		- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
-		- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+- Competition:
+	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
+	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
 
 v1.12.1.0
 IMPROVEMENTS / FIXES

@@ -321,6 +321,7 @@ namespace BDArmory.Utils
                                 }
                             }
                         }
+                        part.UpdateMass();
                         return aeroVolume;
                     }
                 }
@@ -365,7 +366,7 @@ namespace BDArmory.Utils
                     }
                 }
             }
-
+            part.UpdateMass();
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Pwing module not found!");
             return 0;
         }

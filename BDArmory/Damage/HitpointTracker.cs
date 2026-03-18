@@ -1,15 +1,15 @@
-﻿using System;
+﻿using BDArmory.Armor;
+using BDArmory.Extensions;
+using BDArmory.Modules;
+using BDArmory.Settings;
+using BDArmory.UI;
+using BDArmory.Utils;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-
-using BDArmory.Armor;
-using BDArmory.Extensions;
-using BDArmory.Modules;
-using BDArmory.Settings;
-using BDArmory.Utils;
 
 namespace BDArmory.Damage
 {
@@ -661,38 +661,39 @@ namespace BDArmory.Damage
             }
         }
 
-        void Update()
+        void FixedUpdate()
         {
             if (_finished_setting_up) // Only gets set in flight mode.
             {
                 RefreshHitPoints();
-                return;
             }
-            if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight) // Also needed in flight mode for initial setup of mass, hull and HP, but shouldn't be triggered afterwards as ShipModified is only for the editor.
+            else
             {
-                if (_armorModified)
+                if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight) // Also needed in flight mode for initial setup of mass, hull and HP, but shouldn't be triggered afterwards as ShipModified is only for the editor.
                 {
-                    _armorModified = false;
-                    ArmorSetup(null, null);
-                }
-                if (_hullModified && !_updateMass) // Wait for the mass to update first.
-                {
-                    _hullModified = false;
-                    HullSetup(null, null);
-                }
-                if (!_updateMass) // Wait for the mass to update first.
-                {
-                    RefreshHitPoints();
-                }
-                if (HighLogic.LoadedSceneIsFlight && _armorConfigured && _hullConfigured && _hpConfigured) // No more changes, we're done.
-                {
-                    _finished_setting_up = true;
+                    if (_armorModified)
+                    {
+                        _armorModified = false;
+                        _armorConfigured = false;
+                        ArmorSetup(null, null);
+                    }
+                    if (_hullModified && !_updateMass) // Wait for the mass to update first.
+                    {
+                        _hullModified = false;
+                        _hullConfigured = false;
+                        HullSetup(null, null);
+                    }
+                    if (!_updateMass) // Wait for the mass to update first.
+                    {
+                        RefreshHitPoints();
+                    }
+                    if (HighLogic.LoadedSceneIsFlight && _armorConfigured && _hullConfigured && _hpConfigured) // No more changes, we're done.
+                    {
+                        _finished_setting_up = true;
+                    }
                 }
             }
-        }
 
-        void FixedUpdate()
-        {
             if (_updateMass)
             {
                 _updateMass = false;
@@ -791,6 +792,8 @@ namespace BDArmory.Damage
                 _updateHitpoints = false;
                 _forceUpdateHitpointsUI = false;
                 SetupPrefab();
+                if (HighLogic.LoadedSceneIsEditor)
+                    BDAEditorArmorWindow.Instance.OnEditorShipModifiedEvent(EditorLogic.fetch.ship);
             }
         }
 
@@ -1325,7 +1328,7 @@ namespace BDArmory.Damage
                 //	armorInfo = ArmorInfo.armors[SelectedArmorType];
                 //    ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == SelectedArmorType); //adjust part's current armor setting to match
                 //}
-                guiArmorTypeString = armorInfo.name; //FIXME - Localize these
+                guiArmorTypeString = string.IsNullOrEmpty(armorInfo.localizedName) ? armorInfo.name : StringUtils.Localize(armorInfo.localizedName);
                 SelectedArmorType = armorInfo.name;
                 Density = armorInfo.Density;
                 Diffusivity = armorInfo.Diffusivity;
