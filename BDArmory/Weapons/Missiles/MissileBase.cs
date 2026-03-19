@@ -1272,7 +1272,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     soughtTarget = vessel.CoM;
                 }
 
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName}: Active radar found: {lockedNum} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName}: Active radar found: {numLocked} targets; radarTarget?{radarTarget.exists}; tgtVessel? {targetVessel != null}");
                 for (int i = 0; i < scannedTargets.Length; i++)
                 {
                     // Once we've reached the last target we've locked, break
