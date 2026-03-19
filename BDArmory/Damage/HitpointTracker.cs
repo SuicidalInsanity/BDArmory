@@ -730,7 +730,7 @@ namespace BDArmory.Damage
                 CalculateDryCost(); //recalc if modify event added a fueltank -resource swap, etc
                 HullMassAdjust = oldHullMassAdjust; // Put the HullmassAdjust back so we can test against it when we update the hull mass.
                 float tweakScaleMassMultiplier = _tweakScaleMassMultiplier;
-                _tweakScaleMassMultiplier = part.GetTweakScaleMultiplier(); // Update our copy of the TweakScale mass multiplier.
+                _tweakScaleMassMultiplier = part.GetTweakScaleMassMultiplier(); // Update our copy of the TweakScale mass multiplier.
                 if (oldPartMass != partMass)
                 {
                     if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}, tweakScaleMassMultiplier {tweakScaleMassMultiplier}->{_tweakScaleMassMultiplier}");
@@ -1634,7 +1634,8 @@ namespace BDArmory.Damage
                     }
                 case -1:
                     {
-                        dryCost = (part.partInfo.cost + part.partInfo.variant.Cost) * part.GetTweakScaleMassMultiplier() - (float)resourceCost;
+                        _tweakScaleMassMultiplier = part.GetTweakScaleMassMultiplier(); // Update our copy of the TweakScale mass multiplier.
+                        dryCost = (part.partInfo.cost + part.partInfo.variant.Cost) * _tweakScaleMassMultiplier - (float)resourceCost;
                         break;
                     }
             }
