@@ -2673,7 +2673,7 @@ namespace BDArmory.Weapons.Missiles
                         // pretend we have an active radar seeker for ground targets:
                         //TargetSignatureData[] scannedTargets = new TargetSignatureData[5];
                         if (scannedTargets == null) scannedTargets = new TargetSignatureData[BDATargetManager.LoadedVessels.Count];
-                        TargetSignatureData.ResetTSDArray(ref scannedTargets);
+                        //TargetSignatureData.ResetTSDArray(ref scannedTargets);
                         Ray ray = new Ray(vessel.CoM, GetForwardTransform());
 
                         // Missile's radar has gone active
@@ -2684,7 +2684,7 @@ namespace BDArmory.Weapons.Missiles
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
+                        int numLocked = RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                         float sqrThresh = terminalGuidanceDistance * terminalGuidanceDistance * 2.25f; // (terminalGuidanceDistance * 1.5f)^2
 
                         //float smallestAngle = maxOffBoresight;
@@ -2698,20 +2698,24 @@ namespace BDArmory.Weapons.Missiles
 
                         for (int i = 0; i < scannedTargets.Length; i++)
                         {
-                            if (scannedTargets[i].exists && (!hasIFF || !Team.IsFriendly(scannedTargets[i].Team)))
+                            if (i == numLocked) break;
+
+                            if (!scannedTargets[i].exists) continue;
+
+                            if (hasIFF && Team.IsFriendly(scannedTargets[i].Team)) continue;
+
+                            currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
+
+                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} has currDist: {currDist}.");
+
+                            //re-check engagement envelope, only lock appropriate targets
+                            if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
                             {
-                                currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
+                                prevDist = currDist;
 
-                                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} has currDist: {currDist}.");
-
-                                //re-check engagement envelope, only lock appropriate targets
-                                if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
-                                {
-                                    prevDist = currDist;
-
-                                    lockIndex = i;
-                                }
+                                lockIndex = i;
                             }
+
                             //if (!scannedTargets[i].exists)
                             //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {i} doesn't exist!.");
                             //if (scannedTargets[i].exists && Team.IsFriendly(scannedTargets[i].Team))
@@ -2734,7 +2738,7 @@ namespace BDArmory.Weapons.Missiles
                             else
                                 RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Pitbull! Radar missileBase has gone active.  Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
+                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {shortName}: Pitbull! Radar missileBase has gone active. Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
                         }
                         else
                         {

@@ -1680,14 +1680,17 @@ namespace BDArmory.Radar
         /// Uses the missiles locktrackCurve for rcs evaluation.
         /// </summary>
         //was: UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-        public static bool RadarUpdateMissileLock(Ray ray, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile, bool pingRWR)
+        public static int RadarUpdateMissileLock(Ray ray, float fov, ref TargetSignatureData[] dataArray, float dataPersistTime, MissileBase missile, bool pingRWR)
         {
             int dataIndex = 0;
-            bool hasLocked = false;
+            //bool hasLocked = false;
 
             // guard clauses
             if (!missile)
-                return false;
+            {
+                dataArray[0] = TargetSignatureData.noTarget;
+                return dataIndex;
+            }
 
             // fov gives cone width, so halve it
             fov *= 0.5f;
@@ -1704,8 +1707,7 @@ namespace BDArmory.Radar
                     MissileFire wm = loadedvessels.Current.ActiveController().WM;
                     if (wm != null)
                     {
-                        if (missile.hasIFF && missile.Team.IsFriendly(wm.Team))
-                            continue;
+                        if (missile.hasIFF && missile.Team.IsFriendly(wm.Team)) continue;
                     }
 
                     // ignore self, ignore behind ray
@@ -1719,95 +1721,88 @@ namespace BDArmory.Radar
                     // as unlike radars, this is called with `maxOffBoresight` in some cases
                     // rather than `lockedSensorFoV`, and should be treated as an overall
                     // scan rather than just a sensor-look scan.
-                    if (angle > 90f)
+                    if (angle > 90f) continue;
+
+                    if (angle > fov) continue;
+
+                    // evaluate range
+                    // range already evaluated above, NOTE: no conversion from m to km is needed here due to
+                    // all missile radar FloatCurves being in m, not km. Unfortunately as this convention
+                    // began in legacy code, not much we can do about it!
+
+                    float terrainR = float.MaxValue;
+                    float terrainAngle = 90f;
+                    float notchMultiplier = 1f;
+                    float notchVMod = 0f;
+                    float notchRMod = 0f;
+
+                    if (!RadarTerrainNotchingCheck(missile.GetWeaponClass() != WeaponClasses.SLW, ray.origin, missile.activeRadarRangeGate, missile.activeRadarVelocityGate,
+                        missile.activeRadarVelocityFilter, missile.activeRadarRangeFilter, missile.activeRadarVelocityGate.minTime, missile.activeRadarRangeGate.minTime, missile.vessel,
+                        loadedvessels.Current, loadedvessels.Current.CoM, distance, out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, true))
                         continue;
 
-                    if (angle < fov)
+                    // get vessel's radar signature
+                    TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
+                    float signature = 10f;
+                    // See comment in RadarUpdateScanBoresight for more info about this.
+                    if (ti.Vessel == null) continue;
+
+                    if (ti != null)
                     {
-                        // evaluate range
-                        // range already evaluated above, NOTE: no conversion from m to km is needed here due to
-                        // all missile radar FloatCurves being in m, not km. Unfortunately as this convention
-                        // began in legacy code, not much we can do about it!
+                        signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin, distance) : ti.radarModifiedSignature;
+                        // no ground clutter modifier for missiles
+                        signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
 
-                        float terrainR = float.MaxValue;
-                        float terrainAngle = 90f;
-                        float notchMultiplier = 1f;
-                        float notchVMod = 0f;
-                        float notchRMod = 0f;
+                    }                                                                 //do not multiply chaff factor here
+                    signature *= GetStandoffJammingModifier(missile.vessel, missile.Team, ray.origin, loadedvessels.Current, signature);
+                    if (missile.GetWeaponClass() == WeaponClasses.SLW) signature *= GetVesselBubbleFactor(missile.transform.position, loadedvessels.Current);
 
-                        if (!RadarTerrainNotchingCheck(missile.GetWeaponClass() != WeaponClasses.SLW, ray.origin, missile.activeRadarRangeGate, missile.activeRadarVelocityGate,
-                            missile.activeRadarVelocityFilter, missile.activeRadarRangeFilter, missile.activeRadarVelocityGate.minTime, missile.activeRadarRangeGate.minTime, missile.vessel,
-                            loadedvessels.Current, loadedvessels.Current.CoM, distance, out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, true))
-                            continue;
+                    float baseSignature = signature;
+                    // Does notching affect the notch mult?
+                    if (missile.activeRadarCanNotch)
+                    {
+                        signature *= notchMultiplier;
+                    }
 
-                        // get vessel's radar signature
-                        TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
-                        float signature = 10f;
-                        // See comment in RadarUpdateScanBoresight for more info about this.
-                        if (ti.Vessel == null)
-                            continue;
-                        if (ti != null)
+                    // check SCR if we're checking notching, are not a torpedo, the target isn't splashed and the radar is active
+                    // technically the notchMultiplier < 1f condition should account for the rest
+                    // Note, since SCR behavior is only for locked radars ActiveRadar has to be true, hence why it's evaluated
+                    // before notchMultiplier, otherwise we don't account for SCR
+                    bool SCRcheck = BDArmorySettings.RADAR_NOTCHING && missile.activeRadarCanNotch && (notchMultiplier < 1f) && missile.GetWeaponClass() != WeaponClasses.SLW && !loadedvessels.Current.Splashed;
+
+                    if (distance < missile.activeRadarRange)
+                    {
+                        //evaluate if we can detect such a signature at that range
+                        float minDetectSig = missile.activeRadarLockTrackCurve.Evaluate(distance);
+
+                        if (signature > minDetectSig || (SCRcheck && baseSignature > minDetectSig && GetRadarNotchingSCR(baseSignature, fov, distance * 0.001f, terrainR, terrainAngle) > missile.activeRadarMinTrackSCR))
                         {
-                            signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin, distance) : ti.radarModifiedSignature;
-                            // no ground clutter modifier for missiles
-                            signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
-
-                        }                                                                 //do not multiply chaff factor here
-                        signature *= GetStandoffJammingModifier(missile.vessel, missile.Team, ray.origin, loadedvessels.Current, signature);
-                        if (missile.GetWeaponClass() == WeaponClasses.SLW) signature *= GetVesselBubbleFactor(missile.transform.position, loadedvessels.Current);
-
-                        float baseSignature = signature;
-                        // Does notching affect the notch mult?
-                        if (missile.activeRadarCanNotch)
-                        {
-                            signature *= notchMultiplier;
-                        }
-
-                        // check SCR if we're checking notching, are not a torpedo, the target isn't splashed and the radar is active
-                        // technically the notchMultiplier < 1f condition should account for the rest
-                        // Note, since SCR behavior is only for locked radars ActiveRadar has to be true, hence why it's evaluated
-                        // before notchMultiplier, otherwise we don't account for SCR
-                        bool SCRcheck = BDArmorySettings.RADAR_NOTCHING && missile.activeRadarCanNotch && (notchMultiplier < 1f) && missile.GetWeaponClass() != WeaponClasses.SLW && !loadedvessels.Current.Splashed;
-
-                        if (distance < missile.activeRadarRange)
-                        {
-                            //evaluate if we can detect such a signature at that range
-                            float minDetectSig = missile.activeRadarLockTrackCurve.Evaluate(distance);
-
-                            if (signature > minDetectSig || (SCRcheck && baseSignature > minDetectSig && GetRadarNotchingSCR(baseSignature, fov, distance * 0.001f, terrainR, terrainAngle) > missile.activeRadarMinTrackSCR))
+                            // Only fill up array up to dataArray.Length, need the rest of the processing for RWR pings though
+                            if (dataIndex < dataArray.Length)
                             {
                                 // detected by radar
-                                // fill attempted locks array for locking later:
-                                while (dataIndex < dataArray.Length - 1)
-                                {
-                                    if (!dataArray[dataIndex].exists || (dataArray[dataIndex].exists && (Time.time - dataArray[dataIndex].timeAcquired) > dataPersistTime))
-                                    {
-                                        break;
-                                    }
-                                    dataIndex++;
-                                }
-
-                                if (dataIndex < dataArray.Length)
-                                {
-                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: distance);
-                                    dataIndex++;
-                                    hasLocked = true;
-                                }
+                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: distance);
+                                dataIndex++;
                             }
                         }
+                    }
 
-                        //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
-                        if (pingRWR && distance < missile.activeRadarRange * RWR_PING_RANGE_FACTOR)
-                        {
-                            if (missile.GetWeaponClass() == WeaponClasses.SLW)
-                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
-                            else
-                                RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
-                        }
+                    //  our radar ping can be received at a higher range than we can detect, according to RWR range ping factor:
+                    if (pingRWR && distance < missile.activeRadarRange * RWR_PING_RANGE_FACTOR)
+                    {
+                        if (missile.GetWeaponClass() == WeaponClasses.SLW)
+                            RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.TorpedoLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
+                        else
+                            RadarWarningReceiver.PingRWR(loadedvessels.Current, ray.origin, RadarWarningReceiver.RWRThreatTypes.MissileLock, ACTIVE_MISSILE_PING_PERSIST_TIME, missile.vessel);
                     }
                 }
 
-            return hasLocked;
+            if (dataIndex < dataArray.Length)
+            {
+                dataArray[dataIndex] = TargetSignatureData.noTarget;
+            }
+
+            return dataIndex;
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-﻿using BDArmory.Competition;
+using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Guidances;
@@ -1505,12 +1505,16 @@ namespace BDArmory.Weapons.Missiles
                 if (missileLauncher.MissileReferenceTransform.position.CloserToThan(targetV.CoM, ml.activeRadarRange))
                 {
                     TargetSignatureData[] scannedTargets = new TargetSignatureData[(int)FiredByWM.multiMissileTgtNum];
-                    RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
+                    int numLocked = RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
                     TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
 
                     for (int i = 0; i < scannedTargets.Length; i++)
                     {
-                        if (scannedTargets[i].exists && scannedTargets[i].vessel == targetV)
+                        if (i == numLocked) break;
+
+                        if (!scannedTargets[i].exists) continue;
+
+                        if (scannedTargets[i].vessel == targetV)
                         {
                             lockedTarget = scannedTargets[i];
                             if (BDArmorySettings.DEBUG_MISSILES)
