@@ -605,7 +605,7 @@ namespace BDArmory.Radar
                 }
                 
                 // Consider swapping this to a vessel check, since we know the vessel anyways.
-                if ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh)
+                if ((tempPing.signalType == type) && ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh))
                     break;
             }
 
@@ -725,10 +725,14 @@ namespace BDArmory.Radar
             }
 
             int index = _missileLockHead;
+            float currTime = Time.time;
             for (int i = 0; i < _missileLockSize; i++)
             {
                 if (index >= missileLockData.Length)
                     index = 0;
+
+                if (missileLockData[index].expirationTime - currTime < RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME * 0.5f)
+                    continue;
 
                 Vector2 pingPosition = missileLockData[index].pingPosition;
                 ++index;
