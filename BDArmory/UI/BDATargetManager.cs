@@ -511,6 +511,7 @@ namespace BDArmory.UI
         {
             (float score, Part tempPart)  = BDATargetManager.GetVesselHeatSignature(v, sensorPosition);
             score *= (1400 * 1400) / Mathf.Max(sqrRange, 90000); // Clamp below 300m
+            score *= Mathf.Clamp(VectorUtils.Angle(v.CoM - sensorPosition, -VectorUtils.GetUpDirection(sensorPosition)) / 90, 0.5f, 1.5f);
             return score;
         }
 
@@ -811,6 +812,16 @@ namespace BDArmory.UI
             return new Tuple<float, Part>(noiseScore, NoisePart);
         }
 
+        public static float GetVesselAcousticTarget(Vessel v, Vector3 sensorPosition, double altitude)
+        {
+            (float score, Part tempPart) = BDATargetManager.GetVesselAcousticSignature(v, sensorPosition);
+            Vector3 relativePosVessel = v.CoM - sensorPosition;
+            if (altitude > -100)
+                score *= Mathf.Pow(0.8f, relativePosVessel.magnitude / 1450);
+            score *= Mathf.Clamp(VectorUtils.Angle(relativePosVessel, -VectorUtils.GetUpDirection(sensorPosition)) / 90, 0.5f, 1.5f);
+            return score;
+        }
+
         public static TargetSignatureData GetAcousticTarget(Vessel sourceVessel, Vessel missileVessel, Ray ray, TargetSignatureData priorNoiseTarget, float scanRadius, float highpassThreshold, bool targetCoM, FloatCurve lockedSensorFOVBias, FloatCurve lockedSensorVelocityBias, FloatCurve lockedSensorVelocityMagnitudeBias, float lockedSensorMinAngularVelocity, MissileFire mf = null, TargetInfo desiredTarget = null, bool IFF = true)
         {
             TargetSignatureData finalData = TargetSignatureData.noTarget;
@@ -860,7 +871,7 @@ namespace BDArmory.UI
                         tInfo = vessel.gameObject.AddComponent<TargetInfo>();
                     }
                     else
-                        return finalData;
+                        continue; //return finalData;
                 }
 
                 // Abort if target is friendly.

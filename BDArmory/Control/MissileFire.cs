@@ -9730,6 +9730,8 @@ namespace BDArmory.Control
                 int skipIRindex = 0;
                 bool skipIRSigCheck = false;
                 float IRHeatSig = 0;
+                bool skipAcousticSigCheck = false;
+                float AcousticSig = 0;
                 bool skipRadarCheck = false;
                 bool radarLocked = false;
                 bool INSDetected = false;
@@ -9857,22 +9859,42 @@ namespace BDArmory.Control
                                 {
                                     if (!vesselRadarData.locked)
                                     {
-                                        radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
+                                        // First try without priority
+                                        radarLocked = vesselRadarData.TryLockTarget(targetVessel);
+                                        if (!radarLocked)
+                                        {
+                                            // If it fails, try with priority
+                                            radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
+                                        }
                                     }
                                     else if (vesselRadarData.lockedTargetData.vessel == targetVessel)
+                                    {
                                         radarLocked = true;
+                                    }
                                     else
                                     {
                                         if (vesselRadarData.SwitchActiveLockedTarget(targetVessel))
+                                        {
                                             radarLocked = true;
+                                        }
                                         else
-                                            radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
+                                        {
+                                            // First try without priority
+                                            radarLocked = vesselRadarData.TryLockTarget(targetVessel);
+                                            if (!radarLocked)
+                                            {
+                                                // If it fails, try with priority
+                                                radarLocked = vesselRadarData.TryLockTarget(targetVessel, true);
+                                            }
+                                        }
                                     }
 
                                     // Once we've performed the check we can skip it
                                     skipRadarCheck = true;
                                     if (!INSDetected)
+                                    {
                                         INSDetected = radarLocked;
+                                    }
                                 }
 
                                 //if (logging)
@@ -9892,17 +9914,23 @@ namespace BDArmory.Control
 
                                     // First check the radar for a detection
                                     if (_radarsEnabled)
+                                    {
                                         (INSTarget, tempRadarLocked) = vesselRadarData.detectedRadarTargetLock(targetVessel, this); //detected by radar scan?
+                                    }
 
                                     // If detected on radar
                                     if (INSTarget.exists)
+                                    {
                                         if (tempRadarLocked)
                                         {
                                             radarLocked = true;
                                             skipRadarCheck = true;
                                         }
                                         else if (_irstsEnabled)
+                                        {
                                             INSTarget = vesselRadarData.activeIRTarget(null, this, true); //how about IRST?
+                                        }
+                                    }
 
                                     skipDetectionCheck = true;
 
@@ -9928,25 +9956,56 @@ namespace BDArmory.Control
                                     }
                                 }
 
-                                if (!skipIRSigCheck)
+                                bool heater;
+                                if (heater = (currMissile.GuidanceMode != MissileBase.GuidanceModes.SLW || (currMissile.GuidanceMode == MissileBase.GuidanceModes.SLW && currMissile.activeRadarRange > 0)))
                                 {
-                                    IRHeatSig = BDATargetManager.GetVesselHeatTarget(targetVessel, vessel.CoM, targetDist * targetDist);
-                                }
+                                    if (!skipIRSigCheck)
+                                    {
+                                        IRHeatSig = BDATargetManager.GetVesselHeatTarget(targetVessel, vessel.CoM, targetDist * targetDist);
+                                        skipIRSigCheck = true;
+                                    }
 
-                                if (IRHeatSig * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform.up, currMissile.GetForwardTransform()) > 0.25f) ? currMissile.frontAspectHeatModifier : 1) < currMissile.heatThreshold)
+                                    if (IRHeatSig * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform.up, currMissile.GetForwardTransform()) > 0.25f) ? currMissile.frontAspectHeatModifier : 1) < currMissile.heatThreshold)
+                                    {
+                                        // Write down the missile type that failed to lock
+                                        //if (logging)
+                                        //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
+                                        pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
+                                        skipIRindex++;
+                                        continue;
+                                    }
+                                }
+                                else
                                 {
-                                    // Write down the missile type that failed to lock
-                                    //if (logging)
-                                    //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD IR missile: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
-                                    pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
-                                    skipIRindex++;
-                                    continue;
+                                    if (!skipAcousticSigCheck)
+                                    {
+                                        AcousticSig = BDATargetManager.GetVesselAcousticTarget(targetVessel, vessel.CoM, vessel.altitude);
+                                        skipIRSigCheck = true;
+                                    }
+
+                                    if (AcousticSig < currMissile.heatThreshold)
+                                    {
+                                        // Write down the missile type that failed to lock
+                                        //if (logging)
+                                        //    Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD Acoustic torpedo: {currMissile.shortName}, failed to lock. Noted as skipIRindex: {skipIRindex}");
+                                        pointDefenseIRMissileSkipArr[skipIRindex] = currMissile.shortName;
+                                        skipIRindex++;
+                                        continue;
+                                    }
                                 }
 
                                 // Look for a better way to do this...
                                 //SearchForHeatTarget(currMissile, PDMslTgts[MissileID]);
                                 Vector3 missilePos = currMissile.MissileReferenceTransform.position + 5f * currMissile.GetForwardTransform();
-                                TargetSignatureData currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget, 0.5f * currMissile.lockedSensorFOV, currMissile.heatThreshold, currMissile.frontAspectHeatModifier, currMissile.uncagedLock, currMissile.targetCoM, currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity, this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
+                                TargetSignatureData currHeatTarget;
+                                if (heater)
+                                {
+                                    currHeatTarget = BDATargetManager.GetHeatTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget, 0.5f * currMissile.lockedSensorFOV, currMissile.heatThreshold, currMissile.frontAspectHeatModifier, currMissile.uncagedLock, currMissile.targetCoM, currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity, this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
+                                }
+                                else
+                                {
+                                    currHeatTarget = BDATargetManager.GetAcousticTarget(vessel, vessel, new Ray(missilePos, targetVessel.CoM - missilePos), TargetSignatureData.noTarget, 0.5f * currMissile.lockedSensorFOV, currMissile.heatThreshold, currMissile.targetCoM, currMissile.lockedSensorFOVBias, currMissile.lockedSensorVelocityBias, currMissile.lockedSensorVelocityMagnitudeBias, currMissile.lockedSensorMinAngularVelocity, this, PDMslTgts[MissileID], IFF: currMissile.hasIFF);
+                                }
 
                                 // If no heat target -> we're probably out of view
                                 if (!currHeatTarget.exists)
