@@ -9848,7 +9848,8 @@ namespace BDArmory.Control
 
                     if (!CheckEngagementEnvelope(currMissile, targetDist, targetVessel)) continue;
                     bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
-                    if (targetVessel.Splashed && !torpedo) viableTarget = false;
+                                                                 //Also, what about missiles that launch torpedoes?
+                    if (targetVessel.Splashed != torpedo) continue; // If there is a type mismatch, skip current missile
 
                     switch (currMissile.TargetingMode)
                     {
