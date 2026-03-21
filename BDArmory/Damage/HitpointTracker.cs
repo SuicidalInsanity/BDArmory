@@ -162,6 +162,7 @@ namespace BDArmory.Damage
         public float maxSupportedArmor = -1; //upper cap on armor per part, overridable in MM/.cfg
         [KSPField(isPersistant = true)]
         public float armorVolume = -1;
+        float aeroVolume = -1;
         private float sizeAdjust;
 
         AttachNode bottom;
@@ -671,20 +672,53 @@ namespace BDArmory.Damage
             {
                 if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight) // Also needed in flight mode for initial setup of mass, hull and HP, but shouldn't be triggered afterwards as ShipModified is only for the editor.
                 {
+                    float Safetymass = -1;
+                    var oldPartMass = partMass;
+                    if (_updateMass)
+                    {                        
+                        var oldHullMassAdjust = HullMassAdjust; // We need to temporarily remove the HullmassAdjust and update the part.mass to get the correct value as KSP clamps the mass to > 1e-4.
+                        HullMassAdjust = 0;
+                        if (isProcWing || isProcPart || isProcWheel || isVariantPart)
+                        {
+                            UpdatePartMass(Safetymass);
+                            HullMassAdjust = oldHullMassAdjust; // Put the HullmassAdjust back so we can test against it when we update the hull mass.
+                            if (oldPartMass != partMass) //non-pParts partMAss is and would remain the mass value in the .cfg grabbed during OnStart()
+                            {
+                                if (isProcWing)
+                                {
+                                    aeroVolume = ProceduralWing.GetPWingVolume(part);
+                                }
+                                else
+                                {
+                                    calcPartSize();
+                                    _armorModified = true;
+                                }
+                                _updateHitpoints = true;
+                            }                            
+                            _hullModified = true; // Modifying the mass modifies the hull.
+                        }
+                        part.UpdateMass();
+                    }
+                    if (_armorModified)
+                    {
+                        _armorModified = false;
+                        _armorConfigured = false;
+                        ArmorSetup(null, null);
+                    }
+                    UpdatePartMass(Safetymass);
+                    if (_hullModified) // Wait for the mass to update first.
+                    {
+                        _hullModified = false;
+                        _hullConfigured = false;
+                        HullSetup(null, null);
+                    }
+                    UpdatePartMass(Safetymass);
                     if (_updateMass)
                     {
                         _updateMass = false;
-                        var oldPartMass = partMass;
-                        var oldHullMassAdjust = HullMassAdjust; // We need to temporarily remove the HullmassAdjust and update the part.mass to get the correct value as KSP clamps the mass to > 1e-4.
-                        HullMassAdjust = 0;  
-                        //partMass = part.mass - armorMass - HullMassAdjust; //part mass is taken from the part.cfg val, not current part mass; this overrides that
+
                         if (isProcWing || isProcPart || isProcWheel || isVariantPart)
                         {
-                            float Safetymass = 0;
-                            var SST = part.GetComponent<ModuleSelfSealingTank>();
-                            if (SST != null)
-                            { Safetymass = SST.FBmass + SST.FISmass; }
-                            partMass = part.mass - armorMass - HullMassAdjust - Safetymass;
                             if (isVariantPart)
                             {
                                 var r = part.GetComponentsInChildren<Renderer>();
@@ -705,38 +739,17 @@ namespace BDArmory.Damage
                             }
                         }
                         CalculateDryCost(); //recalc if modify event added a fueltank -resource swap, etc
-                        HullMassAdjust = oldHullMassAdjust; // Put the HullmassAdjust back so we can test against it when we update the hull mass.
                         float tweakScaleMassMultiplier = _tweakScaleMassMultiplier;
                         _tweakScaleMassMultiplier = part.GetTweakScaleMultiplier(); // Update our copy of the TweakScale mass multiplier.
-                        if (oldPartMass != partMass)
-                        {
-                            if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}, tweakScaleMassMultiplier {tweakScaleMassMultiplier}->{_tweakScaleMassMultiplier}");
-                            if (isProcPart || isProcWheel || isVariantPart)
-                            {
-                                calcPartSize();
-                                _armorModified = true;
-                            }
-                            _hullModified = true; // Modifying the mass modifies the hull.
-                            _updateHitpoints = true;
-                        }
+                        if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}, tweakScaleMassMultiplier {tweakScaleMassMultiplier}->{_tweakScaleMassMultiplier}");
+
                         part.UpdateMass();
                     }
-                    if (_armorModified)
-                    {
-                        _armorModified = false;
-                        _armorConfigured = false;
-                        ArmorSetup(null, null);
-                    }
-                    if (_hullModified && !_updateMass) // Wait for the mass to update first.
-                    {
-                        _hullModified = false;
-                        _hullConfigured = false;
-                        HullSetup(null, null);
-                    }
-                    if (!_updateMass) // Wait for the mass to update first.
+                    else // Wait for the mass to update first.
                     {
                         RefreshHitPoints();
                     }
+
                     if (HighLogic.LoadedSceneIsFlight && _armorConfigured && _hullConfigured && _hpConfigured) // No more changes, we're done.
                     {
                         _finished_setting_up = true;
@@ -793,6 +806,21 @@ namespace BDArmory.Damage
                 SetupPrefab();
                 if (HighLogic.LoadedSceneIsEditor)
                     BDAEditorArmorWindow.Instance.OnEditorShipModifiedEvent(EditorLogic.fetch.ship);
+            }
+        }
+
+        private void UpdatePartMass(float Safetymass)
+        {
+            if (isProcWing || isProcPart || isProcWheel || isVariantPart)
+            {
+                if (Safetymass < 0)
+                {
+                    var SST = part.GetComponent<ModuleSelfSealingTank>();
+                    if (SST != null)
+                    { Safetymass = SST.FBmass + SST.FISmass; }
+                    else Safetymass = 0;
+                }
+                partMass = part.mass - armorMass - HullMassAdjust - Safetymass;
             }
         }
 
@@ -1025,13 +1053,6 @@ namespace BDArmory.Damage
                             armorVolume = -1;
                             if (ProceduralWing.CheckForB9ProcWing() && ProceduralWing.CheckForPWModule())
                             {
-                                var oldMass = part.mass;
-                                float aeroVolume = ProceduralWing.GetPWingVolume(part); //PWing  0.7 * length * (widthRoot + WidthTip) + (thicknessRoot + ThicknessTip) / 4; yields 1.008 for a stock dimension 2*4*.18 board, so need mult of 1400 for parity with stock wing boards
-                                if (oldMass != part.mass && !_delayedShipModifiedRunning)
-                                {
-                                    _hullModified = true; // Modifying the mass modifies the hull.
-                                    _updateMass = true; // Recalculate the mass on the next frame unless we're already going to.
-                                }
                                 if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: Found {part.name}; HP: {Hitpoints}->{hitpoints} at time {Time.time}, partMass: {partMass}, Pwing Aerovolume: {aeroVolume}");
                                 //hitpoints should scale with stock wings correctly (and if used as thicker structural elements, should scale with tanks of similar size)
                                 armorVolume = ProceduralWing.GetPWingArea(part);
@@ -1473,6 +1494,7 @@ namespace BDArmory.Damage
             {
                 if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated armour mass {oldArmorMass}->{armorMass} or type {OldArmorType}->{ArmorTypeNum} at time {Time.time}");
                 OldArmorType = ArmorTypeNum;
+                _updateMass = true;
                 part.UpdateMass();
                 if (HighLogic.LoadedSceneIsEditor && EditorLogic.fetch != null)
                     GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
@@ -1557,14 +1579,14 @@ namespace BDArmory.Damage
 
         public void HullSetup(BaseField field, object obj) //no longer needed for realtime HP calcs, but does need to be updated occasionally to give correct vessel mass
         {
-            if (isProcWing)
-            {
-                StartCoroutine(WaitForHullSetup());
-            }
-            else
-            {
+            //if (isProcWing)
+            //{
+            //    StartCoroutine(WaitForHullSetup()); //pWings now handled as aprt of the FixedUpdate pipeline
+            //}
+            //else
+            //{
                 SetHullMass();
-            }
+            //}
         }
         IEnumerator WaitForHullSetup()
         {
@@ -1641,6 +1663,7 @@ namespace BDArmory.Damage
             {
                 if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated hull mass {OldHullMassAdjust}->{HullMassAdjust} (part mass {partMass}, total mass {part.mass + HullMassAdjust - OldHullMassAdjust}) or type {OldHullType}->{HullTypeNum} at time {Time.time}");
                 OldHullType = HullTypeNum;
+                _updateMass = true;
                 part.UpdateMass();
                 if (HighLogic.LoadedSceneIsEditor && EditorLogic.fetch != null)
                     GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
