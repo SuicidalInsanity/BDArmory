@@ -2178,12 +2178,12 @@ namespace BDArmory.Radar
                         if (loadedvessels.Current.Splashed)
                         {
                             if (TerrainCheck(position, loadedvessels.Current.CoM + loadedvessels.Current.upAxis * (loadedvessels.Current.altitude < 0f ? -loadedvessels.Current.altitude + 2f : 0f), FlightGlobals.currentMainBody))
-                                return false;
+                                continue;
                         }
                         else
                         {
                             if (TerrainCheck(position, loadedvessels.Current.CoM, FlightGlobals.currentMainBody))
-                                return false;
+                                continue;
                         }
 
                         // get vessel's heat signature
