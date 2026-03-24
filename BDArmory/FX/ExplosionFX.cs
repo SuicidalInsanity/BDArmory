@@ -645,10 +645,11 @@ namespace BDArmory.FX
                 if (intermediateParts)
                 {
                     float partHP = partHit.Damage();
-                    if (ProjectileUtils.IsArmorPart(partHit)) partHP = 100f;
+                    bool isArmor = ProjectileUtils.IsArmorPart(partHit);
+                    if (isArmor) partHP = 0;
 
                     // Ignore parts that are already dead but not yet removed from the game or have already been added.
-                    if (partHP <= 0 || _LoSIntermediateParts.Contains(partHit)) continue;
+                    if ((!isArmor && partHP <= 0) || _LoSIntermediateParts.Contains(partHit)) continue;
 
                     //var partArmour = partHit.GetArmorThickness();
                     float partArmour = 0f;

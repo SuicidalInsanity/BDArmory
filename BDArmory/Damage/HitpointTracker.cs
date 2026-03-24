@@ -1211,7 +1211,7 @@ namespace BDArmory.Damage
         {
             if (BDArmorySettings.DEBUG_ARMOR)
             {
-                Debug.Log("[HPTracker] armor mass: " + armorMass * 1000 + "kg; mass to reduce: " + (massToReduce * Math.Round((Density / 1000000), 3)) * BDArmorySettings.ARMOR_MASS_MOD + "kg"); //g/m3
+                Debug.Log($"[HPTracker] armor mass: {armorMass * 1000}kg; mass to reduce: {(massToReduce * Math.Round((Density / 1000000), 3)) * BDArmorySettings.ARMOR_MASS_MOD}kg"); //g/m3
             }
             float reduceMass = (massToReduce * (Density / 1000000000)); //g/cm3 conversion to yield tons
             if (totalArmorQty < reduceMass) reduceMass = totalArmorQty; //shouldn't be happening, but just in case
