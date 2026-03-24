@@ -70,7 +70,7 @@ namespace BDArmory.Weapons.Missiles
         private int tubesFired = 0;
         [KSPField(isPersistant = true)]
         private bool LoadoutModified = false;
-        public BDTeam Team = BDTeam.Get("Neutral");
+        public BDTeam Team = null;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
     UI_FloatRange(minValue = 0.5f, maxValue = 2, stepIncrement = 0.05f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
@@ -825,7 +825,16 @@ namespace BDArmory.Weapons.Missiles
                 //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Num of targets: {targetsAssigned.Count - 1}");
                 if (targetsAssigned.Count < 1)
                     if (FiredByWM.currentTarget != null) targetsAssigned.Add(FiredByWM.currentTarget);
+
+                Team = FiredByWM.Team;
             }
+            else
+            {
+                if (BDArmorySettings.DEBUG_MISSILES)
+                    Debug.Log($"[BDArmory.MultiMissileLauncher]: {vessel.vesselName}'s multilauncher could not acquire the firing vessel's WM and as a result targets are not assigned correctly! Team also set to Neutral!");
+                Team = BDTeam.Get("Neutral");
+            }
+
             //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
             if (deployState != null)
             {

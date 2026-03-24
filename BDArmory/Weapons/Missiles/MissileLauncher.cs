@@ -1564,7 +1564,14 @@ namespace BDArmory.Weapons.Missiles
                 SourceVessel = vessel;
             }
             FiredByWM = SourceVessel.ActiveController().WM;
-            if (FiredByWM != null) Team = FiredByWM.Team;
+            if (FiredByWM != null)
+            {
+                Team = FiredByWM.Team;
+            }
+            else
+            {
+                Debug.Log($"[BDArmory.MissileLauncher]: {vessel.vesselName}'s {shortName} could not acquire the firing vessel's WM and as a result Team is NOT correctly set!");
+            }
 
             if (multiLauncher)
             {
@@ -1577,7 +1584,9 @@ namespace BDArmory.Weapons.Missiles
                     if (reloadableRail && reloadableRail.ammoCount >= 1 || BDArmorySettings.INFINITE_ORDINANCE)
                     {
                         if (FiredByWM)
+                        {
                             FiredByWM.UpdateQueuedLaunches(targetVessel, this, true);
+                        }
                         if (radarTarget.exists && radarTarget.lockedByRadar && radarTarget.lockedByRadar.vessel != SourceVessel)
                         {
                             MissileFire datalinkwpm = radarTarget.lockedByRadar.vessel.ActiveController().WM;
@@ -1856,6 +1865,10 @@ namespace BDArmory.Weapons.Missiles
                 ml.GpsUpdateMax = FiredByWM.GpsUpdateMax;
                 FiredByWM.UpdateQueuedLaunches(targetVessel, ml, false);
                 FiredByWM.UpdateMissilesAway(targetVessel, ml);
+            }
+            else
+            {
+                Debug.Log($"[BDArmory.MissileLauncher]: {vessel.vesselName}'s reloadable missile {shortName} could not acquire the firing vessel's WM and as a result Team is NOT correctly set!");
             }
 
             if (ml.radarTarget.exists && ml.radarTarget.lockedByRadar && ml.radarTarget.lockedByRadar.vessel != ml.SourceVessel)

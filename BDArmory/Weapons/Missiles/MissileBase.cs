@@ -435,7 +435,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
 
         public bool launched = false;
 
-        public BDTeam Team { get; set; } = BDTeam.Get("Neutral");
+        public BDTeam Team { get; set; } = null;
 
         public bool HasMissed { get; set; } = false;
 
@@ -722,6 +722,22 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
         protected void AddTargetInfoToVessel()
         {
             TargetInfo info = vessel.gameObject.AddComponent<TargetInfo>();
+            if (Team == null && FiredByWM)
+            {
+                Team = FiredByWM.Team;
+            }
+            info.Team = Team;
+            info.isMissile = true;
+            info.MissileBaseModule = this;
+            updateRadarCS = true;
+        }
+
+        public void SetTargetInfo(TargetInfo info)
+        {
+            if (Team == null && FiredByWM)
+            {
+                Team = FiredByWM.Team;
+            }
             info.Team = Team;
             info.isMissile = true;
             info.MissileBaseModule = this;
@@ -1301,7 +1317,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     //Don't lock friendlies
                     if (hasIFF && Team.IsFriendly(scannedTargets[i].targetInfo.Team))
                     {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName}: Target: {scannedTargets[i].vessel.name} at index {i} rejected due to IFF! Team: {Team}, Target Team: {scannedTargets[i].targetInfo.Team}");
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName}: Target: {scannedTargets[i].vessel.name} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(scannedTargets[i].targetInfo.Team != null ? scannedTargets[i].targetInfo.Team.Name : "null")}");
                         continue;
                     }
 
