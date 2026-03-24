@@ -2177,6 +2177,7 @@ namespace BDArmory.Radar
                         */
                         if (loadedvessels.Current.Splashed)
                         {
+                            if (loadedvessels.Current.IsUnderwater()) continue; // No underwater detection!
                             if (TerrainCheck(position, loadedvessels.Current.CoM + loadedvessels.Current.upAxis * (loadedvessels.Current.altitude < 0f ? -loadedvessels.Current.altitude + 2f : 0f), FlightGlobals.currentMainBody))
                                 continue;
                         }
