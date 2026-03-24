@@ -1115,14 +1115,15 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 {
                     // active radar with target locked:
                     vrd = null;
-                    if (angleToTarget > maxOffBoresight && TimeIndex > 3) //Give non-SARH VLS-launched missiles a 3sec grace period after launch to tip over towards target first before checking boresight
+                    /*if (angleToTarget > maxOffBoresight && TimeIndex > 3) //Give non-SARH VLS-launched missiles a 3sec grace period after launch to tip over towards target first before checking boresight
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName}: Active Radar guidance failed. Target is out of active seeker gimbal limits.");
                         radarTarget = TargetSignatureData.noTarget;
                         targetVessel = null;
                         return;
                     }
-                    else
+                    else*/
+                    if (angleToTarget < maxOffBoresight || TimeIndex < 3) //Give non-SARH VLS-launched missiles a 3sec grace period after launch to tip over towards target first before checking boresight
                     {
                         if (scannedTargets == null) scannedTargets = new TargetSignatureData[BDATargetManager.LoadedVessels.Count];
                         //TargetSignatureData.ResetTSDArray(ref scannedTargets);
@@ -1212,38 +1213,41 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
                             }
                         }
+                    }
 
-                        if (radarLOAL)
-                        {
-                            // Lost track of target, but we can re-acquire set radarLOALSearching = true and try to re-acquire using existing target information
-                            if (!radarLOALSearching)
-                            {
-                                radarLOALSearching = true;
-                                updateRadarCS = true;
-                                startDirection = vectorToTarget;
-                            }
-                            TargetAcquired = true;
+                    if (radarLOAL)
+                    {
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName}: Active Radar guidance target {(angleToTarget > maxOffBoresight ? "is outside of seeker gimbal limits" : "not found")}! Starting radarLOAL search!");
 
-                            TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
-                            TargetVelocity = radarTarget.velocity;
-                            TargetAcceleration = Vector3.zero;
-                            ActiveRadar = false;
-                            _lockFailTimer = 0;
-                            radarTarget = TargetSignatureData.noTarget;
-                        }
-                        else
+                        // Lost track of target, but we can re-acquire set radarLOALSearching = true and try to re-acquire using existing target information
+                        if (!radarLOALSearching)
                         {
-                            // Lost track of target and unable to re-acquire
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName}: Active Radar guidance failed. No target locked.");
-                            radarTarget = TargetSignatureData.noTarget;
-                            targetVessel = null;
-                            radarLOALSearching = false;
-                            radarLOAL = false;
-                            TargetAcquired = false;
-                            ActiveRadar = false;
+                            radarLOALSearching = true;
                             updateRadarCS = true;
-                            startDirection = GetForwardTransform();
+                            startDirection = vectorToTarget;
                         }
+                        TargetAcquired = true;
+
+                        TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
+                        TargetVelocity = radarTarget.velocity;
+                        TargetAcceleration = Vector3.zero;
+                        ActiveRadar = false;
+                        _lockFailTimer = 0;
+                        radarTarget = TargetSignatureData.noTarget;
+                    }
+                    else
+                    {
+                        // Lost track of target and unable to re-acquire
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName}: Active Radar guidance failed. Target {(angleToTarget > maxOffBoresight ? "is outside of seeker gimbal limits" : "not found")}!");
+
+                        radarTarget = TargetSignatureData.noTarget;
+                        targetVessel = null;
+                        radarLOALSearching = false;
+                        radarLOAL = false;
+                        TargetAcquired = false;
+                        ActiveRadar = false;
+                        updateRadarCS = true;
+                        startDirection = GetForwardTransform();
                     }
                 }
             }
