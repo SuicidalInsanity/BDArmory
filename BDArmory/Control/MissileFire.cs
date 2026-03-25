@@ -2254,7 +2254,7 @@ namespace BDArmory.Control
 
                     missileBase = Missiles.Current as MissileBase;
 
-                    if (missileBase.targetVessel == null) continue;
+                    if (missileBase == null || missileBase.targetVessel == null) continue;
                     sourceVessel = missileBase.SourceVessel == this.vessel;
                     if (!sourceVessel)
                     {
@@ -3907,7 +3907,7 @@ namespace BDArmory.Control
                         targetingAudioSource.clip = heatGrowlSound;
                     }
 
-                    if (heatTarget.exists && CurrentMissile && CurrentMissile.heatThreshold < heatTarget.signalStrength)
+                    if (heatTarget.exists && ml.heatThreshold < heatTarget.signalStrength)
                     {
                         targetingAudioSource.pitch = Mathf.MoveTowards(targetingAudioSource.pitch, 2, 8 * Time.deltaTime);
                     }
