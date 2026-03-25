@@ -628,11 +628,11 @@ namespace BDArmory.Utils
                     if (blowthroughFactor > 0.66)
                     {
                         spallArea *= ((1 - ductility) * blowthroughFactor); //m2
-
-                        spallMass = Mathf.Min(spallArea, armorArea) * 10000 * ((thickness / 10) * (blowthroughFactor - 0.66f)) * (Density / 1000000); //lose  up to 1/3rd thickness from spalling, based on severity of blast; m2 -> cm2 -> cm3 -> kg
                         if (spallArea > armorArea) spallArea = armorArea; //m2
-
                         float spallCaliber = BDAMath.Sqrt(spallArea) * 1000; //m2 -> mm
+                        spallArea *= 10000 * (thickness / 10) * (blowthroughFactor - 0.66f); //m2 -> cm2 -> cm3
+                        spallMass = spallArea * (Density / 1000000); //lose  up to 1/3rd thickness from spalling, based on severity of blast; m2 -> cm2 -> cm3 -> kg
+
                         if (hardness > 500)//armor holds, but spalling
                         {
                             damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
@@ -647,14 +647,13 @@ namespace BDArmory.Utils
                         {
                             BattleDamageHandler.CheckDamageFX(hitPart, spallCaliber, blowthroughFactor, false, false, sourcevessel, hit);
                         }
-                        spallArea *= 10000 * (thickness / 10) * (blowthroughFactor - 0.66f); //m2 -> cm2 -> cm3
                         hitPart.ReduceArmor(spallArea); //cm3
                         return true;
                     }
                 }
                 else //ductility < 0.20
                 {
-                    if (blowthroughFactor >= 1)
+                    if (blowthroughFactor >= 1f)
                     {
                         if (ductility < 0.05f) //ceramics
                         {
@@ -681,10 +680,11 @@ namespace BDArmory.Utils
                         else //0.05-0.19 ductility - harder steels, etc
                         {
                             spallArea *= (1.2f - ductility) * blowthroughFactor; //m2
-                            spallMass = Mathf.Min(spallArea, armorArea) * 10000 * (thickness / 10) * (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
                             if (spallArea > armorArea) spallArea = armorArea; //m2
                             float spallCaliber = BDAMath.Sqrt(spallArea) * 1000; //m2 -> mm
-
+                            spallArea *= 10000 * (thickness / 10); // m2 -> cm3
+                            spallMass = spallArea * (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
+                            
                             hitPart.ReduceArmor(spallArea); //cm3
                             damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                             ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
@@ -736,10 +736,10 @@ namespace BDArmory.Utils
                             }
                             else //0.05-0.19 ductility - harder steels, etc
                             {
-                                spallArea *= 10000 * ((1.2f - ductility) * blowthroughFactor) * (blowthroughFactor - 0.66f); //cm2
-                                if (spallArea > armorArea * 10000) spallArea = armorArea; //cm2
+                                spallArea *= ((1.2f - ductility) * blowthroughFactor) * (blowthroughFactor - 0.66f); //m2
+                                if (spallArea > armorArea) spallArea = armorArea; //m2
                                 float spallCaliber = BDAMath.Sqrt(spallArea) * 10; //cm2 -> mm
-                                spallArea *= thickness / 10; //cm2 -> cm3
+                                spallArea *= 10000 * thickness / 10; //m2 -> cm3
                                 if (hardness > 500)
                                 {
                                     //blowtrhoughFactor - 1 * 100
