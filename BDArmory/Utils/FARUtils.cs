@@ -221,6 +221,8 @@ namespace BDArmory.Utils
                 return -1;
             }
 
+            // Note: this sets the part mass in the UI to the unmodified mass (without the hullInfo.massMod factor or armor),
+            // but this is unavoidable since those are applied elsewhere and setting it in the UI breaks everywhere else.
             foreach (var module in part.Modules)
             {
                 if (module.GetType() == PWType || module.GetType().IsSubclassOf(PWType))
@@ -296,7 +298,7 @@ namespace BDArmory.Utils
                         if (part.name.Contains("B9.Aero.Wing.Procedural.Panel") || !isAeroSrf) //if Josue's noLift PWings PR never gets folded in, here's an alternative using an MM'ed PWing structural panel part
                         {
                             PWType.GetField("stockLiftCoefficient", BindingFlags.Public | BindingFlags.Instance).SetValue(module, 0f); //adjust PWing GUI lift readout
-                            PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, (((length * ((width + edgeWidth) / 2)) / 3.515f) / 12.5f) * (Mathf.Max(0.3f, adjustedThickness * 5.6f))); //Struct panels lighter than wings, clamp mass for panels thinner than 0.05m
+                            PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, length * ((width + edgeWidth) / 2) / 3.515f / 12.5f * Mathf.Max(0.3f, adjustedThickness * 5.6f)); //Struct panels lighter than wings, clamp mass for panels thinner than 0.05m
                             if (!FerramAerospace.CheckForFAR()) part.FindModuleImplementing<ModuleLiftingSurface>().deflectionLiftCoeff = 0;
                             else
                             {
@@ -330,16 +332,16 @@ namespace BDArmory.Utils
             return -1;
         }
 
-        public static float ResetPWing(Part part)
+        public static void ResetPWing(Part part)
         {
             if (!hasPwingModule)
             {
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: hasPwing check failed!");
-                return 0;
+                return;
             }
             if (FerramAerospace.CheckForFAR())
             {
-                return 0;
+                return;
             }
             foreach (var module in part.Modules)
             {
@@ -350,7 +352,7 @@ namespace BDArmory.Utils
                         bool ctrlSrf = (bool)PWType.GetField("isCtrlSrf", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
                         bool WingctrlSrf = (bool)PWType.GetField("isWingAsCtrlSrf", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
 
-                        if (ctrlSrf) return 0; //control surfaces don't have any lift modification to begin with
+                        if (ctrlSrf) return; //control surfaces don't have any lift modification to begin with
                         double originalLift = (double)PWType.GetField("aeroStatSurfaceArea", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
                         originalLift /= 3.515f;
 
@@ -363,12 +365,13 @@ namespace BDArmory.Utils
                             PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, (float)originalLift / 10f);
                         else
                             PWType.GetField("aeroUIMass", BindingFlags.Public | BindingFlags.Instance).SetValue(module, (float)originalLift / 5f);
+                        part.UpdateMass();
+                        return;
                     }
                 }
             }
-            part.UpdateMass();
             if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Pwing module not found!");
-            return 0;
+            return;
         }
 
         public static float GetPWingArea(Part part)

@@ -119,7 +119,8 @@ namespace BDArmory.Settings
         #region Debug Labels
         [BDAPersistentSettingsField] public static bool DEBUG_LINES = false;                 //AI/Weapon aim visualizers
         [BDAPersistentSettingsField] public static bool DEBUG_OTHER = false;                 //internal debugging
-        [BDAPersistentSettingsField] public static bool DEBUG_ARMOR = false;                 //armor and HP
+        [BDAPersistentSettingsField] public static bool DEBUG_ARMOR = false;                 //armor
+        [BDAPersistentSettingsField] public static bool DEBUG_HP = false;                    //HP
         [BDAPersistentSettingsField] public static bool DEBUG_WEAPONS = false;               //Debug messages for guns/rockets/lasers and their projectiles
         [BDAPersistentSettingsField] public static bool DEBUG_APS = false;                   //Debug messages for point defense weapons
         [BDAPersistentSettingsField] public static bool DEBUG_MISSILES = false;              //Missile launch, tracking and targeting debug labels

@@ -210,7 +210,7 @@ namespace BDArmory.UI
                ship == null || ship.Parts == null || ship.Parts.TrueForAll(p =>
                {
                    if (p == null) return true;
-                   var hp = p.GetComponent<Damage.HitpointTracker>();
+                   var hp = p.GetComponent<HitpointTracker>();
                    return hp == null || hp.Ready;
                })); // Wait for HP changes to delayed ship modified events in HitpointTracker
             if (count == countLimit)
