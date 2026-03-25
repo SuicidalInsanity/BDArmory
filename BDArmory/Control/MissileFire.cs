@@ -10051,7 +10051,7 @@ namespace BDArmory.Control
                     //need to see if missile is turreted (and is a unique turret we haven't seen yet); if so, check if target is within traverse, else see if target is within boresight
                     bool turreted = false;
                     MissileTurret mT = null;
-                    if (launcher && (mT = launcher.missileTurret ? launcher.missileTurret : launcher.multiLauncher.turret))
+                    if (launcher && (mT = launcher.missileTurret ? launcher.missileTurret : (launcher.multiLauncher ? launcher.multiLauncher.turret : null)))
                     {
                         if (!MslTurrets.Contains(mT))
                         {
