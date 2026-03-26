@@ -4,6 +4,7 @@ using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
+using BDArmory.Weapons;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -339,7 +340,9 @@ namespace BDArmory.Damage
             }
             if (part.Modules.Contains("ModuleB9PartSwitch") || part.Modules.Contains("ModulePartVariants"))
             {
-                isVariantPart = true;
+                if (!B9PartSwitch.checkForSimpleRepaint(part)) isVariantPart = false;
+                else
+                    isVariantPart = true;
             }
             StartingArmor = Armor;
             if (ProjectileUtils.IsArmorPart(this.part))
