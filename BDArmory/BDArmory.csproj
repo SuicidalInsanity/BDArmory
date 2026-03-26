@@ -228,12 +228,15 @@
     <Compile Include="Initialization\Bootstrapper.cs" />
     <Compile Include="Initialization\Cleanup.cs" />
     <Compile Include="Initialization\Dependencies.cs" />
+    <Compile Include="ModIntegration\B9PartSwitch.cs" />
     <Compile Include="ModIntegration\BDATeamIcons.cs" />
     <Compile Include="ModIntegration\CameraTools.cs" />
     <Compile Include="ModIntegration\ConformalDecals.cs" />
+    <Compile Include="ModIntegration\FerramAerospace.cs" />
     <Compile Include="ModIntegration\ModuleManager.cs" />
     <Compile Include="ModIntegration\MouseAimFlight.cs" />
     <Compile Include="ModIntegration\PhysicsRangeExtender.cs" />
+    <Compile Include="ModIntegration\ProceduralWings.cs" />
     <Compile Include="ModIntegration\ReflectionUtils.cs" />
     <Compile Include="Modules\CFEnable.cs" />
     <Compile Include="Modules\KerbalSafety.cs" />
@@ -304,7 +307,6 @@
     <Compile Include="Utils\ConfigNodeUtils.cs" />
     <Compile Include="Utils\DebugUtils.cs" />
     <Compile Include="Utils\DecoupledBooster.cs" />
-    <Compile Include="Utils\FARUtils.cs" />
     <Compile Include="Utils\FireSpitterUtils.cs" />
     <Compile Include="Utils\GUIUtils.cs" />
     <Compile Include="Utils\KSPForceApplier.cs" />

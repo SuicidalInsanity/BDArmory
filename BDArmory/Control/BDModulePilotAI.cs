@@ -8,15 +8,16 @@ using UnityEngine;
 
 using BDArmory.Competition;
 using BDArmory.Extensions;
+using BDArmory.GameModes.Waypoints;
 using BDArmory.Guidances;
+using BDArmory.ModIntegration;
+using BDArmory.Radar;
 using BDArmory.Settings;
-using BDArmory.VesselSpawning;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Weapons;
+using BDArmory.VesselSpawning;
 using BDArmory.Weapons.Missiles;
-using BDArmory.Radar;
-using BDArmory.GameModes.Waypoints;
+using BDArmory.Weapons;
 
 namespace BDArmory.Control
 {

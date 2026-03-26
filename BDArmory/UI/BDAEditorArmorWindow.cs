@@ -9,6 +9,7 @@ using UnityEngine;
 using BDArmory.Armor;
 using BDArmory.Damage;
 using BDArmory.Extensions;
+using BDArmory.ModIntegration;
 using BDArmory.Settings;
 using BDArmory.Utils;
 

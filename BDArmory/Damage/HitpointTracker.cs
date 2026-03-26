@@ -1,10 +1,10 @@
 ﻿using BDArmory.Armor;
 using BDArmory.Extensions;
+using BDArmory.ModIntegration;
 using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Weapons;
 using System;
 using System.Collections;
 using System.Collections.Generic;
