@@ -10,6 +10,8 @@ namespace BDArmory.Armor
     public class ArmorInfo
     {
         public string name { get; private set; }
+
+        public string localizedName { get; private set; } //display name
         public float Density { get; private set; } //mass kg/m3 lighter is better. Or is it?
         public float Strength { get; private set; } //in MPa, yieldstrength for material, controls fail point for material when projectile can penetrate. Higher is better
         public float Hardness { get; private set; } //hardness, in MPa, of material. Controls how much deformation impacting projectiles experience
@@ -41,9 +43,10 @@ namespace BDArmory.Armor
         public static List<string> armorNames;
         public static ArmorInfo defaultArmor;
 
-        public ArmorInfo(string name, float Density, float Strength, float Hardness, float yield, float youngModulus, float Ductility, float Diffusivity, float SafeUseTemp, float Stealth, float Cost, float defaultPenShrapnel, float defaultPenHEAT)
+        public ArmorInfo(string name, string localizedName, float Density, float Strength, float Hardness, float yield, float youngModulus, float Ductility, float Diffusivity, float SafeUseTemp, float Stealth, float Cost, float defaultPenShrapnel, float defaultPenHEAT)
         {
             this.name = name;
+            this.localizedName = localizedName;
             this.Density = Density;
             this.Strength = Strength;
             this.Hardness = Hardness;
@@ -124,6 +127,7 @@ namespace BDArmory.Armor
                     Debug.Log("[BDArmory.ArmorInfo]: Parsing default armor definition from " + nodes[i].parent.name);
                     defaultArmor = new ArmorInfo(
                         "def",
+                        (string)ParseField(node, "localizedName", typeof(string)),
                         (float)ParseField(node, "Density", typeof(float)),
                         (float)ParseField(node, "Strength", typeof(float)),
                         (float)ParseField(node, "Hardness", typeof(float)),
@@ -161,6 +165,7 @@ namespace BDArmory.Armor
                     armors.Add(
                         new ArmorInfo(
                             name_,
+                        (string)ParseField(node, "localizedName", typeof(string)),
                         (float)ParseField(node, "Density", typeof(float)),
                         (float)ParseField(node, "Strength", typeof(float)),
                         (float)ParseField(node, "Hardness", typeof(float)),

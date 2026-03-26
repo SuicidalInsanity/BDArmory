@@ -2,11 +2,16 @@ IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.
+	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
+	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 - UI:
 	- Updated German localisation from EzBro.
+	- Updated Japanese localisation from Taka005.
 	- Fix infolink explanation of Extend Abort Time / Extend Min Gain Rate.
 	- BDA UI Icon draw distance (MAX_DISTANCE_THRESHOLD) no longer clamped to a max of MAX_GUARD_VISUAL_RANGE.
-	- Add an option (and MM patch) to specify the Kerbal Suit to use for kerbals in BDA spawns. (Default is settable in the vessel spawner window.)
+	- Add an option (and MM patch) to allow specifying the Kerbal Suit kerbals spawn with in crewed parts. Adds an override in the vessel spawner window for BDA spawns.
+	- New 'localizedName' field for armor material configs.
+	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -39,6 +44,9 @@ IMPROVEMENTS / FIXES
 			- The currently selected weapon will always take priority over all other turrets using that axis.
 			- New "turretPriority" field that determines which turret is prioritized over others when none of the weapons using that axis are currently selected. HIGHER values are prioritized.
 			- For turrets with the same "turretPriority" value, the turret with the LOWEST "turretID" is prioritized (to allow support for older mods which were created prior to this feature being added).
+	- Active Protection Systems:
+		- Target shells now need to be within a certain size/APS needs to pass penetration depth check to destroy larger shells; no more destroying battleship shells with standard anti-tankshell APS.
+		- APS debugging moved to new Debug PointDefense toggle.
 	- Explosions:
 		- Re-implemented the shaped charge unfocusing/squeezing mechanic, where as the shaped charge jet penetrates armor, it loses coherence and diameter.
 		- Add spall to shaped charge damage calculations, shaped charge now carries along a % of the spall it produces as it penetrates causing additional damage.
@@ -54,7 +62,13 @@ IMPROVEMENTS / FIXES
 	- Warheads:
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
 	- Bombs:
-		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped. 
+		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
+	- Lasers:
+		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance.
+		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
+		- New, more realistic damage drop off over distance for lasers and microwave weapons (conicAoE=true) due to laser/beam spreading. See ABL.cfg for details.
+		- Add aperture configuration value to laser configuration options. See ABL.cfg for details.
+		- Apply distance and atmospheric attenuation to electro-lasers, heat rays, and HE pulse lasers.
 	- Missiles:
 		- Fix graphical glitch where Helmet Mounted Display/Sight appearing in WM modules despite there not being a cockpit with a HMD.
 		- Fix NREs that would occur when a CLOS missile has its guiding targeting pod destroyed.
@@ -66,18 +80,20 @@ IMPROVEMENTS / FIXES
 		- Fix IR missiles not turning towards a target they lost track of.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
+    - Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
 		- Multi-Missile Launchers:
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
-	- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
-      - Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+      			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+			- Custom turrets now compatible with turret multi-targeting		
+			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
-	- Competition:
-		- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
-		- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+- Competition:
+	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
+	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
 
 v1.12.1.0
 IMPROVEMENTS / FIXES
@@ -109,7 +125,7 @@ IMPROVEMENTS / FIXES
 		- Fixed instances where the armor calcs could return infinite armor.
 		- "Improved" shaped-charge model that somewhat better matches real results.
 		- Enable shrapnel damage to non-armored parts.
-		- Add debug messages with Debug Armor on regarding projectile destruction when non-sabot projectiles ricochet off of thick sloped armor, causing explosive bullets to not detonate. 
+		- Add debug messages with Debug Armor on regarding projectile destruction when non-sabot projectiles ricochet off of thick sloped armor, causing explosive bullets to not detonate.
 	- Missiles:
 		- Added consistency/"anti-cheat" checks for missile explosive mass, ensuring missiles don't need to be replaced after a mod update.
 		- Added Helmet Mounted Display/Sight for IR missiles. Can be added to any cockpit, when enabled allows targeting of "uncagedLock = true" missiles via mouse.
@@ -649,7 +665,7 @@ IMPROVEMENTS / FIXES
 	- Add craft spawn warning message if craft doesn't have AI/WM on root part or if the root part isn't a cockpit.
 - P:S:
 	- Add max extend time limit clamp to override extend behavior that goes on for longer than time limit.
-	- Add support for automated AI/WM settings for competition rules compliance. To utilze, create a 'Comp_settings.cfg' with an 'AIWMChecks' node, containing one or more of the following settings: 
+	- Add support for automated AI/WM settings for competition rules compliance. To utilze, create a 'Comp_settings.cfg' with an 'AIWMChecks' node, containing one or more of the following settings:
 		-	extensionCutoffTime = n
 		-	extendDistanceAirToAir = n
 		-	MONOCOCKPIT_VIEWRANGE = n
@@ -816,7 +832,7 @@ IMPROVEMENTS / FIXES
 		- Add a "detonate at minimum distance" option to flak/proximity rockets (enabled by default).
 		- Aero-stabilization is now stateless (doesn't depend on the time since launch, only on current aero-forces).
 		- Hydra70 and S-8KOM rocket types updated and variants added.
-		- Fixes S-8KOM rocket mass. 
+		- Fixes S-8KOM rocket mass.
 		- Optimizations to Incindiary rockets, should now be a bit better at settings things on fire.
 	- Don't apply lead and weapon offset corrections to the pilot AI for turrets.
 	- Proximity detonation now uses the target's "average radius" instead of its "max radius".
@@ -1025,7 +1041,7 @@ IMPROVEMENTS / FIXES
 	- The subMunitionType field for beehive ammo now uses the syntax of "ammotype; quantity" (e.g. subMunitionType = 35x228AHEADPellet; 30) with number of projectiles released on detonation set here instead of the subMunition's bulletDef.
 		- BDA will try to automatically detect and adjust old beehive ammo types, but mods should update their bulletDefs accordingly.
 	- Fix the aiming reticles of guns (fixed and turrets) and auto-proxy-tracking when using MouseAimFlight (again).
-	- Add new projectileTTL field to bulletDefs, use to set time in seconds beehive round subprojectiles will persist for. Optional, defaults to 0.5. 
+	- Add new projectileTTL field to bulletDefs, use to set time in seconds beehive round subprojectiles will persist for. Optional, defaults to 0.5.
 	- Switch the gun range sliders to use a power-law slider instead of a semi-log slider to keep typical ranges closer to the centre of the slider.
 	- Missiles:
 		- Fix issue with Rotary Rails trying to use missiles that have previously been blown off from combat damage.
@@ -1220,7 +1236,7 @@ IMPROVEMENTS / FIXES
 		- Fix guidance type = none missiles detonating 5km from launcher.
 		- Fix NRE from manually firing GPS missiles from a multimissilelauncher.
 		- AIs attempting to dumbfire multimissileLaunchers will now take missile launch vector into account instead of vessel prograde.
-		- Adds new Settings option 'LIMITED_ORDINANCE' to clamp multimissilelaunchers and reloadable rails to a single salvo's worth of ammo. 
+		- Adds new Settings option 'LIMITED_ORDINANCE' to clamp multimissilelaunchers and reloadable rails to a single salvo's worth of ammo.
 		- Fixed GPS coords not updating for bombs.
 		- Fixed occasional NRE when using laser-guided missiles in a surface to surface role.
 		- AI can now aim unguided/dumbfired missiles with the missile turret.
@@ -1267,7 +1283,7 @@ IMPROVEMENTS / FIXES
 		- Fix issue with air-dropped torpedoes exploding on impact with the water despite being within their waterImpactTolearance.
 		- Fix torpedo behavior if trying to target something with a CoM above water level
 		- Tweaked weapon lead aim calcs for guns firing beehive shells, Oerlikon should hit more often now.
-		- MultiMissileLaunchers can now support GPS guided missiles launching at multiple simultaneous targets. 
+		- MultiMissileLaunchers can now support GPS guided missiles launching at multiple simultaneous targets.
 - Competition:
 	- Add new GM Kill conditions for planes that have lost engines/weapons/set percentage of their parts and LandedKillTimer conditions for surface AIs that have found themselves in water/water AIs that have beached themselves/sunk.
 	- Don't auto-resume tournaments when custom spawn templates are selected.
@@ -1282,7 +1298,7 @@ IMPROVEMENTS / FIXES
 
 v1.6.5.0
 IMPROVEMENTS / FIXES
-- General: 
+- General:
 	- Fix Pwing HP error with Pwing edges not contributing as much HP as they should.
 - UI:
 	- Fix numeric input fields not updating when they should.
@@ -1306,7 +1322,7 @@ IMPROVEMENTS / FIXES
 	- Fix APS weapons not activating when Guardmode enabled, if they aren't already active.
 	- Anti-Missile weapons can now shoot down missiles in Paintball mode.
 	- Missiles:
-		- Add option (in Show Missile and Countermeasure Settings) to allow missiles to be fired from their full dynamic launch range instead of static launch range. 
+		- Add option (in Show Missile and Countermeasure Settings) to allow missiles to be fired from their full dynamic launch range instead of static launch range.
 		- Add trigger range setting for cluster missile submunition launch.
 		- Fix MultiMissileLaunchers resetting detonation Distance.
 		- Fix MML "TNT Mass Equivalent = -0.0018726" PAW label.
@@ -1459,7 +1475,7 @@ IMPROVEMENTS / FIXES
 - Competition:
 	- Fix Laser mutators.
 - RWP:
-	- Add MAX_SAS_TORQUE setting to autoset max non-cockpit SAS torque across vessel at competiton start. 
+	- Add MAX_SAS_TORQUE setting to autoset max non-cockpit SAS torque across vessel at competiton start.
 	- Add Runway_Round S5R10 setting to autoset necessary AI settings/fields for Space combat.
 
 v1.6.2.0
@@ -1515,7 +1531,7 @@ IMPROVEMENTS / FIXES
 	- Fix TweakScale config for Typhoon engine.
 	- Reduce min size, scaling increment for procArmor panels.
 	- Internal refactor of vessel spawning/moving.
-	- EAS-2 External Combat Seat now has a unique model(credit: Eclipse) to help differentiate it from the stock EAS-1. 
+	- EAS-2 External Combat Seat now has a unique model(credit: Eclipse) to help differentiate it from the stock EAS-1.
 - UI:
 	- Maintain the camera angle and distance when switching vessels with the Vessel Switcher (page up/down).
 - Vessel Mover:
@@ -1775,7 +1791,7 @@ IMPROVEMENTS / FIXES
 - Countermeasures:
 	- Add selection priority to countermeasures to allow staggering of dropping countermeasures — higher priority CM dispensers trigger first.
 - GameModes:
-	- Add ability to disable cornering multiplier when using space hacks by setting it to 0. 
+	- Add ability to disable cornering multiplier when using space hacks by setting it to 0.
 	- Space Friction no longer applied to root part at the position of the CoM; large craft whould have an easier time turning now.
 - Weapons:
 	- Weapon burst length/fire angle overrides now respect symmetry.
@@ -1968,7 +1984,7 @@ IMPROVEMENTS / FIXES
 - Weapons:
 	- Don't activate all engines on modular missiles when firing them, leave it up to the configured action groups.
 	- 0 damage beam lasers will no longer cause battledamage.
-	- Adjusts post-penetration calculations to prevent non-physical penetration/bullet mass adjustments. 
+	- Adjusts post-penetration calculations to prevent non-physical penetration/bullet mass adjustments.
 - Spawning:
 	- Spawner will now spawn craft facing inwards if spawn distance is larger than competition distance.
 - Armor/Hull:
@@ -1977,7 +1993,7 @@ IMPROVEMENTS / FIXES
 	- Fix issue with parts using custom materials with greater than stock maxTemps still exploding at stock maxtemp.
 	- Add crashTolerance modifier to hull materials.
 	- Fix Hull Material modifiers not applying in Flight.
-	- Add user-customizable exclusion list (BDArmory/PluginData/PartMaterialsBlacklist.cfg) for IgnoredParts/parts that shouldn't have material options. 
+	- Add user-customizable exclusion list (BDArmory/PluginData/PartMaterialsBlacklist.cfg) for IgnoredParts/parts that shouldn't have material options.
 	- Fires from incendiary rounds igniting flammable parts now generates heat if BD FIRE_HEATDMG enabled.
 - RWP:
 	- Add Min Altitude Increases on Death game-mode.
@@ -2473,7 +2489,7 @@ IMPROVEMENTS
 	- BDArmory is now a single DLL (the old BDArmory.Core.dll will be detected and removed).
 	- Add a 'Generate Clean Save' toggle for auto-loading to the KSC without generating a clean save (tournaments and evolution still generate a clean save).
 - AI:
-	- New AI part: AI Vertical Takeoff and Landing Pilot (for helicopters, VTOL jets, and airships). 
+	- New AI part: AI Vertical Takeoff and Landing Pilot (for helicopters, VTOL jets, and airships).
 		- The VTOL AI behaves like the Surface AI in combat.
 		- The AI flies your craft by using throttle to control altitude and pitch to control speed.
 		- The AI will try to stay above the minimum altitude at all times and if it can, at the default altitude outside of combat and the combat altitude during combat.
@@ -2647,8 +2663,8 @@ IMPROVEMENTS
 		- The integral is now vector valued to account for coupling between the yaw and pitch axes due to roll and the individual pitch and yaw components are projected out from this integral.
 		- The maximum contribution to the steering from the integral component is 1 (similar to the magnitude of the individual components before this change, but larger than the original 0.2 prior to the previous change).
 		- The internal yaw damping factor is increased from 0.2 to 0.33 to keep the internal ratios between the axes consistent for each of the P, I and D components (1:0.33:0.1 for pitch:yaw:roll).
-	- Use missile velocity vector for evasion instead of missile relative position to prevent turning into missiles when they are at close range. 
-	- Use soonest time to closest approach instead of closest distance to select highest threat missile. 
+	- Use missile velocity vector for evasion instead of missile relative position to prevent turning into missiles when they are at close range.
+	- Use soonest time to closest approach instead of closest distance to select highest threat missile.
 	- Change closest approach point to ignore missile threats to 3 Blast Radius from 1.5 Blast Radius.
 - Weapons:
 	- Adds Chaingun functionality; chainguns have user configurable RoF in the SPH/VAB.
@@ -2988,7 +3004,7 @@ ADDED/REMOVED/CHANGED SETTINGS VALUES
 	- Armor Reset toggle split into separate Armor Reset and Hull Reset toggles.
 
 v1.4.11.2
-FIXES 
+FIXES
 	- Fix Intake Battle Damage issue.
 	- Intake Battle Damage now clamped to a minimum of 1/4 original intake area.
 	- AP rounds that penetrate multiple parts now only register a single 'hit' for scoring.
@@ -3203,7 +3219,7 @@ IMPROVEMENTS
 
 KNOWN ISSUES
 	- Occasional graphical glitch for proc wings in the SPH/VAB due to HP/Armor visualizer. Doesn't affect flight mode and the color resets if the craft is reloaded or the proc wings color settings are nudged.
-	- Flickering of the RCS window, particularly when the Armor window is open. 
+	- Flickering of the RCS window, particularly when the Armor window is open.
 	- Tweakscale HP is misbehaving beyond certain size changes.
 
 v1.4.8.1
@@ -3327,7 +3343,7 @@ IMPROVEMENTS
 		- Adds Incendiary ammo, plus associated BattleDamage support
 		- Adds Custom Ammo Loadouts; weapons with multiple ammo types can be configured to fire non-homogeneous loadouts (e.g. AP, AP, AP, HE, AP...)
 		- Adds Custom Ammo Belt config GUI
-		- Weapons can be configured to use custom ammo belts in .cfg with useCustomBelt = true and ammoBelt = foo; bar; 
+		- Weapons can be configured to use custom ammo belts in .cfg with useCustomBelt = true and ammoBelt = foo; bar;
 		- New VesselModuleRegistry class for much faster access to vessel modules which gives a nice overall performance boost.
 		- New Asteroid Rain game mode added.
 	- Resource stealing:
@@ -4299,7 +4315,7 @@ v1.3.0
 		* Probably breaks ALL the existing addons.
 			The new property is `Team` instead of `team`.
 			Review all existing references and check whether the check is for the same/different team (`==`/`!=`) or enemy/ally (use `IsEnemy` and `IsFriendly`).
-			`TargetDatabase` and `GPSTargets` have gone private and are not guaranteed to contain all the teams anyway. 
+			`TargetDatabase` and `GPSTargets` have gone private and are not guaranteed to contain all the teams anyway.
 			Use `TargetList` and `GPSTargetList` instead.
 		* Will lose existing saved GPS targets.
 		* Right-click the team button to customize the teams in-game.
@@ -4330,7 +4346,7 @@ v1.2.4
 * NEW FEATURES:
 	* Weapons groups - different weapons firing in parallel(thanks to @SuicidalInsanity)
 * ENHANCEMENTS:
-	* Recompiled for KSP 1.6.0 
+	* Recompiled for KSP 1.6.0
 * FIXES
 	* Fixing modular missiles roll correction.
 	* Fixing modular missiles stage on proximity.
@@ -4359,7 +4375,7 @@ v1.2.3
 
 * FIXES
 	* HE bullets now do less kinetic damage after substracting HE mass
-	* HitPoints calculations: values remain the same between scenes 
+	* HitPoints calculations: values remain the same between scenes
 	* HitPoints calculations: bigger vessels now have more sensible HP values. #477
 	* Stop explosions moving across the ground
 	* Fixed detonation on collision #566
@@ -4385,7 +4401,7 @@ v1.2.2.2
 * Recompiled for KSP 1.4.5
 
 * FIXES
-	*Error spam in Log when a radar is destroyed. An orphaned index was not properly being updated. 
+	*Error spam in Log when a radar is destroyed. An orphaned index was not properly being updated.
 	 Reported in BDAc Forum post: https://forum.kerbalspaceprogram.com/index.php?/topic/155014-14x-bdarmory-continued-v1221-7102018-vessel-mover-camera-tools-bdmk22-destruction-effects-burn-together/&do=findComment&comment=3425233
 	 Thanks to greydragon70 for his thoughtful evaluation of BDac and issue reporting.
 	* Corrected an error where high speed missiles would sometimes not detonate in the correct location.
@@ -4395,15 +4411,15 @@ v1.2.2.2
   * Added EMP Module.  Now Electromagnetic pulses exist in game that can disable electronics within the blast range.
   * Added 2 new EMP equipped missiles  HellFire EMP, and AIM-120 EMP.  Small pulse radius but demonstrates the feature.
   * Added 3 different sized EMP pulse FX, allows for additional sized pulse weapons.
-  * Added Reloadable Missile Rail (ModuleMissileRearm.  Now missile launchers can be reloadable!  
-	This module can be added to missile launcher designs to allow reloading. (code used with permission courtesy of @flywyx).  
+  * Added Reloadable Missile Rail (ModuleMissileRearm.  Now missile launchers can be reloadable!
+	This module can be added to missile launcher designs to allow reloading. (code used with permission courtesy of @flywyx).
 	Requires unity based modifications,  normal rails will not function as reloadable unless additional transforms are added.
   * Added new standard resource High Explosive.  Provides better matching of tntMass for balance.
   * Added an Ammo switcher feature (no more Firespitter required)
-  * Added new Universal Ammo Box part that uses the new Ammo switcher feature.  Old part remains for backawards compatability.  
+  * Added new Universal Ammo Box part that uses the new Ammo switcher feature.  Old part remains for backawards compatability.
 	Use the new part going forward.  To remove the need for FireSpitter, replace existing Ammo Box parts with the new part on existing craft.
   * Improved sub categories for BDA parts.  This helps with the clutter in the Editor under the BDA category.
-  * Removed BDACategoryModule as a result of the BDA categories refactor.  
+  * Removed BDACategoryModule as a result of the BDA categories refactor.
 	Existing craft may see a module not found warnings in the log.  This will have no ill effects and can be safely ignored.
   * Improved smoke effects for smoke canister launchers
   * Added new Jet engine based on the J-404.  Licensed from KTech. (Thanks @TheKurgan, @SpannerMonkey(SMCE) & @XOC2008!)
@@ -4414,11 +4430,11 @@ v1.2.2.2
 v1.2.2.1
 * FIXES
   * Added bulletinfo.explosive check to GetInfo, so explosive shells now show blast radius in the part Info (RMB) section in the editor.
-  * Correct text errors in bullet names on some files.  Not all platforms support UTF8 characters. 
+  * Correct text errors in bullet names on some files.  Not all platforms support UTF8 characters.
   * (Internal) Fix file copy error in build process.
   * Increase default detonation range boundaries and step increments.  Git Issue #527
   * Removed : Final from entried in MM config 000000_HitpointModule.cfg.  Causing race conditions with some BDA part mods
-  
+
 * ENHANCEMENTS:
   * Improved reload sound on M1Abrams Turret.
   * Removed BDA_SLW.cfg from MM configs.  Obsolete and no longer used.
@@ -4432,10 +4448,10 @@ v1.2.2.1
 
 v1.2.2
 * NEW FEATURES:
-  * Recompiled for KSP 1.4.4. 
+  * Recompiled for KSP 1.4.4.
 
 * ENHANCEMENTS:
-  * Added AN/APG-77  Air to ground radar. 
+  * Added AN/APG-77  Air to ground radar.
 
 v1.2.1.4
 * FIXES
@@ -4445,7 +4461,7 @@ v1.2.1.4
   * Added mouse slewing (pointing) in the TargetCam Window.  Now you can intuitively click and drag to position the target in the window.
   * Added mouse scrollwheel zooming in TargetCam window.  Now you can zoom in and zoom out using the mousewheel.
   * Added reactive armor part module. Modders can now take advantage of a new armor type in BDAc.
-  * Added Wet Weapons Check module (ModuleWWC).  This module will pevent submerged weapons from firing (like when a ship sinks).  
+  * Added Wet Weapons Check module (ModuleWWC).  This module will pevent submerged weapons from firing (like when a ship sinks).
 	The depth is user selectable.
 
 
@@ -4468,12 +4484,12 @@ v1.2.1.2
   * Correct tracer display missing graphics when using low quality graphics.  Git Issue #520.
   * Correct automatic resizing of WingCommander Window
   * Reintroduce BDAcUniversalAmmoBox Module Manager config file.  Somehow was dropped during a merge somewhere back.
-  * Separate RWR operation from RWR display.  RWR should be enabled at all times when a Radar is installed on craft. 
+  * Separate RWR operation from RWR display.  RWR should be enabled at all times when a Radar is installed on craft.
 	- Opening and closing the RWR window now leaves RWR operation active.  Git Issues 410, #411, #461
   * removed part configs for the AGM86-cruise an the RBS-15  They have been broken, and are superceded by improved weapons.
 
 * ENHANCEMENTS:
-  * Increase the limits of the Radar and RWR window scaling to allow for larger windows.  
+  * Increase the limits of the Radar and RWR window scaling to allow for larger windows.
 	- Add min and max settings to the settings.cfg to allow user defined limits. Git Issue #521
   * Add mouse driven RWR and Radar windows resizing.  Now you can intuitivly resize by mouse.  Click an drag the lower right corner.
   * Redesigned Targeting Cam window to incorporate all features added to the Radar window - resizing, boundary checks, mouse resize, relocate buttons
@@ -4503,7 +4519,7 @@ v1.2.1.1
 
 v1.2.1
 * NEW FEATURES:
-  * Recompiled for KSP 1.4.3. 
+  * Recompiled for KSP 1.4.3.
 * FIXES:
   * Fixed model path for Flare & Chaff. Issue #512.
 
@@ -4511,7 +4527,7 @@ v1.2.0
 
 * NEW FEATURES:
   * Support for Unity 2017. Icons textures fixed by PapaJoe. Thanks to @SpannerMonkey for chaff/smoke models.
-  * Compatibility with KSP 1.4.2. 
+  * Compatibility with KSP 1.4.2.
   * Surface AI: Yes, tank battles and ships battles are a reality now. Thanks to @Gedas for this major feature.
   * Damage Consequences: damaged engine has reduced thrust and greater heat production. Issue #433.
 
@@ -4524,7 +4540,7 @@ v1.2.0
   * Modular missile core - added option to control roll.
   * HE-KV1 missile is now efficient and deadly in Space :) Thanks to Kergan.
   * Weapons like cannons can fire up to their max range. (eg: a 20 km cannon can fire at 20 km)
-  
+
 * FIXES:
   * Drag of ammo boxes reduced. Issue #498.
   * Dozens of small fixes and rebalance!
@@ -4542,7 +4558,7 @@ v1.1.0
   * Realism overhaul for ballistics, penetration and armor.
   * Realism overhaul for explosive damage and forces.
   * Improvements to Cruise Guidance.
-  * Option for Modular Missiles to correct Roll. 
+  * Option for Modular Missiles to correct Roll.
 
 		- For more detail you can check the issue #307 and the Wiki https://github.com/PapaJoesSoup/BDArmory/wiki/
 * FIXES:
@@ -4572,11 +4588,11 @@ v1.0.0
   * Massive improvements to ballistic missile guidance and modular missiles, ability to simulate ICBM flight paths:
 	- Ballistic guidance has been enhanced to allow firing missiles accurately even at distances greater than 500 km
 	- A new field called BallisticOverShootFactor has been added to missiles, the greater the value the further the missile will go before the terminal maneuver begins
-	- By default all missiles now can steer in vacuum. New field called "vacuumSteerable" can be set to false to disable this behaviour    
+	- By default all missiles now can steer in vacuum. New field called "vacuumSteerable" can be set to false to disable this behaviour
 	- Auto SAS activation when the missile is fired. Before it was only activated if the parent vessel had it switched on.
 	- Improved the Cruise and Ballistic Guidance. Ballistic Guidance will switch to AGM guidance as soon as it reached the 50% of the distance
 	- Guard mode in space will consider orbiting vessels as "flying" (air targets), hence engagement of space targets is possible now
- 
+
   * New dedicated sonar ping and torpedo ping sounds, courtesy of PapaJoe!
 
 * FIXES / ENHANCEMENTS:
@@ -4624,7 +4640,7 @@ v0.3.0.0
 
 	* Increased Radar Range #170
 
-	* Logic for Smart Targeting should correct #216 
+	* Logic for Smart Targeting should correct #216
 
 	* fixing issue with throttle mirroring when switching vessels
 
@@ -4637,7 +4653,7 @@ v0.3.0.0
 	
 * New Parts
 
-	* Courtesy of SpannerMonkey 
+	* Courtesy of SpannerMonkey
 		- BDA MK1 Sonar Pod
 		- Sting Ray  BDA LightWeight Torpedo
 		
@@ -4664,13 +4680,13 @@ v0.2.1.2
 
 - SM changelog for Ammo overhaul and bullet sweep detail
 	• Added bulletType =  to all applicable turrets Browning AN/M2 bahaOMillennium bahaM230ChainGun bahaHiddenVulcan bahaM102Howitzer bahaM1Abrams BDAcGKmk2 GoalKeeperBDAcMk1 bahaGoalKeeper bahaGau-8 bahaTurret50cal
-	• Merge existing BDA ammunition resource definitions  with  UA master list 
-	• Merge existing BDA Bullet and shell sweep definitions  with  UA master list 
-	• Created large list of all current ammunition across all weapons mods 
+	• Merge existing BDA ammunition resource definitions  with  UA master list
+	• Merge existing BDA Bullet and shell sweep definitions  with  UA master list
+	• Created large list of all current ammunition across all weapons mods
 	• Defined bullet and shell sweep for most popular ammunition types  , obtained max dat for large caliber marine shells
 	• Created universal ammo box, a cfg and texture only addition
- 
-Assigned values to universalAmmunition supply 
+
+Assigned values to universalAmmunition supply
 	
 
 v0.2.1.1
@@ -4678,7 +4694,7 @@ v0.2.1.1
 - Recompiled and fixed for KSP 1.3.0
 
 = New features=
-- Modular Missile Guidance: 
+- Modular Missile Guidance:
 	- New option to detonate an stage on proximity.
 
 v0.2.1.0
@@ -4700,7 +4716,7 @@ v0.2.0.0
 	And read this wiki
 	https://github.com/jrodrigv/BDModularMissileParts/wiki/1.-Building-your-first-Modular-Missile
 
-- Proximity Fuse for Missiles: 
+- Proximity Fuse for Missiles:
 	A new field called "detonation distance override" has been added to missiles.
 	0 by default means that it will detonate within is normal explosive radius (eg: 20 meters for AIM-120)
 
@@ -4712,7 +4728,7 @@ v0.2.0.0
 	Please delete it before installing this version.
 - Physics range field and logic has been removed:
 	BDArmory now integrates a new mod called PhysicsRangeExtender. https://github.com/jrodrigv/PhysicsRangeExtender
-	Now the physics range has been extended to almost 200 km. 
+	Now the physics range has been extended to almost 200 km.
 	However, be careful with landed vessels. Even if the vessel still loaded it could be possible that the terrain beneath it's not there anymore.
 	
 
@@ -4951,7 +4967,7 @@ v0.10.0
 - Beam riding missile guidance
 - Guard usage of missile launcher turrets
 - Weapon targeting types are displayed in weapon list
-- Weapon alignment and converge distance indicator in editor (F2) 
+- Weapon alignment and converge distance indicator in editor (F2)
 - MinCombatSpeed variable for AI Pilot, below which the pilot will focus on regaining speed when extending or orbiting
 - Idle speed for AI Pilot for when it is only orbiting
 - Added steer damping value for missiles to reduce oscillations
@@ -5004,7 +5020,7 @@ v0.10.0
 - Fixed unnecessary snaking in sa or aa missile guidance
 - Fixed AGM guidance on high altitude surface targets
 - Fixed muzzle flashes not appearing when framerate is low
-- Fixed rotary cannons not appearing to spin 
+- Fixed rotary cannons not appearing to spin
 - Fixed incorrect description in RBS-15 cruise missile (should say GPS guided)
 - Fixed targeting pod disabling radar tracking when radar loses lock - it will wait until next lock
 - Fixed turret yaw limiting behavior
@@ -5073,8 +5089,8 @@ v0.9.8
 - Reduced radome mass
 - Adjusted global drag multiplier (affects missiles)
 - Improved AI Pilot steering and aiming
-- Improved AI Pilot's 'extend' behavior 
-- Improved AI Pilot's take-off behavior 
+- Improved AI Pilot's 'extend' behavior
+- Improved AI Pilot's take-off behavior
 - AI Pilot will no longer fly straight up to achieve target altitude when loitering
 - Guard will no longer engage target that has lost more than 75% of its mass
 - Radar lock-on-after-launch is now limited to 2 re-lock-ons before failing
@@ -5148,7 +5164,7 @@ v0.9.6
 - Max guard visual range value is read from config file (Yski)
 - Removed 8km limit for PooledBullet (Yski)
 - Max bullet range is read from config file (Yski)
- 
+
 
 v0.9.5
 = New =
@@ -5469,7 +5485,7 @@ v0.7.0
 - Fix: Increase crash tolerance of missile rail
 - Fix: Limited landed pack/unpack distance to <12km to reduce vessels falling through terrain
 - Fixed NRE when attempting to explode a part that is 'packed'
-- Changed: Countermeasures are now a finite resource 
+- Changed: Countermeasures are now a finite resource
 - Changed: Greatly reduced default damage multiplier (by about 66%).
 - Changed: Missiles and bombs are not explosive until they are fired.
 - Changed: Explosion damage and force does not pass through objects (armor plating is more useful)
@@ -5561,7 +5577,7 @@ v0.5.0
 - Added AGM-65 Maverick
 - Added AIM-9 Sidewinder
 - Added M102 Howitzer (AC-130 style)
-- Added Fixed Hidden Vulcan 
+- Added Fixed Hidden Vulcan
 - Added RocketLauncher PartModule
 - Added Hydra-70 Rocket Pod
 - Added chance for explosions to destroy parts (not just push them)
@@ -5602,8 +5618,8 @@ v0.3.1
 - ---missile no longer drops after certain distance
 - ---missile guidance works (kinda) in orbit
 - missile specs now configurable
-- improved missile contrail 
-- added missile exhaust 
+- improved missile contrail
+- added missile exhaust
 
 v0.3.0
 - 0.24 update
@@ -5621,7 +5637,7 @@ v0.3.0
 - added settings config file
 - ---fire key moved to settings.cfg
 - ---instakill moved to settings.cfg
-- added configurable physics range (default 15km) 
+- added configurable physics range (default 15km)
 
 
 v0.2.0
@@ -5642,7 +5658,7 @@ v0.2.0
 - changed overheat behavior
 - changed folder structure
 - reduced size and mass of .50cal turret
-- made unity setup a little more flexible (pitch/yaw transforms configurable) 
+- made unity setup a little more flexible (pitch/yaw transforms configurable)
 
 v0.1.1
 - added overheat behavior + sound
