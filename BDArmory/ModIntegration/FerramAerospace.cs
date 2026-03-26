@@ -47,7 +47,7 @@ namespace BDArmory.ModIntegration
                 {
                     FARAssembly = assy.assembly;
                     hasFAR = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found FAR Assembly: {FARAssembly.FullName}");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found FAR Assembly: {FARAssembly.FullName}");
                 }
             }
             return hasFAR;
@@ -64,7 +64,7 @@ namespace BDArmory.ModIntegration
                 {
                     FARWingModule = type;
                     hasFARWing = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found FAR wing module type.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found FAR wing module type.");
                 }
             }
             return hasFARWing;
@@ -81,7 +81,7 @@ namespace BDArmory.ModIntegration
                 {
                     FARControllableSurfaceModule = type;
                     hasFARControllableSurface = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found FAR controllable surface module type.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found FAR controllable surface module type.");
                 }
             }
             return hasFARControllableSurface;
@@ -96,13 +96,13 @@ namespace BDArmory.ModIntegration
                 if (module.GetType() == FARWingModule)
                 {
                     var massMultiplier = (float)FARWingModule.GetField("massMultiplier", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found wing Mass multiplier of {massMultiplier} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found wing Mass multiplier of {massMultiplier} for {part.name}.");
                     return massMultiplier;
                 }
                 if (module.GetType() == FARControllableSurfaceModule)
                 {
                     var massMultiplier = (float)FARControllableSurfaceModule.GetField("massMultiplier", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found ctrl. srf. Mass multiplier of {massMultiplier} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found ctrl. srf. Mass multiplier of {massMultiplier} for {part.name}.");
                     return massMultiplier;
                 }
             }
@@ -116,13 +116,13 @@ namespace BDArmory.ModIntegration
                 if (module.GetType() == FARWingModule)
                 {
                     var wingMass = (float)FARWingModule.GetField("curWingMass", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found wing Mass of {wingMass} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found wing Mass of {wingMass} for {part.name}.");
                     return wingMass;
                 }
                 if (module.GetType() == FARControllableSurfaceModule)
                 {
                     var wingMass = (float)FARControllableSurfaceModule.GetField("curWingMass", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found ctrl. srf. Mass multiplier of {wingMass} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found ctrl. srf. Mass multiplier of {wingMass} for {part.name}.");
                     return wingMass;
                 }
             }
@@ -137,13 +137,13 @@ namespace BDArmory.ModIntegration
                 if (module.GetType() == FARWingModule)
                 {
                     var sweep = (double)FARWingModule.GetField("MidChordSweep", BindingFlags.Public | BindingFlags.Instance).GetValue(module); //leading + trailing angle / 2
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found mid chord sweep of {sweep} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found mid chord sweep of {sweep} for {part.name}.");
                     return sweep;
                 }
                 if (module.GetType() == FARControllableSurfaceModule)
                 {
                     var sweep = (double)FARControllableSurfaceModule.GetField("MidChordSweep", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found ctrl. srf. mid chord sweep of {sweep} for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FerramAerospace]: Found ctrl. srf. mid chord sweep of {sweep} for {part.name}.");
                     return sweep;
                 }
             }

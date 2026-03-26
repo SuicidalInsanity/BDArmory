@@ -338,11 +338,13 @@ namespace BDArmory.Damage
             {
                 isProcWheel = true;
             }
-            if (part.Modules.Contains("ModuleB9PartSwitch") || part.Modules.Contains("ModulePartVariants"))
+            if (B9PartSwitch.hasB9Module && part.Modules.Contains("ModuleB9PartSwitch") && !SimpleRepaint.CheckForSimpleRepaint(part, B9PartSwitch.B9PSModule))
             {
-                if (!B9PartSwitch.checkForSimpleRepaint(part)) isVariantPart = false;
-                else
-                    isVariantPart = true;
+                isVariantPart = true;
+            }
+            if (!isVariantPart && part.Modules.Contains("ModulePartVariants") && !SimpleRepaint.CheckForSimpleRepaint(part, typeof(ModulePartVariants)))
+            {
+                isVariantPart = true;
             }
             StartingArmor = Armor;
             if (ProjectileUtils.IsArmorPart(this.part))

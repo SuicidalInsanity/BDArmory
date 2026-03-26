@@ -43,7 +43,7 @@ namespace BDArmory.ModIntegration
                 {
                     B9PSAssembly = assy.assembly;
                     hasB9 = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.B9Utils]: Found B9PS Assembly: {B9PSAssembly.FullName}");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.B9PartSwitch]: Found B9PS Assembly: {B9PSAssembly.FullName}");
                 }
             }
             return hasB9;
@@ -60,24 +60,10 @@ namespace BDArmory.ModIntegration
                 {
                     B9PSModule = type;
                     hasB9Module = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.B9Utils]: Found B9 module type.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.B9PartSwitch]: Found B9 module type.");
                 }
             }
             return hasB9Module;
-        }
-
-        public static bool checkForSimpleRepaint(Part part)
-        {
-            if (!hasB9Module) return false;
-            foreach (var module in part.Modules)
-            {
-                if (module.GetType() == B9PSModule)
-                {
-                    string SR = (string)B9PSModule.GetField("moduleID", BindingFlags.Public | BindingFlags.Instance).GetValue(module);
-                    return SR == "SimpleRepaint" ? true : false;
-                }
-            }
-            return false;
         }
     }
 }

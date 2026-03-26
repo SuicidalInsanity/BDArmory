@@ -42,7 +42,7 @@ namespace BDArmory.ModIntegration
                     PWAssembly = assy.assembly;
                     hasB9ProcWing = true;
                     PWAssyVersion = assy.assembly.GetName().Version.ToString();
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found Pwing Assembly: {PWAssembly.FullName}");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Found Pwing Assembly: {PWAssembly.FullName}");
                 }
             }
 
@@ -56,13 +56,13 @@ namespace BDArmory.ModIntegration
             hasCheckedForPwingModule = true;
             foreach (var type in PWAssembly.GetTypes())
             {
-                //Debug.Log($"[BDArmory.FARUtils]: Found module " + type.Name);
+                //Debug.Log($"[BDArmory.ProceduralWings]: Found module " + type.Name);
 
                 if (type.Name == "WingProcedural")
                 {
                     PWType = type;
                     hasPwingModule = true;
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found Pwing module.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Found Pwing module.");
                 }
             }
             return hasPwingModule;
@@ -72,7 +72,7 @@ namespace BDArmory.ModIntegration
         {
             if (!hasPwingModule)
             {
-                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: hasPwing check failed!");
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: hasPwing check failed!");
                 return -1;
             }
 
@@ -116,7 +116,7 @@ namespace BDArmory.ModIntegration
 
                         float liftCoeff = (length * ((width + edgeWidth) / 2)) / 3.515f;
                         float aeroVolume = (0.786f * length * ((width + edgeWidth) / 2) * Mathf.Clamp(adjustedThickness, 0, 0.275f)); //original .7 was based on errorneous 2x4 wingboard dimensions; stock reference wing area is 1.875x3.75m
-                        if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found volume of {aeroVolume} for {part.name}.");
+                        if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Found volume of {aeroVolume} for {part.name}.");
 
                         //if (PWAssyVersion != "0.44.0.0") //PWings now have edge colliders, unnecessary
                         if (!BDArmorySettings.PWING_EDGE_LIFT && !ctrlSrf) //if part !controlsurface, remove lift/mass from edges to bring inline with stock boards
@@ -168,7 +168,7 @@ namespace BDArmory.ModIntegration
                                 float massToAdd = 0;
                                 massToAdd = ((float)liftCoeff / ((!ctrlSrf && !WingctrlSrf) ? 10 : 5)) * (adjustedThickness * 2.8f) -
                                     ((float)liftCoeff / ((!ctrlSrf && !WingctrlSrf) ? 10 : 5)) * (0.36f * 3);
-                                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: massToAdd {massToAdd} for {part.name}.");
+                                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: massToAdd {massToAdd} for {part.name}.");
 
                                 massToAdd += part.partInfo.partPrefab.mass; //this gets subtracted out in the WingProcedural GetModuleMass, so need to add it here to get proper mass addition
                                 if (massToAdd > 0)
@@ -183,7 +183,7 @@ namespace BDArmory.ModIntegration
                     }
                 }
             }
-            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Pwing module not found!");
+            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Pwing module not found!");
             return -1;
         }
 
@@ -191,7 +191,7 @@ namespace BDArmory.ModIntegration
         {
             if (!hasPwingModule)
             {
-                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: hasPwing check failed!");
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: hasPwing check failed!");
                 return;
             }
             if (FerramAerospace.CheckForFAR())
@@ -225,7 +225,7 @@ namespace BDArmory.ModIntegration
                     }
                 }
             }
-            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Pwing module not found!");
+            if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Pwing module not found!");
             return;
         }
 
@@ -251,7 +251,7 @@ namespace BDArmory.ModIntegration
                     (float)PWType.GetField("sharedEdgeWidthTrailingRoot", BindingFlags.Public | BindingFlags.Instance).GetValue(module)) / 2) : 0));
 
                     float area = (2 * (length * width)) + (2 * (width * thickness)) + (2 * (length * thickness));
-                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.FARUtils]: Found wing area of {area}: {length} * {width} * {thickness} * 2 for {part.name}.");
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.ProceduralWings]: Found wing area of {area}: {length} * {width} * {thickness} * 2 for {part.name}.");
                     if (thickness <= 0.25f) area /= 2; //for ~stock thickness wings, halve area to prevent to prevent double armor. Thicker wings/Wings ued as structural elements that can conceivably have other stuff inside them, treat as standard part for armor volume
                     return area;
                 }
