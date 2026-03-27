@@ -534,7 +534,7 @@ namespace BDArmory.Utils
                 }
             }
         }
-        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, double distance, string sourcevessel, RaycastHit hit, ExplosionSourceType explosionSource, float radius)
+        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, float distance, string sourcevessel, RaycastHit hit, ExplosionSourceType explosionSource, float Range, double MinBlastPressure)
         {
             /// <summary>
             /// Calculates if shockwave from detonation is stopped by armor, and if not, how much damage is done to armor and part in case of armor rupture or spalling
@@ -559,21 +559,23 @@ namespace BDArmory.Utils
                     armorArea = Armor.armorVolume; // pseudo-surface area, m2
                     if (double.IsNaN(armorArea) || Armor.Armor <= 0)
                         return false; //no armor to stop explosion
-                    spallArea = Mathf.Min(armorArea, radius * radius * 1.5f); //clamp based on max size of explosion, m2
+                    spallArea = armorArea; //clamp based on max size of explosion, m2
                 }
                 else
                 {
                     if (Armor.ArmorTypeNum == 1) return false;//ArmorType "None"; no armor to block/reduce blast, take full damage
                     armorArea = !double.IsNaN(hitPart.radiativeArea) ? (float)hitPart.radiativeArea : hitPart.GetArea();// m2 // * 10000; //cm2
-                    spallArea = Mathf.Min(armorArea / 3, radius * radius * 1.5f);//m2
+                    spallArea = armorArea / 3f;//m2
                 }
+
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
-                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: part: {hitPart} armorArea: {armorArea}m2 / {Armor.armorVolume}m2; expl. radius: {radius}m; spallArea: {spallArea}m2");
+                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: part: {hitPart} armorArea: {armorArea}m2 / {Armor.armorVolume}m2; un-clamped spallArea: {spallArea}m2");
 
-                    if (double.IsNaN(hitPart.radiativeArea))
-                        Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: radiative area of part {hitPart} was NaN, using approximate area {hitPart.GetArea()}m2 instead.");
+                    if (double.IsNaN(hitPart.radiativeArea) && !IsArmorPart(hitPart))
+                        Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: radiative area of part {hitPart} was NaN, used approximate area instead!");
                 }
+
                 float ductility = Armor.Ductility;
                 float hardness = Armor.Hardness;
                 float Strength = Armor.Strength;
@@ -591,6 +593,23 @@ namespace BDArmory.Utils
 
                 // Commented out the above bits as they don't make a ton of sense to me, a powerful blast would expand radially, any hole they make would continue to expand until the pressure drops below what's required to damage the plate, so I would
                 // expect blasts, especially powerful blasts blow very large holes, unless the blast is incredibly directional.
+
+                // Create linear fit of the blast pressure vs. range curve (while not accurate it is fast)
+                float invSlope = (Range - distance) / (float)(MinBlastPressure - BlastPressure);
+                // Determine the range at wich we reach 80% of the BlastPressure or ArmorTolerance, whichever is smaller
+                // This allows for dynamic adjustment of the damaged area for non-penetrating blasts while allowing
+                // penetrating blasts to grow in size with blowthroughFactor
+                float REffective = Range + (Mathf.Min(0.8f * (float)BlastPressure, ArmorTolerance) - (float)MinBlastPressure) * invSlope;
+                // Since the above is a range, we'll have to use Pythagoras to get the effective radius of the equivalent circle at the part
+                float sqrRadius = REffective * REffective - distance * distance;
+
+                if (BDArmorySettings.DEBUG_ARMOR)
+                {
+                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; Effective Slope: {1f / invSlope}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Mathf.Min(spallArea, sqrRadius * 1.5f)}m²");
+                }
+
+                // Clamp spall area to the blast effect range
+                spallArea = Mathf.Min(spallArea, sqrRadius * 1.5f);
 
                 if (spallArea >= armorArea) thickness = hitPart.GetArmorThickness(); //if armor larger than blast area, use max thickness to ensure currect armor reduction from HE hits (siming plate thickness reduction as more localized cratering
                                                                                      //than the entire panel delaminating layers of armor)

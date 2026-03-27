@@ -1000,6 +1000,7 @@ namespace BDArmory.FX
 
                     float damageWithoutIntermediateParts = blastInfo.Damage;
                     float dmgModifier = PartExtensions.ExplosiveDamageModifier(ExplosionSource, dmgMult); // Scale the HP and Armour by the appropriate modifier for how the damage will be applied.
+                    double minPressure;
 
                     if (dmgModifier > 0)
                     {
@@ -1029,6 +1030,8 @@ namespace BDArmory.FX
                                 break;
                             }
                         }
+                        minPressure = currtntMassCubeRoot * BlastPhysicsUtils.clampScaledMinPressure;
+
                         // Add rest of the parts to the sum
                         for (int i = currIndex; i < eventToExecute.IntermediateParts.Count; i++)
                         {
@@ -1041,6 +1044,7 @@ namespace BDArmory.FX
                     else
                     {
                         blastInfo.Damage = 0;
+                        minPressure = 0;
                         // I guess this technically doesn't need to be done if the mult is 0
                         // but since later stuff expects it somewhat, it's probably good to do
                         // it anyways.
@@ -1321,7 +1325,7 @@ namespace BDArmory.FX
                             }
                             else
                             {
-                                if ((part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range - realDistance)) //false = armor blowthrough or bullet detonating inside part
+                                if ((part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range, minPressure)) //false = armor blowthrough or bullet detonating inside part
                                 {
                                     if (RA != null && !RA.NXRA) //blast wave triggers RA; detonate all remaining RA sections
                                     {
@@ -1336,7 +1340,7 @@ namespace BDArmory.FX
                                         totalDamageApplied[vesselHit] += damage;
                                         if (part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) //deal armor damage to armor panel, since we didn't do that earlier
                                         {
-                                            ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range - realDistance);
+                                            ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range, minPressure);
                                         }
                                         penetrationFactor = damage / 10f; //closer to the explosion/greater magnitude of the explosion at point blank, the greater the blowthrough
                                         if (float.IsNaN(damage)) Debug.LogError("DEBUG NaN damage!");
