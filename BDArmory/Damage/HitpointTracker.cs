@@ -1,4 +1,4 @@
-﻿using BDArmory.Armor;
+using BDArmory.Armor;
 using BDArmory.Extensions;
 using BDArmory.ModIntegration;
 using BDArmory.Modules;
@@ -635,61 +635,8 @@ namespace BDArmory.Damage
 
         void FixedUpdate()
         {
-<<<<<<< dev
-            if (_updateMass)
-            {
-                _updateMass = false;
-                var oldPartMass = partMass;
-                var oldHullMassAdjust = HullMassAdjust; // We need to temporarily remove the HullmassAdjust and update the part.mass to get the correct value as KSP clamps the mass to > 1e-4.
-                HullMassAdjust = 0;
-                part.UpdateMass();
-                //partMass = part.mass - armorMass - HullMassAdjust; //part mass is taken from the part.cfg val, not current part mass; this overrides that
-                if (isProcWing || isProcPart || isProcWheel || isVariantPart)
-                {
-                    float Safetymass = 0;
-                    var SST = part.GetComponent<ModuleSelfSealingTank>();
-                    if (SST != null)
-                    { Safetymass = SST.FBmass + SST.FISmass; }
-                    partMass = part.mass - armorMass - HullMassAdjust - Safetymass;
-                    if (isVariantPart)
-                    {
-                        var r = part.GetComponentsInChildren<Renderer>();
-                        for (int i = 0; i < r.Length; i++)
-                        {
-                            if (r[i].GetComponentInParent<Part>() != part) continue; // Don't recurse to child parts.
-                            int key = r[i].material.GetInstanceID(); // The instance ID is unique for each object (not just component or gameObject).
-                            if (!defaultShader.ContainsKey(key))
-                            {
-                                defaultShader.Add(key, r[i].material.shader); //grab materials for part variant variants when switching to that variant
-                                if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: ARMOR: part shader on {r[i].GetComponentInParent<Part>().partInfo.name} is {r[i].material.shader.name}");
-                            }
-                            if (r[i].material.HasProperty("_Color"))
-                            {
-                                if (!defaultColor.ContainsKey(key)) defaultColor.Add(key, r[i].material.color);
-                            }
-                        }
-                    }
-                }
-                CalculateDryCost(); //recalc if modify event added a fueltank -resource swap, etc
-                HullMassAdjust = oldHullMassAdjust; // Put the HullmassAdjust back so we can test against it when we update the hull mass.
-                float tweakScaleMassMultiplier = _tweakScaleMassMultiplier;
-                _tweakScaleMassMultiplier = part.GetTweakScaleMassMultiplier(); // Update our copy of the TweakScale mass multiplier.
-                if (oldPartMass != partMass)
-                {
-                    if (BDArmorySettings.DEBUG_ARMOR) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated mass at {Time.time}: part.mass {part.mass}, partMass {oldPartMass}->{partMass}, armorMass {armorMass}, hullMassAdjust {HullMassAdjust}, tweakScaleMassMultiplier {tweakScaleMassMultiplier}->{_tweakScaleMassMultiplier}");
-                    if (isProcPart || isProcWheel || isVariantPart)
-                    {
-                        calcPartSize();
-                        _armorModified = true;
-                    }
-                    _hullModified = true; // Modifying the mass modifies the hull.
-                    _updateHitpoints = true;
-                }
-            }
-=======
             if (!HighLogic.LoadedSceneIsFlight) return;
             if (started) RefreshHitPoints();
->>>>>>> dev
 
             if (!BDArmorySetup.GameIsPaused)
             {
