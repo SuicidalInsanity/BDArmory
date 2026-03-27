@@ -9,6 +9,7 @@ using UnityEngine;
 using BDArmory.Armor;
 using BDArmory.Damage;
 using BDArmory.Extensions;
+using BDArmory.ModIntegration;
 using BDArmory.Settings;
 using BDArmory.Utils;
 
@@ -148,7 +149,7 @@ namespace BDArmory.UI
             armorGUI = new GUIContent[ArmorInfo.armors.Count];
             for (int i = 0; i < ArmorInfo.armors.Count; i++)
             {
-                GUIContent gui = new GUIContent(ArmorInfo.armors[i].name.Length <= 17 ? ArmorInfo.armors[i].name : ArmorInfo.armors[i].name.Remove(14) + "...");
+                GUIContent gui = new GUIContent(ArmorInfo.armors[i].localizedName.Length <= 17 ? ArmorInfo.armors[i].localizedName : ArmorInfo.armors[i].name.Remove(14) + "...");
                 armorGUI[i] = gui;
             }
             armorBoxText = new GUIContent();
@@ -184,7 +185,7 @@ namespace BDArmory.UI
             }
         }
 
-        private void OnEditorShipModifiedEvent(ShipConstruct data)
+        public void OnEditorShipModifiedEvent(ShipConstruct data)
         {
             if (data is null) return;
             delayedRefreshVisuals = true;
@@ -210,7 +211,7 @@ namespace BDArmory.UI
                ship == null || ship.Parts == null || ship.Parts.TrueForAll(p =>
                {
                    if (p == null) return true;
-                   var hp = p.GetComponent<Damage.HitpointTracker>();
+                   var hp = p.GetComponent<HitpointTracker>();
                    return hp == null || hp.Ready;
                })); // Wait for HP changes to delayed ship modified events in HitpointTracker
             if (count == countLimit)
@@ -274,7 +275,7 @@ namespace BDArmory.UI
 
         private void OnEditorPartPlacedEvent(Part data)
         {
-            DoVesselLegalityChecks(true);
+            //DoVesselLegalityChecks(true); //these also get triggered in OnShipModified, which properly waits for HP, etc to settle; important since LegalityChecks also calls CalculateTotalLift, which needs craft mass settled
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 78)
             {
                 data.sameVesselCollision = true;

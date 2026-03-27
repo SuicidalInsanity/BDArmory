@@ -119,8 +119,10 @@ namespace BDArmory.Settings
         #region Debug Labels
         [BDAPersistentSettingsField] public static bool DEBUG_LINES = false;                 //AI/Weapon aim visualizers
         [BDAPersistentSettingsField] public static bool DEBUG_OTHER = false;                 //internal debugging
-        [BDAPersistentSettingsField] public static bool DEBUG_ARMOR = false;                 //armor and HP
+        [BDAPersistentSettingsField] public static bool DEBUG_ARMOR = false;                 //armor
+        [BDAPersistentSettingsField] public static bool DEBUG_HP = false;                    //HP
         [BDAPersistentSettingsField] public static bool DEBUG_WEAPONS = false;               //Debug messages for guns/rockets/lasers and their projectiles
+        [BDAPersistentSettingsField] public static bool DEBUG_APS = false;                   //Debug messages for point defense weapons
         [BDAPersistentSettingsField] public static bool DEBUG_MISSILES = false;              //Missile launch, tracking and targeting debug labels
         [BDAPersistentSettingsField] public static bool DEBUG_DAMAGE = false;                //Explosions and battle damage logging
         [BDAPersistentSettingsField] public static bool DEBUG_AI = false;                    //AI debugging
@@ -209,12 +211,14 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float ARMOR_MASS_MOD = 1f;                   //Armor mass multiplier
         [BDAPersistentSettingsField] public static bool KERBAL_ERA = true;
         [BDAPersistentSettingsField] public static float HMDCost = 2000f;
+        [BDAPersistentSettingsField] public static float LASER_ATM_GAMMA = 0.000158f;                // Transmission factor for laser in atmosphere. ~75% transmission over 1800m. Based on Figure 6: https://www.mdpi.com/2073-4433/12/7/918
+        [BDAPersistentSettingsField] public static float LASER_WATER_GAMMA = 0.151f;                  // Transmission factor for laser in water. 15% at 10m, ~3% at 20m, ~0% at 30m. Based on transmittance (c, Table 2) coefficient for clear water https://www.mdpi.com/1424-8220/25/10/3057.
         #endregion
 
         #region FX
         [BDAPersistentSettingsField] public static bool FIRE_FX_IN_FLIGHT = false;
         [BDAPersistentSettingsField] public static int MAX_FIRES_PER_VESSEL = 10;                 //controls fx for penetration only for landed or splashed //this is only for physical missile collisons into fueltanks - SI
-        [BDAPersistentSettingsField] public static float FIRELIFETIME_IN_SECONDS = 90f;           //controls fx for penetration only for landed or splashed 
+        [BDAPersistentSettingsField] public static float FIRELIFETIME_IN_SECONDS = 90f;           //controls fx for penetration only for landed or splashed
         #endregion
 
         #region Radar settings
@@ -358,7 +362,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_START_COMPETITION_AUTOMATICALLY = false; // Automatically start a competition after spawning succeeds.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_INITIAL_VELOCITY = false;     // Set planes at their idle speed after dropping them at the start of a competition.
         [BDAPersistentSettingsField] public static bool VESSEL_SPAWN_CS_FOLLOWS_CENTROID = false;  // The continuous spawning spawn point follows the brawl centroid with bias back to the original spawn point.
-        [BDAPersistentSettingsField] public static int VESSEL_SPAWN_DEFAULT_KERBAL_SUIT = 0;
+        [BDAPersistentSettingsField] public static int VESSEL_SPAWN_KERBAL_SUIT_TYPE = -1;
         #endregion
 
         #region Vessel Mover settings

@@ -754,8 +754,6 @@ namespace BDArmory.Bullets
                 else
                 {
                     bool cockpitPen = (16f * impactVelocity * BDAMath.Sqrt(rocketMass / caliber)) > Mathf.Max(20 / anglemultiplier, 1);
-                    // Previously this was gated by cockpitPen for some reason?
-                    // Seems like we should be adding ballistic damage regardless of if there's a cockpit no?
                     ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker <= 0, penTicker <= 0, cockpitPen);
 
                     if (!explosive)

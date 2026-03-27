@@ -24,13 +24,12 @@ namespace BDArmory.Targeting
         {
             get
             {
-                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-                    _weaponManager = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
-                if (_weaponManager != null && _weaponManager.vessel != vessel) _weaponManager = null;
-                return _weaponManager;
+                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+                    field = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
+                if (field != null && field.vessel != vessel) field = null;
+                return field;
             }
         }
-        public MissileFire _weaponManager;
 
         Dictionary<BDTeam, List<MissileFire>> friendliesEngaging = [];
         public Dictionary<BDTeam, bool> detected = [];

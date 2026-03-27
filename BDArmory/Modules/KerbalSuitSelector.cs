@@ -1,6 +1,4 @@
 using System;
-using BDArmory.Settings;
-using UnityEngine;
 
 namespace BDArmory.Modules
 {
@@ -15,6 +13,7 @@ namespace BDArmory.Modules
     /// </summary>
     public enum KerbalSuit
     {
+      NoChange = -1,
       Default = 0,
       Vintage = 1,
       Future = 2,
@@ -22,13 +21,12 @@ namespace BDArmory.Modules
       Random = 4
     }
 
-    [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "Kerbal Suit Type"),
+    [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_Settings_KerbalSuitType"),
         UI_ChooseOption(options = new string[5] { "Default", "Vintage", "Future", "Slim", "Random" })]
-    public string suit;
+    public string suit = "Default";
 
     public ProtoCrewMember.KerbalSuit Suit
     {
-      get;
       set
       {
         field = value;
@@ -37,20 +35,12 @@ namespace BDArmory.Modules
       }
     }
 
-    /// <summary>
-    /// This is called during loading of the shipConstruct during spawning AND after the vessel has spawned!
-    /// Also on loading parts in the SPH, but not for new parts.
-    /// </summary>
-    /// <param name="node"></param>
-    public override void OnLoad(ConfigNode node)
+    public void Start()
     {
-      base.OnLoad(node);
-      if (!HighLogic.LoadedSceneIsFlight && !HighLogic.LoadedSceneIsEditor) return;
       if (!CheckValidPart())
-        part.RemoveModule(this);
-      if (string.IsNullOrEmpty(suit))
       {
-        suit = ((KerbalSuit)Mathf.Clamp(BDArmorySettings.VESSEL_SPAWN_DEFAULT_KERBAL_SUIT, 0, 4)).ToString();
+        part.RemoveModule(this);
+        return;
       }
       if (HighLogic.LoadedSceneIsFlight && part.FindModuleImplementing<KerbalSeat>() != null)
       {
@@ -61,21 +51,6 @@ namespace BDArmory.Modules
         SetOnSuitChanged();
       }
       OnSuitChanged();
-    }
-    
-    /// <summary>
-    /// This is called for new and loaded parts in the SPH, but too late for spawning.
-    /// </summary>
-    public override void OnAwake()
-    {
-      base.OnAwake();
-      if (!HighLogic.LoadedSceneIsEditor) return;
-      if (!CheckValidPart())
-        part.RemoveModule(this);
-      if (string.IsNullOrEmpty(suit))
-      {
-        suit = ((KerbalSuit)Mathf.Clamp(BDArmorySettings.VESSEL_SPAWN_DEFAULT_KERBAL_SUIT, 0, 4)).ToString();
-      }
     }
 
     bool CheckValidPart()
@@ -101,6 +76,16 @@ namespace BDArmory.Modules
       Suit = Enum.IsDefined(typeof(ProtoCrewMember.KerbalSuit), (ProtoCrewMember.KerbalSuit)suitType) ?
         (ProtoCrewMember.KerbalSuit)suitType :
         (ProtoCrewMember.KerbalSuit)UnityEngine.Random.Range(0, 4);
+    }
+
+    /// <summary>
+    /// Set the suit type.
+    /// Note: this is called from OnLoad prior to Start, which is when Suit gets set.
+    /// </summary>
+    /// <param name="suitType"></param>
+    public void SetSuit(KerbalSuit suitType)
+    {
+      suit = suitType.ToString();
     }
   }
 }
