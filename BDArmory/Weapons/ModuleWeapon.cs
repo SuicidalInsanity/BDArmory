@@ -5818,7 +5818,7 @@ namespace BDArmory.Weapons
                         radarTarget = true;
                         slaved = true;
                         if (BDArmorySettings.DEBUG_WEAPONS)
-                            Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.vessel.vesselName} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
+                            Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.Name()} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
                         return;
                     }
                     else //no lock for our secondary target/fixed gun/no multitargeting? slave weapon to primary lock
@@ -5838,7 +5838,7 @@ namespace BDArmory.Weapons
                             targetAcquired = true;
                             targetAcquisitionType = TargetAcquisitionType.Slaved;
                             if (BDArmorySettings.DEBUG_WEAPONS)
-                                Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.vessel.name : weaponManager.vesselRadarData.lockedTargetData.vessel.name)}");
+                                Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.Name() : weaponManager.vesselRadarData.lockedTargetData.Name())}");
                             return;
                         }
                     }

@@ -45,6 +45,11 @@ namespace BDArmory.Targeting
                 timeAcquired == other.timeAcquired;
         }
 
+        public string Name()
+        {
+            return (vessel ? vessel.name : (isDecoy ? "Decoy" : "Null"));
+        }
+
         public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f)
         {
             //orbital = v.InOrbit();

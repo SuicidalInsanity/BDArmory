@@ -1692,6 +1692,11 @@ namespace BDArmory.Radar
                 return dataIndex;
             }
 
+            if (BDArmorySettings.DEBUG_RADAR)
+            {
+                Debug.Log($"[BDArmory.RadarUtils] Missile: {missile.shortName} beginning scan with FoV: {fov}.");
+            }
+
             // fov gives cone width, so halve it
             fov *= 0.5f;
 
@@ -1716,6 +1721,11 @@ namespace BDArmory.Radar
                     float angle = VectorUtils.AnglePreNormalized(ray.direction, directionToTarget);
                     //if (((vectorToTarget).sqrMagnitude < RADAR_IGNORE_DISTANCE_SQR) ||
                     //     (Vector3.Dot(vectorToTarget, ray.direction) < 0))
+
+                    if (BDArmorySettings.DEBUG_RADAR)
+                    {
+                        Debug.Log($"[BDArmory.RadarUtils] Processing Target: {loadedvessels.Current.name} at distance: {distance}m and angle: {angle}/{fov}");
+                    }
 
                     // No targets behind the seeker's view! Note maybe this should change,
                     // as unlike radars, this is called with `maxOffBoresight` in some cases
@@ -1844,6 +1854,11 @@ namespace BDArmory.Radar
 
             Vessel radarVessel = radar.vessel;
 
+            if (BDArmorySettings.DEBUG_RADAR)
+            {
+                Debug.Log($"[BDArmory.RadarUtils] Vessel: {radarVessel.name}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
+            }
+
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
                 {
@@ -1881,6 +1896,8 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Processing Target: {loadedvessels.Current.name} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
+
                     if (azDiff < azFov && Mathf.Abs(targetEl - elevationAngle) < elFov)
                     {
                         float terrainR = 0f, terrainAngle = 0f;
@@ -1894,7 +1911,6 @@ namespace BDArmory.Radar
                             radar.radarMaxVelocityGate, radar.radarMaxRangeGate, radar.radarMinVelocityGate, radar.radarMinRangeGate, radar.vessel,
                             loadedvessels.Current, loadedvessels.Current.CoM, distance, out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod))
                             continue;
-
 
                         // get vessel's radar signature
                         TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
@@ -1932,6 +1948,8 @@ namespace BDArmory.Radar
 
                                 if (signature >= minLockSig && RadarCanDetect(radar, signature, distance)) // Must be able to detect and lock to lock targets
                                 {
+                                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed lock checks!");
+
                                     // detected by radar
                                     if (myWpnManager != null)
                                     {
@@ -1971,6 +1989,8 @@ namespace BDArmory.Radar
                             //evaluate if we can detect such a signature at that range
                             if (RadarCanDetect(radar, signature, distance))
                             {
+                                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Target: {loadedvessels.Current.name} passed detection checks!");
+
                                 // detected by radar
                                 if (myWpnManager != null)
                                 {
@@ -2012,6 +2032,11 @@ namespace BDArmory.Radar
             Vector3 directionToTarget = Vector3.zero;
             float distance = -1f;
 
+            if (BDArmorySettings.DEBUG_RADAR)
+            {
+                Debug.Log($"[BDArmory.RadarUtils] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, checking target: {(lockedVessel ? lockedVessel.name : "null")}.");
+            }
+
             // first: re-acquire lock if temporarily lost
             if (!lockedVessel)
             {
@@ -2049,10 +2074,19 @@ namespace BDArmory.Radar
                             }
                         }
                     }
+
+                if (BDArmorySettings.DEBUG_RADAR)
+                {
+                    Debug.Log($"[BDArmory.RadarUtils] Selected Target: {(lockedVessel ? lockedVessel.name : "null")} at distance: {distance}m for re-acquisition.");
+                }
             }
             else
             {
                 (distance, directionToTarget) = (lockedVessel.CoM - ray.origin).MagNorm();
+                if (BDArmorySettings.DEBUG_RADAR)
+                {
+                    Debug.Log($"[BDArmory.RadarUtils] Target at distance: {distance}m.");
+                }
             }
 
             // second: track that lock
