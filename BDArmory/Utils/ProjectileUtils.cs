@@ -595,8 +595,8 @@ namespace BDArmory.Utils
                 // expect blasts, especially powerful blasts blow very large holes, unless the blast is incredibly directional.
 
                 // Create linear fit of the blast pressure vs. range curve (while not accurate it is fast)
-                float invSlope = (Range - distance) / (float)(MinBlastPressure - BlastPressure);
-                // Determine the range at wich we reach 80% of the BlastPressure or ArmorTolerance, whichever is smaller
+                /*float invSlope = (Range - distance) / (float)(MinBlastPressure - BlastPressure);
+                // Determine the range at which we reach 80% of the BlastPressure or ArmorTolerance, whichever is smaller
                 // This allows for dynamic adjustment of the damaged area for non-penetrating blasts while allowing
                 // penetrating blasts to grow in size with blowthroughFactor
                 float REffective = Range + (Mathf.Min(0.8f * (float)BlastPressure, ArmorTolerance) - (float)MinBlastPressure) * invSlope;
@@ -606,6 +606,23 @@ namespace BDArmory.Utils
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
                     Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; Effective Slope: {1f / invSlope}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Mathf.Min(spallArea, sqrRadius * 1.5f)}m²");
+                }*/
+
+                double temp = Math.Sqrt(MinBlastPressure * BlastPressure);
+                double temp2 = (double)(distance - Range);
+
+                double ROffset = ((double)distance * (BlastPressure + temp) - (double)Range * (MinBlastPressure + temp)) / (BlastPressure - MinBlastPressure);
+                double BlastOffset = MinBlastPressure * BlastPressure * temp2 * temp2 * (BlastPressure + MinBlastPressure + 2.0 * temp) / ((BlastPressure - MinBlastPressure) * (BlastPressure - MinBlastPressure));
+
+                double BlastR = Math.Sqrt(BlastOffset / Math.Min(0.8 * BlastPressure, (double)ArmorTolerance));
+
+                double REffective = ROffset + BlastR;
+                // Since the above is a range, we'll have to use Pythagoras to get the effective radius of the equivalent circle at the part
+                float sqrRadius = (float)(REffective * REffective) - distance * distance;
+
+                if (BDArmorySettings.DEBUG_ARMOR)
+                {
+                    Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Blast pressure clamp for part: {hitPart} BlastPressure/MinBlastPressure: {BlastPressure}/{MinBlastPressure}; ROffset: {ROffset}; BlastOffset: {BlastOffset}; BlastR: {BlastR}; Range: {Range}m; Eff. Range: {REffective}m; dist: {distance}m; expl. radius: {BDAMath.Sqrt(sqrRadius)}m; currSpallArea: {spallArea}m²; clamped spallArea: {Mathf.Min(spallArea, sqrRadius * 1.5f)}m²");
                 }
 
                 // Clamp spall area to the blast effect range
