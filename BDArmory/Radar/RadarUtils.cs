@@ -1694,7 +1694,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils] Missile: {missile.shortName} beginning scan with FoV: {fov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} beginning scan with FoV: {fov}.");
             }
 
             // fov gives cone width, so halve it
@@ -1724,7 +1724,7 @@ namespace BDArmory.Radar
 
                     if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        Debug.Log($"[BDArmory.RadarUtils] Processing Target: {loadedvessels.Current.name} at distance: {distance}m and angle: {angle}/{fov}");
+                        Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Processing Target: {loadedvessels.Current.name} at distance: {distance}m and angle: {angle}/{fov}");
                     }
 
                     // No targets behind the seeker's view! Note maybe this should change,
@@ -1856,7 +1856,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils] Vessel: {radarVessel.name}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.name}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
 
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
@@ -1896,7 +1896,7 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
-                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils] Processing Target: {loadedvessels.Current.name} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
 
                     if (azDiff < azFov && Mathf.Abs(targetEl - elevationAngle) < elFov)
                     {
@@ -2034,7 +2034,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, checking target: {(lockedVessel ? lockedVessel.name : "null")}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, checking target: {(lockedVessel ? lockedVessel.name : "null")}.");
             }
 
             // first: re-acquire lock if temporarily lost
@@ -2077,7 +2077,7 @@ namespace BDArmory.Radar
 
                 if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    Debug.Log($"[BDArmory.RadarUtils] Selected Target: {(lockedVessel ? lockedVessel.name : "null")} at distance: {distance}m for re-acquisition.");
+                    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Selected Target: {(lockedVessel ? lockedVessel.name : "null")} at distance: {distance}m for re-acquisition.");
                 }
             }
             else
@@ -2085,7 +2085,7 @@ namespace BDArmory.Radar
                 (distance, directionToTarget) = (lockedVessel.CoM - ray.origin).MagNorm();
                 if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    Debug.Log($"[BDArmory.RadarUtils] Target at distance: {distance}m.");
+                    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Target at distance: {distance}m.");
                 }
             }
 
