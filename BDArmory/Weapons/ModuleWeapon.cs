@@ -2857,7 +2857,7 @@ namespace BDArmory.Weapons
                                                                 if (hullConduction) continue;//charge already flowing through hull to next part
                                                                 else
                                                                 {
-                                                                    EMPDamage -= 2 * Armor.Armour; //-2 EMP damage per mm of insulating armor charge has to pass through to get to conductive amterials on other side
+                                                                    EMPDamage -= 2 * Armor.Armor; //-2 EMP damage per mm of insulating armor charge has to pass through to get to conductive amterials on other side
                                                                     hullConduction = true;
                                                                     continue;
                                                                 }
@@ -2865,7 +2865,7 @@ namespace BDArmory.Weapons
                                                             else //and non-con hull
                                                             {
                                                                 if (!hullConduction)
-                                                                    EMPDamage -= 2 * Armor.Armour;
+                                                                    EMPDamage -= 2 * Armor.Armor;
                                                                 if (EMPDamage > 100)
                                                                 {
                                                                     EMPDamage /= 4;
@@ -3142,7 +3142,7 @@ namespace BDArmory.Weapons
                                 var Armor = partHit.FindModuleImplementing<HitpointTracker>();
                                 if (Armor != null && partHit.Rigidbody != null)
                                 {
-                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armour;
+                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armor;
                                     if (Armor.HullMassAdjust >= 0) testShieldValue += (partHit.mass * 4);
                                 }
                             }

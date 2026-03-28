@@ -659,7 +659,7 @@ namespace BDArmory.FX
                                 var Armor = partHit.FindModuleImplementing<HitpointTracker>();
                                 if (Armor != null && partHit.Rigidbody != null)
                                 {
-                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armour;
+                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armor;
                                     if (Armor.HullMassAdjust > 0) testShieldValue += (partHit.mass * 4);
                                 }
                                 if (testShieldValue < shieldvalue) shieldvalue = testShieldValue;
