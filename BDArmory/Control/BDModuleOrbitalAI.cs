@@ -472,7 +472,8 @@ namespace BDArmory.Control
         {
             base.OnGUI();
 
-            if (!pilotEnabled || !vessel.isActiveVessel) return;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
 
             if (!BDArmorySettings.DEBUG_LINES) return;
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, PIDActive ? debugTargetPosition : fc.attitude * 1000, 5, Color.red); // The point we're asked to turn to

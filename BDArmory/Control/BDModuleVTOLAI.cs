@@ -330,7 +330,8 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
         {
             base.OnGUI();
 
-            if (!pilotEnabled || !vessel.isActiveVessel) return;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
 
             if (!BDArmorySettings.DEBUG_LINES) return;
             if (command == PilotCommands.Follow)
