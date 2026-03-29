@@ -40,7 +40,7 @@ namespace BDArmory.GameModes
             if (ProjectileUtils.IsIgnoredPart(part)) return; // Ignore ignored parts.
 
             double damageChance = Mathf.Clamp((BDArmorySettings.BD_DAMAGE_CHANCE * ((1f - part.GetDamagePercentage()) * 10f) * ((penetrationFactor - BDArmorySettings.BD_DAMAGE_PENETRATION) * 0.5f)), 0, 100); //more heavily damaged parts more likely to take battledamage
-            Vector3 hitPoint = colliderLocalHitPoint == default ? hitLoc.point : hitLoc.collider.transform.TransformPoint(colliderLocalHitPoint);
+            Vector3 hitPoint = (colliderLocalHitPoint == default || hitLoc.collider == null) ? hitLoc.point : hitLoc.collider.transform.TransformPoint(colliderLocalHitPoint);
 
             if (BDArmorySettings.BD_TANKS)
             {
