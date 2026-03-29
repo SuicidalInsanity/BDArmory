@@ -1216,9 +1216,9 @@ namespace BDArmory.Damage
                 Debug.Log("[ARMOR] max supported armor for " + part.name + " is " + maxSupportedArmor);
             }
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
-            UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields["Armor"].uiControlFlight;
+            /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields["Armor"].uiControlFlight;
             armorFieldFlight.minValue = 0f;
-            armorFieldFlight.maxValue = maxSupportedArmor;
+            armorFieldFlight.maxValue = maxSupportedArmor;*/
             UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
             armorFieldEditor.maxValue = maxSupportedArmor;
             armorFieldEditor.minValue = 1f;

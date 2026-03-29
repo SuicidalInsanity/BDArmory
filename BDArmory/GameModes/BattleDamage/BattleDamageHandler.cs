@@ -83,7 +83,7 @@ namespace BDArmory.GameModes
                         {
                             Diceroll *= 0.66;
                         }
-                        if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.BattleDamageHandler]: Battery Dice Roll: " + Diceroll);
+                        if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.BattleDamageHandler]: Battery Dice Roll: {Diceroll}, needs {BDArmorySettings.BD_DAMAGE_CHANCE}");
                         if (Diceroll <= BDArmorySettings.BD_DAMAGE_CHANCE)
                         {
                             BulletHitFX.AttachFire(hitPoint, part, caliber, attacker);
