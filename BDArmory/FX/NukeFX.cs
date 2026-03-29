@@ -67,6 +67,7 @@ namespace BDArmory.FX
         private float EMPRadius = 100;
         private float scale = 1;
         private float lightScale = 1;
+        private double minImpulse;
         const int explosionLayerMask = (int)(LayerMasks.Parts | LayerMasks.Scenery | LayerMasks.EVA | LayerMasks.Unknown19 | LayerMasks.Unknown23 | LayerMasks.Wheels); // Why 19 and 23?
 
         static RaycastHit[] lineOfSightHits;
@@ -367,6 +368,10 @@ namespace BDArmory.FX
                 if (!hasDetonated)
                 {
                     hasDetonated = true;
+                    if (lastValidAtmDensity > 0.1)
+                        minImpulse = Mathf.Pow(3.01f * 1100f / thermalRadius, 1.25f) * 6.894f * lastValidAtmDensity * yieldCubeRoot; // * (radiativeArea / 3f); pascals/m isn't going to increase if a larger surface area, it's still going go be same force
+                    else
+                        minImpulse = (nukeMass * 15295.74) / (4 * Math.PI * Math.Pow(thermalRadius, 2.0));// * (part.radiativeArea / 3.0);
                     CalculateBlastEvents();
                     if (isEMP) CalculateEMPEvent();
                     if (lastValidAtmDensity < 0.05)
@@ -506,7 +511,7 @@ namespace BDArmory.FX
                         }
                         else
                         {
-                            if (!ProjectileUtils.CalculateExplosiveArmorDamage(part, blastImpulse, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, thermalRadius - realDistance)) //false = armor blowthrough
+                            if (!ProjectileUtils.CalculateExplosiveArmorDamage(part, blastImpulse, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, thermalRadius, minImpulse)) //false = armor blowthrough
                             {
                                 damage = ProjectileUtils.IsArmorPart(part) ? blastDamage : part.AddExplosiveDamage(blastDamage, 1, ExplosionSource, 1); //armor panels return damage = 0, so adding exception so they still score properly
                                 // no damage reduction from very thick armor, but no multiplier from damage type, either, should balance out. And any comp that allows nukes probably isn't going to be weighting DamageIn...
@@ -654,7 +659,7 @@ namespace BDArmory.FX
                                 var Armor = partHit.FindModuleImplementing<HitpointTracker>();
                                 if (Armor != null && partHit.Rigidbody != null)
                                 {
-                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armour;
+                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armor;
                                     if (Armor.HullMassAdjust > 0) testShieldValue += (partHit.mass * 4);
                                 }
                                 if (testShieldValue < shieldvalue) shieldvalue = testShieldValue;

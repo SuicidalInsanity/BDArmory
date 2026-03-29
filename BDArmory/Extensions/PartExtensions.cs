@@ -375,6 +375,37 @@ namespace BDArmory.Extensions
             }
             //return Dependencies.Get<DamageService>().GetPartArmor_svc(p);
         }
+
+        public static float GetRealArmorThickness(this Part p)
+        {
+            if (p == null) return 0f;
+            float realArmor = Dependencies.Get<DamageService>().GetPartRealArmor_svc(p);
+            if (float.IsNaN(realArmor))
+            {
+                if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[BDArmory.PartExtensions]: GetRealArmorThickness; realArmor is NaN");
+                return 0f;
+            }
+            else
+            {
+                return realArmor;
+            }
+        }
+
+        public static float GetRealArmorPercentage(this Part p)
+        {
+            if (p == null) return 0f;
+            float armorQtyP = Dependencies.Get<DamageService>().GetPartArmorQtyP_svc(p);
+            if (float.IsNaN(armorQtyP))
+            {
+                if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[BDArmory.PartExtensions]: GetRealArmorPercentage; armorQtyP is NaN");
+                return 0f;
+            }
+            else
+            {
+                return armorQtyP;
+            }
+        }
+
         public static float GetArmorMaxThickness(this Part p)
         {
             if (p == null) return 0f;

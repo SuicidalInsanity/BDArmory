@@ -2362,7 +2362,7 @@ namespace BDArmory.Weapons.Missiles
                         {
                             if (heatTarget.vessel)
                             {
-                                debugGuidanceTarget = $"{heatTarget.vessel.GetName()} {heatTarget.signalStrength}";
+                                debugGuidanceTarget = $"{heatTarget.vessel.name} {heatTarget.signalStrength}";
                             }
                             else if (heatTarget.isDecoy)
                             {
@@ -2382,7 +2382,14 @@ namespace BDArmory.Weapons.Missiles
 
                             if (radarTarget.vessel)
                             {
-                                debugGuidanceTarget = $"{radarTarget.vessel.GetName()} {radarTarget.signalStrength}";
+                                if (!BDArmorySettings.RADAR_NOTCHING)
+                                {
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength};";
+                                }
+                                else
+                                {
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod}; notchRMod: {radarTarget.notchRMod}";
+                                }
                             }
                             else if (radarTarget.signalStrength > 0)
                             {
