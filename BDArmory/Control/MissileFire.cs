@@ -2729,6 +2729,7 @@ namespace BDArmory.Control
             return true;
         }
 
+        // This is left here in case there's cases that require custom conditionals or custom implementations
         bool AimMissileTurretAngle(Vessel targetVessel, MissileBase ml, ref float timer, bool lead, bool loft, float loftFac, float angleThreshold, ref float currAngle)
         {
             if (timer < 0 || !ml || !targetVessel) return false;
@@ -2746,36 +2747,95 @@ namespace BDArmory.Control
             return true;
         }
 
-        bool AimMissileTurretIR(MissileBase ml, ref float timer, bool lead, bool loft, float loftFac, float angleThreshold, ref float currAngle)
+        IEnumerator AimMissileTurretAngle(Vessel targetVessel, MissileBase ml, float timeout, bool lead, bool loft, float loftFac, float angleThreshold)
         {
-            if (timer < 0 || !ml || !heatTarget.exists) return false;
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
 
-            Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, heatTarget.predictedPosition, heatTarget.velocity, loft, loftFac) : heatTarget.predictedPosition;
-            ml.AimTurrets(target);
+            float timer = timeout;
+            float currAngle = 999f;
 
-            float prevAngle = currAngle;
-            if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) return false;
+            while(timer > 0 && ml && targetVessel)
+            {
+                Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, targetVessel.CoM, targetVessel.Velocity(), loft, loftFac) : targetVessel.CoM;
+                ml.AimTurrets(target);
 
-            // If the angle is not decreasing, decrement the timer
-            if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                // Save previous angle
+                float prevAngle = currAngle;
+                if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
-            return true;
+                // If the angle is not decreasing, decrement the timer
+                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+
+                yield return wait;
+            }
         }
 
-        bool AimMissileTurretLaser(MissileBase ml, ref float timer, float angleThreshold, ref float currAngle)
+        IEnumerator AimMissileTurretAntirad(Vessel targetVessel, MissileBase ml, float timeout, float angleThreshold) //, bool lead, bool loft, float loftFac, float angleThreshold)
         {
-            if (timer < 0 || !ml || !foundCam) return false;
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
 
-            Vector3 target = foundCam.targetPointPosition;
-            ml.AimTurrets(target);
+            float timer = timeout;
+            float currAngle = 999f;
 
-            float prevAngle = currAngle;
-            if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) return false;
+            while (timer > 0 && ml && antiRadTargetAcquired && targetVessel)
+            {
+                //Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, antiRadiationTarget, targetVessel.Velocity(), loft, loftFac) : antiRadiationTarget;
+                Vector3 target = antiRadiationTarget;
+                ml.AimTurrets(target);
 
-            // If the angle is not decreasing, decrement the timer
-            if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+                // Save previous angle
+                float prevAngle = currAngle;
+                if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
 
-            return true;
+                // If the angle is not decreasing, decrement the timer
+                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+
+                yield return wait;
+            }
+        }
+
+        IEnumerator AimMissileTurretIR(Vessel targetVessel, MissileBase ml, float timeout, bool lead, bool loft, float loftFac, float angleThreshold)
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+            float timer = timeout;
+            float currAngle = 999f;
+
+            while (timer > 0 && ml && targetVessel && heatTarget.exists)
+            {
+                Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, heatTarget.predictedPosition, heatTarget.velocity, loft, loftFac) : heatTarget.predictedPosition;
+                ml.AimTurrets(target);
+
+                float prevAngle = currAngle;
+                if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
+
+                // If the angle is not decreasing, decrement the timer
+                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+
+                yield return wait;
+            }
+        }
+
+        IEnumerator AimMissileTurretLaser(Vessel targetVessel, MissileBase ml, float timeout, float angleThreshold)
+        {
+            WaitForFixedUpdate wait = new WaitForFixedUpdate();
+
+            float timer = timeout;
+            float currAngle = 999f;
+
+            while (timer > 0 && ml && foundCam && targetVessel)
+            {
+                Vector3 target = foundCam.targetPointPosition;
+                ml.AimTurrets(target);
+
+                float prevAngle = currAngle;
+                if ((currAngle = VectorUtils.Angle(ml.MissileReferenceTransform.forward, target - ml.MissileReferenceTransform.position)) < angleThreshold) break;
+
+                // If the angle is not decreasing, decrement the timer
+                if (currAngle > prevAngle) timer -= Time.fixedDeltaTime;
+
+                yield return wait;
+            }
         }
 
         float GetMissileTurretFireAngle(MissileLauncher mlauncher)
@@ -2933,11 +2993,7 @@ namespace BDArmory.Control
 
                                     ml.SetSlavedGuard(true);
 
-                                    float currAngle = 999f;
-                                    while (AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, angleThreshold, ref currAngle))
-                                    {
-                                        yield return wait;
-                                    }
+                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
 
                                     if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
@@ -3055,11 +3111,13 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(true);
 
-                                float currAngle = 999f;
+                                yield return StartCoroutine(AimMissileTurretIR(targetVessel, ml, turretTimer, useUncaged, loft, loftFac, angleThreshold));
+
+                                /*float currAngle = 999f;
                                 while (targetVessel && AimMissileTurretIR(ml, ref turretTimer, useUncaged, loft, loftFac, angleThreshold, ref currAngle))
                                 {
                                     yield return wait;
-                                }
+                                }*/
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3238,11 +3296,7 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(true);
 
-                                float currAngle = 999f;
-                                while (AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, angleThreshold, ref currAngle))
-                                {
-                                    yield return wait;
-                                }
+                                yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3305,11 +3359,13 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(true);
 
-                                float currAngle = 999f;
+                                yield return StartCoroutine(AimMissileTurretAntirad(targetVessel, ml, turretTimer, angleThreshold));
+
+                                /*float currAngle = 999f;
                                 while (antiRadTargetAcquired && AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, angleThreshold, ref currAngle))
                                 {
                                     yield return wait;
-                                }
+                                }*/
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3352,11 +3408,7 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            float currAngle = 999f;
-                            while (AimMissileTurretAngle(targetVessel, ml, ref laserLockTimer, false, false, 1f, 25f, ref currAngle))
-                            {
-                                yield return wait;
-                            }
+                            yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, laserLockTimer, false, false, 1f, 25f));
 
                             ml.SetSlavedGuard(false);
 
@@ -3416,11 +3468,13 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(true);
 
-                                currAngle = 999f;
+                                yield return StartCoroutine(AimMissileTurretLaser(targetVessel, ml, turretTimer, angleThreshold));
+
+                                /*float currAngle = 999f;
                                 while (AimMissileTurretLaser(ml, ref turretTimer, angleThreshold, ref currAngle))
                                 {
                                     yield return wait;
-                                }
+                                }*/
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3537,11 +3591,7 @@ namespace BDArmory.Control
 
                                     ml.SetSlavedGuard(true);
 
-                                    float currAngle = 999f;
-                                    while (AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, angleThreshold, ref currAngle))
-                                    {
-                                        yield return wait;
-                                    }
+                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
 
                                     if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
@@ -3616,11 +3666,7 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(true);
 
-                                float currAngle = 999f;
-                                while (AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, dumbfireFOV, ref currAngle))
-                                {
-                                    yield return wait;
-                                }
+                                yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, dumbfireFOV));
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
