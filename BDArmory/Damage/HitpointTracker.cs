@@ -39,6 +39,7 @@ namespace BDArmory.Damage
         public float ArmorRemaining = 100;
 
         public float StartingArmor;
+        public float StartingArmorQty;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_Armor_ArmorType"),//Armor Types
         UI_FloatRange(minValue = 1, maxValue = 999, stepIncrement = 1, scene = UI_Scene.All)]
@@ -1039,6 +1040,15 @@ namespace BDArmory.Damage
 
             PartExploderSystem.AddPartToExplode(part);
         }
+        public float GetRealArmor()
+        {
+            return StartingArmor * totalArmorQty / StartingArmorQty;
+        }
+
+        public float GetArmorQtyP()
+        {
+            return totalArmorQty / StartingArmorQty;
+        }
 
         public float GetMaxArmor()
         {
@@ -1347,6 +1357,7 @@ namespace BDArmory.Damage
             armorMass = 0;
             armorCost = 0;
             totalArmorQty = 0;
+            StartingArmorQty = 0;
             if (ArmorTypeNum != (ArmorInfo.armors.FindIndex(t => t.name == "None") + 1) && (!BDArmorySettings.LEGACY_ARMOR || (!BDArmorySettings.RESET_ARMOUR || (BDArmorySettings.RESET_ARMOUR && ArmorThickness > 10)))) //don't apply cost/mass to None armor type
             {
                 armorMass = (Armor / 1000) * armorVolume * Density / 1000; //armor mass in tons
@@ -1370,6 +1381,7 @@ namespace BDArmory.Damage
             }
             CalculateRCSreduction();
             totalArmorQty = armorMass; //grabbing a copy of unmodified armorMAss so it can be used in armorMass' place for armor reduction without having to un/re-modify the mass before and after armor hits
+            StartingArmorQty = totalArmorQty;
             armorMass *= BDArmorySettings.ARMOR_MASS_MOD;
             //part.RefreshAssociatedWindows(); //having this fire every time a change happens prevents sliders from being used. Add delay timer?
             if (OldArmorType != ArmorTypeNum || !AlmostEqual(oldArmorMass, armorMass))

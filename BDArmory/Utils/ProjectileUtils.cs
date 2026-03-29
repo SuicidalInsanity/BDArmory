@@ -281,7 +281,7 @@ namespace BDArmory.Utils
                 if (armorType == 1) return; //ArmorType "None"; no armor to block/reduce blast, take full damage
             }
             if (BDArmorySettings.PAINTBALL_MODE) return; //don't damage armor if paintball mode
-            float thickness = (float)hitPart.GetArmorThickness();
+            float thickness = hitPart.GetRealArmorThickness();
             if (thickness <= 0) return; //No armor present to spall/damage
 
             double volumeToReduce = -1d;
@@ -384,7 +384,7 @@ namespace BDArmory.Utils
             /// Shrapnel penetration dist determined by caliber, penetration. Penetration = -1 is part only hit by blast/airburst
             /// </summary>
             if (BDArmorySettings.PAINTBALL_MODE) return; //don't damage armor if paintball mode
-            if (thickness < 0) thickness = (float)hitPart.GetArmorThickness();
+            if (thickness < 0) thickness = hitPart.GetArmorThickness();
             if (thickness < 1)
             {
                 thickness = 1; //prevent divide by zero or other odd behavior
@@ -542,7 +542,7 @@ namespace BDArmory.Utils
             /// </summary>
             //use blastTotalPressure to get MPa of shock on plate, compare to armor mat tolerances
             if (BDArmorySettings.PAINTBALL_MODE) return false; //don't damage armor if paintball mode. Returns false (damage passes armor) so misiles can still be damaged in Paintball mode
-            float thickness = (float)hitPart.GetArmorMaxThickness();
+            float thickness = hitPart.GetArmorMaxThickness();
             //Since BDA armor is some sort of weird ablatitive model, need to adjust thickness to original level before volume calcs to ensure a hit that should remove X mass will continue to
             //remove x mass subsequent hits, instead of diminishing amounts, so using getmaxThickness isntead of GetThickness
 
@@ -628,11 +628,11 @@ namespace BDArmory.Utils
                 // Clamp spall area to the blast effect range
                 spallArea = Mathf.Min(spallArea, sqrRadius * 1.5f);
 
-                if (spallArea >= armorArea) thickness = hitPart.GetArmorThickness(); //if armor larger than blast area, use max thickness to ensure currect armor reduction from HE hits (siming plate thickness reduction as more localized cratering
-                                                                                     //than the entire panel delaminating layers of armor)
-                                                                                     //if blast area encompasses entire plate, then max thickness is whatever the current thickness is, 
-                                                                                     //tl;dr 'thickness' at present is really more accurately 'average thickness'. Should probably refactor armor at somepoint to maintain a constant thickness
-                                                                                     //and have armor degredation solely represented by armor integrity.
+                if (spallArea >= armorArea) thickness *= hitPart.GetRealArmorPercentage();  //if armor larger than blast area, use max thickness to ensure currect armor reduction from HE hits (siming plate thickness reduction as more localized cratering
+                                                                                            //than the entire panel delaminating layers of armor)
+                                                                                            //if blast area encompasses entire plate, then max thickness is whatever the current thickness is, 
+                                                                                            //tl;dr 'thickness' at present is really more accurately 'average thickness'. Should probably refactor armor at somepoint to maintain a constant thickness
+                                                                                            //and have armor degredation solely represented by armor integrity.
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
                     Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Beginning ExplosiveArmorDamage(); {hitPart.name}, ArmorType: {Armor.ArmorTypeNum}; Armor Thickness: {Armor.Armor}mm; BlastPressure: {BlastPressure}; BlowthroughFactor: {blowthroughFactor}"); ;
@@ -652,7 +652,7 @@ namespace BDArmory.Utils
                         ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
                         if (BDArmorySettings.DEBUG_ARMOR)
                         {
-                            Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: Armor rupture on " + hitPart.name + ", " + hitPart.vessel.GetName() + "! Size: " + spallArea + "m2; mass: " + spallMass + "kg; spall dmg: " + damage);
+                            Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Armor rupture on {hitPart.name}, {hitPart.vessel.GetName()}! Size: {spallArea}m2; mass: {spallMass}kg; spall dmg: {damage}");
                         }
 
                         if (BDArmorySettings.BATTLEDAMAGE)
@@ -661,13 +661,16 @@ namespace BDArmory.Utils
                         }
                         return false;
                     }
-                    if (blowthroughFactor > 0.66)
+                    if (blowthroughFactor > 0.66f)
                     {
-                        spallArea *= (1 - ductility); // * blowthroughFactor; //m2
+                        spallArea *= (1f - ductility) * (blowthroughFactor - 0.66f); // * blowthroughFactor; //m2
                         if (spallArea > armorArea) spallArea = armorArea; //m2
                         float spallCaliber = BDAMath.Sqrt(spallArea) * 1000; //m2 -> mm
-                        spallArea *= 10000 * (thickness / 10) * (blowthroughFactor - 0.66f); //m2 -> cm2 -> cm3
-                        spallMass = spallArea * (Density / 1000000); //lose  up to 1/3rd thickness from spalling, based on severity of blast; m2 -> cm2 -> cm3 -> kg
+                        spallMass = spallArea * 10000 * (thickness / 10); //m2 -> cm2 -> cm3
+
+                        hitPart.ReduceArmor(spallMass); //cm3
+
+                        spallMass *= (Density / 1000000); //lose  up to 1/3rd thickness from spalling, based on severity of blast; m2 -> cm2 -> cm3 -> kg
 
                         if (hardness > 500)//armor holds, but spalling
                         {
@@ -676,14 +679,13 @@ namespace BDArmory.Utils
                         }
                         if (BDArmorySettings.DEBUG_ARMOR)
                         {
-                            Debug.Log("[BDArmory.ProjectileUtils{CalculateExplosiveArmorDamage}]: Explosive Armor spalling" + hitPart.name + ", " + hitPart.vessel.GetName() + "! Size: " + spallArea + "m2; mass: " + spallMass + "kg; spall dmg: " + damage);
+                            Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Explosive Armor spalling {hitPart.name}, {hitPart.vessel.GetName()}! Size: {spallArea}m2; mass: {spallMass}kg; spall dmg: {damage}");
                         }
                         //else soft enough to not spall. Armor has suffered some deformation, though, weakening it.
                         if (BDArmorySettings.BATTLEDAMAGE)
                         {
                             BattleDamageHandler.CheckDamageFX(hitPart, spallCaliber, blowthroughFactor, false, false, sourcevessel, hit);
                         }
-                        hitPart.ReduceArmor(spallArea); //cm3
                         return true;
                     }
                 }
@@ -718,10 +720,12 @@ namespace BDArmory.Utils
                             spallArea *= (1.2f - ductility); // * blowthroughFactor; //m2
                             if (spallArea > armorArea) spallArea = armorArea; //m2
                             float spallCaliber = BDAMath.Sqrt(spallArea) * 1000; //m2 -> mm
-                            spallArea *= 10000 * (thickness / 10); // m2 -> cm3
-                            spallMass = spallArea * (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
+                            spallMass = spallArea * 10000 * (thickness / 10); // m2 -> cm3
+
+                            hitPart.ReduceArmor(spallMass); //cm3
+
+                            spallMass *= (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
                             
-                            hitPart.ReduceArmor(spallArea); //cm3
                             damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                             ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
 
@@ -765,11 +769,14 @@ namespace BDArmory.Utils
                             spallArea *= (1.2f - ductility) * (blowthroughFactor - 0.66f); //((1.2f - ductility) * blowthroughFactor) * (blowthroughFactor - 0.66f); //m2
                             if (spallArea > armorArea) spallArea = armorArea; //m2
                             float spallCaliber = BDAMath.Sqrt(spallArea) * 10; //cm2 -> mm
-                            spallArea *= 10000 * thickness / 10; //m2 -> cm3
+                            spallMass = spallArea * 10000 * thickness / 10; //m2 -> cm3
+
+                            hitPart.ReduceArmor(spallMass); //cm3
+
                             if (hardness > 500)
                             {
                                 //blowtrhoughFactor - 1 * 100
-                                spallMass = spallArea * (Density / 1000000); //kg
+                                spallMass *= (Density / 1000000); //kg
                                 damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                                 ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
                                 if (BDArmorySettings.BATTLEDAMAGE)
@@ -777,11 +784,10 @@ namespace BDArmory.Utils
                                     BattleDamageHandler.CheckDamageFX(hitPart, spallCaliber, blowthroughFactor, true, false, sourcevessel, hit);
                                 }
                             }
-                            hitPart.ReduceArmor(spallArea); //cm3
 
                             if (BDArmorySettings.DEBUG_ARMOR)
                             {
-                                Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Armor holding. Barely!, {hitPart.name}, {hitPart.vessel.GetName()}!; area lost: {spallArea}cm3; mass: {spallArea * (Density / 1000000)}kg; spall dmg: {damage}");
+                                Debug.Log($"[BDArmory.ProjectileUtils{{CalculateExplosiveArmorDamage}}]: Armor holding. Barely!, {hitPart.name}, {hitPart.vessel.GetName()}!; area lost: {spallArea}m2; mass: {spallArea * (Density / 1000000)}kg; spall dmg: {damage}");
                             }
                         }
                         return true;
