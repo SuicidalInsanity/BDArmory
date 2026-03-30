@@ -26,8 +26,11 @@ IMPROVEMENTS / FIXES
 	- Fix AI not respecting Max Missiles Per Target setting when dropping bombs.
 	- Fix Surface AI circling last waypoint when it finishes a WP race.
 	- Fix AI usage of radar-warning receiver not always being consistent, sometimes not "noticing" a radar missile fired at it.
+	- Improve AI missile turret usage behavior, now instead of timing out after half of "Firing Interval" elapses, the turret must make no progress towards the target for half of "Firing Interval" to time out.
 	- Point Defense AI:
 		- Fix PD usage of laser-guided, anti-radiation, and heat-seeking missiles.
+		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
+		- Add support for acoustic torpedoes.
 - Sensors:
   - Improvements to target camera target switching behavior, should no longer switch to a new target while current laser ordnance is still in the air.
   - Multiple target cam support, craft with multiple cams can now simultaneously engage multiple targets with laser ordnance, one per camera.
@@ -35,6 +38,7 @@ IMPROVEMENTS / FIXES
   - Target Cameras now respect subsystem targeting options and will paint specific part(s) of a target craft if non-CoM targeting enabled.
   - Fix Laser missile LoS checks using vessel root instead of missile position for determining terrain occlusion of target.
   - Radars will now set any newly locked targets as the current primary target (affecting their multi-lock FoV).
+  - Improved radar debug statements.
 - Weapons:
 	- Turrets:
 		- Added "baseTransformName" field to turrets, while this was previously unclear, the parent transform of yawTransform was previously being used to determine the turret's center of rotation and the orientation of its axes. This has now been made into an explicit field to allow modders to better control this behavior. Unless specified, the transform will be set to the parent of the yawTransform.
@@ -55,6 +59,7 @@ IMPROVEMENTS / FIXES
 		- Fix shaped charges applying kinetic damage without actually penetrating the part they hit.
 		- Apply missing explosion source multiplier for shaped charge kinetic damage and shrapnel.
 		- Rename incorrectly named "Implosive Damage Multiplier" setting to "Exp. Impulse Multiplier". This setting modifies the force with which explosions push vessels (the ones that aren't blown up at least...).
+		- Fix explosion blast damage calculations, damage is now more strictly based on the explosion's blast wave and is more consistent. This means explosions will damage armor plates more significantly once they blast through them, while larger plates will see more reasonable amounts of damage relative to the size of the blast.
 	- Bullets:
 		- Fixed bullets which ricochet not activating their penetrating / delayed fuzes.
 	- Rockets:
@@ -78,6 +83,8 @@ IMPROVEMENTS / FIXES
 		- Added spinning missiles, missiles can now be given a spin using "spinRate", specifying the spin rate in revolutions per second (clockwise-positive when looking from behind the missile) and "spinAccel", a proportional control constant for missile's spin rate, higher values will mean the missile spins up faster. Note this "spinAccel" should be a relatively small value, by default it is 0.25.
 		- Fix INS and GPS missiles fired from multi-missile launchers being fired towards (0, 0, 0) when dumbfired by the AI.
 		- Fix IR missiles not turning towards a target they lost track of.
+		- ARH missiles will now use "radarLOAL" behavior when a target flies outside of their boresight instead of declaring a miss.
+		- Fix "CruisePopup" setting for cruise missiles with this feature not being persistent.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
     - Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.

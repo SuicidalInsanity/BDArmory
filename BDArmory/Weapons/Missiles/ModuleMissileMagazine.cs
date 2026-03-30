@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -127,16 +127,16 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
 				missileMass = 0;
 				missileCost = 0;
 			}
-            if (string.IsNullOrEmpty(scaleTransformName))
+            if (string.IsNullOrEmpty(scaleTransformName) || (ScaleTransform = part.FindModelTransform(scaleTransformName)) == null)
             {
-                Fields["Scale"].guiActiveEditor = false;
+                Fields[nameof(ammoCount)].guiActiveEditor = false;
+                Fields[nameof(rowCount)].guiActiveEditor = false;
             }
             else
             {
-                ScaleTransform = part.FindModelTransform(scaleTransformName);
-                UI_FloatRange scale = (UI_FloatRange)Fields["ammoCount"].uiControlEditor;
+                UI_FloatRange scale = (UI_FloatRange)Fields[nameof(ammoCount)].uiControlEditor;
                 scale.onFieldChanged = UpdateScale;
-                UI_FloatRange rows = (UI_FloatRange)Fields["rowCount"].uiControlEditor;
+                UI_FloatRange rows = (UI_FloatRange)Fields[nameof(rowCount)].uiControlEditor;
                 rows.maxValue = Mathf.CeilToInt(BDAMath.Sqrt(maxAmmo));
                 rows.onFieldChanged = UpdateScale;
             }
