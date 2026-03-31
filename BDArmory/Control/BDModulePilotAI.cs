@@ -3508,9 +3508,13 @@ namespace BDArmory.Control
                     Vector3 threatDirection;
                     // If in space or not SARH (note that no radarTarget.exists check is made, but this *should* be fine)
                     if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
+                    {
                         threatDirection = -1f * missileThreat.Velocity(); // Use missile vel
+                    }
                     else
+                    {
                         threatDirection = -1f * missileThreatMB.radarTarget.lockedByRadar.vessel.Velocity(); // Use radar parent vessel vel
+                    }
 
                     threatDirection = threatDirection.ProjectOnPlanePreNormalized(upDirection);
                     float sign = Vector3.SignedAngle(threatDirection, vessel.Velocity().ProjectOnPlanePreNormalized(upDirection), upDirection);

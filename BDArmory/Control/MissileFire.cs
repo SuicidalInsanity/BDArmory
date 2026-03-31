@@ -3002,7 +3002,6 @@ namespace BDArmory.Control
 
                                     ml.SetSlavedGuard(false);
                                 }
-                                yield return wait;
 
                                 // if (ml && guardTarget && vesselRadarData.locked && (!AIMightDirectFire() || GetLaunchAuthorization(guardTarget, this)))
                                 //no check if only non-locking scanning radars on craft
@@ -3126,7 +3125,6 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(false);
                             }
-                            yield return wait;
 
                             if (targetVessel && ml && heatTarget.exists && heatTarget.signalStrength * ((BDArmorySettings.ASPECTED_IR_SEEKERS && Vector3.Dot(targetVessel.vesselTransform ? targetVessel.vesselTransform.up : targetVessel.transform.up, ml.transform.forward) > 0.25f) ? ml.frontAspectHeatModifier : 1) < ml.heatThreshold)
                             {
@@ -3305,7 +3303,6 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(false);
                             }
-                            yield return wait;
 
                             if (!dumbfiring && vessel && targetVessel)
                             {
@@ -3374,7 +3371,6 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(false);
                             }
-                            yield return wait;
 
                             if (!antiRadTargetAcquired)
                             {
@@ -3483,7 +3479,6 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(false);
                             }
-                            yield return wait;
 
                             //Debug.Log($"[GMR_Debug] waiting... laspoint: {laserPointDetected}; foundCam: {foundCam != null}; targetVessel: {targetVessel != null}");
                             //if (ml && laserPointDetected && foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude < targetpaintAccuracyThreshold)
@@ -3600,7 +3595,6 @@ namespace BDArmory.Control
 
                                     ml.SetSlavedGuard(false);
                                 }
-                                yield return wait;
 
                                 if (vessel && ml && targetVessel)
                                 {
@@ -3675,7 +3669,6 @@ namespace BDArmory.Control
 
                                 ml.SetSlavedGuard(false);
                             }
-                            yield return wait;
 
                             if (ml && targetVessel && GetLaunchAuthorization(targetVessel, this, ml))
                             {
