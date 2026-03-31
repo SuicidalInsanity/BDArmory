@@ -1,9 +1,11 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.
+	- Fix SimpleRepaint messing with part HP.
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
+	- Modded EVA kerbals with WMs no longer get their vessel type changed.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
@@ -12,6 +14,8 @@ IMPROVEMENTS / FIXES
 	- Add an option (and MM patch) to allow specifying the Kerbal Suit kerbals spawn with in crewed parts. Adds an override in the vessel spawner window for BDA spawns.
 	- New 'localizedName' field for armor material configs.
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
+	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
+	- Add a debug toggle specifically for part HP.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
