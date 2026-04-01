@@ -87,10 +87,11 @@ IMPROVEMENTS / FIXES
 		- Fix "CruisePopup" setting for cruise missiles with this feature not being persistent.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
-    - Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
 		- Multi-Missile Launchers:
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
+			- Fix unguided weapons suddenly becoming guided after being launched from a MML.
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
