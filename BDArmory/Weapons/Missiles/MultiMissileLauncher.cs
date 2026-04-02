@@ -594,6 +594,7 @@ namespace BDArmory.Weapons.Missiles
 
         void UpdateFields(MissileLauncher MLConfig, bool configurableSettings)
         {
+            missileLauncher.guidanceActive = MLConfig.guidanceActive;
             missileLauncher.homingType = MLConfig.homingType; //these are all non-persistant, and need to be re-grabbed at launch
             missileLauncher.targetingType = MLConfig.targetingType;
             missileLauncher.missileType = MLConfig.missileType;
@@ -925,7 +926,6 @@ namespace BDArmory.Weapons.Missiles
                     ml.decoupleSpeed = missileLauncher.decoupleSpeed;
                 }
                 ml.DetonateAtMinimumDistance = missileLauncher.DetonateAtMinimumDistance && missileLauncher.canDetMinDist;
-                ml.guidanceActive = true;
                 ml.detonationTime = missileLauncher.detonationTime;
                 ml.engageAir = missileLauncher.engageAir;
                 ml.engageGround = missileLauncher.engageGround;
