@@ -31,6 +31,7 @@ IMPROVEMENTS / FIXES
 		- Fix PD usage of laser-guided, anti-radiation, and heat-seeking missiles.
 		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
 		- Add support for acoustic torpedoes.
+		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
 - Sensors:
   - Improvements to target camera target switching behavior, should no longer switch to a new target while current laser ordnance is still in the air.
   - Multiple target cam support, craft with multiple cams can now simultaneously engage multiple targets with laser ordnance, one per camera.
@@ -68,6 +69,7 @@ IMPROVEMENTS / FIXES
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
+		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Lasers:
 		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance.
 		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
