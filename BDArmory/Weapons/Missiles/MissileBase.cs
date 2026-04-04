@@ -2118,6 +2118,11 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             this.part.RefreshAssociatedWindows();
         }
 
+        public virtual bool HasTurrets()
+        {
+            return customTurret.Count > 0;
+        }
+
         public virtual void SetSlavedGuard(bool slavedGuard)
         {
             for (int i = 0; i < customTurret.Count; i++)
@@ -2128,7 +2133,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
         }
 
-        public virtual void AimTurrets(Vector3 targetPos)
+        public virtual bool AimTurrets(Vector3 targetPos)
         {
             for (int i = 0; i < customTurret.Count; i++)
             {
@@ -2136,6 +2141,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 if (customTurret[i].vessel != vessel) continue;
                 customTurret[i].slavedTargetPosition = targetPos;
             }
+            return customTurret.Count > 0;
         }
 
         public virtual Vector3 TurretAimPosition()

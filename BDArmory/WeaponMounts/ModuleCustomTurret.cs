@@ -170,10 +170,7 @@ namespace BDArmory.WeaponMounts
         public void SetSlavedGuard(bool slavedGuard, MissileBase ml)
         {
             _slavedGuard = slavedGuard;
-            if (slavedGuard)
-            {
-                _slavedGuardMissile = ml;
-            }
+            _slavedGuardMissile = slavedGuard ? ml : null;
         }
 
         void FixedUpdate()

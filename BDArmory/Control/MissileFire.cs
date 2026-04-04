@@ -2724,9 +2724,7 @@ namespace BDArmory.Control
         {
             if (Time.time > finalTime || !ml || !targetVessel) return false;
 
-            ml.AimTurrets(lead ? MissileGuidance.GetAirToAirFireSolution(ml, targetVessel.CoM, targetVessel.Velocity(), loft, loftFac) : targetVessel.CoM);
-
-            return true;
+            return ml.AimTurrets(lead ? MissileGuidance.GetAirToAirFireSolution(ml, targetVessel.CoM, targetVessel.Velocity(), loft, loftFac) : targetVessel.CoM);
         }
 
         // This is left here in case there's cases that require custom conditionals or custom implementations
@@ -2986,14 +2984,17 @@ namespace BDArmory.Control
                                 MissileLauncher mlauncher = ml as MissileLauncher;
                                 if (targetVessel)
                                 {
-                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+                                    if (ml.HasTurrets())
+                                    {
+                                        //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                        float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                        float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+                                        (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
 
-                                    ml.SetSlavedGuard(true);
+                                        ml.SetSlavedGuard(true);
 
-                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                        yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                    }
 
                                     if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
@@ -3053,9 +3054,13 @@ namespace BDArmory.Control
                             float IRLockAttemptEndTime = attemptStartTime + Mathf.Max(targetScanInterval * 0.75f, 5f);
                             MissileLauncher mlauncher = ml as MissileLauncher;
 
+                            bool hasTurrets = ml.HasTurrets();
+
                             ml.SetSlavedGuard(true);
 
-                            while (AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f) && (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f))
+                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do the turret checks
+                                    (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
+                                    (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
                             {
                                 yield return wait;
                             }
@@ -3103,20 +3108,17 @@ namespace BDArmory.Control
                             //mlauncher = ml as MissileLauncher;
                             if (targetVessel)
                             {
-                                //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-                                (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
-
-                                ml.SetSlavedGuard(true);
-
-                                yield return StartCoroutine(AimMissileTurretIR(targetVessel, ml, turretTimer, useUncaged, loft, loftFac, angleThreshold));
-
-                                /*float currAngle = 999f;
-                                while (targetVessel && AimMissileTurretIR(ml, ref turretTimer, useUncaged, loft, loftFac, angleThreshold, ref currAngle))
+                                if (ml.HasTurrets())
                                 {
-                                    yield return wait;
-                                }*/
+                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+
+                                    ml.SetSlavedGuard(true);
+
+                                    yield return StartCoroutine(AimMissileTurretIR(targetVessel, ml, turretTimer, useUncaged, loft, loftFac, angleThreshold));
+                                }
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3287,14 +3289,17 @@ namespace BDArmory.Control
 
                             if (targetVessel)
                             {
-                                //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-                                (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+                                if (ml.HasTurrets())
+                                {
+                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
 
-                                ml.SetSlavedGuard(true);
+                                    ml.SetSlavedGuard(true);
 
-                                yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                }
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3335,9 +3340,13 @@ namespace BDArmory.Control
                             float attemptStartTime = Time.time;
                             float antiradLockAttemptEndTime = attemptStartTime + targetScanInterval * 0.75f;
 
+                            bool hasTurrets = ml.HasTurrets();
+
                             ml.SetSlavedGuard(true);
 
-                            while (AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f) && (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel)))
+                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do turret checks
+                                    (Time.time < antiradLockAttemptEndTime && ml && targetVessel)) && // If we don't, perform the simple checks
+                                    (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel))) // And the target isn't yet locked
                             {
                                 yield return wait;
                             }
@@ -3349,20 +3358,17 @@ namespace BDArmory.Control
 
                             if (targetVessel && antiRadTargetAcquired)
                             {
-                                //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-                                (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
-
-                                ml.SetSlavedGuard(true);
-
-                                yield return StartCoroutine(AimMissileTurretAntirad(targetVessel, ml, turretTimer, angleThreshold));
-
-                                /*float currAngle = 999f;
-                                while (antiRadTargetAcquired && AimMissileTurretAngle(targetVessel, ml, ref turretTimer, true, loft, loftFac, angleThreshold, ref currAngle))
+                                if (ml.HasTurrets())
                                 {
-                                    yield return wait;
-                                }*/
+                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+
+                                    ml.SetSlavedGuard(true);
+
+                                    yield return StartCoroutine(AimMissileTurretAntirad(targetVessel, ml, turretTimer, angleThreshold));
+                                }
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3402,11 +3408,14 @@ namespace BDArmory.Control
                             float laserLockTimer = targetScanInterval * 0.75f;
                             MissileLauncher mlauncher = ml as MissileLauncher;
 
-                            ml.SetSlavedGuard(true);
+                            if (ml.HasTurrets())
+                            {
+                                ml.SetSlavedGuard(true);
 
-                            yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, laserLockTimer, false, false, 1f, 25f));
+                                yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, laserLockTimer, false, false, 1f, 25f));
 
-                            ml.SetSlavedGuard(false);
+                                ml.SetSlavedGuard(false);
+                            }
 
                             float targetpaintAccuracyThreshold = Mathf.Max(100f, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed);
                             if (targetingPods.Count > 0) //if targeting pods are available, slew them onto target and lock.
@@ -3447,9 +3456,13 @@ namespace BDArmory.Control
                             attemptStartTime = Time.time;
                             float laserLockAttemptEndTime = attemptStartTime + targetScanInterval * 0.75f;
 
+                            bool hasTurrets = ml.HasTurrets();
+
                             ml.SetSlavedGuard(true);
 
-                            while (AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f) && (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
+                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f)) || // Perform turret checks if we have turrets
+                                    (Time.time < laserLockAttemptEndTime && ml && targetVessel)) && // Otherwise perform the simple checks
+                                    (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
                             {
                                 yield return wait;
                             }
@@ -3458,19 +3471,16 @@ namespace BDArmory.Control
 
                             if (targetVessel && foundCam)
                             {
-                                //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-
-                                ml.SetSlavedGuard(true);
-
-                                yield return StartCoroutine(AimMissileTurretLaser(targetVessel, ml, turretTimer, angleThreshold));
-
-                                /*float currAngle = 999f;
-                                while (AimMissileTurretLaser(ml, ref turretTimer, angleThreshold, ref currAngle))
+                                if (ml.HasTurrets())
                                 {
-                                    yield return wait;
-                                }*/
+                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+
+                                    ml.SetSlavedGuard(true);
+
+                                    yield return StartCoroutine(AimMissileTurretLaser(targetVessel, ml, turretTimer, angleThreshold));
+                                }
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
@@ -3579,14 +3589,17 @@ namespace BDArmory.Control
 
                                 if (targetVessel)
                                 {
-                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                    float angleThreshold = GetMissileTurretFireAngle(mlauncher);
-                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+                                    if (ml.HasTurrets())
+                                    {
+                                        //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                        float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                        float angleThreshold = GetMissileTurretFireAngle(mlauncher);
+                                        (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
 
-                                    ml.SetSlavedGuard(true);
+                                        ml.SetSlavedGuard(true);
 
-                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                        yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, angleThreshold));
+                                    }
 
                                     if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                     {
@@ -3653,14 +3666,17 @@ namespace BDArmory.Control
                                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} attempting to fire unguided missile on target {targetVessel.GetName()} at range {(targetVessel.CoM - vessel.CoM).magnitude}");
                                 //float attemptStartTime = Time.time;
 
-                                //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
-                                float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
-                                float dumbfireFOV = 1f; // Match firing conditions for dumbfired weapons in GetLaunchAuthorization
-                                (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
+                                if (ml.HasTurrets())
+                                {
+                                    //float turretEndTime = attemptStartTime + Mathf.Max(targetScanInterval / 2f, 2);
+                                    float turretTimer = Mathf.Max(targetScanInterval / 2f, 2);
+                                    float dumbfireFOV = 1f; // Match firing conditions for dumbfired weapons in GetLaunchAuthorization
+                                    (bool loft, float loftFac) = GetMissileTurretLoft(ml, mlauncher);
 
-                                ml.SetSlavedGuard(true);
+                                    ml.SetSlavedGuard(true);
 
-                                yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, dumbfireFOV));
+                                    yield return StartCoroutine(AimMissileTurretAngle(targetVessel, ml, turretTimer, true, loft, loftFac, dumbfireFOV));
+                                }
 
                                 if (mlauncher && mlauncher.multiLauncher && !mlauncher.multiLauncher.turret)
                                 {
