@@ -42,9 +42,9 @@ namespace BDArmory.Weapons.Missiles
             return weap;
         }
 
-        public string GetMissileType()
+        public MissileType GetMissileType()
         {
-            return missileType;
+            return _missileType;
         }
 
         public float GetEngageFOV()
@@ -71,6 +71,10 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public string missileType = "missile";
+
+        public enum MissileType { Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
+
+        protected MissileType _missileType = MissileType.Missile;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MaxStaticLaunchRange"), UI_FloatRange(minValue = 5000f, maxValue = 50000f, stepIncrement = 1000f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Max Static Launch Range
         public float maxStaticLaunchRange = 5000;
@@ -621,6 +625,19 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
         }
 
+        public void ParseMissileType()
+        {
+            missileType = missileType.ToLower();
+            _missileType = missileType switch
+            {
+                "bomb" => MissileType.Bomb,
+                "torpedo" => MissileType.Torpedo,
+                "depthcharge" => MissileType.DepthCharge,
+                "aswmissile" => MissileType.ASWMissile,
+                _ => MissileType.Missile
+            };
+        }
+
         public ModuleMissileRearm reloadableRail = null;
         public bool hasAmmo = false;
         int AmmoCount // Returns the ammo count if the part contains ModuleMissileRearm, otherwise 1.
@@ -642,6 +659,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 hasAmmo = false;
                 isMMG = true;
             }
+            ParseMissileType();
         }
 
         public void GetMissileCount() // could stick this in GetSublabel, but that gets called every frame by BDArmorySetup?

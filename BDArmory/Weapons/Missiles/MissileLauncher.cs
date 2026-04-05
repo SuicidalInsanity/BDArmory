@@ -479,19 +479,14 @@ namespace BDArmory.Weapons.Missiles
 
         void ParseWeaponClass()
         {
-            missileType = missileType.ToLower();
-            if (missileType == "bomb")
+            weaponClass = _missileType switch
             {
-                weaponClass = WeaponClasses.Bomb;
-            }
-            else if (missileType == "torpedo" || missileType == "depthcharge")
-            {
-                weaponClass = WeaponClasses.SLW;
-            }
-            else
-            {
-                weaponClass = WeaponClasses.Missile;
-            }
+                MissileType.Bomb => WeaponClasses.Bomb,
+                MissileType.Torpedo => WeaponClasses.SLW,
+                MissileType.DepthCharge => WeaponClasses.SLW,
+                MissileType.ASWMissile => WeaponClasses.SLW,
+                _ => WeaponClasses.Missile
+            };
         }
 
         public override void OnStart(StartState state)
@@ -1080,7 +1075,7 @@ namespace BDArmory.Weapons.Missiles
             }
 
             // Moved mFA setting here instead of OnStart() to account for the need for this to be set for MMLs as well
-            if (maxOffBoresight < 180 && missileType.ToLower() == "missile" || missileType.ToLower() == "torpedo")
+            if (maxOffBoresight < 180 && _missileType == MissileType.Missile || _missileType == MissileType.Torpedo)
             {
                 UI_FloatRange mFA = (UI_FloatRange)Fields["missileFireAngle"].uiControlEditor;
                 mFA.maxValue = maxOffBoresight * 0.75f;

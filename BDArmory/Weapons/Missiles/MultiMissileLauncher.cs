@@ -597,7 +597,7 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.guidanceActive = MLConfig.guidanceActive;
             missileLauncher.homingType = MLConfig.homingType; //these are all non-persistant, and need to be re-grabbed at launch
             missileLauncher.targetingType = MLConfig.targetingType;
-            missileLauncher.missileType = MLConfig.missileType;
+            missileLauncher.missileType = MLConfig.missileType.ToLower();
             missileLauncher.lockedSensorFOV = MLConfig.lockedSensorFOV;
             missileLauncher.lockedSensorFOVBias = MLConfig.lockedSensorFOVBias;
             missileLauncher.lockedSensorVelocityBias = MLConfig.lockedSensorVelocityBias;
@@ -699,6 +699,7 @@ namespace BDArmory.Weapons.Missiles
             GUIUtils.RefreshAssociatedWindows(missileLauncher.part);
             missileLauncher.ParseLiftDragSteerTorque();
             // Because we already set the values from the true base config, we do **not** check the base config in SetFields
+            missileLauncher.ParseMissileType();
             missileLauncher.SetFields(false);
             missileLauncher.Sublabel = $"Guidance: {Enum.GetName(typeof(TargetingModes), missileLauncher.TargetingMode)}; Max Range: {Mathf.Round(missileLauncher.engageRangeMax / 100) / 10} km; Remaining: {missileLauncher.missilecount}";
         }
