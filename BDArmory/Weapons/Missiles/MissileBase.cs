@@ -1056,20 +1056,40 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         {
                             if (vrd.locked)
                             {
-                                t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                                //t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
                                 //Debug.Log($"[MML RADAR DEBUG] missile switched target to {t.vessel.GetName()}");
+                                List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
+                                for (int i = 0; i < possibleTargets.Count; i++)
+                                {
+                                    if (!possibleTargets[i].exists) continue;
+
+                                    //re-check engagement envelope, only lock appropriate targets
+                                    if (!CheckTargetEngagementEnvelope(possibleTargets[i].targetInfo)) continue;
+
+                                    if (hasIFF && Team.IsFriendly(possibleTargets[i].Team)) continue;
+
+                                    t = possibleTargets[i];
+
+                                    break;
+                                }
                             }
                         }
                         else
                         {
-                            List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
+                            (t, bool tempLocked) = vrd.detectedRadarTargetLock(radarTarget.vessel, FiredByWM);
+                            if (!tempLocked)
+                            {
+                                // If not locked, unset t
+                                t = TargetSignatureData.noTarget;
+                            }
+                            /*List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
                             for (int i = 0; i < possibleTargets.Count; i++)
                             {
                                 if (possibleTargets[i].vessel == radarTarget.vessel) //this means SARH will remain locked to whatever was the initial target, regardless of current radar lock
                                 {
                                     t = possibleTargets[i];
                                 }
-                            }
+                            }*/
                         }
                         if (t.exists)
                         {
