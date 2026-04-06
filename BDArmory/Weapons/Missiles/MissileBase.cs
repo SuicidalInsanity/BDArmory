@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
 
         protected MissileType _missileType = MissileType.Missile;
 
