@@ -26,6 +26,7 @@ IMPROVEMENTS / FIXES
 	- Fix AI not respecting Max Missiles Per Target setting when dropping bombs.
 	- Fix Surface AI circling last waypoint when it finishes a WP race.
 	- Fix AI usage of radar-warning receiver not always being consistent, sometimes not "noticing" a radar missile fired at it.
+	- Improve AI missile notching. AI will not accurately notch / beam missiles while diving, as well as when flying level.
 	- Improve AI missile turret usage behavior, now instead of timing out after half of "Firing Interval" elapses, the turret must make no progress towards the target for half of "Firing Interval" to time out.
 	- Point Defense AI:
 		- Fix PD usage of laser-guided, anti-radiation, and heat-seeking missiles.
@@ -90,6 +91,7 @@ IMPROVEMENTS / FIXES
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
 		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+		- Fix SARH missiles not respecting IFF and target envelope settings when relocking after having lost the primary target when "canRelock" is true.
 		- Multi-Missile Launchers:
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
@@ -104,6 +106,8 @@ IMPROVEMENTS / FIXES
 - Competition:
 	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
 	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+- Mod Support:
+	- Hack support for JonnyOThan's TweakScale Rescaled fork, for now we assume all parts have cubic mass scaling, which is incorrect, but will temporarily patch support for the mod, pending official support.
 
 v1.12.1.0
 IMPROVEMENTS / FIXES
