@@ -372,9 +372,9 @@ namespace BDArmory.Weapons
             //}
             return ammoLeft;
         }
-        public string GetMissileType()
+        public MissileBase.MissileType GetMissileType()
         {
-            return string.Empty;
+            return MissileBase.MissileType.None;
         }
         public float GetEngageFOV()
         {

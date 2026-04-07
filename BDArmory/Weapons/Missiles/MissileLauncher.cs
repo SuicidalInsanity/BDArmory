@@ -479,19 +479,14 @@ namespace BDArmory.Weapons.Missiles
 
         void ParseWeaponClass()
         {
-            missileType = missileType.ToLower();
-            if (missileType == "bomb")
+            weaponClass = _missileType switch
             {
-                weaponClass = WeaponClasses.Bomb;
-            }
-            else if (missileType == "torpedo" || missileType == "depthcharge")
-            {
-                weaponClass = WeaponClasses.SLW;
-            }
-            else
-            {
-                weaponClass = WeaponClasses.Missile;
-            }
+                MissileType.Bomb => WeaponClasses.Bomb,
+                MissileType.Torpedo => WeaponClasses.SLW,
+                MissileType.DepthCharge => WeaponClasses.SLW,
+                MissileType.ASWMissile => WeaponClasses.SLW,
+                _ => WeaponClasses.Missile
+            };
         }
 
         public override void OnStart(StartState state)
@@ -1080,7 +1075,7 @@ namespace BDArmory.Weapons.Missiles
             }
 
             // Moved mFA setting here instead of OnStart() to account for the need for this to be set for MMLs as well
-            if (maxOffBoresight < 180 && missileType.ToLower() == "missile" || missileType.ToLower() == "torpedo")
+            if (maxOffBoresight < 180 && _missileType == MissileType.Missile || _missileType == MissileType.Torpedo)
             {
                 UI_FloatRange mFA = (UI_FloatRange)Fields["missileFireAngle"].uiControlEditor;
                 mFA.maxValue = maxOffBoresight * 0.75f;
@@ -1478,18 +1473,27 @@ namespace BDArmory.Weapons.Missiles
             if (multiLauncher && multiLauncher.turret) multiLauncher.turret.SetSlavedGuard(slavedGuard, this);
         }
 
-        public override void AimTurrets(Vector3 targetPos)
+        public override bool HasTurrets()
         {
-            base.AimTurrets(targetPos);
+            if (missileTurret) return true;
+            if (multiLauncher && multiLauncher.turret) return true;
+            return base.HasTurrets();
+        }
+
+        public override bool AimTurrets(Vector3 targetPos)
+        {
+            bool turrets = base.AimTurrets(targetPos);
             if (missileTurret)
             {
                 missileTurret.slavedTargetPosition = targetPos;
-                return;
+                return true;
             }
             if (multiLauncher && multiLauncher.turret)
             {
                 multiLauncher.turret.slavedTargetPosition = targetPos;
+                return true;
             }
+            return turrets;
         }
 
         public override float GetBlastRadius()
@@ -2388,7 +2392,7 @@ namespace BDArmory.Weapons.Missiles
                                 }
                                 else
                                 {
-                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength};\nnotchVMod: {radarTarget.notchVMod}; notchRMod: {radarTarget.notchRMod}";
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod:F2}; notchRMod: {radarTarget.notchRMod:F2}";
                                 }
                             }
                             else if (radarTarget.signalStrength > 0)

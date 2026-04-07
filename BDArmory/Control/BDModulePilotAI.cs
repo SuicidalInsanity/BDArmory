@@ -3443,6 +3443,8 @@ namespace BDArmory.Control
             speedController.forceAfterburnerIfMaxThrottle = vessel.srfSpeed < ABOverrideThreshold;
         }
 
+        static string[] kinematicEvasionStateStrings = ["", " (Turning Hot)", " (Cranking)", " (Notching)", " (Turning Cold)", " (Notching & Diving)"];
+
         void Evasive(FlightCtrlState s)
         {
             if (s == null) return;
@@ -3507,28 +3509,31 @@ namespace BDArmory.Control
                     // Break off at 90 deg to missile
                     Vector3 threatDirection;
                     // If in space or not SARH (note that no radarTarget.exists check is made, but this *should* be fine)
-                    if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
+                    /*if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
                     {
                         threatDirection = -1f * missileThreat.Velocity(); // Use missile vel
                     }
                     else
                     {
                         threatDirection = -1f * missileThreatMB.radarTarget.lockedByRadar.vessel.Velocity(); // Use radar parent vessel vel
-                    }
+                    }*/
 
-                    threatDirection = threatDirection.ProjectOnPlanePreNormalized(upDirection);
+                    threatDirection = -1f * missileThreat.Velocity().ProjectOnPlanePreNormalized(upDirection);
                     float sign = Vector3.SignedAngle(threatDirection, vessel.Velocity().ProjectOnPlanePreNormalized(upDirection), upDirection);
                     Vector3 breakDirection = Vector3.Cross(Mathf.Sign(sign) * upDirection, threatDirection).ProjectOnPlanePreNormalized(upDirection); // Break left or right depending on which side the missile is coming in on.
 
                     // Missile kinematics check to see if alternate break directions are better (crank or turn around and run)
                     bool dive = true;
+                    bool notch = true;
                     float diveAngle = 75f;
                     if (evasionMissileKinematic && !inVacuum)
                     {
                         dive = false;
+                        notch = false;
                         breakDirection = MissileKinematicEvasion(breakDirection, threatDirection);
                         if (kinematicEvasionState == KinematicEvasionStates.NotchDive)
                         {
+                            notch = true;
                             dive = true;
                             if (weaponManager.incomingMissileTime > weaponManager.cmThreshold)
                             {
@@ -3537,24 +3542,12 @@ namespace BDArmory.Control
                                 diveAngle = Mathf.Lerp(35f, 75f, t); // Gradually dive more as missile gets closer
                             }
                         }
-                        switch (kinematicEvasionState)
+                        else if (kinematicEvasionState == KinematicEvasionStates.Notch)
                         {
-                            case KinematicEvasionStates.ToTarget:
-                                kinematicEvasionStatus = " (Turning Hot)";
-                            break;
-                            case KinematicEvasionStates.Crank:
-                                kinematicEvasionStatus = " (Cranking)";
-                            break;
-                            case KinematicEvasionStates.Notch:
-                                kinematicEvasionStatus = " (Notching)";
-                            break;
-                            case KinematicEvasionStates.TurnAway:
-                                kinematicEvasionStatus = " (Turning Cold)";
-                            break;
-                            case KinematicEvasionStates.NotchDive:
-                                kinematicEvasionStatus = " (Notching & Diving)";
-                            break;
+                            notch = true;
                         }
+
+                        kinematicEvasionStatus = kinematicEvasionStateStrings[(int)kinematicEvasionState];
                     }
                     else
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine("Breaking from missile threat!");
@@ -3566,8 +3559,22 @@ namespace BDArmory.Control
                         float angle = Mathf.Clamp((float)vessel.radarAltitude - minAltitude, 0, diveScale) / diveScale * 90;
                         float angleAdjMissile = Mathf.Max(Mathf.Asin(((float)vessel.radarAltitude - (float)weaponManager.incomingMissileVessel.radarAltitude) /
                             weaponManager.incomingMissileDistance) * Mathf.Rad2Deg, 0f); // Don't dive into the missile if it's coming from below
-                        angle = Mathf.Clamp(angle - angleAdjMissile, 0, diveAngle) * Mathf.Deg2Rad;
-                        breakDirection = Vector3.RotateTowards(breakDirection, -upDirection, angle, 0);
+                        diveAngle = Mathf.Clamp(angle - angleAdjMissile, 0, diveAngle) * Mathf.Deg2Rad;
+                        //breakDirection = Vector3.RotateTowards(breakDirection, -upDirection, angle, 0);
+                    }
+                    if (notch)
+                    {
+                        Vector3 radarDir;
+                        if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
+                        {
+                            radarDir = VectorUtils.NormalizedDiff(missileThreat.CoM, vessel.CoM); // Use missile dir
+                        }
+                        else
+                        {
+                            radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
+                        }
+
+                        breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
                     }
                     if (BDArmorySettings.DEBUG_LINES) debugBreakDirection = breakDirection;
 
@@ -3713,6 +3720,132 @@ namespace BDArmory.Control
             //+ (Mathf.Sin (Time.time/3) * upDirection * minAltitude/3);
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Evading unknown attacker");
             FlyToPosition(s, target);
+        }
+
+        Vector3 NotchDir(Vector3 breakDirection, Vector3 radarDir, float diveAngle)
+        {
+            Vector3 down = -vessel.up;
+            float cosCone = Mathf.Sin(diveAngle); // Using sin instead of cos as we want the angle relative to the down vector, cos(90 deg - diveAngle) = sin(diveAngle)
+
+            float x1 = down.x;
+            float y1 = down.y;
+            float z1 = down.z;
+
+            float x2 = radarDir.x;
+            float y2 = radarDir.y;
+            float z2 = radarDir.z;
+
+            float dot = Vector3.Dot(down, radarDir);
+
+            float crossx = y1 * z2 - z1 * y2;
+            if (Mathf.Abs(crossx) > Mathf.Epsilon)
+            {
+                float newCosCone = calcNotch(x1, x2, y2, z2, crossx, dot, cosCone, out float xsol1, out float xsol2);
+                calcNotchYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                if (Vector3.Dot(breakDirection, sol1) > Vector3.Dot(breakDirection, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            float crossy = x1 * z2 - z1 * x2;
+            if (Mathf.Abs(crossy) > Mathf.Epsilon)
+            {
+                float newCosCone = calcNotch(y1, y2, x2, z2, crossy, dot, cosCone, out float ysol1, out float ysol2);
+                calcNotchXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                if (Vector3.Dot(breakDirection, sol1) > Vector3.Dot(breakDirection, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            float crossz = x1 * y2 - y1 * x2;
+            if (Mathf.Abs(crossz) > Mathf.Epsilon)
+            {
+                float newCosCone = calcNotch(z1, z2, x2, y2, crossz, dot, cosCone, out float zsol1, out float zsol2);
+                calcNotchXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                if (Vector3.Dot(breakDirection, sol1) > Vector3.Dot(breakDirection, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            return breakDirection;
+        }
+
+        float calcNotch(float d1, float d2, float a2, float b2, float crossd, float dot, float cosCone, out float r1, out float r2)
+        {
+            float denominator = (1.0f - dot * dot);
+            float numerator = cosCone * (d1 - d2 * dot);
+            float determinant = numerator * numerator - denominator * (cosCone * cosCone * (a2 * a2 + b2 * b2) - crossd * crossd);
+
+            if (determinant < 0.0f)
+            {
+                if (determinant < -5e-5f)
+                {
+                    // Solve for cosCone required for determinant to be zero
+                    cosCone = BDAMath.Sqrt(numerator * numerator / (denominator * (a2 * a2 + b2 * b2 - crossd * crossd)));
+                    determinant = 0.0f;
+                }
+                else
+                {
+                    determinant = 0.0f;
+                }
+            }
+            else
+                determinant = BDAMath.Sqrt(determinant);
+
+            r1 = (numerator - determinant) / denominator;
+            r2 = (numerator + determinant) / denominator;
+            return cosCone;
+        }
+
+        static void calcNotchYZ(float x1, float x2, float y1, float y2, float z1, float z2, float xsol1, float xsol2, float crossx, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossx = 1.0f / crossx;
+            float ysol1 = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) * crossx;
+            float zsol1 = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) * crossx;
+            float ysol2 = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) * crossx;
+            float zsol2 = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) * crossx;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
+        }
+
+        static void calcNotchXZ(float x1, float x2, float y1, float y2, float z1, float z2, float ysol1, float ysol2, float crossy, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossy = 1.0f / crossy;
+            float xsol1 = (z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
+            float zsol1 = -(x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
+            float xsol2 = (z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
+            float zsol2 = -(x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
+        }
+
+        static void calcNotchXY(float x1, float x2, float y1, float y2, float z1, float z2, float zsol1, float zsol2, float crossz, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossz = 1.0f / crossz;
+            float xsol1 = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) * crossz;
+            float ysol1 = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) * crossz;
+            float xsol2 = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) * crossz;
+            float ysol2 = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) * crossz;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
         }
 
         Vector3 MissileKinematicEvasion(Vector3 breakDirection, Vector3 threatDirection)

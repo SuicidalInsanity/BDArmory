@@ -42,9 +42,9 @@ namespace BDArmory.Weapons.Missiles
             return weap;
         }
 
-        public string GetMissileType()
+        public MissileType GetMissileType()
         {
-            return missileType;
+            return _missileType;
         }
 
         public float GetEngageFOV()
@@ -71,6 +71,10 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public string missileType = "missile";
+
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
+
+        protected MissileType _missileType = MissileType.Missile;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MaxStaticLaunchRange"), UI_FloatRange(minValue = 5000f, maxValue = 50000f, stepIncrement = 1000f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Max Static Launch Range
         public float maxStaticLaunchRange = 5000;
@@ -621,6 +625,19 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
         }
 
+        public void ParseMissileType()
+        {
+            missileType = missileType.ToLower();
+            _missileType = missileType switch
+            {
+                "bomb" => MissileType.Bomb,
+                "torpedo" => MissileType.Torpedo,
+                "depthcharge" => MissileType.DepthCharge,
+                "aswmissile" => MissileType.ASWMissile,
+                _ => MissileType.Missile
+            };
+        }
+
         public ModuleMissileRearm reloadableRail = null;
         public bool hasAmmo = false;
         int AmmoCount // Returns the ammo count if the part contains ModuleMissileRearm, otherwise 1.
@@ -642,6 +659,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 hasAmmo = false;
                 isMMG = true;
             }
+            ParseMissileType();
         }
 
         public void GetMissileCount() // could stick this in GetSublabel, but that gets called every frame by BDArmorySetup?
@@ -1038,20 +1056,40 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         {
                             if (vrd.locked)
                             {
-                                t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
+                                //t = vrd.lockedTargetData.targetData; //SARH is passive, and guided towards whatever is currently painted by FCS radar
                                 //Debug.Log($"[MML RADAR DEBUG] missile switched target to {t.vessel.GetName()}");
+                                List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
+                                for (int i = 0; i < possibleTargets.Count; i++)
+                                {
+                                    if (!possibleTargets[i].exists) continue;
+
+                                    //re-check engagement envelope, only lock appropriate targets
+                                    if (!CheckTargetEngagementEnvelope(possibleTargets[i].targetInfo)) continue;
+
+                                    if (hasIFF && Team.IsFriendly(possibleTargets[i].Team)) continue;
+
+                                    t = possibleTargets[i];
+
+                                    break;
+                                }
                             }
                         }
                         else
                         {
-                            List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
+                            (t, bool tempLocked) = vrd.detectedRadarTargetLock(radarTarget.vessel, FiredByWM);
+                            if (!tempLocked)
+                            {
+                                // If not locked, unset t
+                                t = TargetSignatureData.noTarget;
+                            }
+                            /*List<TargetSignatureData> possibleTargets = vrd.GetLockedTargets();
                             for (int i = 0; i < possibleTargets.Count; i++)
                             {
                                 if (possibleTargets[i].vessel == radarTarget.vessel) //this means SARH will remain locked to whatever was the initial target, regardless of current radar lock
                                 {
                                     t = possibleTargets[i];
                                 }
-                            }
+                            }*/
                         }
                         if (t.exists)
                         {
@@ -1814,7 +1852,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             if (vessel == null || !HasFired || !vessel.isActiveVessel) return;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
             {
-                GUI.Label(new Rect(200, Screen.height - 300, 600, 300), $"{this.shortName}\n{debugString}");
+                GUI.Label(new Rect(200, Screen.height - 300, 800, 300), $"{this.shortName}\n{debugString}");
             }
         }
 
@@ -2118,6 +2156,11 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             this.part.RefreshAssociatedWindows();
         }
 
+        public virtual bool HasTurrets()
+        {
+            return customTurret.Count > 0;
+        }
+
         public virtual void SetSlavedGuard(bool slavedGuard)
         {
             for (int i = 0; i < customTurret.Count; i++)
@@ -2128,7 +2171,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
         }
 
-        public virtual void AimTurrets(Vector3 targetPos)
+        public virtual bool AimTurrets(Vector3 targetPos)
         {
             for (int i = 0; i < customTurret.Count; i++)
             {
@@ -2136,6 +2179,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 if (customTurret[i].vessel != vessel) continue;
                 customTurret[i].slavedTargetPosition = targetPos;
             }
+            return customTurret.Count > 0;
         }
 
         public virtual Vector3 TurretAimPosition()

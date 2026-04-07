@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.IO;
@@ -157,7 +157,7 @@ namespace BDArmory.UI
                                 // weapon class is not parsed when in editor, so using missileType
                                 if (missileLauncher.missileType.ToLower() == "bomb")
                                     parts.Current.partConfig.AddValue(AutoBDACategoryKey, "Bombs");
-                                else if (missileLauncher.missileType.ToLower() == "torpedo" || missileLauncher.missileType.ToLower() == "depthcharge")
+                                else if (missileLauncher.missileType.ToLower() == "torpedo" || missileLauncher.missileType.ToLower() == "depthcharge" || missileLauncher.missileType.ToLower() == "aswmissile")
                                     parts.Current.partConfig.AddValue(AutoBDACategoryKey, "Torpedoes");
                                 else
                                     parts.Current.partConfig.AddValue(AutoBDACategoryKey, "Missiles");
