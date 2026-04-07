@@ -2392,7 +2392,7 @@ namespace BDArmory.Weapons.Missiles
                                 }
                                 else
                                 {
-                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength};\nnotchVMod: {radarTarget.notchVMod}; notchRMod: {radarTarget.notchRMod}";
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod:F2}; notchRMod: {radarTarget.notchRMod:F2}";
                                 }
                             }
                             else if (radarTarget.signalStrength > 0)

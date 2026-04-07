@@ -1852,7 +1852,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             if (vessel == null || !HasFired || !vessel.isActiveVessel) return;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
             {
-                GUI.Label(new Rect(200, Screen.height - 300, 600, 300), $"{this.shortName}\n{debugString}");
+                GUI.Label(new Rect(200, Screen.height - 300, 800, 300), $"{this.shortName}\n{debugString}");
             }
         }
 
