@@ -4115,12 +4115,13 @@ namespace BDArmory.Control
                 case KinematicEvasionStates.TurnAway: // Turn 180 deg from missile
                     breakDirection = (-1f * threatDirection).ProjectOnPlanePreNormalized(upDirection).normalized;
                 break;
-                default: // Notch, beam missile initially, start to turn away as missile gets closer
+                default: // Notch, no change in breakDirection
                 {
-                    float t = Mathf.Clamp01((WeaponManager.incomingMissileTime - WeaponManager.cmThreshold)/(WeaponManager.evadeThreshold - WeaponManager.cmThreshold));
+                    // Previous implementation: beam missile initially, start to turn away as missile gets closer
+                    /*float t = Mathf.Clamp01((WeaponManager.incomingMissileTime - WeaponManager.cmThreshold)/(WeaponManager.evadeThreshold - WeaponManager.cmThreshold));
                     t = -1.72f*t*t*t+4.06f*t*t-3.34f*t+1f;
                     float notchAngle = Mathf.Lerp(90f, 135f, t); // Gradually turn from 90 deg notch to 135 deg as missile gets closer
-                    breakDirection = Vector3.RotateTowards(threatDirection, breakDirection, notchAngle * Mathf.Deg2Rad, 0).normalized;
+                    breakDirection = Vector3.RotateTowards(threatDirection, breakDirection, notchAngle * Mathf.Deg2Rad, 0).normalized;*/
                 }
                 break;
             }
