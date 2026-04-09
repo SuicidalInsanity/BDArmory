@@ -2690,6 +2690,7 @@ namespace BDArmory.UI
                         //         var ti = RadarUtils.RenderVesselRadarSnapshot(v, EditorLogic.RootPart.transform);
                         //     }
                         // }
+                        // if (GUI.Button(SLineRect(++line), "Test Bounds")) TestBounds();
                         // if (GUI.Button(SLineRect(++line), "Test Angle")) TestAngle();
                         // if (GUI.Button(SLineRect(++line), "Test Abs")) TestAbs();
                         // if (GUI.Button(SLineRect(++line), "Test \"up\"")) TestUp();
@@ -4963,28 +4964,70 @@ namespace BDArmory.UI
             Debug.Log($"DEBUG inline x<0?-x:x took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {zx}, {zy}");
         }
 
-        // public static void TestAngle()
-        // {
-        //     Vector3 v = UnityEngine.Random.onUnitSphere, v2=Vector3.zero;
-        //     var ax = Vector3.Cross(Vector3.up, v);
-        //     foreach (var angle in new List<float> { 0, 1e-8f, 1e-7f, 1e-6f, 1e-5f, 1e-4f, 1e-3f, 1e-2f, 2e-2f, 3e-2f, 4e-2f, 5e-2f, 1e-1f })
-        //     {
-        //         v2 = Quaternion.AngleAxis(angle, ax) * v;
-        //         Debug.Log($"DEBUG angle from v={v} to v rotated by {angle} is {Vector3.Angle(v, v2)} vs {VectorUtils.Angle(v, v2)} vs {(float)Vector3d.Angle(v, v2)}");
-        //     }
-        //     var watch = new System.Diagnostics.Stopwatch();
-        //     float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
-        //     Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
-        //     float a = 0;
-        //     var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = Vector3.Angle(v,v2); } };
-        //     Debug.Log($"DEBUG Vector3.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-        //     a = 0;
-        //     func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = VectorUtils.Angle(v,v2); } };
-        //     Debug.Log($"DEBUG VectorUtils.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-        //     a = 0;
-        //     func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = (float)Vector3d.Angle(v,v2); } };
-        //     Debug.Log($"DEBUG (float)Vector3d.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-        // }
+        public static void TestAngle()
+        {
+            Vector3 v = UnityEngine.Random.onUnitSphere, v2 = Vector3.zero;
+            var ax = Vector3.Cross(Vector3.up, v);
+            foreach (var angle in new List<float> { 0, 1e-8f, 1e-7f, 1e-6f, 1e-5f, 1e-4f, 1e-3f, 1e-2f, 2e-2f, 3e-2f, 4e-2f, 5e-2f, 1e-1f })
+            {
+                v2 = Quaternion.AngleAxis(angle, ax) * v;
+                Debug.Log($"DEBUG angle from v={v} to v rotated by {angle} is {Vector3.Angle(v, v2)} vs {VectorUtils.Angle(v, v2)} vs {(float)Vector3d.Angle(v, v2)}");
+            }
+            var watch = new System.Diagnostics.Stopwatch();
+            float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
+            float a = 0;
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = Vector3.Angle(v, v2); } };
+            Debug.Log($"DEBUG Vector3.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+            a = 0;
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = VectorUtils.Angle(v, v2); } };
+            Debug.Log($"DEBUG VectorUtils.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+            a = 0;
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = (float)Vector3d.Angle(v, v2); } };
+            Debug.Log($"DEBUG (float)Vector3d.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+        }
+
+        public static void TestBounds()
+        {
+            var watch = new System.Diagnostics.Stopwatch();
+            float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+            Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
+            var vessel = FlightGlobals.ActiveVessel;
+            Bounds bounds = default;
+            Vector3 size = default;
+            // Current GetBounds
+            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetBounds(false); } };
+            Debug.Log($"DEBUG vessel.GetBounds(false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetBounds(true); } };
+            Debug.Log($"DEBUG vessel.GetBounds(true) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            // Collider bounds
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetColliderBounds(); } };
+            Debug.Log($"DEBUG vessel.GetColliderBounds() took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetColliderBounds().size; } };
+            Debug.Log($"DEBUG vessel.GetColliderBounds().size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            // Renderer bounds, with and without LineRenderers/ParticleSystemRenderers
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(); } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds() took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds().size; } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds().size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(ignoreLineRenderers: false); } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(ignoreLineRenderers: false).size; } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(ignoreLineRenderers: false, ignoreParticleRenderers: false); } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false,ignoreParticleRenderers:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(ignoreLineRenderers: false, ignoreParticleRenderers: false).size; } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false,ignoreParticleRenderers:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            // Using cached model renderers vs current renderers
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:true); } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:true).size; } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:false); } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:false).size; } };
+            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
+        }
 
         public static void TestUp()
         {
