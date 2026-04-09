@@ -566,7 +566,14 @@ namespace BDArmory.Extensions
             if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
             {
                 var tweakScaleModule = part.Modules["TweakScale"];
-                massMultiplier = tweakScaleModule.Fields["MassScale"].GetValue<float>(tweakScaleModule);
+                var massMultiplierField = tweakScaleModule.Fields["MassScale"];
+                if (massMultiplierField == null)
+                {
+                    float linScale = part.GetTweakScaleMultiplier();
+                    return linScale * linScale * linScale; // Hacked together support for TweakScale Rescaled
+                    // This is gonna be inaccurate for *many* parts
+                }
+                massMultiplier = massMultiplierField.GetValue<float>(tweakScaleModule);
             }
             return massMultiplier;
         }

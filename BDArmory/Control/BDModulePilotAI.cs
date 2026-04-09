@@ -3722,8 +3722,26 @@ namespace BDArmory.Control
             FlyToPosition(s, target);
         }
 
+        /// <summary>
+        /// Calculates the appropriate notch direction based on the direction to the radar, "radarDir",
+        /// the commanded "diveAngle" (radians, +ve down, 0 is level flight), and "breakDirection", the preferred
+        /// direction of travel (as there are potential two solutions).
+        /// </summary>
+        /// <param name="breakDirection">Preferred direction of travel, does not need to be normalized.</param>
+        /// <param name="radarDir">Direction to the radar, must be normalized.</param>
+        /// <param name="diveAngle">Dive angle in radians</param>
+        /// <returns>Vector to fly towards to notch the radar threat, normalized.</returns>
         Vector3 NotchDir(Vector3 breakDirection, Vector3 radarDir, float diveAngle)
         {
+            // This function solves the system of equations in the form:
+            // V_down dot V = cos(theta)
+            // V_radar dot V = 0
+            // ||V|| = 1
+
+            // It essentially solves for the intersection of a plane and a cone, both centered at the origin,
+            // where V_down is the cone's direction vector, and V_radar is the normal vector of the plane.
+            // Because the solutions are lines, we close the system by enforcing unit-vector results.
+
             Vector3 down = -vessel.up;
             float cosCone = Mathf.Sin(diveAngle); // Using sin instead of cos as we want the angle relative to the down vector, cos(90 deg - diveAngle) = sin(diveAngle)
 
@@ -3737,11 +3755,16 @@ namespace BDArmory.Control
 
             float dot = Vector3.Dot(down, radarDir);
 
+            // Because the equation solved requires division by the appropriate component of the cross product, we
+            // must check if it isn't 0.
             float crossx = y1 * z2 - z1 * y2;
             if (Mathf.Abs(crossx) > Mathf.Epsilon)
             {
+                // If it is, we can solve for the two x-solutions
                 float newCosCone = calcNotch(x1, x2, y2, z2, crossx, dot, cosCone, out float xsol1, out float xsol2);
+                // Giving us the two vector solutions
                 calcNotchYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                // We pick the vector most aligned with breakDirection
                 if (Vector3.Dot(breakDirection, sol1) > Vector3.Dot(breakDirection, sol2))
                 {
                     return sol1;
@@ -3752,7 +3775,8 @@ namespace BDArmory.Control
                 }
             }
 
-            float crossy = x1 * z2 - z1 * x2;
+            // If the solving for the x-component isn't possible due to crossx being 0, we try y
+            float crossy = z1 * x2 - x1 * z2;
             if (Mathf.Abs(crossy) > Mathf.Epsilon)
             {
                 float newCosCone = calcNotch(y1, y2, x2, z2, crossy, dot, cosCone, out float ysol1, out float ysol2);
@@ -3767,6 +3791,7 @@ namespace BDArmory.Control
                 }
             }
 
+            // And if y is also zero we try z
             float crossz = x1 * y2 - y1 * x2;
             if (Mathf.Abs(crossz) > Mathf.Epsilon)
             {
@@ -3782,9 +3807,26 @@ namespace BDArmory.Control
                 }
             }
 
+            // If the down and radar vectors are in-line, then we have a planar solution, and we just return breakDirection
             return breakDirection;
         }
 
+        /// <summary>
+        /// This solves for the component corresponding to the d1/d2 values (I.E. x1/x2 solves for x) of the cone-plane intersection
+        /// problem. a2 and b2 are the two other components of the normal vector of the plane (I.E. y2, z2 for x1/x2). Due to these
+        /// being added, the order is irrelevant.
+        /// Note that if a solution isn't found, then cosCone is adjusted until there is a single solution.
+        /// </summary>
+        /// <param name="d1">Component of the cone's vector corresponding to the component to be solved for.</param>
+        /// <param name="d2">Component of the plane's normal vector corresponding to the component to be solved for.</param>
+        /// <param name="a2">Other component of the plane's normal vector (I.E. y/z for x).</param>
+        /// <param name="b2">Other component of the plane's normal vector (I.E. y/z for x).</param>
+        /// <param name="crossd">Cross product component in the direction to solve for (cone cross plane).</param>
+        /// <param name="dot">Dot product of the two vectors.</param>
+        /// <param name="cosCone">Cosine of the cone's half-angle.</param>
+        /// <param name="r1">Solution 1 of the problem.</param>
+        /// <param name="r2">Solution 2 of the problem.</param>
+        /// <returns></returns>
         float calcNotch(float d1, float d2, float a2, float b2, float crossd, float dot, float cosCone, out float r1, out float r2)
         {
             float denominator = (1.0f - dot * dot);
@@ -3812,6 +3854,7 @@ namespace BDArmory.Control
             return cosCone;
         }
 
+        // Solves for the two other components of the solution given the X-component
         static void calcNotchYZ(float x1, float x2, float y1, float y2, float z1, float z2, float xsol1, float xsol2, float crossx, float cosCone, out Vector3 sol1, out Vector3 sol2)
         {
             crossx = 1.0f / crossx;
@@ -3824,18 +3867,20 @@ namespace BDArmory.Control
             sol2 = new Vector3(xsol2, ysol2, zsol2);
         }
 
+        // Solves for the two other components of the solution given the Y-component
         static void calcNotchXZ(float x1, float x2, float y1, float y2, float z1, float z2, float ysol1, float ysol2, float crossy, float cosCone, out Vector3 sol1, out Vector3 sol2)
         {
             crossy = 1.0f / crossy;
-            float xsol1 = (z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
-            float zsol1 = -(x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
-            float xsol2 = (z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
-            float zsol2 = -(x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
+            float xsol1 = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
+            float zsol1 = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
+            float xsol2 = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
+            float zsol2 = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
 
             sol1 = new Vector3(xsol1, ysol1, zsol1);
             sol2 = new Vector3(xsol2, ysol2, zsol2);
         }
 
+        // Solves for the two other components of the solution given the Z-component
         static void calcNotchXY(float x1, float x2, float y1, float y2, float z1, float z2, float zsol1, float zsol2, float crossz, float cosCone, out Vector3 sol1, out Vector3 sol2)
         {
             crossz = 1.0f / crossz;
@@ -4070,12 +4115,13 @@ namespace BDArmory.Control
                 case KinematicEvasionStates.TurnAway: // Turn 180 deg from missile
                     breakDirection = (-1f * threatDirection).ProjectOnPlanePreNormalized(upDirection).normalized;
                 break;
-                default: // Notch, beam missile initially, start to turn away as missile gets closer
+                default: // Notch, no change in breakDirection
                 {
-                    float t = Mathf.Clamp01((WeaponManager.incomingMissileTime - WeaponManager.cmThreshold)/(WeaponManager.evadeThreshold - WeaponManager.cmThreshold));
+                    // Previous implementation: beam missile initially, start to turn away as missile gets closer
+                    /*float t = Mathf.Clamp01((WeaponManager.incomingMissileTime - WeaponManager.cmThreshold)/(WeaponManager.evadeThreshold - WeaponManager.cmThreshold));
                     t = -1.72f*t*t*t+4.06f*t*t-3.34f*t+1f;
                     float notchAngle = Mathf.Lerp(90f, 135f, t); // Gradually turn from 90 deg notch to 135 deg as missile gets closer
-                    breakDirection = Vector3.RotateTowards(threatDirection, breakDirection, notchAngle * Mathf.Deg2Rad, 0).normalized;
+                    breakDirection = Vector3.RotateTowards(threatDirection, breakDirection, notchAngle * Mathf.Deg2Rad, 0).normalized;*/
                 }
                 break;
             }

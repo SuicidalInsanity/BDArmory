@@ -2945,8 +2945,14 @@ namespace BDArmory.Control
                                     BayTriggerTime = Time.time;
                                     //yield return new WaitForSecondsFixed(2f); //so this doesn't delay radar targeting stuff below
                                 }
+                                bool hasTurrets = ml.HasTurrets();
+
+                                ml.SetSlavedGuard(true);
+
                                 float attemptLockEndTime = Time.time + 2;
-                                while (ml && (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)) && Time.time < attemptLockEndTime)
+                                while ((hasTurrets ? AimMissileTurret(targetVessel, ml, attemptLockEndTime, false, false, 1f) : 
+                                       (ml && Time.time < attemptLockEndTime && targetVessel)) && 
+                                       (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)))
                                 {
                                     bool lockSuccess = false;
                                     if (vesselRadarData.locked)
@@ -2977,6 +2983,8 @@ namespace BDArmory.Control
                                         break;
                                     }
                                 }
+
+                                ml.SetSlavedGuard(false);
 
                                 //wait for missile turret to point at target
                                 //TODO BDModularGuidance: add turret
@@ -3058,9 +3066,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do the turret checks
-                                    (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
-                                    (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f) : // If we have turrets, do the turret checks
+                                   (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
+                                   (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
                             {
                                 yield return wait;
                             }
@@ -3344,9 +3352,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do turret checks
-                                    (Time.time < antiradLockAttemptEndTime && ml && targetVessel)) && // If we don't, perform the simple checks
-                                    (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel))) // And the target isn't yet locked
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f) : // If we have turrets, do turret checks
+                                   (Time.time < antiradLockAttemptEndTime && ml && targetVessel)) && // If we don't, perform the simple checks
+                                   (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel))) // And the target isn't yet locked
                             {
                                 yield return wait;
                             }
@@ -3460,9 +3468,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f)) || // Perform turret checks if we have turrets
-                                    (Time.time < laserLockAttemptEndTime && ml && targetVessel)) && // Otherwise perform the simple checks
-                                    (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f) : // Perform turret checks if we have turrets
+                                   (Time.time < laserLockAttemptEndTime && ml && targetVessel)) && // Otherwise perform the simple checks
+                                   (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
                             {
                                 yield return wait;
                             }
@@ -8880,7 +8888,7 @@ namespace BDArmory.Control
                                 else
                                 {
                                     //designatedGPSInfo = new GPSTargetInfo(VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.MissileReferenceTransform.forward * 10000, vessel.mainBody), "null target");
-                                    designatedINSCoords = VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.MissileReferenceTransform.forward * 10000, vessel.mainBody);
+                                    designatedINSCoords = VectorUtils.WorldPositionToGeoCoords(ml.MissileReferenceTransform.position + ml.GetForwardTransform() * Mathf.Max(2f * ml.engageRangeMin, 10000f), vessel.mainBody);
                                     ml.TargetAcquired = true;
                                 }
                             }

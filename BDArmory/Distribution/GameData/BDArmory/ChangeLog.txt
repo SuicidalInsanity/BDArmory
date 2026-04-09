@@ -30,12 +30,15 @@
 	- Fix AI not respecting Max Missiles Per Target setting when dropping bombs.
 	- Fix Surface AI circling last waypoint when it finishes a WP race.
 	- Fix AI usage of radar-warning receiver not always being consistent, sometimes not "noticing" a radar missile fired at it.
+	- Improve AI missile notching. AI will not accurately notch / beam missiles while diving, as well as when flying level.
 	- Improve AI missile turret usage behavior, now instead of timing out after half of "Firing Interval" elapses, the turret must make no progress towards the target for half of "Firing Interval" to time out.
 	- Point Defense AI:
 		- Fix PD usage of laser-guided, anti-radiation, and heat-seeking missiles.
 		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
+- Armor:
+	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate (or half the minimum for triangles) to prevent unphysical armor calculations.
 - Sensors:
   - Improvements to target camera target switching behavior, should no longer switch to a new target while current laser ordnance is still in the air.
   - Multiple target cam support, craft with multiple cams can now simultaneously engage multiple targets with laser ordnance, one per camera.
@@ -87,13 +90,14 @@
 		- Fix pronav and augpronav missiles not properly guiding on targets when launched from extreme off-boresight angles.
 		- Added arming delay to missiles with the "fuzeArmingDelay" field specifying the arming delay in seconds and the "impactFuzeArmingDelay" bool field specifying if the impact fuze should also have an arming delay.
 		- Added spinning missiles, missiles can now be given a spin using "spinRate", specifying the spin rate in revolutions per second (clockwise-positive when looking from behind the missile) and "spinAccel", a proportional control constant for missile's spin rate, higher values will mean the missile spins up faster. Note this "spinAccel" should be a relatively small value, by default it is 0.25.
-		- Fix INS and GPS missiles fired from multi-missile launchers being fired towards (0, 0, 0) when dumbfired by the AI.
+		- Fix INS and GPS missiles fired from multi-missile launchers being fired towards (0, 0, 0) when dumbfired. They will now be fired at a point 2 times the minimum engagement range or 10 km in front of them, whichever is greater.
 		- Fix IR missiles not turning towards a target they lost track of.
 		- ARH missiles will now use "radarLOAL" behavior when a target flies outside of their boresight instead of declaring a miss.
 		- Fix "CruisePopup" setting for cruise missiles with this feature not being persistent.
 		- Fix terminal targeting checks reducing track accuracy for missiles with a terminal targeting mode.
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
 		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
+		- Fix SARH missiles not respecting IFF and target envelope settings when relocking after having lost the primary target when "canRelock" is true.
 		- Multi-Missile Launchers:
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
@@ -108,6 +112,8 @@
 - Competition:
 	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
 	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+- Mod Support:
+	- Hack support for JonnyOThan's TweakScale Rescaled fork, for now we assume all parts have cubic mass scaling, which is incorrect, but will temporarily patch support for the mod, pending official support.
 
 v1.12.1.0
 IMPROVEMENTS / FIXES

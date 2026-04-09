@@ -1237,7 +1237,7 @@ namespace BDArmory.Weapons.Missiles
                                     targetGEOPos = VectorUtils.WorldPositionToGeoCoords(missileLauncher.TargetPosition, FlightGlobals.currentMainBody);
                                     break;
                                 case TargetingModes.Inertial:
-                                    targetGEOPos = VectorUtils.WorldPositionToGeoCoords(missileLauncher.TargetPosition, FlightGlobals.currentMainBody);
+                                    targetGEOPos = missileLauncher.targetGPSCoords;
                                     targetINScoords = missileLauncher.TargetINSCoords;
                                     TimeOfLastINS = missileLauncher.TimeOfLastINS;
                                     INStimetogo = missileLauncher.INStimetogo;
