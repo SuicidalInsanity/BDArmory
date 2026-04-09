@@ -385,6 +385,10 @@ namespace BDArmory.Armor
                 //pushTarget.transform.rotation += worldAngle;
             }
         }
+        public float calcMaxArmor()
+        {
+            return Mathf.Min((isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f, 1500f);
+        }
         public void updateArmorStats()
         {
             armor.armorVolume = ((scaleneTri ? scaleneWidth + Width : Width) * Length);
@@ -392,7 +396,7 @@ namespace BDArmory.Armor
             {
                 armor.armorVolume /= 2;
             }
-            armor.maxSupportedArmor = (isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f;
+            armor.maxSupportedArmor = calcMaxArmor();
             armor.ArmorSetup(null, null);
             StartCoroutine(updateDrag());
         }
@@ -400,7 +404,7 @@ namespace BDArmory.Armor
         {
             if (armor != null && armorTransforms != null)
             {
-                float tempMaxThickness = (isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f;
+                float tempMaxThickness = calcMaxArmor();
                 if (armor.Armor > tempMaxThickness)
                 {
                     armor.Armor = tempMaxThickness;
