@@ -2945,8 +2945,14 @@ namespace BDArmory.Control
                                     BayTriggerTime = Time.time;
                                     //yield return new WaitForSecondsFixed(2f); //so this doesn't delay radar targeting stuff below
                                 }
+                                bool hasTurrets = ml.HasTurrets();
+
+                                ml.SetSlavedGuard(true);
+
                                 float attemptLockEndTime = Time.time + 2;
-                                while (ml && (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)) && Time.time < attemptLockEndTime)
+                                while ((hasTurrets ? AimMissileTurret(targetVessel, ml, attemptLockEndTime, false, false, 1f) : 
+                                       (ml && Time.time < attemptLockEndTime && targetVessel)) && 
+                                       (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)))
                                 {
                                     bool lockSuccess = false;
                                     if (vesselRadarData.locked)
@@ -2977,6 +2983,8 @@ namespace BDArmory.Control
                                         break;
                                     }
                                 }
+
+                                ml.SetSlavedGuard(false);
 
                                 //wait for missile turret to point at target
                                 //TODO BDModularGuidance: add turret
