@@ -3058,9 +3058,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do the turret checks
-                                    (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
-                                    (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, IRLockAttemptEndTime, false, false, 1f) : // If we have turrets, do the turret checks
+                                   (Time.time < IRLockAttemptEndTime && ml && targetVessel)) && // If we don't have turrets, skip the turret check and just do the simple check
+                                   (!heatTarget.exists || (heatTarget.predictedPosition - targetVessel.CoM).sqrMagnitude > 40f * 40f)) // And the target isn't locked yet
                             {
                                 yield return wait;
                             }
@@ -3344,9 +3344,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f)) || // If we have turrets, do turret checks
-                                    (Time.time < antiradLockAttemptEndTime && ml && targetVessel)) && // If we don't, perform the simple checks
-                                    (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel))) // And the target isn't yet locked
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, antiradLockAttemptEndTime, false, false, 1f) : // If we have turrets, do turret checks
+                                   (Time.time < antiradLockAttemptEndTime && ml && targetVessel)) && // If we don't, perform the simple checks
+                                   (!antiRadTargetAcquired || !AntiRadDistanceCheck(targetVessel))) // And the target isn't yet locked
                             {
                                 yield return wait;
                             }
@@ -3460,9 +3460,9 @@ namespace BDArmory.Control
 
                             ml.SetSlavedGuard(true);
 
-                            while (((hasTurrets && AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f)) || // Perform turret checks if we have turrets
-                                    (Time.time < laserLockAttemptEndTime && ml && targetVessel)) && // Otherwise perform the simple checks
-                                    (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
+                            while ((hasTurrets ? AimMissileTurret(targetVessel, ml, laserLockAttemptEndTime, false, false, 1f) : // Perform turret checks if we have turrets
+                                   (Time.time < laserLockAttemptEndTime && ml && targetVessel)) && // Otherwise perform the simple checks
+                                   (!laserPointDetected || (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > targetpaintAccuracyThreshold)))
                             {
                                 yield return wait;
                             }
