@@ -219,6 +219,61 @@ namespace BDArmory.Extensions
             return part.gameObject.GetRendererBoundsWithoutParticles();
         }
 
+        public static Bounds GetRendererBounds(this Vessel vessel, bool useCached = true, bool checkForLaunchClamps = false, bool ignoreLineRenderers = true, bool ignoreParticleRenderers = true)
+        {
+            Bounds result = default;
+            bool flag = false;
+            var vesselRot = vessel.transform.rotation;
+            vessel.SetRotation(Quaternion.identity);
+            foreach (var part in vessel.Parts)
+            {
+                if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
+                foreach (var renderer in useCached ? part.FindModelRenderersCached().AsEnumerable() : part.GetComponentsInChildren<Renderer>().AsEnumerable())
+                {
+                    if (ignoreLineRenderers && renderer is LineRenderer) continue;
+                    if (ignoreParticleRenderers && renderer is ParticleSystemRenderer) continue;
+
+                    if (flag)
+                    {
+                        result.Encapsulate(renderer.bounds);
+                    }
+                    else
+                    {
+                        result = renderer.bounds;
+                        flag = true;
+                    }
+                }
+            }
+            vessel.SetRotation(vesselRot);
+            return result;
+        }
+
+        public static Bounds GetColliderBounds(this Vessel vessel, bool checkForLaunchClamps = false)
+        {
+            Bounds result = default;
+            bool flag = false;
+            var vesselRot = vessel.transform.rotation;
+            vessel.SetRotation(Quaternion.identity);
+            foreach (var part in vessel.Parts)
+            {
+                if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
+                foreach (var collider in part.FindModelComponents<Collider>())
+                {
+                    if (flag)
+                    {
+                        result.Encapsulate(collider.bounds);
+                    }
+                    else
+                    {
+                        result = collider.bounds;
+                        flag = true;
+                    }
+                }
+            }
+            vessel.SetRotation(vesselRot);
+            return result;
+        }
+
         /// <summary>
         /// Work-around for pre-1.11 versions of KSP not having Vessel.FindVesselModuleImplementing<T>().
         /// </summary>
