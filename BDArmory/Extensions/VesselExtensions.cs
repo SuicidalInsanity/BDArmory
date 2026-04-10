@@ -305,12 +305,8 @@ namespace BDArmory.Extensions
                 r*new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
                 r*new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
                 r*new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
-                r*new Vector3(-bounds.extents.x, -bounds.extents.y, bounds.extents.z),
-                r*new Vector3(-bounds.extents.x, bounds.extents.y, -bounds.extents.z),
-                r*new Vector3(bounds.extents.x, -bounds.extents.y, -bounds.extents.z),
-                r*new Vector3(-bounds.extents.x, -bounds.extents.y, -bounds.extents.z),
             ];
-            return new Bounds(t.TransformPoint(bounds.center), new Vector3(2f * corners.Max(c => c.x), 2f * corners.Max(c => c.y), 2f * corners.Max(c => c.z)));
+            return new Bounds(t.TransformPoint(bounds.center), new Vector3(2f * corners.Max(c => Mathf.Abs(c.x)), 2f * corners.Max(c => Mathf.Abs(c.y)), 2f * corners.Max(c => Mathf.Abs(c.z))));
         }
 
         /// <summary>
