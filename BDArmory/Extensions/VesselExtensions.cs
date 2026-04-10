@@ -254,7 +254,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            if (makeLocal) result.center = vessel.transform.InverseTransformPoint(result.center);
+            if (makeLocal) result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
         }
@@ -281,9 +281,36 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            if (makeLocal) result.center = vessel.transform.InverseTransformPoint(result.center);
+            if (makeLocal) result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
+        }
+
+        /// <summary>
+        /// Convert a bounds (local to a vessel's reference transform) into bounds centered in worldspace coords with extents relative to the viewer.
+        /// E.g.,
+        ///   var localBounds = vessel.GetColliderBounds(makeLocal: true);
+        ///   var bounds = vessel.MakeBoundsLocal(localBounds, FlightCamera.fetch.transform.rotation);
+        /// </summary>
+        /// <param name="vessel"></param>
+        /// <param name="bounds"></param>
+        /// <param name="viewerRotation"></param>
+        /// <returns></returns>
+        public static Bounds MakeBoundsLocal(this Vessel vessel, Bounds bounds, Quaternion viewerRotation)
+        {
+            var t = vessel.ReferenceTransform;
+            var r = Quaternion.Inverse(viewerRotation) * t.rotation;
+            Vector3[] corners = [
+                r*bounds.extents,
+                r*new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
+                r*new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
+                r*new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
+                r*new Vector3(-bounds.extents.x, -bounds.extents.y, bounds.extents.z),
+                r*new Vector3(-bounds.extents.x, bounds.extents.y, -bounds.extents.z),
+                r*new Vector3(bounds.extents.x, -bounds.extents.y, -bounds.extents.z),
+                r*new Vector3(-bounds.extents.x, -bounds.extents.y, -bounds.extents.z),
+            ];
+            return new Bounds(t.TransformPoint(bounds.center), new Vector3(2f * corners.Max(c => c.x), 2f * corners.Max(c => c.y), 2f * corners.Max(c => c.z)));
         }
 
         /// <summary>
