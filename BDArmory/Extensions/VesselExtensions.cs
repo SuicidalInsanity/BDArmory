@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -244,6 +244,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
+            result.center -= vessel.transform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }
@@ -270,6 +271,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
+            result.center -= vessel.transform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }

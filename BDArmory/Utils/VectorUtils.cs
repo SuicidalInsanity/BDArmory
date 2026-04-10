@@ -597,6 +597,19 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
+        /// Get vector sum, scaled by a scale vector.
+        /// </summary>
+        /// <param name="v1">First vector.</param>
+        /// <param name="v2">Second vector.</param>
+        /// <param name="scale">Scale vector.</param>
+        /// <returns>v1.Scale(scale) + v2.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 ScaledSum(Vector3 v1, Vector3 v2, Vector3 scale)
+        {
+            return new Vector3(scale.x * v1.x + v2.x, scale.y * v1.y + v2.y, scale.z * v1.z + v2.z);
+        }
+
+        /// <summary>
         /// Get normalized difference between two vectors with given distance, useful for direction vectors.
         /// </summary>
         /// <param name="v1">First vector.</param>

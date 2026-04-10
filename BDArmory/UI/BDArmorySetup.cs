@@ -3045,6 +3045,46 @@ namespace BDArmory.UI
                         //     dMass = -EditorLogic.fetch.ship.parts.SelectMany(p => p.Resources, (p, r) => r).Select(res => (float)res.amount * res.info.density).Sum();
                         //     Debug.Log($"DEBUG dMass: {dMass}");
                         // }
+                        //if (GUI.Button(SLineRect(++line), "Test GetWorldAlignedVector")) // Test TransformDirection vs. Rotation
+                        //{
+                        //    TargetInfo test = FlightGlobals.ActiveVessel.gameObject.GetComponent<TargetInfo>();
+                        //    Vector3 oneVec = Vector3.one;
+                        //    Vector3 testVec;
+                        //    float testFloat = 0;
+                        //    int iters = 10000000;
+                        //    var watch = new System.Diagnostics.Stopwatch();
+                        //    float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+                        //    var tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        testVec = test.GetWorldAlignedVector(UnityEngine.Random.onUnitSphere);
+                        //        testFloat += Vector3.Dot(oneVec, testVec);
+                        //    }
+                        //    watch.Stop();
+                        //    var dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG WorldAligned TransformDirection:  {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testFloat: {testFloat}");
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        testVec = test.GetWorldAlignedVectorAlt(UnityEngine.Random.onUnitSphere);
+                        //        testFloat += Vector3.Dot(oneVec, testVec);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG WorldAligned Rot. Cached:         {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testFloat: {testFloat}");
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        testVec = test.GetWorldAlignedVectorAlt2(UnityEngine.Random.onUnitSphere);
+                        //        testFloat += Vector3.Dot(oneVec, testVec);
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG WorldAlignedAlt Rot. Non-Cached:  {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testFloat: {testFloat}");
+                        //}
                     }
 #endif
                 }

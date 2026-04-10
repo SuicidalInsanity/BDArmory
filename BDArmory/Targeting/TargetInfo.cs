@@ -280,6 +280,81 @@ namespace BDArmory.Targeting
             }
         }
 
+        /*void OnGUI()
+        { 
+            if (BDArmorySettings.DEBUG_LINES)
+            {
+                Vector3 vesselPos = vesselTransform.position;
+                //Vector3 vesselForward = vesselTransform.up;
+                //Vector3 vesselUp = -vesselTransform.forward;
+                //Vector3 vesselRight = vesselTransform.right;
+                Vector3 scaledDiff = vesselTransform.TransformDirection(localBoundsCenter);
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.y) * vesselForward, vesselPos - (0.5f * bounds.y) * vesselForward, 5, Color.blue);
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.x) * vesselRight, vesselPos - (0.5f * bounds.x) * vesselRight, 5, Color.green);
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.z) * vesselUp, vesselPos - (0.5f * bounds.z) * vesselUp, 5, Color.red);
+                Vector3 rand = UnityEngine.Random.onUnitSphere;
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(rand, 0.5f)), vessel.CoM, 5, Color.magenta);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(Vector3.up, 0.5f)), vessel.CoM, 5, Color.yellow);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(-Vector3.forward, 0.5f)), vessel.CoM, 5, Color.yellow);
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (GetBoundsScaledVectorAlt(0.6f * Vector3.up)), vesselPos + scaledDiff, 5, Color.cyan);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.up, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.up, 0.5f)), 5, Color.blue);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.right, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.right, 0.5f)), 5, Color.green);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.forward, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.forward, 0.5f)), 5, Color.red);
+                GUIUtils.DrawLabelOnWorldPos(vesselPos, $"bounds.length={bounds.y}\nbounds.width={bounds.x}\nbounds.height={bounds.z}", new Vector2(200, 200));
+            }
+        }*/
+
+        public void GetVesselTransform()
+        {
+            vesselTransform = vessel.transform; //(isMissile && !MissileBaseModule.isMMG) ? MissileBaseModule.MissileReferenceTransform : vessel.transform;
+        }
+
+        public Vector3 GetWorldAlignedVector(Vector3 localVector)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            return vesselTransform.TransformDirection(localVector);
+        }
+
+        /*float currRotTime = 0;
+        Quaternion currRot;
+
+        public Vector3 GetWorldAlignedVectorAlt(Vector3 localVector)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            if (currRotTime < Time.time)
+            {
+                currRot = vesselTransform.rotation;
+                currRotTime = Time.time;
+            }
+            return currRot * localVector;
+        }
+
+        public Vector3 GetWorldAlignedVectorAlt2(Vector3 localVector)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            return vesselTransform.rotation * localVector;
+        }*/
+
+        public Vector3 GetBoundsScaledVector(Vector3 localVector, float boundScale)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            return new Vector3(boundScale * bounds.x * localVector.x + localBoundsCenter.x, boundScale * bounds.y * localVector.y + localBoundsCenter.y, boundScale * bounds.z * localVector.z + localBoundsCenter.z);
+        }
+
+        public Vector3 GetBoundsScaledBiasedVector(Vector3 localVector, float boundScale)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            Vector3 localRelCoM = Quaternion.Inverse(vesselTransform.rotation) * (vessel.CoM - vesselTransform.position);
+            Vector3 biasedVector = new Vector3(localVector.x * (localVector.x > 0f ? (boundScale * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (boundScale * bounds.x - (localBoundsCenter.x - localRelCoM.x))) + localRelCoM.x,
+                                               localVector.y * (localVector.y > 0f ? (boundScale * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (boundScale * bounds.y - (localBoundsCenter.y - localRelCoM.y))) + localRelCoM.y,
+                                               localVector.z * (localVector.z > 0f ? (boundScale * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (boundScale * bounds.z - (localBoundsCenter.z - localRelCoM.z))) + localRelCoM.z);
+            /*if (log)
+            {
+                Debug.Log($"[BDArmory.TargetInfo.GetBoundsScaledBiasedVector] localVector: {localVector}, localBoundsCenter: {localBoundsCenter}, localRelCoM: {localRelCoM}, bounds: {bounds}, biasedVector: {biasedVector}, x: {(localVector.x > 0f ? (0.5f * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (0.5f * bounds.x - (localBoundsCenter.x - localRelCoM.x)))}, y: {(localVector.y > 0f ? (0.5f * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (0.5f * bounds.y - (localBoundsCenter.y - localRelCoM.y)))}, z: {(localVector.z > 0f ? (0.5f * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (0.5f * bounds.z - (localBoundsCenter.z - localRelCoM.z)))}");
+            }*/
+            return biasedVector;
+        }
+
         void FixedUpdate()
         {
             if (vessel == null)
@@ -296,6 +371,20 @@ namespace BDArmory.Targeting
             }
         }
 
+        /*Vector3 vesselSizeB;
+        readonly static Quaternion vesselRot = Quaternion.Inverse(Quaternion.LookRotation(Vector3.up, -Vector3.forward));
+        readonly static Quaternion vesselRot2 = Quaternion.LookRotation(Vector3.up, -Vector3.forward);*/
+
+        Transform vesselTransform;
+        Vector3 localBoundsCenter;
+        public void UpdateBounds()
+        {
+            GetVesselTransform();
+            Bounds tempBounds = vessel.GetColliderBounds();
+            localBoundsCenter = tempBounds.center;
+            bounds = tempBounds.size;
+        }
+
         public void UpdateTargetPartList()
         {
             targetPartListNeedsUpdating = false;
@@ -308,7 +397,17 @@ namespace BDArmory.Targeting
 
             if (vessel == null) return;
 
-            bounds = vessel.GetBounds(); // Update vessel bounds on part changes
+            UpdateBounds(); // Update vessel bounds on part changes
+            /*vessel.UpdateVesselSize();
+            Vector3 tempSize = vessel.vesselSize;
+            Quaternion rot = Quaternion.Inverse(vessel.ReferenceTransform.rotation);
+            Vector3 vesselForward = vessel.ReferenceTransform.up;
+            Vector3 vesselUp = -vessel.ReferenceTransform.forward;
+            Vector3 vesselRight = vessel.ReferenceTransform.right;
+            vesselSizeB = new Vector3(Vector3.Dot(tempSize, vesselForward), Vector3.Dot(tempSize, vesselRight), Vector3.Dot(tempSize, vesselUp));
+            // vesselSizeB and vesselSizeBQuat2 are in GLOBAL coords
+            // vesselSizeBQuat is in local coords
+            Debug.Log($"[BDArmory.TargetInfo] bounds: {bounds}, vesselSize: {tempSize}, vesselSizeB: {vesselSizeB}, vesselSizeBQuat: {rot * vesselRot * tempSize}, vesselSizeBQuat2: {rot * tempSize}, vesselSizeBQuat3: {rot * vesselRot2 * tempSize}");*/
 
             // Get the parts via the VesselModuleRegistry to avoid the expensive Find... commands.
             VesselModuleRegistry.OnVesselModified(vessel); // Make sure the vessel is up-to-date since this can happen as part of an event.
