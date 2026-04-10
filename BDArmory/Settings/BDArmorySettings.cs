@@ -130,6 +130,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool DEBUG_TELEMETRY = false;             //AI/WM UI debug telemetry display
         [BDAPersistentSettingsField] public static bool DEBUG_SPAWNING = false;              //Spawning debugging
         [BDAPersistentSettingsField] public static bool DEBUG_COMPETITION = false;           //Competition debugging
+        [BDAPersistentSettingsField] public static bool DEBUG_HULLBREACH = false;            //Debug messages for Hullbreach sinking mechanics
         #endregion
 
         #region General slider settings
@@ -244,6 +245,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static bool GRAVITY_HACKS = false;
         [BDAPersistentSettingsField] public static bool ALTITUDE_HACKS = false; //transfer to a RunWayRound number?
         [BDAPersistentSettingsField] public static bool BATTLEDAMAGE = true;
+        [BDAPersistentSettingsField] public static bool HULLBREACH = true;
         [BDAPersistentSettingsField] public static bool HEART_BLEED_ENABLED = false;
         [BDAPersistentSettingsField] public static bool RESOURCE_STEAL_ENABLED = false;
         [BDAPersistentSettingsField] public static bool ASTEROID_FIELD = false;

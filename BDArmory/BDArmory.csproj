@@ -216,6 +216,8 @@
     <Compile Include="GameModes\Asteroids.cs" />
     <Compile Include="GameModes\BattleDamage\BattleDamageHandler.cs" />
     <Compile Include="GameModes\BattleDamage\BattleDamageTracker.cs" />
+    <Compile Include="GameModes\BattleDamage\HullLeak.cs" />
+    <Compile Include="GameModes\BattleDamage\HullBreach.cs" />
     <Compile Include="GameModes\ModuleSpaceFriction.cs" />
     <Compile Include="GameModes\Mutators\BDAMutator.cs" />
     <Compile Include="GameModes\Mutators\MutatorInfo.cs" />
@@ -425,7 +427,6 @@
     <None Include="Distribution\GameData\BDArmory\MMPatches\bdmk22_cockpit.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\Explode_Mode_Squad_Tanks.cfg" />
     <None Include="Distribution\GameData\BDArmory\MMPatches\SimpleRepaint.cfg" />
-    <None Include="Distribution\GameData\BDArmory\MMPatches\StructPWing.cfg" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal1.mu" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal2.mu" />
     <None Include="Distribution\GameData\BDArmory\Models\bulletDecal\BulletDecal2b.mu" />

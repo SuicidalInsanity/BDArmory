@@ -11,6 +11,7 @@ using BDArmory.Extensions;
 using BDArmory.FX;
 using BDArmory.GameModes;
 using BDArmory.Settings;
+using BDArmory.GameModes.BattleDamage;
 
 namespace BDArmory.Utils
 {
@@ -213,7 +214,10 @@ namespace BDArmory.Utils
             {
                 BattleDamageHandler.CheckDamageFX(hitPart, caliber, penetrationfactor, explosive, incendiary, sourceVesselName, hit, partAlreadyHit, cockpitPen);
             }
-
+            if (BDArmorySettings.HULLBREACH && firstHit && penetrationfactor > 1)
+            {
+                HullBreach.AddHullLeak(hit, hitPart, caliber);
+            }
             // Update scoring structures
             //if (firstHit)
             //{
@@ -534,7 +538,7 @@ namespace BDArmory.Utils
                 }
             }
         }
-        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, float distance, string sourcevessel, RaycastHit hit, ExplosionSourceType explosionSource, float Range, double MinBlastPressure)
+        public static bool CalculateExplosiveArmorDamage(Part hitPart, double BlastPressure, float distance, string sourcevessel, RaycastHit hit, ExplosionSourceType explosionSource, float Range, double MinBlastPressure, bool armorpenetrated)
         {
             /// <summary>
             /// Calculates if shockwave from detonation is stopped by armor, and if not, how much damage is done to armor and part in case of armor rupture or spalling
@@ -558,14 +562,35 @@ namespace BDArmory.Utils
                 {
                     armorArea = Armor.armorVolume; // pseudo-surface area, m2
                     if (double.IsNaN(armorArea) || Armor.Armor <= 0)
+                    {
+                        if (BDArmorySettings.HULLBREACH)
+                        {
+                            if (!armorpenetrated)
+                            {
+                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {radius:F2}m, {(radius * radius * 0.786f):F2}m2");
+                                HullBreach.AddHullLeak(hit, hitPart, radius, radius * radius);
+                            }                            
+                        }
                         return false; //no armor to stop explosion
+					}
                     spallArea = armorArea; //clamp based on max size of explosion, m2
                 }
                 else
                 {
-                    if (Armor.ArmorTypeNum == 1) return false;//ArmorType "None"; no armor to block/reduce blast, take full damage
                     armorArea = !double.IsNaN(hitPart.radiativeArea) ? (float)hitPart.radiativeArea : hitPart.GetArea();// m2 // * 10000; //cm2
                     spallArea = armorArea / 3f;//m2
+                    if (Armor.ArmorTypeNum == 1)
+                    {
+                        if (BDArmorySettings.HULLBREACH)
+                        {
+                            if (!armorpenetrated)
+                            {
+                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2:F2}mm, {spallArea:F2}m2");
+                                HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea);
+                            }
+                        }
+                        return false;//ArmorType "None"; no armor to block/reduce blast, take full damage
+                    }
                 }
 
                 if (BDArmorySettings.DEBUG_ARMOR)
@@ -648,6 +673,7 @@ namespace BDArmory.Utils
                         spallMass *= (Density / 1000000); //cm3 -> kg -> No armor mass mod so we get consistent spall damage regardless of setting
 
                         float spallCaliber = BDAMath.Sqrt(spallArea) * 1000; //m2 -> mm
+                        if (!armorpenetrated) HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea); //hit, hit part, caliber (mm), area (m)
                         damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                         ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
                         if (BDArmorySettings.DEBUG_ARMOR)
@@ -700,6 +726,8 @@ namespace BDArmory.Utils
                             if (hardness > 500f)
                             {
                                 spallMass = volumeToReduce * (Density / 1000000f); //cm3 -> kg
+                                float adjustedSpallArea = Mathf.CeilToInt(spallArea / 0.25f) * 0.25f;
+                                if (!armorpenetrated) HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(adjustedSpallArea * 1000000 / Mathf.PI) * 2, adjustedSpallArea); //hit, hit part, caliber (mm), area (m)
                                 damage = hitPart.AddBallisticDamage(spallMass, 500, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                                 ApplyScore(hitPart, sourcevessel, 0, damage, "Armor Shatter", explosionSource);
                                 if (BDArmorySettings.BATTLEDAMAGE)
@@ -723,9 +751,9 @@ namespace BDArmory.Utils
                             spallMass = spallArea * 10000 * (thickness / 10); // m2 -> cm3
 
                             hitPart.ReduceArmor(spallMass); //cm3
-
                             spallMass *= (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
-                            
+
+                            if (!armorpenetrated) HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea); //hit, hit part, caliber (mm), area (m)
                             damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                             ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
 

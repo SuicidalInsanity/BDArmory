@@ -969,6 +969,7 @@ namespace BDArmory.Bullets
                 }
                 else
                 {
+                    //this needs to report teh bullet as explosive if it has HE filler, but not if it has a delay/penetrating fuze that's been triggered AND armor penetration > 0
                     ProjectileUtils.ApplyDamage(hitPart, bulletHit.hit, dmgMult, 1, caliber, bulletMass, impactSpeed, bulletDmgMult, distanceTraveled, HEType != PooledBulletTypes.Slug ? true : false, incendiary, hasRicocheted, sourceVessel, bullet.DisplayName, team, ExplosionSourceType.Bullet, true, true, true);
                 }
                 ExplosiveDetonation(hitPart, bulletHit.hit, bulletRay);
@@ -1654,7 +1655,7 @@ namespace BDArmory.Bullets
                             velocityRatio = 1f - penRatio; // thickness/penetration
                             velocityRatio = 0.05f * (1f - velocityRatio * velocityRatio) + 0.95f; // 1 - (thickness/penetration)^2
                         }
-                        ExplosionFx.CreateExplosion(bulletHit.hit.point, oldBulletMass - bulletMass, "BDArmory/Models/explosion/30mmExplosion", explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, currentVelocity, 70, false, bulletMass, -1, dmgMult, ExplosionFx.WarheadTypes.Standard, null, 1f, -1, currentVelocity); //explosion simming ablated material flashing into plasma, HE amount = bullet mass lost on hit
+                        ExplosionFx.CreateExplosion(bulletHit.hit.point, oldBulletMass - bulletMass, "BDArmory/Models/explosion/30mmExplosion", explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, currentVelocity, 70, false, bulletMass, -1, dmgMult, ExplosionFx.WarheadTypes.Standard, null, 1f, -1, currentVelocity, hasPenetratedArmor: true); //explosion simming ablated material flashing into plasma, HE amount = bullet mass lost on hit
                     }
                     else
                     {
@@ -1795,7 +1796,7 @@ namespace BDArmory.Bullets
             if (!hasDetonated)
             {
                 if (HEType != PooledBulletTypes.Slug)
-                    ExplosionFx.CreateExplosion(currentPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, CurrentPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1);
+                    ExplosionFx.CreateExplosion(currentPosition, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Bullet, caliber, null, sourceVesselName, null, null, HEType == PooledBulletTypes.Explosive ? default : currentVelocity, -1, false, bulletMass, -1, dmgMult, HEType == PooledBulletTypes.Shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, CurrentPart, HEType == PooledBulletTypes.Shaped ? apBulletMod : 1f, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)DistanceTraveled : -1, hasPenetratedArmor: true);
                 if (nuclear)
                     NukeFX.CreateExplosion(currentPosition, ExplosionSourceType.Bullet, sourceVesselName, bullet.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "", hitPart: CurrentPart);
                 hasDetonated = true;
