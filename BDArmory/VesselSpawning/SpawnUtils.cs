@@ -1,22 +1,22 @@
-using UnityEngine;
+using BDArmory.Competition;
+using BDArmory.Control;
+using BDArmory.Damage;
+using BDArmory.Extensions;
+using BDArmory.FX;
+using BDArmory.GameModes;
+using BDArmory.GameModes.BattleDamage;
+using BDArmory.Modules;
+using BDArmory.Settings;
+using BDArmory.UI;
+using BDArmory.Utils;
+using BDArmory.Weapons;
+using BDArmory.Weapons.Missiles;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-
-using BDArmory.Competition;
-using BDArmory.Control;
-using BDArmory.Extensions;
-using BDArmory.GameModes;
-using BDArmory.Modules;
-using BDArmory.Settings;
-using BDArmory.UI;
-using BDArmory.Utils;
-using BDArmory.Weapons.Missiles;
-using BDArmory.Weapons;
-using BDArmory.Damage;
-using BDArmory.FX;
+using UnityEngine;
 
 namespace BDArmory.VesselSpawning
 {
@@ -204,6 +204,11 @@ namespace BDArmory.VesselSpawning
         #region Space hacks
         public static void SpaceFrictionOnNewVessels(bool enable) => SpawnUtilsInstance.Instance.SpaceFrictionOnNewVessels(enable);
         public static void SpaceHacks(Vessel vessel) => SpawnUtilsInstance.Instance.SpaceHacks(vessel);
+        #endregion
+
+        #region Boat hacks
+        public static void AddHullBreachOnNewVessels(bool enable) => SpawnUtilsInstance.Instance.AddHullBreachOnNewVessels(enable);
+        public static void AddHullBreach(Vessel vessel, bool enable) => SpawnUtilsInstance.Instance.AddHullBreach(vessel);
         #endregion
 
         #region Mutators
@@ -549,6 +554,7 @@ namespace BDArmory.VesselSpawning
             if (BDArmorySettings.HACK_INTAKES) HackIntakesOnNewVessels(true);
             if (BDArmorySettings.SPACE_HACKS) SpaceFrictionOnNewVessels(true);
             if (BDArmorySettings.RUNWAY_PROJECT) HackActuatorsOnNewVessels(true);
+            if (BDArmorySettings.HULLBREACH) AddHullBreachOnNewVessels(true);
         }
 
         void OnDestroy()
@@ -556,6 +562,7 @@ namespace BDArmory.VesselSpawning
             VesselSpawnerField.Save();
             Destroy(spawnLocationCamera);
             HackIntakesOnNewVessels(false);
+            AddHullBreachOnNewVessels(false);
             HackActuatorsOnNewVessels(false);
             SpaceFrictionOnNewVessels(false);
         }
@@ -1008,6 +1015,38 @@ namespace BDArmory.VesselSpawning
         {
             if (ship == null) return;
             ship.Parts[0].AddModule("ModuleSpaceFriction");
+        }
+        #endregion
+
+        #region Boat hacks
+        public void AddHullBreachOnNewVessels(bool enable)
+        {
+            if (enable)
+            {
+                GameEvents.onVesselLoaded.Add(HullBreachEventHandler);
+                GameEvents.OnVesselRollout.Add(AddHullBreach);
+            }
+            else
+            {
+                GameEvents.onVesselLoaded.Remove(HullBreachEventHandler);
+                GameEvents.OnVesselRollout.Remove(AddHullBreach);
+            }
+        }
+        void HullBreachEventHandler(Vessel vessel) => AddHullBreach(vessel);
+
+        public void AddHullBreach(Vessel vessel)
+        {
+            if (vessel == null || !vessel.loaded) return;
+
+            if (vessel.rootPart.FindModuleImplementing<HullBreach>() == null)
+            {
+                vessel.rootPart.AddModule("HullBreach");
+            }
+        }
+        public void AddHullBreach(ShipConstruct ship) // This version only needs to enable the hack.
+        {
+            if (ship == null) return;
+            ship.Parts[0].AddModule("HullBreach");
         }
         #endregion
 

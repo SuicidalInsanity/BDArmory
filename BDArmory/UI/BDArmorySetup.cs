@@ -2585,6 +2585,7 @@ namespace BDArmory.UI
                             BDArmorySettings.DEBUG_SPAWNING = false;
                             BDArmorySettings.DEBUG_TELEMETRY = false;
                             BDArmorySettings.DEBUG_WEAPONS = false;
+                            BDArmorySettings.DEBUG_HULLBREACH = false;
                         }
                     }
                     if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE)
@@ -2600,6 +2601,7 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_RADAR = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_RADAR, StringUtils.Localize("#LOC_BDArmory_Settings_DebugRadar"));//"Debug Detectors"
                         BDArmorySettings.DEBUG_SPAWNING = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_SPAWNING, StringUtils.Localize("#LOC_BDArmory_Settings_DebugSpawning"));//"Debug Spawning"
                         BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
+                        BDArmorySettings.DEBUG_HULLBREACH = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_HULLBREACH, StringUtils.Localize("#Debug Hullbreach"));//"Debug Hullbreach"
 
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.
                         if (BDArmorySettings.DEBUG_AI && GUI.Button(SLineRect(++line), "Debug Extending")) // Debug why a vessel is stuck in extending.
@@ -3822,6 +3824,30 @@ namespace BDArmory.UI
                     line -= 0.25f;
                 }
                 BDArmorySettings.WAYPOINTS_MODE = GUI.Toggle(SLeftRect(++line), BDArmorySettings.WAYPOINTS_MODE, StringUtils.Localize("#LOC_BDArmory_Settings_WaypointsMode"));
+                if (BDArmorySettings.HULLBREACH != (BDArmorySettings.HULLBREACH = GUI.Toggle(SRightRect(line), BDArmorySettings.HULLBREACH, StringUtils.Localize("#LOC_BDArmory_Settings_Hullbreach"))))// Enable HullBreach
+                {
+                    if (HighLogic.LoadedSceneIsFlight)
+                    {
+                        SpawnUtils.AddHullBreachOnNewVessels(BDArmorySettings.HULLBREACH);
+                        if (BDArmorySettings.HULLBREACH) // Add the hack to all in-game intakes.
+                        {
+                            foreach (var vessel in FlightGlobals.Vessels)
+                            {
+                                if (vessel == null || !vessel.loaded) continue;
+                                SpawnUtils.AddHullBreach(vessel, true);
+                            }
+                        }
+                        else // Reset all the in-game intakes back to their part-defined settings.
+                        {
+                            foreach (var vessel in FlightGlobals.Vessels)
+                            {
+                                if (vessel == null || !vessel.loaded) continue;
+                                SpawnUtils.AddHullBreach(vessel, false);
+                            }
+                        }
+                    }
+                }
+
                 line += 0.5f;
             }
 
