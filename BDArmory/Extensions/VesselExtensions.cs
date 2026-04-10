@@ -71,6 +71,16 @@ namespace BDArmory.Extensions
             }
         }
 
+        /// <summary>
+        /// Set the world velocity of a vessel, taking into account Krakensbane, which Vessel.SetWorldVelocity doesn't.
+        /// </summary>
+        /// <param name="v"></param>
+        /// <param name="velocity"></param>
+        public static void SetVelocity(this Vessel v, Vector3 velocity)
+        {
+            v.SetWorldVelocity(BDKrakensbane.IsActive ? BDKrakensbane.FrameVelocityV3f + velocity : velocity);
+        }
+
         public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);

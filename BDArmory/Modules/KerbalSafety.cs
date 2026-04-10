@@ -213,7 +213,7 @@ namespace BDArmory.Modules
                 kerbal.vessel.IgnoreGForces(1);
                 kerbal.vessel.IgnoreSpeed(1);
                 kerbal.vessel.SetPosition(position);
-                kerbal.vessel.SetWorldVelocity(velocity);
+                kerbal.vessel.SetVelocity(velocity);
                 yield return wait;
                 if (activeVesselBeforeEject != null && activeVesselBeforeEject != FlightGlobals.ActiveVessel) { LoadedVesselSwitcher.Instance.ForceSwitchVessel(activeVesselBeforeEject); }
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.KerbalSafety]: Setting " + kerbal.vessel.vesselName + "'s position to " + position.ToString("0.00") + " (" + kerbal.vessel.GetWorldPos3D().ToString("0.00") + ", altitude: " + kerbal.vessel.radarAltitude.ToString("0.00") + ") and velocity to " + velocity.magnitude.ToString("0.00") + " (" + kerbal.vessel.Velocity().magnitude.ToString("0.00") + ", " + verticalSpeed.ToString("0.00") + "m/s vertically, adjusted by " + verticalSpeedAdjustment.ToString("0.00") + "m/s)." + " (offset: " + !BDKrakensbane.FloatingOriginOffset.IsZero() + ", frameVel: " + !Krakensbane.GetFrameVelocity().IsZero() + ")" + " " + BDKrakensbane.FrameVelocityV3f.ToString("0.0") + ", corr: " + Krakensbane.GetLastCorrection().ToString("0.0"));

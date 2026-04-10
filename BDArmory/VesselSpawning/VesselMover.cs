@@ -259,7 +259,7 @@ namespace BDArmory.VesselSpawning
                     vessel.IgnoreSpeed(240);
                     position += count * (startingAltitude - safeAlt) / 55f * up;
                     vessel.SetPosition(position);
-                    vessel.SetWorldVelocity(Vector3d.zero);
+                    vessel.SetVelocity(Vector3.zero);
                     vessel.SetRotation(rotation);
                     yield return wait;
                     KrakensbaneCorrection(ref position);
@@ -332,7 +332,7 @@ namespace BDArmory.VesselSpawning
                         lowerBound = GetLowerBound(vessel);
                         position += (lowerBound - previousLowerBound) * up;
                         vessel.SetPosition(position);
-                        vessel.SetWorldVelocity(Vector3d.zero);
+                        vessel.SetVelocity(Vector3.zero);
                     }
 
                     // Translations/Altitude changes
@@ -403,7 +403,7 @@ namespace BDArmory.VesselSpawning
                 vessel.IgnoreGForces(240);
                 vessel.IgnoreSpeed(240);
                 vessel.SetPosition(position);
-                vessel.SetWorldVelocity(Vector3d.zero);
+                vessel.SetVelocity(Vector3.zero);
                 vessel.acceleration = Vector3d.zero;
                 vessel.SetRotation(rotation); // Reset the rotation to prevent any angular momentum from messing with the orientation.
                 yield return wait;
@@ -416,7 +416,7 @@ namespace BDArmory.VesselSpawning
                 try
                 {
                     vessel.AttachPatchedConicsSolver();
-                    if (vessel.altitude > 1e5) vessel.SetWorldVelocity(UnityEngine.Random.rotation * Vector3.one * 0.01f); // Add noise to the velocity if above 100km to avoid NaNs in the Patched Cubic Solver due to a degenerate orbit.
+                    if (vessel.altitude > 1e5) vessel.SetVelocity(UnityEngine.Random.rotation * Vector3.one * 0.01f); // Add noise to the velocity if above 100km to avoid NaNs in the Patched Cubic Solver due to a degenerate orbit.
                 }
                 catch (Exception e)
                 {
@@ -460,7 +460,7 @@ namespace BDArmory.VesselSpawning
                 var safeAltitude = SafeAltitude(vessel) * 0.95f; // Only go 95% of the way in a single jump in case terrain is still loading in.
                 if (baseAltitude < safeAltitude)
                     vessel.Translate((baseAltitude - safeAltitude) * up);
-                vessel.SetWorldVelocity(Vector3d.zero);
+                vessel.SetVelocity(Vector3.zero);
             }
             yield return LowerVessel(vessel);
         }
@@ -480,13 +480,13 @@ namespace BDArmory.VesselSpawning
                 var speed = distance > 1e4 ? 100f * BDAMath.Sqrt(distance) : distance > BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED ? Mathf.Clamp(1f + 30f / distance, 1f, 4f) * distance : BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED;
                 if (speed > BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED)
                 {
-                    vessel.SetWorldVelocity(Vector3d.zero);
+                    vessel.SetVelocity(Vector3.zero);
                     vessel.Translate(-speed * up * Time.fixedDeltaTime);
                 }
                 else
                 {
                     if (!finalLowering && vessel.verticalSpeed < -1e-2) finalLowering = true;
-                    vessel.SetWorldVelocity(-speed * up);
+                    vessel.SetVelocity(-speed * up);
                 }
                 // Debug.Log($"DEBUG landed/splashed: {LandedOrSplashed(vessel)}, altitude: {vessel.altitude}m ({distance}m), v-speed: {vessel.verticalSpeed}m/s, speed: {speed}");
                 previousAltitude = vessel.altitude;
@@ -512,7 +512,7 @@ namespace BDArmory.VesselSpawning
                     if ((vessel.altitude >= 0 && Math.Abs(vessel.altitude - previousAltitude) > 0.1 * BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED * Time.fixedDeltaTime)
                         || (vessel.altitude < 0 && vessel.altitude - previousAltitude < -0.1 * BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED * Time.fixedDeltaTime))
                     {
-                        vessel.SetWorldVelocity(vessel.GetSrfVelocity() * (0.45f + 0.5f * BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED));
+                        vessel.SetVelocity(vessel.GetSrfVelocity() * (0.45f + 0.5f * BDArmorySettings.VESSEL_MOVER_MIN_LOWER_SPEED));
                         stationaryStartTime = Time.time;
                         yield return wait; // Setting the velocity prevents a proper velocity calculation on the next frame, so wait an extra frame for it to take effect.
                     }
@@ -674,7 +674,7 @@ namespace BDArmory.VesselSpawning
                 {
                     spawnedVessel.Translate(-1000f * up);
                 }
-                spawnedVessel.SetWorldVelocity(Vector3d.zero);
+                spawnedVessel.SetVelocity(Vector3.zero);
             }
 
             // Switch to it when possible

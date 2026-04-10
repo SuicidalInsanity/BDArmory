@@ -4568,7 +4568,6 @@ namespace BDArmory.UI
             if (BDArmorySettings.DEBUG_OTHER)
             {
                 Debug.Log("[BDArmory.BDArmorySetup]: Loaded vessel: " + v.vesselName + ", Velocity: " + v.Velocity() + ", packed: " + v.packed);
-                //v.SetWorldVelocity(Vector3d.zero);
             }
         }
 
