@@ -229,7 +229,7 @@ namespace BDArmory.Extensions
             return part.gameObject.GetRendererBoundsWithoutParticles();
         }
 
-        public static Bounds GetRendererBounds(this Vessel vessel, bool useCached = true, bool checkForLaunchClamps = false, bool ignoreLineRenderers = true, bool ignoreParticleRenderers = true)
+        public static Bounds GetRendererBounds(this Vessel vessel, bool useCached = true, bool checkForLaunchClamps = false, bool ignoreLineRenderers = true, bool ignoreParticleRenderers = true, bool makeLocal = false)
         {
             Bounds result = default;
             bool flag = false;
@@ -254,11 +254,12 @@ namespace BDArmory.Extensions
                     }
                 }
             }
+            if (makeLocal) result.center = vessel.transform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
         }
 
-        public static Bounds GetColliderBounds(this Vessel vessel, bool checkForLaunchClamps = false)
+        public static Bounds GetColliderBounds(this Vessel vessel, bool checkForLaunchClamps = false, bool makeLocal = false)
         {
             Bounds result = default;
             bool flag = false;
@@ -280,6 +281,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
+            if (makeLocal) result.center = vessel.transform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
         }
