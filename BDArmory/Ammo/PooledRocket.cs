@@ -1066,7 +1066,7 @@ namespace BDArmory.Bullets
                             if (nuclear)
                                 NukeFX.CreateExplosion(pos, ExplosionSourceType.Rocket, sourceVesselName, rocket.DisplayName, 0, tntMass * 200, tntMass, tntMass, EMP, blastSoundPath, flashModelPath, shockModelPath, blastModelPath, plumeModelPath, debrisModelPath, "", "", hitPart: hitPart, sourceVelocity: airDetonation ? currentVelocity : default);
                             else
-                                ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, null, direction, -1, false, rocketMass * 1000, -1, dmgMult, shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, hitPart, apMod, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)distanceFromStart : -1, sourceVelocity: airDetonation ? currentVelocity : default);
+                                ExplosionFx.CreateExplosion(pos, tntMass, explModelPath, explSoundPath, ExplosionSourceType.Rocket, caliber, null, sourceVesselName, null, null, direction, -1, false, rocketMass * 1000, -1, dmgMult, shaped ? ExplosionFx.WarheadTypes.ShapedCharge : ExplosionFx.WarheadTypes.Standard, hitPart, apMod, ProjectileUtils.isReportingWeapon(sourceWeapon) ? (float)distanceFromStart : -1, sourceVelocity: airDetonation ? currentVelocity : default, hasPenetratedArmor:hasPenetrated);
                         }
                     }
                 }

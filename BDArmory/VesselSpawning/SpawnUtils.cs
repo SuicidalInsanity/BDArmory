@@ -1038,7 +1038,7 @@ namespace BDArmory.VesselSpawning
         {
             if (vessel == null || !vessel.loaded) return;
 
-            if (vessel.rootPart.FindModuleImplementing<HullBreach>() == null)
+            if (vessel.ActiveController().WM != null && vessel.rootPart.FindModuleImplementing<HullBreach>() == null)
             {
                 vessel.rootPart.AddModule("HullBreach");
             }

@@ -213,7 +213,7 @@ namespace BDArmory.Utils
             {
                 BattleDamageHandler.CheckDamageFX(hitPart, caliber, penetrationfactor, explosive, incendiary, sourceVesselName, hit, partAlreadyHit, cockpitPen);
             }
-            if (BDArmorySettings.HULLBREACH && firstHit && !explosive && penetrationfactor > 1)
+            if (BDArmorySettings.HULLBREACH && firstHit && penetrationfactor > 1)
             {
                 HullBreach.AddHullLeak(hit, hitPart, caliber);
             }
@@ -564,7 +564,11 @@ namespace BDArmory.Utils
                     {
                         if (BDArmorySettings.HULLBREACH)
                         {
-                            if (!armorpenetrated) HullBreach.AddHullLeak(hit, hitPart, radius, radius * radius);
+                            if (!armorpenetrated)
+                            {
+                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {radius:F2}m, {(radius * radius * 0.786f):F2}m2");
+                                HullBreach.AddHullLeak(hit, hitPart, radius, radius * radius);
+                            }                            
                         }
                         return false; //no armor to stop explosion
                     }
@@ -572,16 +576,20 @@ namespace BDArmory.Utils
                 }
                 else
                 {
+                    armorArea = !double.IsNaN(hitPart.radiativeArea) ? (float)hitPart.radiativeArea : hitPart.GetArea();// m2 // * 10000; //cm2
+                    spallArea = Mathf.Min(armorArea / 3, radius * radius);//m2
                     if (Armor.ArmorTypeNum == 1)
                     {
                         if (BDArmorySettings.HULLBREACH)
                         {
-                            if (!armorpenetrated) HullBreach.AddHullLeak(hit, hitPart, radius, radius * radius * 1.5f);
+                            if (!armorpenetrated)
+                            {
+                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2:F2}mm, {spallArea:F2}m2");
+                                HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea);
+                            }
                         }
                         return false;//ArmorType "None"; no armor to block/reduce blast, take full damage
                     }
-                    armorArea = !double.IsNaN(hitPart.radiativeArea) ? (float)hitPart.radiativeArea : hitPart.GetArea();// m2 // * 10000; //cm2
-                    spallArea = Mathf.Min(armorArea / 3, radius * radius);//m2
                 }
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {

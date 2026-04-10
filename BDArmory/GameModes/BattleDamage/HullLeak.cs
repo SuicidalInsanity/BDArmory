@@ -90,7 +90,14 @@ namespace BDArmory.FX
             {
                 parentPart.OnJustAboutToDie -= OnParentDestroy;
                 parentPart.OnJustAboutToBeDestroyed -= OnParentDestroy;
-                Deactivate(); //the part the hole is in is gone, remove and replace with new (part-sized) hole
+                if (parentPart == parentVessel.rootPart) Deactivate();
+                else
+                {
+                    AttachAt(parentVessel, transform.position - parentVessel.rootPart.transform.position);
+                    //the part the hole is in is gone, but hole may be still valid (hole larger than part/is also flooding an ajacent compartment)
+                    //so transfer it over from partAttach to vesselAttach
+                    HBController.OnPartDie(parentPart);
+                }
             }
         }
 
@@ -128,13 +135,19 @@ namespace BDArmory.FX
             debugFlooding = true;
 
             if (!gameObject.activeInHierarchy || !HighLogic.LoadedSceneIsFlight || BDArmorySetup.GameIsPaused) return;
-            if (!parentVessel || parentVessel.situation != Vessel.Situations.SPLASHED) return;
             if (!HBController)
             {
                 if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] HullBreach controller missing! removing hull leak.");
                 Deactivate();
                 return;
             }
+            if (lifeTime >= 0 && Time.time - startTime > lifeTime)
+            {
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] leak ended! Removing hull leak.");
+                Deactivate();
+            }
+            if (!parentVessel || parentVessel.situation != Vessel.Situations.SPLASHED) return;
+
             var dist2Waterline = FlightGlobals.getAltitudeAtPos(transform.position);
             if (dist2Waterline > holeRadius + 1) //1 meter margin for waves/etc
             {
@@ -147,7 +160,7 @@ namespace BDArmory.FX
                 if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability)
                 {
                     //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
-                    double holeFrac = Mathf.Clamp01((holeRadius + (1 - dist2Waterline)) / (holeRadius * 2));
+                    double holeFrac = Mathf.Clamp01(1 - ((holeRadius + dist2Waterline) - 1) / (holeRadius + holeRadius));
                     if (holeFrac <= 0) return;
                     float pressureMod = 1;
                     if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe
@@ -208,7 +221,8 @@ namespace BDArmory.FX
                     HBController.HSectionFlooding[compartment.Key] += amount;
                     HBController.HSectionFlooding[compartment.Key] = Mathf.Clamp((float)HBController.HSectionFlooding[compartment.Key], 0, (float)sectionFloatability);
                     totalLeakAmount = Mathf.Clamp((float)(totalLeakAmount + amount), 0, (float)sectionFloatability);
-                    if (timer >= 50)
+                    if (amount == 0) isFlooding = false;
+                    if (timer >= 50 && isFlooding)
                         if (BDArmorySettings.DEBUG_HULLBREACH)
                             Debug.Log($"[BDArmory.HullLeak] {compartment.Key} undergoing {holeType} flooding at a rate of {(amount * 1000 / Time.fixedDeltaTime):F2} l of water/s ({HBController.HSectionFlooding[compartment.Key]:F2}({totalLeakAmount:F2})/{sectionFloatability:F2})m3 | ({leakRate * compartment.Value:F4}/{holeFrac:F2}/{pressureMod:F2})");
                 }

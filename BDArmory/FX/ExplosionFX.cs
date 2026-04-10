@@ -50,6 +50,8 @@ namespace BDArmory.FX
         bool isReportingWeapon = false;
         bool bulletHitRegistered = true; // Whether the bullet hit has been registered or not before triggering the explosion (for proxi-detonations).
 
+        public bool hasPenetratedArmor = false; //explosion hit tracking for Hullbreach to only apply a single HB leak per explosion to ship
+
         public Part projectileHitPart { get; set; }
         public float ImpactSpeed { get; set; } // For kinetic impactors.
         public float TimeIndex => Time.time - StartTime;
@@ -103,7 +105,7 @@ namespace BDArmory.FX
         static List<ValueTuple<float, float, float>> LoSIntermediateParts = []; // Worker list for LoS checks to avoid reallocations.
         static HashSet<Part> _LoSIntermediateParts = []; // Hashset of unique parts in LoS.
 
-        bool hasPenetratedArmor = false; //explosion hit tracking for Hullbreach to only apply a single HB leak per explosion to ship
+        
 
         void Awake()
         {
@@ -1119,11 +1121,12 @@ namespace BDArmory.FX
                                             _ => ExplosionVelocity //technically this should be the sum vector of the explosion vel (perpendicular to missile vel), and missile vel since the rods are physical projectiles that would be inheriting their parent's vel
                                         },
                                         ExplosionSource);
-                                    if (BDArmorySettings.HULLBREACH)
+                                    if (BDArmorySettings.HULLBREACH && !hasPenetratedArmor)
                                     {
                                         HullBreach.AddHullLeak(eventToExecute.Hit, part, Caliber);
                                     }
                                     totalDamageApplied[vesselHit] += damage;
+                                    hasPenetratedArmor = true;
                                 }
 
                                 if (penetrationFactor > 1 && warheadType != WarheadTypes.Kinetic)
@@ -1259,7 +1262,7 @@ namespace BDArmory.FX
         public static void CreateExplosion(Vector3 position, float tntMassEquivalent, string explModelPath, string soundPath, ExplosionSourceType explosionSourceType,
             float caliber = 120, Part explosivePart = null, string sourceVesselName = null, string sourceVesselTeam = null, string sourceWeaponName = null, Vector3 direction = default,
             float angle = 100f, bool isfx = false, float projectilemass = 0, float caseLimiter = -1, float dmgMutator = 1, WarheadTypes warheadType = WarheadTypes.Standard, Part Hitpart = null,
-            float apMod = 1f, float distancetravelled = -1, Vector3 sourceVelocity = default, bool bulletHitRegistered = true)
+            float apMod = 1f, float distancetravelled = -1, Vector3 sourceVelocity = default, bool bulletHitRegistered = true, bool hasPenetratedArmor = false)
         {
             if (BDArmorySettings.DEBUG_MISSILES && explosionSourceType == ExplosionSourceType.Missile && (!explosionFXPools.ContainsKey(explModelPath) || !audioClips.ContainsKey(soundPath)))
             { Debug.Log($"[BDArmory.ExplosionFX]: Setting up object pool for explosion of type {explModelPath} with audio {soundPath}{(sourceWeaponName != null ? $" for {sourceWeaponName}" : "")}"); }
@@ -1339,6 +1342,7 @@ namespace BDArmory.FX
             }
             eFx.isReportingWeapon = explosionSourceType == ExplosionSourceType.Missile || distancetravelled > 0;
             eFx.bulletHitRegistered = bulletHitRegistered;
+            eFx.hasPenetratedArmor = hasPenetratedArmor;
             eFx.travelDistance = distancetravelled; // Used for reporting weapons.
 
             switch (eFx.warheadType)
