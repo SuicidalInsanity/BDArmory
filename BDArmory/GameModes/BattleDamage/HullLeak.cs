@@ -1,11 +1,7 @@
-﻿using BDArmory.Bullets;
-using BDArmory.Extensions;
-using BDArmory.GameModes.BattleDamage;
+﻿using BDArmory.GameModes.BattleDamage;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
-using Smooth.Collections;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -24,7 +20,7 @@ namespace BDArmory.FX
         public Dictionary<string, double> hullSection = new Dictionary<string, double>();
         public Vessel parentVessel;
         public Part parentPart;
-
+        bool attachedToPart = false;
         public double leakRate = 0; //water gain per second, in kg
         public float holeRadius = 0;
         double totalLeakAmount = 0; //
@@ -57,6 +53,7 @@ namespace BDArmory.FX
             if (hitPart != null)
             {
                 parentPart = hitPart;
+                attachedToPart = true;
                 parentPart.OnJustAboutToDie += OnParentDestroy;
                 parentPart.OnJustAboutToBeDestroyed += OnParentDestroy;
             }
@@ -72,6 +69,7 @@ namespace BDArmory.FX
         {
             if (hitPart is null) return;
             parentPart = hitPart;
+            attachedToPart = true;
             parentVessel = parentPart.vessel;
             transform.SetParent(hit.collider.transform);
             transform.position = hit.point;
@@ -81,13 +79,11 @@ namespace BDArmory.FX
                 OnVesselUnloaded_1_11(true); // Catch unloading events too.
             gameObject.SetActive(true);
         }
-
-
-
         void OnParentDestroy()
         {
             if (parentPart is not null)
             {
+                if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDarmory.HullLeak] OnParentDestroy called.");
                 parentPart.OnJustAboutToDie -= OnParentDestroy;
                 parentPart.OnJustAboutToBeDestroyed -= OnParentDestroy;
                 if (parentPart == parentVessel.rootPart) Deactivate();
@@ -154,19 +150,22 @@ namespace BDArmory.FX
                 debugFlooding = false;
                 return; //alt + 1 for a 1m above waterline margin(wave action, bowwave, etc)
             }
+            timer++;
             foreach (var compartment in hullSection)
             {
                 if (!HBController.HSectionFlooding.ContainsKey(compartment.Key)) return;
                 if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability)
                 {
                     //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
-                    double holeFrac = Mathf.Clamp01(1 - ((holeRadius + dist2Waterline) - 1) / (holeRadius + holeRadius));
-                    if (holeFrac <= 0) return;
+                    double holeFracWL = Mathf.Clamp01((holeRadius + dist2Waterline - 1) / (holeRadius + holeRadius)); //portion of hole above waterline + 1m wave margin
+                    double holeFracKeel = Mathf.Clamp01((holeRadius - dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius)); //portion of hole below bottom vessel
+                    double holeFrac = 1 - (holeFracWL + holeFracKeel);
+                    if (holeFrac <= 0) return; //hole completely above waterline
                     float pressureMod = 1;
                     if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe
                     double amount = (leakRate * compartment.Value * holeFrac * pressureMod) * Time.fixedDeltaTime;
                     isFlooding = true;
-                    timer++;
+                    
                     switch (holeType)
                     {
                         case FloodingType.Splinter:
@@ -217,7 +216,7 @@ namespace BDArmory.FX
                                 break;
                             }
                     }
-                    amount = Mathf.Clamp((float)amount, 0, (float)sectionFloatability);
+                    amount = Mathf.Clamp((float)amount, 0, (float)sectionFloatability/5); //unless compartment literally hollow, there'd be hallways/cabins/bulkheads/etc slowing progression of water into compartment
                     HBController.HSectionFlooding[compartment.Key] += amount;
                     HBController.HSectionFlooding[compartment.Key] = Mathf.Clamp((float)HBController.HSectionFlooding[compartment.Key], 0, (float)sectionFloatability);
                     totalLeakAmount = Mathf.Clamp((float)(totalLeakAmount + amount), 0, (float)sectionFloatability);
@@ -259,8 +258,9 @@ namespace BDArmory.FX
                     OnParentDestroy();
                 }
             }
-            else if (parentPart is null)
+            else if (parentPart is null && attachedToPart || parentVessel is null)
             {
+                if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDarmory.HullLeak] Parent is null, deactivating.");
                 Deactivate(); // Sometimes (mostly when unloading a vessel) the parent becomes null without triggering OnParentDestroy.
             }
         }

@@ -41,13 +41,14 @@ namespace BDArmory.GameModes.BattleDamage
         Dictionary<string, Vector3> HullSections = new Dictionary<string, Vector3>();//center point for Bow/Port Fore/Starboard Fore/Port Aft/Starboard Aft/Stern
         public Dictionary<string, double> HSectionFlooding = new Dictionary<string, double>(); //tracking for total water in vessel
         Vector2 VesselCenterOffset = Vector2.zero; //offset in m from geometric center of craft at waterline to rootPart
-        Vector2 VesselSize = Vector2.zero;
+        public Vector2 VesselSize = Vector2.zero;
         float displacement = 0;
+        BDModuleSurfaceAI surfaceAI = null;
         void Start()
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             GameEvents.onPartDie.Add(OnPartDie);
-            var surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
+            surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
             if (surfaceAI && surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Water)//Assuming ships are not going to be fitted with Pilot/VTOL/Orbital AI
                 StartCoroutine(DelayedStart());
             else
@@ -161,7 +162,6 @@ namespace BDArmory.GameModes.BattleDamage
 
         void SetUpCapsizeFlooding()
         {
-            var surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
             if (surfaceAI.SurfaceType == AIUtils.VehicleMovementType.Submarine) return; //exception for submarines so they don't flood themselves submerging
             HullLeak.CreateLeakPool();
             foreach (var compartment in HullSections)
@@ -221,9 +221,9 @@ namespace BDArmory.GameModes.BattleDamage
                 }
             }
             if (timer >= 50) timer = 0;
-            if (totalWater / totalFloatability > 0.64f) //if flood volume was only submerged hull area, use .66 (only bow/stern unfollded). But since there's some freeboard volume that can also fill, reduce threshold a tad?
+            if (totalWater / totalFloatability > 0.64f || surfaceAI.SurfaceType != AIUtils.VehicleMovementType.Submarine && vessel.altitude < -10) //if flood volume was only submerged hull area, use .66 (only bow/stern unfollded). But since there's some freeboard volume that can also fill, reduce threshold a tad?
                 //if this is above 0.57 that means the entire initial displacement volume of the hull is now full of water; .66 means you need 4 of the 6 compartments fully flooded to down the ship
-                //have this instead be when craftmass is ~2x initial start displacement? Or check to see if 
+                //have depth check for low buoyancy vessels that startto go down before critical flood levels aciheved.
             {
                 if (vessel.altitude < -10 || totalWater / totalFloatability > .83f)
                 {
@@ -271,6 +271,9 @@ namespace BDArmory.GameModes.BattleDamage
                     //GUIUtils.DrawLineBetweenWorldPositions(vessel.ReferenceTransform.position, vessel.ReferenceTransform.position + debugVRTup * 10 , 2, Color.green);
                     //GUIUtils.DrawLineBetweenWorldPositions(vessel.ReferenceTransform.position, vessel.ReferenceTransform.position + debugVRTright * 10, 2, Color.red);
                     //GUIUtils.DrawLineBetweenWorldPositions(vessel.ReferenceTransform.position, vessel.ReferenceTransform.position + debugVRTforward * 10, 2, Color.blue);
+
+                    //GUIUtils.DrawLineBetweenWorldPositions(vessel.ReferenceTransform.position, vessel.ReferenceTransform.position + debugProjectedLoc, 2, Color.black);
+                    //GUIUtils.DrawLineBetweenWorldPositions(vessel.ReferenceTransform.position + debugProjectedLoc, vessel.ReferenceTransform.position + debugHitLoc, 2, Color.grey);
                 }
             }
         }
@@ -334,26 +337,31 @@ namespace BDArmory.GameModes.BattleDamage
 
                 leakFX.leakRate = scale * BDArmorySettings.BD_TANK_LEAK_RATE;                
                 leakFX.holeRadius = caliber;
-                leakFX.holeType = scale > 20? HullLeak.FloodingType.Fatal : scale > 4 ? HullLeak.FloodingType.Major : HullLeak.FloodingType.Minor;
+                leakFX.holeType = scale > sectionFloatability / 20 ? HullLeak.FloodingType.Fatal : scale > sectionFloatability / 4 ? HullLeak.FloodingType.Major : scale > 1 ? HullLeak.FloodingType.Minor : HullLeak.FloodingType.Splinter;
                 leakFX.HBController = this;
                 leakFX.sectionFloatability = sectionFloatability;
                 //grab this part's loc relative to root, then apply VesselCenterOffset, then compare that coord to the section divisors
                 //This needs to be vessel orientation agnostic, else a vessel rotated to heading 315, say, might have a location report at 7m,2m,7m from center instead of 0,2,10m that it should be
-                Quaternion priorRotation = Quaternion.Euler(0, 0, 0);
-                priorRotation = part.transform.rotation;    //should be rootpart        
-                vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
-                var partLoc = p.transform.position - vessel.rootPart.transform.position; 
-                Vector2 adjustedLoc = new Vector2(partLoc.x + VesselCenterOffset.x, partLoc.y + VesselCenterOffset.y);
-                vessel.SetRotation(priorRotation); //surely there's a better way of doing this; just rotate the vector?
+                Vector3 VRT = vessel.rootPart.transform.position;               
+                Vector3 partLoc = p.transform.position - VRT;
+                //need to get the port/star X/fore/aft Y offset of the hit in meters to the root for compartment ID, need to account vor vessel orientation
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] hitLoc: {partLoc.x:F2}, {partLoc.y:F2}, {partLoc.z:F2}m");
+                Vector3 projectedLoc = Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(partLoc, vessel.ReferenceTransform.forward), vessel.ReferenceTransform.right);
+                //this will give a fore/aft hit offset, but will potentially result in a longer X offset due to z elevation differences. Doesn't matter, we just need to know if x is larger/smaller, not exact dist
+                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] projectedLoc: {projectedLoc.x:F2}, {projectedLoc.y:F2}, {projectedLoc.z:F2}m");
+                Vector2 adjustedLoc = new Vector2(((VRT + partLoc) - (VRT + projectedLoc)).magnitude, (VRT - (VRT + projectedLoc)).magnitude);
+                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedLoc: {adjustedLoc.x:F2}, {adjustedLoc.y:F2}m");
+                adjustedLoc.x += VesselCenterOffset.x;
+                adjustedLoc.y += VesselCenterOffset.y;
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2}, {adjustedLoc.y:F2}m");
                 leakFX.AttachAt(p.vessel, adjustedLoc);
                 float holeFracAft = 0;
                 float holeFracFore = 0;
                 string vesselSide = "";
                 string vesselCompartment = "";
-                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2},{adjustedLoc.y:F2}m");
-                if (adjustedLoc.x < 0) vesselSide = "Star";
+                if (VRT.x - adjustedLoc.x > 0) vesselSide = "Star";
                 else vesselSide = "Port";
-                if (adjustedLoc.y > 0)
+                if (VRT.y - adjustedLoc.y > 0)
                 {
                     if (adjustedLoc.y > VesselSize.y * .25f)
                     {
@@ -409,6 +417,11 @@ namespace BDArmory.GameModes.BattleDamage
                 part.buoyancy = -1;
             }
         }
+
+        Vector3 debugHitLoc = Vector3.zero;
+        Vector3 debugProjectedLoc = Vector3.zero;
+        Vector3 debugAdjustedLoc = Vector3.zero;
+
         public static void AddHullLeak(RaycastHit hit, Part hitPart, float caliber, float area = -1)
         {
             if (BDArmorySettings.HULLBREACH && hitPart.Modules.GetModule<HitpointTracker>().Hitpoints > 0)
@@ -461,23 +474,30 @@ namespace BDArmory.GameModes.BattleDamage
                     leakFX.holeType = scale > 20 ? HullLeak.FloodingType.Fatal : scale > 4 ? HullLeak.FloodingType.Major : scale > 1 ? HullLeak.FloodingType.Minor : HullLeak.FloodingType.Splinter;
                     leakFX.HBController = HBComponent;
                     leakFX.sectionFloatability = HBComponent.sectionFloatability;
-                    Vector3 hitLoc = hit.point - hitPart.vessel.rootPart.transform.position;
-                    //need to get the port/star X/fore/aft Y offset of the hit to the root for compartment ID.
-                    //Method of getting Local offset vs Global? ProjectOnPlane doesn't do what is needed (despite soundling like what I need here) FIXME
-                    
-                    Vector2 adjustedLoc = new Vector2(hitLoc.x + HBComponent.VesselCenterOffset.x, hitLoc.y + HBComponent.VesselCenterOffset.y);
-                    // - FIXME This needs to get applied *after* hitLoc gets corrected for vessel orientation
+                    Vector3 VRT = hitPart.vessel.rootPart.transform.position;
+                    Vector3 hitLoc = hit.point - VRT;
+                    HBComponent.debugHitLoc = hitLoc;
+                    //need to get the port/star X/fore/aft Y offset of the hit in meters to the root for compartment ID, need to account vor vessel orientation
+                    if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] hitLoc: {hitLoc.x:F2}, {hitLoc.y:F2}, {hitLoc.z:F2}m");
+                    Vector3 projectedLoc = Vector3.ProjectOnPlane(Vector3.ProjectOnPlane(hitLoc, hitPart.vessel.ReferenceTransform.forward), hitPart.vessel.ReferenceTransform.right);
+                    //this will give a fore/aft hit offset, but will potentially result in a longer X offset due to z elevation differences. Doesn't matter, we just need to know if x is larger/smaller, not exact dist
+                    HBComponent.debugProjectedLoc = projectedLoc;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] projectedLoc: {projectedLoc.x:F2}, {projectedLoc.y:F2}, {projectedLoc.z:F2}m");
+                    Vector2 adjustedLoc = new Vector2(((VRT + hitLoc) - (VRT + projectedLoc)).magnitude, (VRT - (VRT + projectedLoc)).magnitude);
+                    HBComponent.debugAdjustedLoc = adjustedLoc;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedLoc: {adjustedLoc.x:F2}, {adjustedLoc.y:F2}m");
+                    adjustedLoc.x += HBComponent.VesselCenterOffset.x;
+                    adjustedLoc.y += HBComponent.VesselCenterOffset.y;
+                    if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2}, {adjustedLoc.y:F2}m");
                     float holeFracAft = 0;
                     float holeFracFore = 0;
                     string vesselSide = "";
                     string vesselCompartment = "";
-                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2},{adjustedLoc.y:F2}m; adjustedHitLoc2: {adjustedLoc2.x:F2},{adjustedLoc2.y:F2}m");
-                    //if (adjustedLoc.x < 0) vesselSide = "Star";
-                    //else vesselSide = "Port";
-                    if (Vector3.Dot(hitPart.vessel.ReferenceTransform.right, hitLoc) < 0) vesselSide = "Star";
+
+                    if (VRT.x - adjustedLoc.x > 0) vesselSide = "Star";
                     else vesselSide = "Port";
-                    if (adjustedLoc.y > 0)
-                        {
+                    if (VRT.y - adjustedLoc.y > 0)
+                    {
                             if (adjustedLoc.y > HBComponent.VesselSize.y * .25f)
                             {
                                 vesselCompartment = "Stern";
