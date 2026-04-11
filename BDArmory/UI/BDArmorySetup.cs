@@ -3085,6 +3085,45 @@ namespace BDArmory.UI
                         //    dt = Time.realtimeSinceStartup - tic;
                         //    Debug.Log($"DEBUG WorldAlignedAlt Rot. Non-Cached:  {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testFloat: {testFloat}");
                         //}
+                        //if (GUI.Button(SLineRect(++line), "Test Gaussian")) // Test TransformDirection vs. Rotation
+                        //{
+                        //    float testDev = 0;
+                        //    int iters = 10000000;
+                        //    var watch = new System.Diagnostics.Stopwatch();
+                        //    float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+                        //    var tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        float curr = VectorUtils.GaussianQuant();
+                        //        testDev += curr * curr;
+                        //    }
+                        //    watch.Stop();
+                        //    var dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG GaussianQuant:    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testDev: {BDAMath.Sqrt(testDev / iters)}");
+                        //    testDev = 0f;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        float curr = VectorUtils.Gaussian();
+                        //        testDev += curr * curr;
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG Gaussian:         {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testDev: {BDAMath.Sqrt(testDev / iters)}");
+                        //    testDev = 0f;
+                        //    tic = Time.realtimeSinceStartup;
+                        //    watch.Reset(); watch.Start();
+                        //    for (int i = 0; i < iters; ++i)
+                        //    {
+                        //        float curr = VectorUtils.GaussianQuant();
+                        //        testDev += curr * curr;
+                        //    }
+                        //    watch.Stop();
+                        //    dt = Time.realtimeSinceStartup - tic;
+                        //    Debug.Log($"DEBUG GaussianQuant:    {dt / iters:G3}s/iter {watch.ElapsedTicks * μsResolution / iters:G3}ns, testDev: {BDAMath.Sqrt(testDev / iters)}");
+                        //}
                     }
 #endif
                 }

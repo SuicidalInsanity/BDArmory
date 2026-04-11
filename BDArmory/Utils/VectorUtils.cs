@@ -137,6 +137,27 @@ namespace BDArmory.Utils
             }
         }
 
+        static FloatCurve GaussianQuantileApp = new([
+            new(0f, 0.0f, 1.253314f, 1.253314f),
+            new(0.5762892f, 0.8f, 1.7259735f, 1.7259735f),
+            new(0.8663856f, 1.5f, 3.8604795f, 3.8604795f),
+            new(1f, 4.5f, 60f, 0.0f),
+        ]);
+
+        public static float GaussianQuant()
+        {
+            // Technically this will raise an exception if the first random produces a zero (which should never happen now that it's log(1-rnd))
+            try
+            {
+                return GaussianQuantileApp.Evaluate(UnityEngine.Random.value);
+            }
+            catch (Exception e)
+            { // I have no idea what exception Mathf.Log raises when it gets a zero
+                Debug.LogWarning("[BDArmory.VectorUtils]: Exception thrown in Gaussian: " + e.Message + "\n" + e.StackTrace);
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Generate a Vector3 with elements from an approximately normal distribution (mean: 0, std.dev: 1).
         /// </summary>

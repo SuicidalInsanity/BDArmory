@@ -355,6 +355,41 @@ namespace BDArmory.Targeting
             return biasedVector;
         }
 
+        static FloatCurve GaussianQuantileApp = new([
+            new(0f, 0.0f, 1.253314f, 1.253314f),
+            new(0.5762892f, 0.8f, 1.7259735f, 1.7259735f),
+            new(0.8663856f, 1.5f, 3.8604795f, 3.8604795f),
+            new(1f, 4.5f, 60f, 0.0f),
+        ]);
+
+        Vector3 prevGlint = Vector3.zero;
+        Vector3 futureGlint = Vector3.zero;
+        float glintTime = 0f;
+        const float glintInterval = 2f;
+        readonly float glintIntInv = 1f / glintInterval;
+
+        Vector3 currGlint = Vector3.zero;
+        float glintUpdateTime = 0f;
+        public Vector3 GetRadarGlint()
+        {
+            float currTime = Time.time;
+            if (glintUpdateTime >= currTime)
+            {
+                return currGlint;
+            }
+            currTime -= glintTime;
+            if (currTime > glintInterval)
+            {
+                prevGlint = futureGlint;
+                futureGlint = GetBoundsScaledBiasedVector(UnityEngine.Random.onUnitSphere, 0.5f * GaussianQuantileApp.Evaluate(UnityEngine.Random.value));
+                glintTime = Time.time + glintInterval;
+                return GetWorldAlignedVector(prevGlint);
+            }
+            currGlint = GetWorldAlignedVector(Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv));
+            glintUpdateTime = Time.time;
+            return currGlint;
+        }
+
         void FixedUpdate()
         {
             if (vessel == null)
