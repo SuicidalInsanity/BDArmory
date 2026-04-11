@@ -1,17 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-
 using BDArmory.Armor;
 using BDArmory.Competition;
 using BDArmory.Damage;
 using BDArmory.Extensions;
 using BDArmory.GameModes;
+using BDArmory.GameModes.BattleDamage;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using BDArmory.Weapons;
-using BDArmory.GameModes.BattleDamage;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 namespace BDArmory.FX
 {
@@ -53,7 +52,6 @@ namespace BDArmory.FX
         bool bulletHitRegistered = true; // Whether the bullet hit has been registered or not before triggering the explosion (for proxi-detonations).
 
         public bool hasPenetratedArmor = false; //explosion hit tracking for Hullbreach to only apply a single HB leak per explosion to ship
-
         public Part projectileHitPart { get; set; }
         public float ImpactSpeed { get; set; } // For kinetic impactors.
         public float TimeIndex => Time.time - StartTime;
@@ -114,8 +112,6 @@ namespace BDArmory.FX
 
         static List<ValueTuple<float, float, float>> LoSIntermediateParts = []; // Worker list for LoS checks to avoid reallocations.
         static HashSet<Part> _LoSIntermediateParts = []; // Hashset of unique parts in LoS.
-
-        
 
         void Awake()
         {
@@ -1184,7 +1180,7 @@ namespace BDArmory.FX
                                         float currPen = remainingPen / (1f + (standoffTemp * standoffTemp));
 
                                         float penRatio = (currPen - currPart.armor);
-                                        
+
                                         if (BDArmorySettings.DEBUG_ARMOR)
                                         {
                                             Debug.Log($"[BDArmory.ExplosionsFX] Shaped Calc for part {i + 1}/{eventToExecute.IntermediateParts.Count} at dist: {currPart.dist} m; with remainingPen: {remainingPen} mm; armor: {currPart.armor} mm; currPen: {currPen} mm; factor: {penRatio / currPen}; ECurr: {ECurr}; kOffset: {kOffset}; standoffTemp: {standoffTemp}; standoffFactor: {currPen / remainingPen}; origStandoffFactor: {1f / (1f + (currPart.dist * currPart.dist / ((14f * SCFac) * (14f * SCFac))))}.");
@@ -1316,12 +1312,13 @@ namespace BDArmory.FX
                                         },
                                         ExplosionSource, true);
                                     totalDamageApplied[vesselHit] += damage;
+
                                     if (BDArmorySettings.HULLBREACH && !hasPenetratedArmor)
                                     {
                                         HullBreach.AddHullLeak(eventToExecute.Hit, part, Caliber);
                                     }
                                     hasPenetratedArmor = true;
-                                }
+
                                     if (warheadType != WarheadTypes.Kinetic)
                                     {
                                         if (damageWithoutIntermediateParts > 0)
@@ -1336,7 +1333,7 @@ namespace BDArmory.FX
                             }
                             else
                             {
-                                if ((part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range - realDistance, hasPenetratedArmor)) //false = armor blowthrough or bullet detonating inside part
+                                if ((part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) || !ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range, minPressure, hasPenetratedArmor)) //false = armor blowthrough or bullet detonating inside part
                                 {
                                     if (RA != null && !RA.NXRA) //blast wave triggers RA; detonate all remaining RA sections
                                     {
@@ -1351,7 +1348,7 @@ namespace BDArmory.FX
                                         totalDamageApplied[vesselHit] += damage;
                                         if (part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) //deal armor damage to armor panel, since we didn't do that earlier
                                         {
-                                            ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range - realDistance, hasPenetratedArmor);
+                                            ProjectileUtils.CalculateExplosiveArmorDamage(part, blastInfo.TotalPressure, realDistance, SourceVesselName, eventToExecute.Hit, ExplosionSource, Range, minPressure, hasPenetratedArmor);
                                         }
                                         penetrationFactor = damage / 10f; //closer to the explosion/greater magnitude of the explosion at point blank, the greater the blowthrough
                                         if (float.IsNaN(damage)) Debug.LogError("DEBUG NaN damage!");

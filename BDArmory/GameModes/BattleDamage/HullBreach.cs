@@ -65,93 +65,98 @@ namespace BDArmory.GameModes.BattleDamage
             WaitForFixedUpdate wait = new WaitForFixedUpdate();
             yield return wait;
             while (vessel.situation != Vessel.Situations.SPLASHED) yield return wait; //wait until boat in water
-            yield return new WaitForSeconds(2); //wait for vessel to come to rest
-            float CoMAlt = FlightGlobals.getAltitudeAtPos(vessel.CoM);
-            float foreLength = 0;
-            float aftLength = 0;
-            float portBeam = 0;
-            float starBeam = 0;
-            upDir = (vessel.CoM - FlightGlobals.currentMainBody.position).normalized;
-            //debugVRTforward = vessel.ReferenceTransform.forward;
-            Quaternion priorRotation = Quaternion.Euler(0, 0, 0);
-            priorRotation = part.transform.rotation;    //should be rootpart        
-            vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
-            //this is rotating the vessel, which means it's no longer in-line with the water, potentially...
-            //grab vessel height above surface for where water level should be, then do the grab bottom bounds, and compare that distance to 'water line hight'
-            float waterLineHeight = FlightGlobals.getAltitudeAtPos(vessel.rootPart.transform.position); //height offset of root part from waterlevel? 
-            //debugVRTup = vessel.ReferenceTransform.up;
-            //debugVRTright = vessel.ReferenceTransform.right;
-            foreach (Part p in vessel.parts)
+            if (vessel.IsUnderwater())
             {
-                //do some filtering. Control surface parts - hydrofoils/rudders/etc likely to not be part ofthe Hull proper, so their loss shouldn't cause holes
-                //engines usually inside the hull, their loss shouldn't cause leaks (admittedly, if you've taken engine loss, you almost certainly already *have* leaks...)
-                if (p.isEngine()) continue;
-                if (p.isControlSurface()) continue;
-                if (ProjectileUtils.IsIgnoredPart(p)) continue; //AI/WM/flags/decals
-                Vector3 partOffset = Vector3.zero;
-
-                Vector3 bottom = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.forward * 1000);
-                partOffset = bottom - vessel.rootPart.transform.position;
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] rootDist2waterline: {waterLineHeight:F2}; part bottom: {partOffset.y:F2}; wLH + bottom: {(waterLineHeight + partOffset.y):F2}");
-                if (waterLineHeight + partOffset.y > 0)
+                isSinking = true; //loading a sunk ship on the bottom
+            }
+            else
+            {
+                yield return new WaitForSeconds(2); //wait for vessel to come to rest
+                float foreLength = 0;
+                float aftLength = 0;
+                float portBeam = 0;
+                float starBeam = 0;
+                //debugVRTforward = vessel.ReferenceTransform.forward;
+                Quaternion priorRotation = Quaternion.Euler(0, 0, 0);
+                priorRotation = part.transform.rotation;    //should be rootpart        
+                vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
+                //this is rotating the vessel, which means it's no longer in-line with the water, potentially...
+                //grab vessel height above surface for where water level should be, then do the grab bottom bounds, and compare that distance to 'water line hight'
+                float waterLineHeight = FlightGlobals.getAltitudeAtPos(vessel.rootPart.transform.position); //height offset of root part from waterlevel? 
+                                                                                                            //debugVRTup = vessel.ReferenceTransform.up;
+                                                                                                            //debugVRTright = vessel.ReferenceTransform.right;
+                foreach (Part p in vessel.parts)
                 {
-                    if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} above water, skipping");
-                    continue;                  
+                    //do some filtering. Control surface parts - hydrofoils/rudders/etc likely to not be part ofthe Hull proper, so their loss shouldn't cause holes
+                    //engines usually inside the hull, their loss shouldn't cause leaks (admittedly, if you've taken engine loss, you almost certainly already *have* leaks...)
+                    if (p.isEngine()) continue;
+                    if (p.isControlSurface()) continue;
+                    if (ProjectileUtils.IsIgnoredPart(p)) continue; //AI/WM/flags/decals
+                    Vector3 partOffset = Vector3.zero;
+
+                    Vector3 bottom = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.forward * 1000);
+                    partOffset = bottom - vessel.rootPart.transform.position;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] rootDist2waterline: {waterLineHeight:F2}; part bottom: {partOffset.y:F2}; wLH + bottom: {(waterLineHeight + partOffset.y):F2}");
+                    if (waterLineHeight + partOffset.y > 0)
+                    {
+                        if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} above water, skipping");
+                        continue;
+                    }
+                    Vector3 fore = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.up * 1000);
+                    partOffset = fore - vessel.rootPart.transform.position;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} fore: {partOffset.z:F3}");
+                    if (partOffset.z > foreLength) foreLength = Mathf.Abs(partOffset.z);
+                    Vector3 aft = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.up * -1000);
+                    partOffset = aft - vessel.rootPart.transform.position;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} aft: {-partOffset.z:F3}");
+                    if (-partOffset.z > aftLength) aftLength = Mathf.Abs(partOffset.z);
+                    Vector3 port = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.right * -1000);
+                    partOffset = port - vessel.rootPart.transform.position;
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} port: {-partOffset.x:F3}");
+                    if (-partOffset.x > portBeam) portBeam = Mathf.Abs(partOffset.x);
+                    Vector3 star = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.right * 1000);
+                    partOffset = star - vessel.rootPart.transform.position;
+                    if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} fore: {(fore - vessel.rootPart.transform.position).z:F2}, aft: {-(aft - vessel.rootPart.transform.position).z:F2}, port: {-(port - vessel.rootPart.transform.position).x:F2}, star: {(star - vessel.rootPart.transform.position).x:F2}");
+                    if (partOffset.x > starBeam) starBeam = Mathf.Abs(partOffset.x);
+
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] current vessel length: ({foreLength:F2} + {aftLength:F2}) {foreLength + aftLength:F2}; beam: ({portBeam:F2} + {starBeam:F2}) {portBeam + starBeam:F2}");
+                    waterLineParts.Add(p);
+                    p.rigidAttachment = true;
                 }
-                Vector3 fore = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.up * 1000);
-                partOffset = fore - vessel.rootPart.transform.position; 
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} fore: {partOffset.z:F3}");
-                if (partOffset.z > foreLength) foreLength = Mathf.Abs(partOffset.z);
-                Vector3 aft = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.up * -1000);
-                partOffset = aft - vessel.rootPart.transform.position;
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} aft: {-partOffset.z:F3}");
-                if (-partOffset.z > aftLength) aftLength = Mathf.Abs(partOffset.z);
-                Vector3 port = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.right * -1000);
-                partOffset = port - vessel.rootPart.transform.position;
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} port: {-partOffset.x:F3}");
-                if (-partOffset.x > portBeam) portBeam = Mathf.Abs(partOffset.x);
-                Vector3 star = p.collider.ClosestPointOnBounds(vessel.ReferenceTransform.position + vessel.ReferenceTransform.right * 1000);
-                partOffset = star - vessel.rootPart.transform.position;
-                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} fore: {(fore - vessel.rootPart.transform.position).z:F2}, aft: {-(aft - vessel.rootPart.transform.position).z:F2}, port: {-(port - vessel.rootPart.transform.position).x:F2}, star: {(star - vessel.rootPart.transform.position).x:F2}");
-                if (partOffset.x > starBeam) starBeam = Mathf.Abs(partOffset.x);
 
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] current vessel length: ({foreLength:F2} + {aftLength:F2}) {foreLength + aftLength:F2}; beam: ({portBeam:F2} + {starBeam:F2}) {portBeam + starBeam:F2}");
-                waterLineParts.Add(p);
-                p.rigidAttachment = true;
+                vessel.SetRotation(priorRotation);
+                VesselCenterOffset = new Vector2((starBeam - portBeam) / 2, (foreLength - aftLength) / 2); //root part is not necessarily in geometric center of craft
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] {vessel.GetName()} VesseLCenterOffset is {VesselCenterOffset.x}, {VesselCenterOffset.y}");
+
+                VesselSize = new Vector2(portBeam + starBeam, foreLength + aftLength);
+                displacement = vessel.GetTotalMass();
+                totalFloatability = VesselSize.x * (VesselSize.y * 0.75f) * (VesselSize.x * 0.7f); //abstracted displacement, m3. using a 0.75x mod for length to abstract bow/stern; 0.7x width for submerged hull + freeboard
+                                                                                                   //if (totalFloatability > 2 * displacement) totalFloatability = 2 * displacement;
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] {vessel.GetName()} waterline length: {VesselSize.y:F2}m; beam: {VesselSize.x:F2}m, displacment is {displacement:F2}t; hull volume is {(VesselSize.x * (VesselSize.y * 0.75f) * (VesselSize.x * 0.7f)):F2}({totalFloatability:F2})m3");
+                //Set up Hull Sections
+                //For a 6 section vessel, that means Bow, Port Fore, Starboard Fore, Port Aft, Startboard Aft, Stern sections
+                //Vessel is thus 4 sections long; Bow is (0, vesselLength * .375) from vesselCenter, Port1 is (vesselBeam * 0.25, vessellength * 0.125), star1 is (-Beam * 0.25...), etc
+                HullSections.Add("Bow", new Vector3(VesselCenterOffset.x, (VesselSize.y * 0.375f) + VesselCenterOffset.y, waterLineHeight));
+                HullSections.Add("StarFore", new Vector3((VesselSize.x * 0.25f) + VesselCenterOffset.x, (VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
+                HullSections.Add("PortFore", new Vector3((-VesselSize.x * 0.25f) + VesselCenterOffset.x, (VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
+                HullSections.Add("StarAft", new Vector3((VesselSize.x * 0.25f) + VesselCenterOffset.x, (-VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
+                HullSections.Add("PortAft", new Vector3((-VesselSize.x * 0.25f) + VesselCenterOffset.x, (-VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
+                HullSections.Add("Stern", new Vector3(VesselCenterOffset.x, (-VesselSize.y * 0.375f) + VesselCenterOffset.y, waterLineHeight));
+
+                //grab list of batteries/ammo boxes/engines/other things that tend not to work well submerged in saltwater for disabling those as a compartment floods?
+                sectionFloatability = totalFloatability / HullSections.Keys.Count;
+                //TODO - have compartment number be determined by vessel length - doesn't make sense for a 15m sloop to have more than Bow/Stern, or a 100m carrier to only have a pair of flank compartments
+                //or maybe by width - a very narrow hull probably wouldn't have port/starboard compartmentalization, just longitudinal bulkheads
+                //Hmm. ok, but what if a 15.1m sloop? are the bow/stern compartments now 7.55m instead of 7.5? do they suddenly now be only 5m long to fit an amidships compartment?
+                //could just have arbitrary thresholds - craft < 10m long have bow/stern; craft <20m get bow/amidships/stern; craft < 50m get bow/fore/aft/stern
+                //would be simpler to just have a minimum compartment length; if length is, say, 5m, that 14m boat can't fit 3 compartments so it then onlygets bow/stern at 7m erach, etc
+                //
+                foreach (var loc in HullSections.Keys)
+                {
+                    HSectionFlooding.Add(loc, 0);
+                }
+                SetUpCapsizeFlooding();
             }
-
-            vessel.SetRotation(priorRotation);
-            VesselCenterOffset = new Vector2((starBeam - portBeam) / 2, (foreLength - aftLength) / 2); //root part is not necessarily in geometric center of craft
-            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] {vessel.GetName()} VesseLCenterOffset is {VesselCenterOffset.x}, {VesselCenterOffset.y}");
-
-            VesselSize = new Vector2(portBeam + starBeam, foreLength + aftLength);
-            displacement = vessel.GetTotalMass();
-            totalFloatability = VesselSize.x * (VesselSize.y * 0.75f) * (VesselSize.x * 0.7f); //abstracted displacement, m3. using a 0.75x mod for length to abstract bow/stern; 0.7x width for submerged hull + freeboard
-            //if (totalFloatability > 2 * displacement) totalFloatability = 2 * displacement;
-            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] {vessel.GetName()} waterline length: {VesselSize.y:F2}m; beam: {VesselSize.x:F2}m, displacment is {displacement:F2}t; hull volume is {(VesselSize.x * (VesselSize.y * 0.75f) * (VesselSize.x * 0.7f)):F2}({totalFloatability:F2})m3");
-            //Set up Hull Sections
-            //For a 6 section vessel, that means Bow, Port Fore, Starboard Fore, Port Aft, Startboard Aft, Stern sections
-            //Vessel is thus 4 sections long; Bow is (0, vesselLength * .375) from vesselCenter, Port1 is (vesselBeam * 0.25, vessellength * 0.125), star1 is (-Beam * 0.25...), etc
-            HullSections.Add("Bow", new Vector3(VesselCenterOffset.x, (VesselSize.y * 0.375f) + VesselCenterOffset.y, waterLineHeight));
-            HullSections.Add("StarFore", new Vector3((VesselSize.x * 0.25f) + VesselCenterOffset.x, (VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
-            HullSections.Add("PortFore", new Vector3((-VesselSize.x * 0.25f) + VesselCenterOffset.x, (VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
-            HullSections.Add("StarAft", new Vector3((VesselSize.x * 0.25f) + VesselCenterOffset.x, (-VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
-            HullSections.Add("PortAft", new Vector3((-VesselSize.x * 0.25f) + VesselCenterOffset.x, (-VesselSize.y * 0.125f) + VesselCenterOffset.y, waterLineHeight));
-            HullSections.Add("Stern", new Vector3(VesselCenterOffset.x, (-VesselSize.y * 0.375f) + VesselCenterOffset.y, waterLineHeight));
-
-            //grab list of batteries/ammo boxes/engines/other things that tend not to work well submerged in saltwater for disabling those as a compartment floods?
-            sectionFloatability = totalFloatability / HullSections.Keys.Count;
-            //TODO - have compartment number be determined by vessel length - doesn't make sense for a 15m sloop to have more than Bow/Stern, or a 100m carrier to only have a pair of flank compartments
-            //or maybe by width - a very narrow hull probably wouldn't have port/starboard compartmentalization, just longitudinal bulkheads
-            //Hmm. ok, but what if a 15.1m sloop? are the bow/stern compartments now 7.55m instead of 7.5? do they suddenly now be only 5m long to fit an amidships compartment?
-            //could just have arbitrary thresholds - craft < 10m long have bow/stern; craft <20m get bow/amidships/stern; craft < 50m get bow/fore/aft/stern
-            //would be simpler to just have a minimum compartment length; if length is, say, 5m, that 14m boat can't fit 3 compartments so it then onlygets bow/stern at 7m erach, etc
-            //
-            foreach (var loc in HullSections.Keys)
-            {
-                HSectionFlooding.Add(loc, 0);
-            }
-            SetUpCapsizeFlooding();
         }
 
         void SetUpCapsizeFlooding()
@@ -224,18 +229,14 @@ namespace BDArmory.GameModes.BattleDamage
                 {
                     isSinking = true; //vessel (presumably) fully under the waves at this point and subject to heavy flooding, remove buoyancy and let gravity take its course
                                       //remaining floatability check should account for submarines that are submerged by default
-                    foreach (Part p in vessel.parts)
-                    {
-                        p.buoyancy = -1;
-                    }
-                    Destroy(this);
-                    GameEvents.onPartDie.Remove(OnPartDie);
-                    return;
                 }
             }
             if (vessel.ActiveController().WM == null) //Vessel destroyed/GM killed; sink
             {
                 isSinking = true;
+            }
+            if (isSinking)
+            {
                 foreach (Part p in vessel.parts)
                 {
                     p.buoyancy = -1;
@@ -337,11 +338,14 @@ namespace BDArmory.GameModes.BattleDamage
                 leakFX.HBController = this;
                 leakFX.sectionFloatability = sectionFloatability;
                 //grab this part's loc relative to root, then apply VesselCenterOffset, then compare that coord to the section divisors
-                var partLoc = p.transform.position - vessel.rootPart.transform.position;
-                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] partLooc: {partLoc.x:F2},{partLoc.y:F2},{partLoc.z:F2}m");
-
-                Vector2 adjustedLoc = new Vector2(partLoc.x + VesselCenterOffset.x, partLoc.z + VesselCenterOffset.y);
-                leakFX.AttachAt(p.vessel, partLoc);
+                //This needs to be vessel orientation agnostic, else a vessel rotated to heading 315, say, might have a location report at 7m,2m,7m from center instead of 0,2,10m that it should be
+                Quaternion priorRotation = Quaternion.Euler(0, 0, 0);
+                priorRotation = part.transform.rotation;    //should be rootpart        
+                vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
+                var partLoc = p.transform.position - vessel.rootPart.transform.position; 
+                Vector2 adjustedLoc = new Vector2(partLoc.x + VesselCenterOffset.x, partLoc.y + VesselCenterOffset.y);
+                vessel.SetRotation(priorRotation); //surely there's a better way of doing this; just rotate the vector?
+                leakFX.AttachAt(p.vessel, adjustedLoc);
                 float holeFracAft = 0;
                 float holeFracFore = 0;
                 string vesselSide = "";
@@ -405,7 +409,7 @@ namespace BDArmory.GameModes.BattleDamage
                 part.buoyancy = -1;
             }
         }
-        public static void AddHullLeak(RaycastHit hit, Part hitPart, float caliber, float size = -1)
+        public static void AddHullLeak(RaycastHit hit, Part hitPart, float caliber, float area = -1)
         {
             if (BDArmorySettings.HULLBREACH && hitPart.Modules.GetModule<HitpointTracker>().Hitpoints > 0)
             {
@@ -450,7 +454,7 @@ namespace BDArmory.GameModes.BattleDamage
                     var Leak = HullLeak.hullLeakPool.GetPooledObject();
                     var leakFX = Leak.GetComponentInChildren<HullLeak>();
                     
-                    var scale = size > 0 ? size : Mathf.PI * (caliber / 2) * (caliber / 2);
+                    var scale = area > 0 ? area : Mathf.PI * (caliber / 2) * (caliber / 2);
                     leakFX.AttachAtPart(hitPart, hit);
                     leakFX.leakRate = scale * BDArmorySettings.BD_TANK_LEAK_RATE; //m2
                     leakFX.holeRadius = caliber / 2;
@@ -458,58 +462,64 @@ namespace BDArmory.GameModes.BattleDamage
                     leakFX.HBController = HBComponent;
                     leakFX.sectionFloatability = HBComponent.sectionFloatability;
                     Vector3 hitLoc = hit.point - hitPart.vessel.rootPart.transform.position;
-                    Vector2 adjustedLoc = new Vector2(hitLoc.x + HBComponent.VesselCenterOffset.x, hitLoc.z + HBComponent.VesselCenterOffset.y);
+                    //need to get the port/star X/fore/aft Y offset of the hit to the root for compartment ID.
+                    //Method of getting Local offset vs Global? ProjectOnPlane doesn't do what is needed (despite soundling like what I need here) FIXME
+                    
+                    Vector2 adjustedLoc = new Vector2(hitLoc.x + HBComponent.VesselCenterOffset.x, hitLoc.y + HBComponent.VesselCenterOffset.y);
+                    // - FIXME This needs to get applied *after* hitLoc gets corrected for vessel orientation
                     float holeFracAft = 0;
                     float holeFracFore = 0;
                     string vesselSide = "";
                     string vesselCompartment = "";
-                    if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2},{adjustedLoc.y:F2}m");
-                    if (adjustedLoc.x < 0) vesselSide = "Star";
+                    //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] adjustedHitLoc: {adjustedLoc.x:F2},{adjustedLoc.y:F2}m; adjustedHitLoc2: {adjustedLoc2.x:F2},{adjustedLoc2.y:F2}m");
+                    //if (adjustedLoc.x < 0) vesselSide = "Star";
+                    //else vesselSide = "Port";
+                    if (Vector3.Dot(hitPart.vessel.ReferenceTransform.right, hitLoc) < 0) vesselSide = "Star";
                     else vesselSide = "Port";
                     if (adjustedLoc.y > 0)
-                    {
-                        if (adjustedLoc.y > HBComponent.VesselSize.y * .25f)
                         {
-                            vesselCompartment = "Stern";
-                            holeFracFore = Mathf.Clamp01((1 - ((caliber / 2) + adjustedLoc.y - (HBComponent.VesselSize.y * .25f)) / caliber)); //percent of hole overlapping fore compartment
-                            leakFX.hullSection.Add($"{vesselCompartment}", 1 - holeFracFore);
-                            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}");
-                            if (holeFracFore > 0) leakFX.hullSection.Add($"{vesselSide}Aft", holeFracFore);
+                            if (adjustedLoc.y > HBComponent.VesselSize.y * .25f)
+                            {
+                                vesselCompartment = "Stern";
+                                holeFracFore = Mathf.Clamp01((1 - ((caliber / 2) + adjustedLoc.y - (HBComponent.VesselSize.y * .25f)) / caliber)); //percent of hole overlapping fore compartment
+                                leakFX.hullSection.Add($"{vesselCompartment}", 1 - holeFracFore);
+                                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}");
+                                if (holeFracFore > 0) leakFX.hullSection.Add($"{vesselSide}Aft", holeFracFore);
+                            }
+                            else
+                            {
+                                vesselCompartment = "Aft";
+
+                                holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y - (HBComponent.VesselSize.y * .25f)) / caliber); //percent of hole overlapping stern compartment
+                                holeFracFore = Mathf.Clamp01(1 - (((caliber / 2) + adjustedLoc.y) / caliber)); //similarly, fore compartment
+                                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}; holeFracAft: {holeFracAft}");
+                                leakFX.hullSection.Add($"{vesselSide}{vesselCompartment}", 1 - (holeFracFore + holeFracAft));
+                                if (holeFracFore > 0) leakFX.hullSection.Add($"{vesselSide}Fore", holeFracFore);
+                                if (holeFracAft > 0) leakFX.hullSection.Add($"Stern", holeFracAft);
+                            }
                         }
                         else
                         {
-                            vesselCompartment = "Aft";
+                            if (-adjustedLoc.y > HBComponent.VesselSize.y * .25f)
+                            {
+                                vesselCompartment = "Bow";
+                                holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y + (HBComponent.VesselSize.y * .25f)) / caliber); //percent of hole overlapping fore compartment
+                                leakFX.hullSection.Add($"{vesselCompartment}", 1 - holeFracAft);
+                                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracAft}");
+                                if (holeFracAft > 0) leakFX.hullSection.Add($"{vesselSide}Fore", holeFracAft);
+                            }
+                            else
+                            {
+                                vesselCompartment = "Fore";
 
-                            holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y - (HBComponent.VesselSize.y * .25f)) / caliber); //percent of hole overlapping stern compartment
-                            holeFracFore = Mathf.Clamp01(1 - (((caliber / 2) + adjustedLoc.y) / caliber)); //similarly, fore compartment
-                            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}; holeFracAft: {holeFracAft}");
-                            leakFX.hullSection.Add($"{vesselSide}{vesselCompartment}", 1 - (holeFracFore + holeFracAft));
-                            if (holeFracFore > 0) leakFX.hullSection.Add($"{vesselSide}Fore", holeFracFore);
-                            if (holeFracAft > 0) leakFX.hullSection.Add($"Stern", holeFracAft);
+                                holeFracFore = Mathf.Clamp01(1 - (((caliber / 2) + adjustedLoc.y + (HBComponent.VesselSize.y * .25f)) / caliber)); //percent of hole overlapping bow compartment
+                                holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y) / caliber); //similarly, aft compartment
+                                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}; holeFracAft: {holeFracAft}");
+                                leakFX.hullSection.Add($"{vesselSide}{vesselCompartment}", 1 - (holeFracFore + holeFracAft));
+                                if (holeFracAft > 0) leakFX.hullSection.Add($"{vesselSide}Aft", holeFracAft);
+                                if (holeFracFore > 0) leakFX.hullSection.Add($"Bow", holeFracFore);
+                            }
                         }
-                    }
-                    else
-                    {
-                        if (-adjustedLoc.y > HBComponent.VesselSize.y * .25f)
-                        {
-                            vesselCompartment = "Bow";
-                            holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y + (HBComponent.VesselSize.y * .25f)) / caliber); //percent of hole overlapping fore compartment
-                            leakFX.hullSection.Add($"{vesselCompartment}", 1 - holeFracAft);
-                            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracAft}");
-                            if (holeFracAft > 0) leakFX.hullSection.Add($"{vesselSide}Fore", holeFracAft);
-                        }
-                        else
-                        {
-                            vesselCompartment = "Fore";
-
-                            holeFracFore = Mathf.Clamp01(1 - (((caliber / 2) + adjustedLoc.y + (HBComponent.VesselSize.y * .25f)) / caliber)); //percent of hole overlapping bow compartment
-                            holeFracAft = Mathf.Clamp01(((caliber / 2) + adjustedLoc.y) / caliber); //similarly, aft compartment
-                            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] holeFracFore: {holeFracFore}; holeFracAft: {holeFracAft}");
-                            leakFX.hullSection.Add($"{vesselSide}{vesselCompartment}", 1 - (holeFracFore + holeFracAft));
-                            if (holeFracAft > 0) leakFX.hullSection.Add($"{vesselSide}Aft", holeFracAft);
-                            if (holeFracFore > 0) leakFX.hullSection.Add($"Bow", holeFracFore);
-                        }
-                    }
                     if (BDArmorySettings.DEBUG_HULLBREACH)
                     {
                         Debug.Log($"[BDArmory.HullBreach]: Part {hitPart.partInfo.title} holed; total floodable volume {leakFX.sectionFloatability:F2}m3. Generating flooding in:");

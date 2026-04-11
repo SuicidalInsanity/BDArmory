@@ -567,8 +567,8 @@ namespace BDArmory.Utils
                         {
                             if (!armorpenetrated)
                             {
-                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {radius:F2}m, {(radius * radius * 0.786f):F2}m2");
-                                HullBreach.AddHullLeak(hit, hitPart, radius, radius * radius);
+                                Debug.Log($"[BDArmory.HullBreach]: part missing armor! Adding placeholder explosive hole {hitPart.partInfo.title}");
+                                HullBreach.AddHullLeak(hit, hitPart, 4, 4 * 0.786f);
                             }                            
                         }
                         return false; //no armor to stop explosion
@@ -585,8 +585,19 @@ namespace BDArmory.Utils
                         {
                             if (!armorpenetrated)
                             {
-                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2:F2}mm, {spallArea:F2}m2");
-                                HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea);
+                                //Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2:F2}mm, {spallArea:F2}m2");
+                                //HullBreach.AddHullLeak(hit, hitPart, BDAMath.Sqrt(spallArea * 1000000 / Mathf.PI) * 2, spallArea);
+                                //this is always going to return massive holes for even the tiniest of HE rounds; fix
+                                //option A, remove the auto blowthrough and instead have ArmorType None treated as 10mm of aluminium; some loss if performance
+                                //Option B... Guesstimate blast radius based on Pressure
+                                //0.01kg tnt = 67 damage = 67 maxPressure = 3.19m radius
+                                //0.1kg tnt = 579 = 6.87m
+                                //1.0kg tnt = 3048 = 14.8m
+                                //10 kg tnt = 6893 = 31
+                                //which gives an almost but not quite linear growth that can be approximiated as:
+                                double holeRadius = (BlastPressure / 250) + 3;
+                                Debug.Log($"[BDArmory.HullBreach]: adding explosive hole vs unarmored part {hitPart.partInfo.title}, {holeRadius * 1000:F2}mm");
+                                HullBreach.AddHullLeak(hit, hitPart, (float)holeRadius * 1000);
                             }
                         }
                         return false;//ArmorType "None"; no armor to block/reduce blast, take full damage
@@ -610,14 +621,9 @@ namespace BDArmory.Utils
 
                 ArmorTolerance *= 4f * BDArmorySettings.EXP_PEN_RESIST_MULT;
 
-                float blowthroughFactor = (float)BlastPressure / ArmorTolerance; //as damage to armor might be a bit high. Otoh, how much damage is to be expected from, say, a 5" naval HE shell vs 50mm of armor?
-                //have this scaled by blowthrough factor? afterall a very powerful blast right next to the plate is more likely to punch a localzied hole rather than generally push the whole plate, no?
-                //if (distance < radius / 3) spallArea /= 4;
-                //if (distance < 0.5) spallArea = Mathf.Clamp(spallArea, 0.1f, 1 * blowthroughFactor * ductility); //contact detonations against armor scaled by how much excess energy the blast has after penning armor, modded by material ductility
-                // high energy blasts vs more strtchy material will result in larger, but sill localized holes
-
-                // Commented out the above bits as they don't make a ton of sense to me, a powerful blast would expand radially, any hole they make would continue to expand until the pressure drops below what's required to damage the plate, so I would
-                // expect blasts, especially powerful blasts blow very large holes, unless the blast is incredibly directional.
+                float blowthroughFactor = (float)BlastPressure / ArmorTolerance; 
+                // A powerful blast would expand radially, any hole they make would continue to expand until the pressure drops below what's required to damage the plate, so I would
+                // expect blasts, especially powerful blasts, to blow very large holes, unless the blast is incredibly directional.
 
                 // Create linear fit of the blast pressure vs. range curve (while not accurate it is fast)
                 /*float invSlope = (Range - distance) / (float)(MinBlastPressure - BlastPressure);
