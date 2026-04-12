@@ -21,10 +21,11 @@ namespace BDArmory.FX
         public Vessel parentVessel;
         public Part parentPart;
         bool attachedToPart = false;
-        public double leakRate = 0; //water gain per second, in kg
+        public double leakRate = 0; //water gain per second, in m3
         public float holeRadius = 0;
         double totalLeakAmount = 0; //
         public double sectionFloatability = 0; //total displacement volume of the compartment, sets ceiling for how much water the compartment can contain
+        public bool capsizeLeak = false; //for determining capsize flooding; ignore holeFrac calcs
         public enum FloodingType
         {
             Splinter = 0, // splinter damage/small caliber hits - non-penetrating holes < ~40mm dia. that would flood one room/cabin. Mk1 crewcan is 2.5m3; Cumulative hits cannot flood more than 1/4th compartment capacity.
@@ -148,87 +149,93 @@ namespace BDArmory.FX
             if (dist2Waterline > holeRadius + 1) //1 meter margin for waves/etc
             {
                 debugFlooding = false;
-                return; //alt + 1 for a 1m above waterline margin(wave action, bowwave, etc)
+                return;
             }
             timer++;
-            foreach (var compartment in hullSection)
+            if (timer >= 50) //todo Timewarp adjsutments
             {
-                if (!HBController.HSectionFlooding.ContainsKey(compartment.Key)) return;
-                if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability)
+                foreach (var compartment in hullSection)
                 {
-                    //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
-                    double holeFracWL = Mathf.Clamp01((holeRadius + dist2Waterline - 1) / (holeRadius + holeRadius)); //portion of hole above waterline + 1m wave margin
-                    double holeFracKeel = Mathf.Clamp01((holeRadius - dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius)); //portion of hole below bottom vessel
-                    double holeFrac = 1 - (holeFracWL + holeFracKeel);
-                    if (holeFrac <= 0) return; //hole completely above waterline
-                    float pressureMod = 1;
-                    if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe
-                    double amount = (leakRate * compartment.Value * holeFrac * pressureMod) * Time.fixedDeltaTime;
-                    isFlooding = true;
-                    
-                    switch (holeType)
+                    if (!HBController.HSectionFlooding.ContainsKey(compartment.Key)) return;
+                    if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability)
                     {
-                        case FloodingType.Splinter:
-                            {
-                                if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability / 4) //outermost cabins flood, internal rooms unbreached, caps max flooding these holes can to to 1/4th total flotation
+                        //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
+                        double holeFracWL = Mathf.Clamp01((holeRadius + dist2Waterline - 1) / (holeRadius + holeRadius)); //portion of hole above waterline + 1m wave margin
+                        double holeFracKeel = Mathf.Clamp01((holeRadius - dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius)); //portion of hole below bottom vessel
+                        double holeFrac = 1 - (holeFracWL + holeFracKeel);
+                        if (capsizeLeak) holeFrac = 1;
+                        if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDArmory.HullLeak] holeFracWL: {holeFracWL:F2}; holeFracK: {holeFracKeel:F2}; holeFrac: {holeFrac:F2}");
+                        if (holeFrac <= 0) return; //hole completely above waterline
+                        float pressureMod = 1;
+                        if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe
+                        double amount = (leakRate * holeFrac * pressureMod);
+                        isFlooding = true;
+
+                        switch (holeType)
+                        {
+                            case FloodingType.Splinter:
                                 {
-                                    if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability / 4)
+                                    if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability / 4) //outermost cabins flood, internal rooms unbreached, caps max flooding these holes can to to 1/4th total flotation
                                     {
-                                        amount = (sectionFloatability / 8) - (HBController.HSectionFlooding[compartment.Key] + amount);
-                                        isFlooding = false;
+                                        if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability / 4)
+                                        {
+                                            amount = (sectionFloatability / 8) - (HBController.HSectionFlooding[compartment.Key] + amount);
+                                            isFlooding = false;
+                                        }
                                     }
+                                    break;
                                 }
-                                break;
-                            }
-                        case FloodingType.Minor:
-                            {
-                                if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability / 2) //outer cabins flood, inner internal rooms unbreached, caps max flooding these holes can to to 1/2th total flotation
+                            case FloodingType.Minor:
                                 {
-                                    if (totalLeakAmount + amount > sectionFloatability / 2)
+                                    if (HBController.HSectionFlooding[compartment.Key] < sectionFloatability / 2) //outer cabins flood, inner internal rooms unbreached, caps max flooding these holes can to to 1/2th total flotation
+                                    {
+                                        if (totalLeakAmount + amount > sectionFloatability / 2)
+                                        {
+                                            amount = (sectionFloatability / 2) - (HBController.HSectionFlooding[compartment.Key] + amount);
+                                            isFlooding = false;
+                                        }
+                                    }
+                                    break;
+                                }
+                            case FloodingType.Major:
+                                {
+                                    if (totalLeakAmount + amount > sectionFloatability / 2)  //major damage, deals 50% flooding damage. stacks with other flooding
                                     {
                                         amount = (sectionFloatability / 2) - (HBController.HSectionFlooding[compartment.Key] + amount);
                                         isFlooding = false;
                                     }
+                                    if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability)
+                                    {
+                                        amount = sectionFloatability - (HBController.HSectionFlooding[compartment.Key] + amount);
+                                        isFlooding = false;
+                                    }
+                                    break;
                                 }
-                                break;
-                            }
-                        case FloodingType.Major:
-                            {
-                                if (totalLeakAmount + amount > sectionFloatability / 2)  //major damage, deals 50% flooding damage. stacks with other flooding
+                            case FloodingType.Fatal:
                                 {
-                                    amount = (sectionFloatability / 2) - (HBController.HSectionFlooding[compartment.Key] + amount);
-                                    isFlooding = false;
+                                    if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability)
+                                    {
+                                        amount = sectionFloatability - (HBController.HSectionFlooding[compartment.Key] + amount);
+                                        isFlooding = false;
+                                    }
+                                    break;
                                 }
-                                if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability)
-                                {
-                                    amount = sectionFloatability - (HBController.HSectionFlooding[compartment.Key] + amount);
-                                    isFlooding = false;
-                                }
-                                break;
-                            }
-                        case FloodingType.Fatal:
-                            {
-                                if (HBController.HSectionFlooding[compartment.Key] + amount > sectionFloatability)
-                                {
-                                    amount = sectionFloatability - (HBController.HSectionFlooding[compartment.Key] + amount);
-                                    isFlooding = false;
-                                }
-                                break;
-                            }
+                        }
+                        amount = Mathf.Clamp((float)amount, 0, (float)sectionFloatability / 5); //unless compartment literally hollow, there'd be hallways/cabins/bulkheads/etc slowing progression of water into compartment
+                        HBController.prevHSectionFlooding[compartment.Key] = HBController.HSectionFlooding[compartment.Key];
+                        HBController.HSectionFlooding[compartment.Key] += amount;
+                        HBController.HSectionFlooding[compartment.Key] = Mathf.Clamp((float)HBController.HSectionFlooding[compartment.Key], 0, (float)sectionFloatability);
+                        totalLeakAmount = Mathf.Clamp((float)(totalLeakAmount + amount), 0, (float)sectionFloatability);
+                        if (amount == 0) isFlooding = false;
+                        if (timer >= 50 && isFlooding)
+                            if (BDArmorySettings.DEBUG_HULLBREACH)
+                                Debug.Log($"[BDArmory.HullLeak] {compartment.Key} undergoing {holeType} flooding at a rate of {(amount * 1000):F2} l of water/s ({HBController.HSectionFlooding[compartment.Key]:F2}({totalLeakAmount:F2})/{sectionFloatability:F2})m3 | ({leakRate * compartment.Value:F4}/{holeFrac:F2}/{pressureMod:F2})");
                     }
-                    amount = Mathf.Clamp((float)amount, 0, (float)sectionFloatability/5); //unless compartment literally hollow, there'd be hallways/cabins/bulkheads/etc slowing progression of water into compartment
-                    HBController.HSectionFlooding[compartment.Key] += amount;
-                    HBController.HSectionFlooding[compartment.Key] = Mathf.Clamp((float)HBController.HSectionFlooding[compartment.Key], 0, (float)sectionFloatability);
-                    totalLeakAmount = Mathf.Clamp((float)(totalLeakAmount + amount), 0, (float)sectionFloatability);
-                    if (amount == 0) isFlooding = false;
-                    if (timer >= 50 && isFlooding)
-                        if (BDArmorySettings.DEBUG_HULLBREACH)
-                            Debug.Log($"[BDArmory.HullLeak] {compartment.Key} undergoing {holeType} flooding at a rate of {(amount * 1000 / Time.fixedDeltaTime):F2} l of water/s ({HBController.HSectionFlooding[compartment.Key]:F2}({totalLeakAmount:F2})/{sectionFloatability:F2})m3 | ({leakRate * compartment.Value:F4}/{holeFrac:F2}/{pressureMod:F2})");
+                    else isFlooding = false;
+                    if (HBController.isSinking) isFlooding = false; //job's done, shut down this process
                 }
-                else isFlooding = false;
-                if (HBController.isSinking) isFlooding = false; //job's done, shut down this process
+                timer = 0;
             }
-            if (timer >= 50) timer = 0;
             if (isFlooding = false || (lifeTime >= 0 && Time.time - startTime > lifeTime))
             {
                 if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] leak finished! Removing hull leak.");
