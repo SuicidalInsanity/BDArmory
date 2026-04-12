@@ -2645,7 +2645,7 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_APS = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_APS, StringUtils.Localize("#LOC_BDArmory_Settings_DebugAPS"));//"Debug PointDefense"
                         BDArmorySettings.DEBUG_HP = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_HP, StringUtils.Localize("#LOC_BDArmory_Settings_DebugHP"));//"Debug Armor"
                         BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
-                        BDArmorySettings.DEBUG_HULLBREACH = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_HULLBREACH, StringUtils.Localize("#Debug Hullbreach"));//"Debug Hullbreach"
+                        BDArmorySettings.DEBUG_HULLBREACH = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_HULLBREACH, StringUtils.Localize("#LOC_BDArmory_Settings_DebugHullbreach"));//"Debug Hullbreach"
 
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.
                         if (BDArmorySettings.DEBUG_AI && GUI.Button(SLineRect(++line), "Debug Extending")) // Debug why a vessel is stuck in extending.
