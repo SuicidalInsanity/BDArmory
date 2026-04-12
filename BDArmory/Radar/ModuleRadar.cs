@@ -142,6 +142,12 @@ namespace BDArmory.Radar
         public float _radarChaffNotchRFac;
 
         [KSPField]
+        public FloatCurve radarGlintCurve = new FloatCurve();		//FloatCurve defining the reduction in received RCS due to a range gate
+
+        [KSPField]
+        public float radarGlintMult = -1f;
+
+        [KSPField]
         public int sonarType = 0; //0 = Radar; 1 == Active Sonar; 2 == Passive Sonar
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DynamicRadar", advancedTweakable = true),//Disable Radar vs ARMs

@@ -355,17 +355,10 @@ namespace BDArmory.Targeting
             return biasedVector;
         }
 
-        static FloatCurve GaussianQuantileApp = new([
-            new(0f, 0.0f, 1.253314f, 1.253314f),
-            new(0.5762892f, 0.8f, 1.7259735f, 1.7259735f),
-            new(0.8663856f, 1.5f, 3.8604795f, 3.8604795f),
-            new(1f, 4.5f, 60f, 0.0f),
-        ]);
-
         Vector3 prevGlint = Vector3.zero;
         Vector3 futureGlint = Vector3.zero;
         float glintTime = 0f;
-        const float glintInterval = 2f;
+        const float glintInterval = 1f;
         readonly float glintIntInv = 1f / glintInterval;
 
         Vector3 currGlint = Vector3.zero;
@@ -377,16 +370,17 @@ namespace BDArmory.Targeting
             {
                 return currGlint;
             }
+            glintUpdateTime = currTime;
             currTime -= glintTime;
             if (currTime > glintInterval)
             {
                 prevGlint = futureGlint;
-                futureGlint = GetBoundsScaledBiasedVector(UnityEngine.Random.onUnitSphere, 0.5f * GaussianQuantileApp.Evaluate(UnityEngine.Random.value));
-                glintTime = Time.time + glintInterval;
-                return GetWorldAlignedVector(prevGlint);
+                futureGlint = GetBoundsScaledBiasedVector(UnityEngine.Random.onUnitSphere, 0.5f * VectorUtils.Gaussian());
+                glintTime = glintUpdateTime;
+                currGlint = GetWorldAlignedVector(prevGlint);
+                return currGlint;
             }
             currGlint = GetWorldAlignedVector(Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv));
-            glintUpdateTime = Time.time;
             return currGlint;
         }
 
