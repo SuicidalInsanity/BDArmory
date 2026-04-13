@@ -9672,7 +9672,7 @@ namespace BDArmory.Control
             {
                 foreach (var incomingMissile in results.incomingMissiles)
                 {
-                    if (incomingMissile.vessel != null && incomingMissile.vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo))
+                    if (incomingMissile.vessel != null && incomingMissile.vessel.gameObject.TryGetComponent<TargetInfo>(out var tInfo) && tInfo.MissileBaseModule && !(tInfo.MissileBaseModule.targetVessel && tInfo.MissileBaseModule.targetVessel.isMissile))
                         PDMslTgts.Add(tInfo);
                 }
             }
