@@ -50,6 +50,11 @@ namespace BDArmory.Targeting
             return (vessel ? vessel.name : (isDecoy ? "Decoy" : "Null"));
         }
 
+        public Guid ID()
+        {
+            return (vessel ? vessel.id : Guid.Empty);
+        }
+
         public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f, float _glintMod = -1f)
         {
             //orbital = v.InOrbit();

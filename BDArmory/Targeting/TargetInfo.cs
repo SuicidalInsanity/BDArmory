@@ -281,9 +281,10 @@ namespace BDArmory.Targeting
         }
 
         /*void OnGUI()
-        { 
+        {
             if (BDArmorySettings.DEBUG_LINES)
             {
+                if (vesselTransform == null) UpdateBounds();
                 Vector3 vesselPos = vesselTransform.position;
                 //Vector3 vesselForward = vesselTransform.up;
                 //Vector3 vesselUp = -vesselTransform.forward;
@@ -300,6 +301,7 @@ namespace BDArmory.Targeting
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.up, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.up, 0.5f)), 5, Color.blue);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.right, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.right, 0.5f)), 5, Color.green);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.forward, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.forward, 0.5f)), 5, Color.red);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetRadarGlint(), vessel.CoM, 5, Color.magenta);
                 GUIUtils.DrawLabelOnWorldPos(vesselPos, $"bounds.length={bounds.y}\nbounds.width={bounds.x}\nbounds.height={bounds.z}", new Vector2(200, 200));
             }
         }*/

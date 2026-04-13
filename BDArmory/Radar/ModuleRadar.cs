@@ -179,7 +179,6 @@ namespace BDArmory.Radar
         public float currentAngle;
 
         private float ReferenceUpdateTime = -1f;
-        public float TimeSinceReferenceUpdate => Time.fixedTime - ReferenceUpdateTime;
 
         // Variables to pre-calculate transform directions
         public Vector3 currPosition;
@@ -188,7 +187,6 @@ namespace BDArmory.Radar
         public Vector3 currRight;
 
         private float DisplayUpdateTime = -1f;
-        public float TimeSinceDisplayUpdate => Time.fixedTime - DisplayUpdateTime;
 
         // Rotated forward vector according to azimuth and elevation
         // offsets for display purposes
@@ -796,7 +794,7 @@ namespace BDArmory.Radar
 
         public void UpdateReferenceTransform()
         {
-            if (TimeSinceReferenceUpdate < Time.fixedDeltaTime)
+            if (ReferenceUpdateTime >= Time.time)
                 return;
 
             if (omnidirectional)
@@ -823,17 +821,18 @@ namespace BDArmory.Radar
 
             currDisplayForward = currForward;
 
-            ReferenceUpdateTime = Time.fixedTime;
+            ReferenceUpdateTime = Time.time;
         }
 
         public void UpdateDisplayTransform()
         {
-            if (TimeSinceDisplayUpdate < Time.fixedDeltaTime)
+            if (DisplayUpdateTime >= Time.time)
                 return;
             UpdateReferenceTransform();
 
             if (radarElOffset != 0 || radarAzOffset != 0)
                 currDisplayForward = Quaternion.AngleAxis(radarElOffset, currRight) * Quaternion.AngleAxis(-radarAzOffset, currUp) * currForward;
+            DisplayUpdateTime = Time.time;
         }
 
         void FixedUpdate()
@@ -1094,7 +1093,7 @@ namespace BDArmory.Radar
                     lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
                     if (BDArmorySettings.DEBUG_RADAR)
-                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()})");
+                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()}) with UUID {attemptedLocks[i].ID()}");
 
                     vesselRadarData.AddRadarContact(this, lockedTarget, true);
                     //vesselRadarData.UpdateLockedTargets();
@@ -1226,7 +1225,7 @@ namespace BDArmory.Radar
             Vector3 vectorToTarget = lockedTarget.position - currPosition;
             if (VectorUtils.Angle(vectorToTarget, this.lockedTarget.position - currPosition) > multiLockFOV * 0.5f)
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to FoV!");
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to FoV!");
                 UnlockTargetAt(index, true);
                 return;
             }
@@ -1235,7 +1234,7 @@ namespace BDArmory.Radar
                 new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
                 lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, true, index, lockedTarget.vessel))
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to failed lock checks!");
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to failed lock checks!");
                 UnlockTargetAt(index, true);
                 return;
             }

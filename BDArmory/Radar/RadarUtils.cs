@@ -1729,7 +1729,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} beginning scan with FoV: {fov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} with UUID: {missile.vessel.id} beginning scan with FoV: {fov}.");
             }
 
             // fov gives cone width, so halve it
@@ -1759,7 +1759,7 @@ namespace BDArmory.Radar
 
                     if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Processing Target: {loadedvessels.Current.name} at distance: {distance}m and angle: {angle}/{fov}");
+                        Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m and angle: {angle}/{fov}");
                     }
 
                     // No targets behind the seeker's view! Note maybe this should change,
@@ -1894,7 +1894,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.name}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.name} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
 
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
@@ -1934,7 +1934,7 @@ namespace BDArmory.Radar
                     if (azDiff > 180f)
                         azDiff = 360f - azDiff;
 
-                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
+                    if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Processing Target: {loadedvessels.Current.name} with UUID: {loadedvessels.Current.id} at distance: {distance}m; targetAz: {targetAz}, diff: {azDiff}/{azFov}, targetEL: {targetEl}, diff: {Mathf.Abs(targetEl - elevationAngle)}/{elFov}");
 
                     if (azDiff < azFov && Mathf.Abs(targetEl - elevationAngle) < elFov)
                     {
@@ -2077,7 +2077,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, checking target: {(lockedVessel ? lockedVessel.name : "null")}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name} with UUID: {radar.vessel.id}, checking target: {(lockedVessel ? lockedVessel.name : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")}.");
             }
 
             // first: re-acquire lock if temporarily lost
@@ -2120,7 +2120,7 @@ namespace BDArmory.Radar
 
                 if (BDArmorySettings.DEBUG_RADAR)
                 {
-                    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Selected Target: {(lockedVessel ? lockedVessel.name : "null")} at distance: {distance}m for re-acquisition.");
+                    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Selected Target: {(lockedVessel ? lockedVessel.vesselName : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")} at distance: {distance}m for re-acquisition.");
                 }
             }
             else
@@ -2393,11 +2393,11 @@ namespace BDArmory.Radar
             {
                 maxMWSDistance = RWR.RWRMWSRange;
                 RWR.UpdateReferenceTransform();
-                if (Time.fixedTime - RWR.TimeOfLastMWSUpdate > RWR.RWRMWSUpdateRate)
+                if (Time.time >= RWR.TimeOfNextMWSUpdate)
                 {
                     MWSAddTargets = true;
                     RWR.ResetMWSSlots();
-                    RWR.TimeOfLastMWSUpdate = Time.fixedTime;
+                    RWR.TimeOfNextMWSUpdate = Time.time + RWR.RWRMWSUpdateRate;
                 }
                 else
                     MWSAddTargets = false;
@@ -2442,7 +2442,7 @@ namespace BDArmory.Radar
                         MissileBase missileBase = tInfo.MissileBaseModule;
                         if (missileBase == null)
                         {
-                            Debug.LogWarning("[BDArmory.RadarUtils]: Supposed missile (" + loadedvessels.Current.vesselName + ") has no MissileBase!");
+                            Debug.LogWarning($"[BDArmory.RadarUtils]: Supposed missile ({loadedvessels.Current.vesselName}) has no MissileBase!");
                             tInfo.isMissile = false; // The target vessel has lost it's missile base component and should no longer count as a missile. This can happen for modular missiles that are getting destroyed.
                             continue;
                         }
@@ -2487,7 +2487,7 @@ namespace BDArmory.Radar
                                 }
 
                                 // No MWS/visual detection, check RWR
-                                if ((missileBase.TargetingMode != MissileBase.TargetingModes.Radar) || // Must be radar missile
+                                if (!(missileBase.TargetingMode == MissileBase.TargetingModes.Radar || missileBase.TargetingModeTerminal == MissileBase.TargetingModes.Radar) || // Must be radar missile
                                     ((missileBase.ActiveRadar || missileBase.radarLOALSearching) && // if active radar
                                     ((missileBase.activeRadarRange * missileBase.activeRadarRange * 4f < vesselDistanceSqr) || !RWR.IsRadarMissileDetected(loadedvessels.Current))) || // Active radar must be within range and detected
                                     (!missileBase.ActiveRadar && !missileBase.vrd)) // Or if SARH, must have an active SARH track, note strictly speaking there's more nuance to be had here with regards to detection, but we want AI to know that they've been launched at

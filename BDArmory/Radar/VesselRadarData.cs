@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -152,13 +152,12 @@ namespace BDArmory.Radar
         public bool hasLoadedExternalVRDs = false;
 
         private float lockedTargetsUpdateTime = -1f;
-        private float TimeSinceLockedTargetsUpdate => Time.fixedTime - lockedTargetsUpdateTime;
 
         private List<TargetSignatureData> lockedTargetList;
 
         public List<TargetSignatureData> GetLockedTargets()
         {
-            if (TimeSinceLockedTargetsUpdate > Time.fixedDeltaTime)
+            if (lockedTargetsUpdateTime < Time.time)
             {
                 lockedTargetList.Clear();
                 for (int i = 0; i < lockedTargetIndexes.Count; i++)
@@ -166,7 +165,7 @@ namespace BDArmory.Radar
                     lockedTargetList.Add(displayedTargets[lockedTargetIndexes[i]].targetData);
                 }
 
-                lockedTargetsUpdateTime = Time.fixedTime;
+                lockedTargetsUpdateTime = Time.time;
             }
             
             return lockedTargetList;
