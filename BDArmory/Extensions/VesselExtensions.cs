@@ -78,7 +78,7 @@ namespace BDArmory.Extensions
         /// <param name="velocity"></param>
         public static void SetVelocity(this Vessel v, Vector3 velocity)
         {
-            v.SetWorldVelocity(BDKrakensbane.IsActive ? BDKrakensbane.FrameVelocityV3f + velocity : velocity);
+            v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
         }
 
         public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
