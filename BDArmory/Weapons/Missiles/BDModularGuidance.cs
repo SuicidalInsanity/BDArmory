@@ -850,21 +850,13 @@ namespace BDArmory.Weapons.Missiles
 
         private void OnStageOnProximity(BaseField baseField, object o)
         {
-            UI_FloatRange detonationDistance = (UI_FloatRange)Fields["DetonationDistance"].uiControlEditor;
-
             if (StageToTriggerOnProximity != 0)
             {
-                detonationDistance = (UI_FloatRange)Fields["DetonationDistance"].uiControlEditor;
-
-                detonationDistance.maxValue = 8000;
-
-                detonationDistance.stepIncrement = 50;
+                ((UI_FloatSemiLogRange)Fields[nameof(DetonationDistance)].uiControlEditor).UpdateLimits(1, 8000);
             }
             else
             {
-                detonationDistance.maxValue = 100;
-
-                detonationDistance.stepIncrement = 1;
+                ((UI_FloatSemiLogRange)Fields[nameof(DetonationDistance)].uiControlEditor).UpdateLimits(1, 1000);
             }
         }
 

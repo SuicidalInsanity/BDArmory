@@ -1290,7 +1290,7 @@ namespace BDArmory.Weapons.Missiles
                     activeRadarRangeGate.Add(activeRadarRangeFilter, 0f);           // TODO: tune & balance constants!
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default activeRadarRangeGate with maxfilter/minrcs: {activeRadarRangeGate.maxTime}/{RadarUtils.MISSILE_DEFAULT_GATE_RCS}");
                 }
-                else if(activeRadarRangeFilter < activeRadarRangeGate.maxTime)
+                else if (activeRadarRangeFilter < activeRadarRangeGate.maxTime)
                 {
                     activeRadarRangeFilter = activeRadarRangeGate.maxTime;
                 }
@@ -1981,7 +1981,7 @@ namespace BDArmory.Weapons.Missiles
                     tnt.Team = Team;
                     tnt.sourcevessel = SourceVessel;
                 }
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher]: Missile Launched!");
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: {Time.time} Missile Launched!");
                 if (BDArmorySettings.CAMERA_SWITCH_INCLUDE_MISSILES && SourceVessel.isActiveVessel) LoadedVesselSwitcher.Instance.ForceSwitchVessel(vessel);
             }
             catch (Exception e)
@@ -2213,7 +2213,7 @@ namespace BDArmory.Weapons.Missiles
 
         void CheckAltitudeDetonation()
         {
-            switch(altitudeFuze)
+            switch (altitudeFuze)
             {
                 case AltitudeFuzeMode.DescendingMSL:
                     {
@@ -4137,8 +4137,8 @@ namespace BDArmory.Weapons.Missiles
             float cruiseAccel = cruiseThrust / part.mass;
 
             float clampSpeed = Mathf.Clamp(optimumAirspeed, currentSpeed, 2f * currentSpeed); // Don't let the below speeds get out of control, leads to unrealistically high drag estimates
-            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost and currentSpeed
-            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
+            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost and currentSpeed
+            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
             
             float airDensity = (float)vessel.atmDensity;
             float boostDragAccel;

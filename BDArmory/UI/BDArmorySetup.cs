@@ -2690,7 +2690,14 @@ namespace BDArmory.UI
                         //         var ti = RadarUtils.RenderVesselRadarSnapshot(v, EditorLogic.RootPart.transform);
                         //     }
                         // }
-                        // if (GUI.Button(SLineRect(++line), "Test Bounds")) TestBounds();
+                        // if (GUI.Button(SLineRect(++line), "Test Bounds"))
+                        // {
+                        //     // TestBounds();
+                        //     var vessel = FlightGlobals.ActiveVessel;
+                        //     var localBounds = vessel.GetColliderBounds(makeLocal: true);
+                        //     var bounds = vessel.MakeBoundsLocal(localBounds, FlightCamera.fetch.transform.rotation);
+                        //     Debug.Log($"DEBUG Local Bounds: {localBounds}, Bounds: {bounds}, vessel.ref.position: {vessel.ReferenceTransform.position}, offset: {bounds.center - vessel.ReferenceTransform.position} ({(bounds.center - vessel.ReferenceTransform.position).magnitude})");
+                        // }
                         // if (GUI.Button(SLineRect(++line), "Test Angle")) TestAngle();
                         // if (GUI.Button(SLineRect(++line), "Test Abs")) TestAbs();
                         // if (GUI.Button(SLineRect(++line), "Test \"up\"")) TestUp();
