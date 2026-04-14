@@ -3490,36 +3490,26 @@ namespace BDArmory.Control
             {
                 Vector3 targetDirection;
                 bool overrideThrottle = false;
+                Vector3d vesselVel = vessel.Velocity();
                 if ((closingTime <= 1.5f) && (!weaponManager.isChaffing)) // Missile is about to impact, pull a hard turn
                 {
                     if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"Missile about to impact! pull away!");
 
                     AdjustThrottle(maxSpeed, false, !weaponManager.isFlaring);
 
-                    Vector3 cross = Vector3.Cross(missileThreat.transform.position - vesselTransform.position, vessel.Velocity()).normalized;
+                    Vector3 cross = Vector3.Cross(missileThreat.CoM - vessel.CoM, vesselVel).normalized;
                     if (Vector3.Dot(cross, -vesselTransform.forward) < 0)
                     {
                         cross = -cross;
                     }
-                    targetDirection = (50 * vessel.Velocity() / vessel.srfSpeed + 100 * cross).normalized;
+                    targetDirection = ((50.0 / vessel.srfSpeed) * vesselVel + 100 * cross).normalized;
                 }
                 else // Fly at 90 deg to missile to put max distance between ourselves and dispensed flares/chaff
                 {
                     bool inVacuum = vessel.InNearVacuum();
                     // Break off at 90 deg to missile
-                    Vector3 threatDirection;
-                    // If in space or not SARH (note that no radarTarget.exists check is made, but this *should* be fine)
-                    /*if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
-                    {
-                        threatDirection = -1f * missileThreat.Velocity(); // Use missile vel
-                    }
-                    else
-                    {
-                        threatDirection = -1f * missileThreatMB.radarTarget.lockedByRadar.vessel.Velocity(); // Use radar parent vessel vel
-                    }*/
-
-                    threatDirection = -1f * missileThreat.Velocity().ProjectOnPlanePreNormalized(upDirection);
-                    float sign = Vector3.SignedAngle(threatDirection, vessel.Velocity().ProjectOnPlanePreNormalized(upDirection), upDirection);
+                    Vector3 threatDirection = -1f * missileThreat.Velocity().ProjectOnPlanePreNormalized(upDirection);
+                    float sign = Vector3.SignedAngle(threatDirection, vesselVel.ProjectOnPlanePreNormalized(upDirection), upDirection);
                     Vector3 breakDirection = Vector3.Cross(Mathf.Sign(sign) * upDirection, threatDirection).ProjectOnPlanePreNormalized(upDirection); // Break left or right depending on which side the missile is coming in on.
 
                     // Missile kinematics check to see if alternate break directions are better (crank or turn around and run)
@@ -3565,6 +3555,7 @@ namespace BDArmory.Control
                     if (notch)
                     {
                         Vector3 radarDir;
+                        // If in space or not SARH (note that no radarTarget.exists check is made, but this *should* be fine)
                         if (!BDArmorySettings.RADAR_NOTCHING || inVacuum || missileThreatMB.TargetingMode != MissileBase.TargetingModes.Radar || !missileThreatMB.vrd || !missileThreatMB.radarTarget.lockedByRadar)
                         {
                             radarDir = VectorUtils.NormalizedDiff(missileThreat.CoM, vessel.CoM); // Use missile dir
@@ -3574,7 +3565,16 @@ namespace BDArmory.Control
                             radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
                         }
 
-                        breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                        if (weaponManager.isChaffing && Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > 50f)
+                        {
+                            // Emergency notch, get us notched ASAP!
+                            breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
+                        }
+                        else
+                        {
+                            // Standard notch
+                            breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                        }
                     }
                     if (BDArmorySettings.DEBUG_LINES) debugBreakDirection = breakDirection;
 
