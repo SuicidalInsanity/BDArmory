@@ -223,8 +223,16 @@ namespace BDArmory.Extensions
         {
             Bounds result = default;
             bool flag = false;
-            var vesselRot = vessel.transform.rotation;
-            vessel.SetRotation(Quaternion.identity);
+            Quaternion vesselRot = vessel.transform.rotation;
+            Quaternion vesselRefRot = vessel.ReferenceTransform.rotation;
+            if (vesselRot == vesselRefRot)
+            {
+                vessel.SetRotation(Quaternion.identity);
+            }
+            else
+            {
+                vessel.SetRotation(vesselRot * Quaternion.Inverse(vesselRefRot));
+            }
             foreach (var part in vessel.Parts)
             {
                 if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
@@ -253,8 +261,16 @@ namespace BDArmory.Extensions
         {
             Bounds result = default;
             bool flag = false;
-            var vesselRot = vessel.transform.rotation;
-            vessel.SetRotation(Quaternion.identity);
+            Quaternion vesselRot = vessel.transform.rotation;
+            Quaternion vesselRefRot = vessel.ReferenceTransform.rotation;
+            if (vesselRot == vesselRefRot)
+            {
+                vessel.SetRotation(Quaternion.identity);
+            }
+            else
+            {
+                vessel.SetRotation(vesselRot * Quaternion.Inverse(vesselRefRot));
+            }
             foreach (var part in vessel.Parts)
             {
                 if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
