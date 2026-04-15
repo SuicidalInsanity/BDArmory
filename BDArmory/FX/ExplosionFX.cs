@@ -1303,14 +1303,19 @@ namespace BDArmory.FX
                                     BulletHitFX.CreateBulletHit(part, eventToExecute.HitPoint, eventToExecute.Hit, eventToExecute.Hit.normal, true, Caliber, penetrationFactor > 0 ? penetrationFactor : 0f, SourceVesselTeam, eventToExecute.ColliderLocalHitPoint);
                                     if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ExplosionsFX] Applying ballistic damage to part with base mass: {(warheadType == WarheadTypes.ShapedCharge ? Power * 0.0555f : ProjMass)} kg{(warheadType == WarheadTypes.ShapedCharge ? $" and spall mass: {Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI}." : "")} kg");
                                     // Want to add more damage for HEAT, so we'll add 25% of the estimated spall density, we assume the HEAT hole has twice the area of the HEAT jet to account for the material flowing backwards.
-                                    damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, dmgMult,
-                                        warheadType switch
-                                        {
-                                            WarheadTypes.ShapedCharge => SCVelocity,
-                                            WarheadTypes.Kinetic => ImpactSpeed,
-                                            _ => ExplosionVelocity //technically this should be the sum vector of the explosion vel (perpendicular to missile vel), and missile vel since the rods are physical projectiles that would be inheriting their parent's vel
-                                        },
-                                        ExplosionSource, true);
+                                    if (eventToExecute.Hit.collider.transform.name == "BDAHullBreachCitadelCollider")
+                                    {
+                                        damage = 0;
+                                    }
+                                    else
+                                        damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, dmgMult,
+                                            warheadType switch
+                                            {
+                                                WarheadTypes.ShapedCharge => SCVelocity,
+                                                WarheadTypes.Kinetic => ImpactSpeed,
+                                                _ => ExplosionVelocity //technically this should be the sum vector of the explosion vel (perpendicular to missile vel), and missile vel since the rods are physical projectiles that would be inheriting their parent's vel
+                                            },
+                                            ExplosionSource, true);
                                     totalDamageApplied[vesselHit] += damage;
 
                                     if (BDArmorySettings.HULLBREACH && !hasPenetratedArmor)
@@ -1323,7 +1328,12 @@ namespace BDArmory.FX
                                     {
                                         if (damageWithoutIntermediateParts > 0)
                                         {
-                                            damage += part.AddExplosiveDamage(shapedEffect ? (0.2f * blastInfo.Damage + 0.8f * damageWithoutIntermediateParts) : blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
+                                            if (eventToExecute.Hit.collider.transform.name == "BDAHullBreachCitadelCollider")
+                                            {
+                                                damage = 0;
+                                            }
+                                            else
+                                                damage += part.AddExplosiveDamage(shapedEffect ? (0.2f * blastInfo.Damage + 0.8f * damageWithoutIntermediateParts) : blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
                                             totalDamageApplied[vesselHit] += damage;
                                         }
 
@@ -1344,7 +1354,12 @@ namespace BDArmory.FX
                                     }
                                     else
                                     {
-                                        damage = part.AddExplosiveDamage(blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
+                                        if (eventToExecute.Hit.collider.transform.name == "BDAHullBreachCitadelCollider")
+                                        {
+                                            damage = 0;
+                                        }
+                                        else
+                                            damage = part.AddExplosiveDamage(blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
                                         totalDamageApplied[vesselHit] += damage;
                                         if (part == projectileHitPart && ProjectileUtils.IsArmorPart(part)) //deal armor damage to armor panel, since we didn't do that earlier
                                         {

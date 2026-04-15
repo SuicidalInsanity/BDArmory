@@ -1,17 +1,17 @@
+using BDArmory.Bullets;
+using BDArmory.Competition;
+using BDArmory.Damage;
+using BDArmory.Extensions;
+using BDArmory.FX;
+using BDArmory.GameModes;
+using BDArmory.GameModes.BattleDamage;
+using BDArmory.Settings;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using UnityEngine;
-
-using BDArmory.Competition;
-using BDArmory.Damage;
-using BDArmory.Extensions;
-using BDArmory.FX;
-using BDArmory.GameModes;
-using BDArmory.Settings;
-using BDArmory.GameModes.BattleDamage;
 
 namespace BDArmory.Utils
 {
@@ -198,25 +198,29 @@ namespace BDArmory.Utils
             if (hitPart == null) return;
             if (hitPart.partInfo.name.Contains("Strut")) return;
             if (IsIgnoredPart(hitPart)) return; // Ignore ignored parts.
-
+            string sourceVesselName = sourceVessel != null ? sourceVessel.GetName() : null;
             // Add decals
             if (BDArmorySettings.BULLET_HITS)
             {
                 BulletHitFX.CreateBulletHit(hitPart, hit.point, hit, hit.normal, hasRichocheted, caliber, penetrationfactor, team);
             }
+            if (BDArmorySettings.HULLBREACH && firstHit && penetrationfactor > 1)
+            {
+                HullBreach.AddHullLeak(hit, hitPart, caliber);
+                if (hit.collider.transform.name == "BDAHullBreachCitadelCollider")
+                {
+                    ApplyScore(hitPart, sourceVesselName, distanceTraveled, 0, name, explosionSource, firstHit);
+                    return;
+                }
+            }
             // Apply damage
             float damage;
             damage = hitPart.AddBallisticDamage(projmass, caliber, multiplier, penetrationfactor, DmgMult, impactVelocity, explosionSource);
             if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log("[BDArmory.PartExtensions]: Ballistic Hitpoints Applied to " + hitPart.name + ": " + damage);
-
-            string sourceVesselName = sourceVessel != null ? sourceVessel.GetName() : null;
+            
             if (BDArmorySettings.BATTLEDAMAGE)
             {
                 BattleDamageHandler.CheckDamageFX(hitPart, caliber, penetrationfactor, explosive, incendiary, sourceVesselName, hit, partAlreadyHit, cockpitPen);
-            }
-            if (BDArmorySettings.HULLBREACH && firstHit && penetrationfactor > 1)
-            {
-                HullBreach.AddHullLeak(hit, hitPart, caliber);
             }
             // Update scoring structures
             //if (firstHit)

@@ -161,14 +161,16 @@ namespace BDArmory.FX
                     {
                         //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
                         double holeFracWL = Mathf.Clamp01((holeRadius + dist2Waterline - 1) / (holeRadius + holeRadius)); //portion of hole above waterline + 1m wave margin
-                        double holeFracKeel = Mathf.Clamp01((holeRadius - dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius)); //portion of hole below bottom vessel
+                        double holeFracKeel = Mathf.Clamp01(1 - ((holeRadius + dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius))); //portion of hole below bottom vessel
+   
+                        if (capsizeLeak) holeFracKeel = 0;
                         double holeFrac = 1 - (holeFracWL + holeFracKeel);
-                        if (capsizeLeak) holeFrac = 1;
-                        if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDArmory.HullLeak] holeFracWL: {holeFracWL:F2}; holeFracK: {holeFracKeel:F2}; holeFrac: {holeFrac:F2}");
+                      
+                        if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDArmory.HullLeak] WLoverlap: {holeFracWL:F2}; KeelOverlap: {holeFracKeel:F2}; holeFrac: {holeFrac:F2}");
                         if (holeFrac <= 0) return; //hole completely above waterline
                         float pressureMod = 1;
                         if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe
-                        double amount = (leakRate * holeFrac * pressureMod);
+                        double amount = (leakRate * Mathf.Max((float)parentVessel.horizontalSrfSpeed, 1) * holeFrac * pressureMod); //if adding speed modifier, have hook to have Ai slow in the event of major leaks to reduce water intake?
                         isFlooding = true;
 
                         switch (holeType)
@@ -232,11 +234,10 @@ namespace BDArmory.FX
                                 Debug.Log($"[BDArmory.HullLeak] {compartment.Key} undergoing {holeType} flooding at a rate of {(amount * 1000):F2} l of water/s ({HBController.HSectionFlooding[compartment.Key]:F2}({totalLeakAmount:F2})/{sectionFloatability:F2})m3 | ({leakRate * compartment.Value:F4}/{holeFrac:F2}/{pressureMod:F2})");
                     }
                     else isFlooding = false;
-                    if (HBController.isSinking) isFlooding = false; //job's done, shut down this process
                 }
                 timer = 0;
             }
-            if (isFlooding = false || (lifeTime >= 0 && Time.time - startTime > lifeTime))
+            if ((HBController.isSinking) || (isFlooding = false) || (lifeTime >= 0 && Time.time - startTime > lifeTime))
             {
                 if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] leak finished! Removing hull leak.");
                 Deactivate();
