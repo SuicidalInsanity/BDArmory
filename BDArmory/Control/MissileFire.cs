@@ -8559,7 +8559,7 @@ namespace BDArmory.Control
 
                     if (!currTarget.exists)
                     {
-                        if (missileTgt)
+                        if (missileTgt && missileTgt.isMissile)
                         {
                             HMDTarget = CanSeeTarget(missileTgt.MissileBaseModule);
                         }
