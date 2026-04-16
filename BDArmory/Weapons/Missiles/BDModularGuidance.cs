@@ -640,6 +640,10 @@ namespace BDArmory.Weapons.Missiles
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                part.force_activate();
+            }
             SetupsFields();
 
             if (string.IsNullOrEmpty(GetShortName()))
@@ -647,7 +651,6 @@ namespace BDArmory.Weapons.Missiles
                 shortName = "Unnamed";
             }
 
-            part.force_activate();
             RefreshGuidanceMode();
 
             antiradTargets = modularGuidanceAntiRadTargetTypes;

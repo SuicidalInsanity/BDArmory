@@ -263,10 +263,6 @@ namespace BDArmory.Ammo
             }
         }
 
-        public override void OnUpdate()
-        {
-        }
-
         public void Update()
         {
             if (HighLogic.LoadedSceneIsEditor)
