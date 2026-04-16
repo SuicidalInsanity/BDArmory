@@ -161,7 +161,7 @@ namespace BDArmory.FX
                     {
                         //linear approximiation. yes, holes are not square, but this should be sufficiently close abstraction for performace; 1 + ((aboveWaterThresholdheight-(hole height + radius)
                         double holeFracWL = Mathf.Clamp01((holeRadius + dist2Waterline - 1) / (holeRadius + holeRadius)); //portion of hole above waterline + 1m wave margin
-                        double holeFracKeel = Mathf.Clamp01(1 - ((holeRadius + dist2Waterline - (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius))); //portion of hole below bottom vessel
+                        double holeFracKeel = Mathf.Clamp01(1 - ((holeRadius + dist2Waterline + (float)(HBController.VesselSize.x * 0.4)) / (holeRadius + holeRadius))); //portion of hole below bottom vessel
    
                         if (capsizeLeak) holeFracKeel = 0;
                         double holeFrac = 1 - (holeFracWL + holeFracKeel);

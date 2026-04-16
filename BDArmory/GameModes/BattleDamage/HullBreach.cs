@@ -46,12 +46,14 @@ namespace BDArmory.GameModes.BattleDamage
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
             GameEvents.onPartDie.Add(OnPartDie);
+            GameEvents.onVesselPartCountChanged.Add(OnVesselPartCountChanged);
             surfaceAI = VesselModuleRegistry.GetModule<BDModuleSurfaceAI>(vessel);
             if (surfaceAI && surfaceAI.SurfaceType != AIUtils.VehicleMovementType.Land && surfaceAI.SurfaceType != AIUtils.VehicleMovementType.Stationary)//Assuming ships are not going to be fitted with Pilot/VTOL/Orbital AI
                 StartCoroutine(DelayedStart());
             else
             {
                 GameEvents.onPartDie.Remove(OnPartDie);
+                GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
                 //part.RemoveModule(this);
                 Destroy(this);
             }
@@ -335,6 +337,7 @@ namespace BDArmory.GameModes.BattleDamage
                 }
                 //Destroy(this);
                 //GameEvents.onPartDie.Remove(OnPartDie);
+                //GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
                 return;
             }
         }
@@ -389,6 +392,7 @@ namespace BDArmory.GameModes.BattleDamage
                     }
                     Destroy(this); // Force this module to be removed from the gameObject as something is holding onto part references and causing a memory leak.
                     GameEvents.onPartDie.Remove(OnPartDie);
+                    GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
                     return;
                 }
                 catch (Exception e)
@@ -501,6 +505,21 @@ namespace BDArmory.GameModes.BattleDamage
             foreach (Part part in p.children) //make debris separated from the ship by part destruction sink
             {
                 part.buoyancy = -1;
+            }
+        }
+
+        void OnVesselPartCountChanged(Vessel v)
+        {
+            using (List<Part>.Enumerator p = waterLineParts.GetEnumerator())
+            {
+                while (p.MoveNext())
+                {
+                    if (p.Current == null) continue;
+                    if (p.Current.vessel != this.vessel)
+                    {
+                        if (p.Current.vesselType == VesselType.Debris) p.Current.buoyancy = -10; //have this check if part is made of wood/other MassMod < 1 hull material...?
+                    }
+                }
             }
         }
 

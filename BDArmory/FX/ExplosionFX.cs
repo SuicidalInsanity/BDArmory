@@ -1356,7 +1356,7 @@ namespace BDArmory.FX
                                     {
                                         if (eventToExecute.Hit.collider.transform.name == "BDAHullBreachCitadelCollider")
                                         {
-                                            damage = 0;
+                                            damage = 0; //will still take spall damage from CalcExplosiveArmor..., but eh. something something internals damage adds up, warped frames, structural members, gradual structural integrity loss, eventual keel snapping
                                         }
                                         else
                                             damage = part.AddExplosiveDamage(blastInfo.Damage, Caliber, ExplosionSource, dmgMult);
@@ -1374,9 +1374,8 @@ namespace BDArmory.FX
                             if (damage > 0) //else damage from spalling done in CalcExplArmorDamage
                             {
                                 if (BDArmorySettings.BATTLEDAMAGE)
-                                {
-                                    BattleDamageHandler.CheckDamageFX(part, Caliber, penetrationFactor, true, warheadType == WarheadTypes.ShapedCharge ? true : false, SourceVesselName, eventToExecute.Hit, colliderLocalHitPoint: eventToExecute.ColliderLocalHitPoint);
-                                }
+                                    BattleDamageHandler.CheckDamageFX(part, Caliber, penetrationFactor, true, warheadType == WarheadTypes.ShapedCharge ? true : false, SourceVesselName, eventToExecute.Hit, colliderLocalHitPoint: eventToExecute.ColliderLocalHitPoint);        
+                                    //this should really use the size of the hole blown in the part in CalcArmorExplosionm, not missile caliber for things like fuel leaks... OTOH, blowing a 3m hole in a tank means it empties almost imeediately, and even vulcans can do 3m blast radii...
                                 // Update scoring structures
                                 //damage = Mathf.Clamp(damage, 0, part.Damage()); //if we want to clamp overkill score inflation
                                 ProjectileUtils.ApplyScore(part, eventToExecute.SourceVesselName, 0, damage, null, ExplosionSource);

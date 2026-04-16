@@ -227,6 +227,7 @@ namespace BDArmory.Weapons.Missiles
                 }
                 Fields["salvoSize"].guiActive = setSalvoSize;
                 Fields["salvoSize"].guiActiveEditor = setSalvoSize;
+                useSymCounterpart = missileLauncher.useSymCounterpart;
                 if (isMultiLauncher)
                 {
                     if (!string.IsNullOrEmpty(subMunitionName))
