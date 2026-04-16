@@ -337,16 +337,32 @@ namespace BDArmory.Targeting
             return vesselTransform.rotation * localVector;
         }*/
 
+        public Vector3 GetBoundsScaledWorldVector(Vector3 localVector, float boundScale)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            return vesselTransform.TransformDirection(new Vector3(boundScale * bounds.x * localVector.x + localBoundsCenter.x, boundScale * bounds.y * localVector.y + localBoundsCenter.y, boundScale * bounds.z * localVector.z + localBoundsCenter.z));
+        }
+
         public Vector3 GetBoundsScaledVector(Vector3 localVector, float boundScale)
         {
             if (vesselTransform == null) UpdateBounds();
             return new Vector3(boundScale * bounds.x * localVector.x + localBoundsCenter.x, boundScale * bounds.y * localVector.y + localBoundsCenter.y, boundScale * bounds.z * localVector.z + localBoundsCenter.z);
         }
 
+        public Vector3 GetBoundsScaledBiasedWorldVector(Vector3 localVector, float boundScale)
+        {
+            if (vesselTransform == null) UpdateBounds();
+            Vector3 localRelCoM = vessel.localCoM;
+            Vector3 biasedVector = new Vector3(localVector.x * (localVector.x > 0f ? (boundScale * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (boundScale * bounds.x - (localBoundsCenter.x - localRelCoM.x))) + localRelCoM.x,
+                                               localVector.y * (localVector.y > 0f ? (boundScale * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (boundScale * bounds.y - (localBoundsCenter.y - localRelCoM.y))) + localRelCoM.y,
+                                               localVector.z * (localVector.z > 0f ? (boundScale * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (boundScale * bounds.z - (localBoundsCenter.z - localRelCoM.z))) + localRelCoM.z);
+            return vesselTransform.TransformDirection(biasedVector);
+        }
+
         public Vector3 GetBoundsScaledBiasedVector(Vector3 localVector, float boundScale)
         {
             if (vesselTransform == null) UpdateBounds();
-            Vector3 localRelCoM = Quaternion.Inverse(vesselTransform.rotation) * (vessel.CoM - vesselTransform.position);
+            Vector3 localRelCoM = vessel.localCoM;
             Vector3 biasedVector = new Vector3(localVector.x * (localVector.x > 0f ? (boundScale * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (boundScale * bounds.x - (localBoundsCenter.x - localRelCoM.x))) + localRelCoM.x,
                                                localVector.y * (localVector.y > 0f ? (boundScale * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (boundScale * bounds.y - (localBoundsCenter.y - localRelCoM.y))) + localRelCoM.y,
                                                localVector.z * (localVector.z > 0f ? (boundScale * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (boundScale * bounds.z - (localBoundsCenter.z - localRelCoM.z))) + localRelCoM.z);
@@ -364,6 +380,7 @@ namespace BDArmory.Targeting
         readonly float glintIntInv = 1f / glintInterval;
 
         Vector3 currGlint = Vector3.zero;
+        Vector3 currLocalGlint = Vector3.zero;
         float glintUpdateTime = 0f;
         public Vector3 GetRadarGlint()
         {
@@ -377,12 +394,14 @@ namespace BDArmory.Targeting
             if (currTime > glintInterval)
             {
                 prevGlint = futureGlint;
-                futureGlint = GetBoundsScaledBiasedVector(UnityEngine.Random.onUnitSphere, 0.5f * VectorUtils.Gaussian());
+                futureGlint = UnityEngine.Random.onUnitSphere * VectorUtils.Gaussian();
                 glintTime = glintUpdateTime;
-                currGlint = GetWorldAlignedVector(prevGlint);
+                currLocalGlint = prevGlint;
+                currGlint = GetBoundsScaledBiasedWorldVector(prevGlint, 0.5f);
                 return currGlint;
             }
-            currGlint = GetWorldAlignedVector(Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv));
+            currLocalGlint = Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv);
+            currGlint = GetBoundsScaledBiasedWorldVector(currLocalGlint, 0.5f);
             return currGlint;
         }
 
