@@ -3579,6 +3579,8 @@ namespace BDArmory.Control
                                             break;
                                         }
                                     }
+
+                                    INSTarget = vesselRadarData.detectedRadarTarget(targetVessel, this);
                                 }
                                 else
                                 {
