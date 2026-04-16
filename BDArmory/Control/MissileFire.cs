@@ -6897,7 +6897,7 @@ namespace BDArmory.Control
                                                 candidateTDPS *= 0.001f;
                                             }
                                         }
-                                        if (antiRad && rwr && rwr.enabled)
+                                        if (antiRad && rwr && rwr.rwrEnabled)
                                         {
                                             if (!skipRWRCheck)
                                             {

@@ -1729,7 +1729,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} with UUID: {missile.vessel.id} beginning scan with FoV: {fov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Missile: {missile.shortName} with UUID: {missile.vessel.id} beginning scan with FoV: {fov}. pingRWR? {pingRWR}");
             }
 
             // fov gives cone width, so halve it
@@ -2552,7 +2552,7 @@ namespace BDArmory.Radar
 
                         MissileFire tgtMF = loadedvessels.Current.ActiveController().WM;
 
-                        if (!canSeeTarget && RWR && RWR.isEnabled)
+                        if (!canSeeTarget && RWR && RWR.rwrEnabled)
                         {
                             float maxRadarRWRRange = 0f;
                             if (tgtMF && tgtMF.vesselRadarData) maxRadarRWRRange = tgtMF.vesselRadarData.MaxRadarRange() * 2;

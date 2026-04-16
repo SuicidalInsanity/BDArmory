@@ -159,6 +159,7 @@ namespace BDArmory.Radar
         {
             if (HighLogic.LoadedSceneIsFlight)
             {
+                part.force_activate(); // IMPORTANT: Needed on every module that is intended to use OnFixedUpdate()!
                 pingsData = new RWRSignatureData[dataCount];
                 MWSData = new RWRSignatureData[2 *dataCount];
                 //pingWorldPositions = new Vector3[dataCount];
@@ -377,7 +378,7 @@ namespace BDArmory.Radar
                     index = 0;
                 }
 
-                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel at idx: {index} is: {(missileLockData[index].vessel ? missileLockData[index].vessel.name : "null")}, with UUID: {(missileLockData[index].vessel ? missileLockData[index].vessel.id : "null")}");
+                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel at idx: {index} is: {(missileLockData[index].vessel ? missileLockData[index].vessel.name : "null")}, with UUID: {(missileLockData[index].vessel ? missileLockData[index].vessel.id : "null")}, exists: {missileLockData[index].exists}, expirationTime: {missileLockData[index].expirationTime}");
                 if (missileLockData[index++].vessel == v) return true;
             }
 
@@ -440,8 +441,9 @@ namespace BDArmory.Radar
             while (_missileLockSize > 0)
             {
                 int idx = _missileLockHead;
-                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Curr idx: {idx}, exists? {missileLockData[idx].exists}, expirationTime: {missileLockData[idx].expirationTime}");
-                if (missileLockData[idx].exists && currentTime < missileLockData[idx].expirationTime)
+                RWRSignatureData currData = missileLockData[idx];
+                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Curr idx: {idx}, exists? {currData.exists}, expirationTime: {currData.expirationTime}");
+                if (currData.exists && currentTime < currData.expirationTime)
                     break;
 
                 missileLockData[idx] = RWRSignatureData.noTarget;
@@ -866,7 +868,7 @@ namespace BDArmory.Radar
             signalType = _signalType;
             pingPosition = _pingPosition;
             vessel = _vessel;
-            expirationTime = _exists ? Time.time + lifeTime : -1f;
+            expirationTime = _exists ? (Time.time + lifeTime) : -1f;
         }
 
         public RWRSignatureData()
