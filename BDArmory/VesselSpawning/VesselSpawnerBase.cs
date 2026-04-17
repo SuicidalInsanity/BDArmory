@@ -597,7 +597,7 @@ namespace BDArmory.VesselSpawning
                             vessel.Splashed = true; // Tell KSP that the vessel is splashed.
                     }
                     if (vesselsHaveLanded[vesselName] == 1 && vessel.srf_velocity.sqrMagnitude > easeInSpeed) // While the vessel hasn't landed, prevent it from moving too fast.
-                        vessel.SetWorldVelocity(0.99 * easeInSpeed * vessel.srf_velocity); // Move at easeInSpeed m/s at most.
+                        vessel.SetVelocity(0.99 * easeInSpeed * vessel.srf_velocity); // Move at easeInSpeed m/s at most.
                 }
 
                 // Check that none of the vessels have lost parts.

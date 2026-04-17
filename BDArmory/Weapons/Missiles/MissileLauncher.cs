@@ -491,7 +491,7 @@ namespace BDArmory.Weapons.Missiles
 
         public override void OnStart(StartState state)
         {
-            //base.OnStart(state);
+            base.OnStart(state);
 
             if (useFuel)
             {
@@ -2111,7 +2111,7 @@ namespace BDArmory.Weapons.Missiles
 
             FloatingOriginCorrection();
 
-            try // FIXME Remove this once the fix is sufficiently tested.
+            try
             {
                 debugString.Length = 0;
 
@@ -2179,20 +2179,6 @@ namespace BDArmory.Weapons.Missiles
             catch (Exception e)
             {
                 Debug.LogError("[BDArmory.MissileLauncher]: DEBUG " + e.Message + "\n" + e.StackTrace);
-                // throw; // Re-throw the exception so behaviour is unchanged so we see it.
-                /* FIXME this is being caused by attempting to get the wm.Team in RadarUpdateMissileLock. A similar exception occurred in BDATeamIcons, line 239
-                    [ERR 12:05:24.391] Module MissileLauncher threw during OnFixedUpdate: System.NullReferenceException: Object reference not set to an instance of an object
-                        at BDArmory.Radar.RadarUtils.RadarUpdateMissileLock (UnityEngine.Ray ray, System.Single fov, BDArmory.Targeting.TargetSignatureData[]& dataArray, System.Single dataPersistTime, BDArmory.Weapons.Missiles.MissileBase missile) [0x00076] in /storage/github/BDArmory/BDArmory/Radar/RadarUtils.cs:972 
-                        at BDArmory.Weapons.Missiles.MissileBase.UpdateRadarTarget () [0x003d9] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileBase.cs:747 
-                        at BDArmory.Weapons.Missiles.MissileLauncher.UpdateGuidance () [0x000ba] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileLauncher.cs:1134 
-                        at BDArmory.Weapons.Missiles.MissileLauncher.OnFixedUpdate () [0x00593] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileLauncher.cs:1046 
-                        at Part.ModulesOnFixedUpdate () [0x000bd] in <4deecb19beb547f19b1ff89b4c59bd84>:0 
-                        UnityEngine.DebugLogHandler:LogFormat(LogType, Object, String, Object[])
-                        ModuleManager.UnityLogHandle.InterceptLogHandler:LogFormat(LogType, Object, String, Object[])
-                        UnityEngine.Debug:LogError(Object)
-                        Part:ModulesOnFixedUpdate()
-                        Part:FixedUpdate()
-                */
             }
             if (reloadableRail)
             {

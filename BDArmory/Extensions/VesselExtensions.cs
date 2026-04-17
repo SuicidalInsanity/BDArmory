@@ -71,6 +71,16 @@ namespace BDArmory.Extensions
             }
         }
 
+        /// <summary>
+        /// Set the world velocity of a vessel, taking into account Krakensbane, which Vessel.SetWorldVelocity doesn't.
+        /// </summary>
+        /// <param name="v"></param>
+        /// <param name="velocity"></param>
+        public static void SetVelocity(this Vessel v, Vector3 velocity)
+        {
+            v.SetWorldVelocity(BDKrakensbane.IsActive ? velocity - BDKrakensbane.FrameVelocityV3f : velocity);
+        }
+
         public static double GetFutureAltitude(this Vessel vessel, float predictionTime = 10) => GetRadarAltitudeAtPos(AIUtils.PredictPosition(vessel, predictionTime));
 
         public static Vector3 GetFuturePosition(this Vessel vessel, float predictionTime = 10) => AIUtils.PredictPosition(vessel, predictionTime);
@@ -290,6 +300,38 @@ namespace BDArmory.Extensions
             result.center -= vessel.ReferenceTransform.position;
             vessel.SetRotation(vesselRot);
             return result;
+        }
+
+        /// <summary>
+        /// Convert a bounds (local to a vessel's reference transform) into bounds relative to the viewer.
+        /// E.g.,
+        ///   Transform viewer = FlightCamera.fetch.transform;
+        ///   Bounds localBounds = vessel.GetColliderBounds();
+        ///   Bounds bounds = vessel.ViewBoundsFrom(localBounds, viewer);
+        ///   Vector3 worldSpacePosition = viewer.TransformPoint(bounds.center);
+        /// </summary>
+        /// <param name="vessel"></param>
+        /// <param name="bounds"></param>
+        /// <param name="viewer"></param>
+        /// <returns></returns>
+        public static Bounds ViewBoundsFrom(this Vessel vessel, Bounds bounds, Transform viewer)
+        {
+            var t = vessel.ReferenceTransform;
+            var r = Quaternion.Inverse(viewer.rotation) * t.rotation;
+            Vector3[] corners = [
+                r * bounds.extents,
+                r * new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
+                r * new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
+                r * new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
+            ];
+            return new Bounds(
+                viewer.InverseTransformPoint(t.TransformPoint(bounds.center)),
+                new Vector3(
+                    2f * corners.Max(c => Mathf.Abs(c.x)),
+                    2f * corners.Max(c => Mathf.Abs(c.y)),
+                    2f * corners.Max(c => Mathf.Abs(c.z))
+                )
+            );
         }
 
         /// <summary>

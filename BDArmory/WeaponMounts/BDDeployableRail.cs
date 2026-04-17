@@ -75,7 +75,6 @@ namespace BDArmory.WeaponMounts
         {
             base.OnStart(state);
 
-            part.force_activate();
             setupComplete = false;
             deployTransform = part.FindModelTransform(deployTransformName);
             deployState = GUIUtils.SetUpSingleAnimation(deployAnimName, part);
@@ -89,6 +88,7 @@ namespace BDArmory.WeaponMounts
 
             if (HighLogic.LoadedSceneIsFlight)
             {
+                part.force_activate();
                 //DisableRail(); //In SPH, missiletransforms got, then retracting works fine. in flight, transforms got, and retracting moves it a littlebit, then deploying reveals an offset in where the transforms are. wth
                 //DeployRail(true); //this works when called manually later, but not as part of initial spawn...
                 //...but does need to occur before RCS shapshot takes place. hrm.

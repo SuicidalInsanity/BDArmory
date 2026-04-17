@@ -45,11 +45,9 @@ namespace BDArmory.GameModes
 
         public override void OnStart(StartState state)
         {
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                part.force_activate();
-            }
             base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            part.force_activate();
         }
 
 

@@ -1381,7 +1381,7 @@ namespace BDArmory.Damage
             StartingArmorQty = totalArmorQty;
             armorMass *= BDArmorySettings.ARMOR_MASS_MOD;
             //part.RefreshAssociatedWindows(); //having this fire every time a change happens prevents sliders from being used. Add delay timer?
-            if (OldArmorType != ArmorTypeNum || !AlmostEqual(oldArmorMass, armorMass))
+            if (OldArmorType != ArmorTypeNum || !Mathf.Approximately(oldArmorMass, armorMass))
             {
                 if (BDArmorySettings.DEBUG_ARMOR || BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated armour mass {oldArmorMass}->{armorMass} or type {OldArmorType}->{ArmorTypeNum} at time {Time.time}");
                 OldArmorType = ArmorTypeNum;
@@ -1539,7 +1539,7 @@ namespace BDArmory.Damage
             else HullCostAdjust = Mathf.Min(dryCost * hullInfo.costMod, dryCost + hullInfo.costMod * 1000) - dryCost; //Increase costs if costMod => 1
             //this returns cost of base variant, yielding part variant that are discounted by 50% or 500 of base variant cost, not current variant. method to get currently selected variant?
 
-            if (OldHullType != HullTypeNum || !AlmostEqual(OldHullMassAdjust, HullMassAdjust))
+            if (OldHullType != HullTypeNum || !Mathf.Approximately(OldHullMassAdjust, HullMassAdjust))
             {
                 if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated hull mass {OldHullMassAdjust}->{HullMassAdjust} (part mass {partMass}, total mass {part.mass + HullMassAdjust - OldHullMassAdjust}) or type {OldHullType}->{HullTypeNum} at time {Time.time}");
                 OldHullType = HullTypeNum;
@@ -1615,7 +1615,6 @@ namespace BDArmory.Damage
             return output.ToString();
         }
 
-        bool AlmostEqual(float a, float b, float tol = 1e-5f) => Mathf.Abs(a - b) <= Mathf.Max(Mathf.Abs(a), Mathf.Abs(b)) * tol;
         public bool CheckForChanges(bool forceUpdate = false)
         {
             _updateHitpoints = true;
@@ -1649,7 +1648,7 @@ namespace BDArmory.Damage
                         {
                             if (isProcWing)
                             {
-                                if (!AlmostEqual(aeroVolume, aeroVolume = ProceduralWing.GetPWingVolume(part))) // Can modify the part geometry and mass.
+                                if (!Mathf.Approximately(aeroVolume, aeroVolume = ProceduralWing.GetPWingVolume(part))) // Can modify the part geometry and mass.
                                 {
                                     _hullModified = _armorModified = true; // Geometry changes require hull and armor updates. We'll catch mass changes later.
                                 }
@@ -1660,14 +1659,14 @@ namespace BDArmory.Damage
                                 _hullModified = _armorModified = true;
                             }
                         }
-                        else if (!AlmostEqual(oldTSMassMult, _tweakScaleMassMultiplier))
+                        else if (!Mathf.Approximately(oldTSMassMult, _tweakScaleMassMultiplier))
                         {
                             calcPartSize(true); // Recalculate the part size and armor volume of non-proc tweakscaled parts that changed size.
                             _armorModified = true;
                         }
                     }
                     UpdatePartMass(ref Safetymass);
-                    if (!AlmostEqual(tmpMass, partMass))
+                    if (!Mathf.Approximately(tmpMass, partMass))
                     {
                         _hullModified = _armorModified = true;
                     }
@@ -1693,7 +1692,7 @@ namespace BDArmory.Damage
             CheckVariantShaders();
             CalculateDryCost(); // Modify event could have changed resources, etc., without modifying the mass, so recheck it.
             RefreshHitPoints();
-            bool modified = !AlmostEqual(oldMass, partMass) || !AlmostEqual(oldArmorMass, armorMass) || !AlmostEqual(oldHullMass, HullMassAdjust);
+            bool modified = !Mathf.Approximately(oldMass, partMass) || !Mathf.Approximately(oldArmorMass, armorMass) || !Mathf.Approximately(oldHullMass, HullMassAdjust);
             if (BDArmorySettings.DEBUG_HP && modified)
                 Debug.Log($"[BDArmory.HitpointTracker]: {part.name} modified at {Time.time}: part.mass {part.mass}, partMass {oldMass}->{partMass}, armorMass {oldArmorMass}->{armorMass}, hullMassAdjust {oldHullMass}->{HullMassAdjust}, tweakScaleMassMultiplier {oldTSMassMult}->{_tweakScaleMassMultiplier}");
             return modified;
