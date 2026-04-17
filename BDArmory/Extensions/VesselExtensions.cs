@@ -320,10 +320,10 @@ namespace BDArmory.Extensions
             var t = vessel.ReferenceTransform;
             var r = Quaternion.Inverse(viewer.rotation) * t.rotation;
             Vector3[] corners = [
-                r*bounds.extents,
-                r*new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
-                r*new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
-                r*new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
+                r * bounds.extents,
+                r * new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
+                r * new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
+                r * new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
             ];
             return new Bounds(
                 viewer.InverseTransformPoint(t.TransformPoint(bounds.center)),
