@@ -229,12 +229,20 @@ namespace BDArmory.Extensions
             return part.gameObject.GetRendererBoundsWithoutParticles();
         }
 
-        public static Bounds GetRendererBounds(this Vessel vessel, bool useCached = true, bool checkForLaunchClamps = false, bool ignoreLineRenderers = true, bool ignoreParticleRenderers = true, bool makeLocal = false)
+        public static Bounds GetRendererBounds(this Vessel vessel, bool useCached = true, bool checkForLaunchClamps = false, bool ignoreLineRenderers = true, bool ignoreParticleRenderers = true)
         {
             Bounds result = default;
             bool flag = false;
-            var vesselRot = vessel.transform.rotation;
-            vessel.SetRotation(Quaternion.identity);
+            Quaternion vesselRot = vessel.transform.rotation;
+            Quaternion vesselRefRot = vessel.ReferenceTransform.rotation;
+            if (vesselRot == vesselRefRot)
+            {
+                vessel.SetRotation(Quaternion.identity);
+            }
+            else
+            {
+                vessel.SetRotation(Quaternion.Inverse(vesselRefRot) * vesselRot);
+            }
             foreach (var part in vessel.Parts)
             {
                 if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
@@ -254,17 +262,25 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            if (makeLocal) result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
+            result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
         }
 
-        public static Bounds GetColliderBounds(this Vessel vessel, bool checkForLaunchClamps = false, bool makeLocal = false)
+        public static Bounds GetColliderBounds(this Vessel vessel, bool checkForLaunchClamps = false)
         {
             Bounds result = default;
             bool flag = false;
             var vesselRot = vessel.transform.rotation;
-            vessel.SetRotation(Quaternion.identity);
+            Quaternion vesselRefRot = vessel.ReferenceTransform.rotation;
+            if (vesselRot == vesselRefRot)
+            {
+                vessel.SetRotation(Quaternion.identity);
+            }
+            else
+            {
+                vessel.SetRotation(Quaternion.Inverse(vesselRefRot) * vesselRot);
+            }
             foreach (var part in vessel.Parts)
             {
                 if (checkForLaunchClamps && part.Modules.GetModule<LaunchClamp>() != null) continue;
@@ -281,32 +297,42 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            if (makeLocal) result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
+            result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
             vessel.SetRotation(vesselRot);
             return result;
         }
 
         /// <summary>
-        /// Convert a bounds (local to a vessel's reference transform) into bounds centered in worldspace coords with extents relative to the viewer.
+        /// Convert a bounds (local to a vessel's reference transform) into bounds relative to the viewer.
         /// E.g.,
-        ///   var localBounds = vessel.GetColliderBounds(makeLocal: true);
-        ///   var bounds = vessel.MakeBoundsLocal(localBounds, FlightCamera.fetch.transform.rotation);
+        ///   Transform viewer = FlightCamera.fetch.transform;
+        ///   Bounds localBounds = vessel.GetColliderBounds();
+        ///   Bounds bounds = vessel.ViewBoundsFrom(localBounds, viewer);
+        ///   Vector3 worldSpacePosition = viewer.TransformPoint(bounds.center);
+        ///   Vector3 size = bounds.size();
         /// </summary>
         /// <param name="vessel"></param>
         /// <param name="bounds"></param>
-        /// <param name="viewerRotation"></param>
+        /// <param name="viewer"></param>
         /// <returns></returns>
-        public static Bounds MakeBoundsLocal(this Vessel vessel, Bounds bounds, Quaternion viewerRotation)
+        public static Bounds ViewBoundsFrom(this Vessel vessel, Bounds bounds, Transform viewer)
         {
             var t = vessel.ReferenceTransform;
-            var r = Quaternion.Inverse(viewerRotation) * t.rotation;
+            var r = Quaternion.Inverse(viewer.rotation) * t.rotation;
             Vector3[] corners = [
                 r*bounds.extents,
                 r*new Vector3(bounds.extents.x, bounds.extents.y, -bounds.extents.z),
                 r*new Vector3(bounds.extents.x, -bounds.extents.y, bounds.extents.z),
                 r*new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
             ];
-            return new Bounds(t.TransformPoint(bounds.center), new Vector3(2f * corners.Max(c => Mathf.Abs(c.x)), 2f * corners.Max(c => Mathf.Abs(c.y)), 2f * corners.Max(c => Mathf.Abs(c.z))));
+            return new Bounds(
+                viewer.InverseTransformPoint(t.TransformPoint(bounds.center)),
+                new Vector3(
+                    2f * corners.Max(c => Mathf.Abs(c.x)),
+                    2f * corners.Max(c => Mathf.Abs(c.y)),
+                    2f * corners.Max(c => Mathf.Abs(c.z))
+                )
+            );
         }
 
         /// <summary>
