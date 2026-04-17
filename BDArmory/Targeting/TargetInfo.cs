@@ -377,7 +377,7 @@ namespace BDArmory.Targeting
         Vector3 localCoM;
         public Vector3 GetLocalCoM()
         {
-            if (Time.time < timeOfLastCoMUpdate)
+            if (Time.time > timeOfLastCoMUpdate)
             {
                 localCoM = vesselTransform.InverseTransformDirection(vessel.CoM - vesselTransform.position);
                 timeOfLastCoMUpdate = Time.time;
