@@ -231,7 +231,7 @@ namespace BDArmory.Extensions
             }
             else
             {
-                vessel.SetRotation(vesselRot * Quaternion.Inverse(vesselRefRot));
+                vessel.SetRotation(Quaternion.Inverse(vesselRefRot) * vesselRot);
             }
             foreach (var part in vessel.Parts)
             {
@@ -252,7 +252,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            result.center -= vessel.transform.position;
+            result.center -= vessel.ReferenceTransform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }
@@ -269,7 +269,7 @@ namespace BDArmory.Extensions
             }
             else
             {
-                vessel.SetRotation(vesselRot * Quaternion.Inverse(vesselRefRot));
+                vessel.SetRotation(Quaternion.Inverse(vesselRefRot) * vesselRot);
             }
             foreach (var part in vessel.Parts)
             {
@@ -287,7 +287,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            result.center -= vessel.transform.position;
+            result.center -= vessel.ReferenceTransform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }
