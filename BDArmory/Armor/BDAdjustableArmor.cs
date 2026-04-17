@@ -387,7 +387,7 @@ namespace BDArmory.Armor
         }
         public float calcMaxArmor()
         {
-            return Mathf.Min((isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f, 1500f);
+            return Mathf.Min(Mathf.Min(Width, Length) * 1000f, 1500f);
         }
         public void updateArmorStats()
         {
