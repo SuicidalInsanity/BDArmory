@@ -309,7 +309,6 @@ namespace BDArmory.Extensions
         ///   Bounds localBounds = vessel.GetColliderBounds();
         ///   Bounds bounds = vessel.ViewBoundsFrom(localBounds, viewer);
         ///   Vector3 worldSpacePosition = viewer.TransformPoint(bounds.center);
-        ///   Vector3 size = bounds.size();
         /// </summary>
         /// <param name="vessel"></param>
         /// <param name="bounds"></param>
