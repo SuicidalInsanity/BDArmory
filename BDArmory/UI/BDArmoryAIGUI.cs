@@ -490,6 +490,7 @@ namespace BDArmory.UI
                             nameof(AI.evasionThreshold),
                             nameof(AI.evasionTimeThreshold),
                             nameof(AI.evasionMinRangeThreshold),
+                            nameof(AI.evasionMissileEmergencyNotchVel),
                             nameof(AI.collisionAvoidanceThreshold),
                             nameof(AI.vesselCollisionAvoidanceLookAheadPeriod),
                             nameof(AI.vesselCollisionAvoidanceStrength),
@@ -1413,6 +1414,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.evasionMissileKinematic = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionMissileKinematic, StringUtils.Localize("#LOC_BDArmory_AI_EvasionMissileKinematic"), AI.evasionMissileKinematic ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
                                     evadeLines += 1.25f;
+                                    evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionMissileEmergencyNotchVel, nameof(AI.evasionMissileEmergencyNotchVel), "EvasionMissileEmergencyNotch", $"{AI.evasionMissileEmergencyNotchVel:0.0} m/s");
                                     #endregion
 
                                     #region Craft Avoidance

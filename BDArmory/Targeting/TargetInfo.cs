@@ -289,17 +289,19 @@ namespace BDArmory.Targeting
                 //Vector3 vesselForward = vesselTransform.up;
                 //Vector3 vesselUp = -vesselTransform.forward;
                 //Vector3 vesselRight = vesselTransform.right;
-                Vector3 scaledDiff = vesselTransform.TransformDirection(localBoundsCenter);
+                //Vector3 scaledDiff = vesselTransform.TransformDirection(localBoundsCenter);
                 //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.y) * vesselForward, vesselPos - (0.5f * bounds.y) * vesselForward, 5, Color.blue);
                 //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.x) * vesselRight, vesselPos - (0.5f * bounds.x) * vesselRight, 5, Color.green);
                 //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (0.5f * bounds.z) * vesselUp, vesselPos - (0.5f * bounds.z) * vesselUp, 5, Color.red);
-                Vector3 rand = UnityEngine.Random.onUnitSphere;
-                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(rand, 0.5f)), vessel.CoM, 5, Color.magenta);
+                //Vector3 rand = UnityEngine.Random.onUnitSphere;
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(rand, 0.5f)), vessel.CoM, 5, Color.magenta);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(Vector3.up, 0.5f)), vessel.CoM, 5, Color.yellow);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledBiasedVector(-Vector3.forward, 0.5f)), vessel.CoM, 5, Color.yellow);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetLocalCoM()), vessel.CoM, 5, Color.blue);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(localBoundsCenter), vesselPos, 5, Color.grey);
                 //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + (GetBoundsScaledVectorAlt(0.6f * Vector3.up)), vesselPos + scaledDiff, 5, Color.cyan);
-                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.up, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.up, 0.5f)), 5, Color.blue);
-                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.right, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.right, 0.5f)), 5, Color.green);
+                GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.up, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.up, 0.5f)), 5, Color.green);
+                //GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.right, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.right, 0.5f)), 5, Color.green);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(-Vector3.forward, 0.5f)), vesselPos + GetWorldAlignedVector(GetBoundsScaledVector(Vector3.forward, 0.5f)), 5, Color.red);
                 GUIUtils.DrawLineBetweenWorldPositions(vesselPos + GetRadarGlint(), vessel.CoM, 5, Color.magenta);
                 GUIUtils.DrawLabelOnWorldPos(vesselPos, $"bounds.length={bounds.y}\nbounds.width={bounds.x}\nbounds.height={bounds.z}", new Vector2(200, 200));
@@ -308,7 +310,7 @@ namespace BDArmory.Targeting
 
         public void GetVesselTransform()
         {
-            vesselTransform = vessel.ReferenceTransform; //(isMissile && !MissileBaseModule.isMMG) ? MissileBaseModule.MissileReferenceTransform : vessel.transform;
+            vesselTransform = vessel.ReferenceTransform;
         }
 
         public Vector3 GetWorldAlignedVector(Vector3 localVector)
@@ -316,26 +318,6 @@ namespace BDArmory.Targeting
             if (vesselTransform != vessel.ReferenceTransform) UpdateBounds();
             return vesselTransform.TransformDirection(localVector);
         }
-
-        /*float currRotTime = 0;
-        Quaternion currRot;
-
-        public Vector3 GetWorldAlignedVectorAlt(Vector3 localVector)
-        {
-            if (vesselTransform == null) UpdateBounds();
-            if (currRotTime < Time.time)
-            {
-                currRot = vesselTransform.rotation;
-                currRotTime = Time.time;
-            }
-            return currRot * localVector;
-        }
-
-        public Vector3 GetWorldAlignedVectorAlt2(Vector3 localVector)
-        {
-            if (vesselTransform == null) UpdateBounds();
-            return vesselTransform.rotation * localVector;
-        }*/
 
         public Vector3 GetBoundsScaledWorldVector(Vector3 localVector, float boundScale)
         {
@@ -368,7 +350,7 @@ namespace BDArmory.Targeting
                                                localVector.z * (localVector.z > 0f ? (boundScale * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (boundScale * bounds.z - (localBoundsCenter.z - localRelCoM.z))) + localRelCoM.z);
             /*if (log)
             {
-                Debug.Log($"[BDArmory.TargetInfo.GetBoundsScaledBiasedVector] localVector: {localVector}, localBoundsCenter: {localBoundsCenter}, localRelCoM: {localRelCoM}, bounds: {bounds}, biasedVector: {biasedVector}, x: {(localVector.x > 0f ? (0.5f * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (0.5f * bounds.x - (localBoundsCenter.x - localRelCoM.x)))}, y: {(localVector.y > 0f ? (0.5f * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (0.5f * bounds.y - (localBoundsCenter.y - localRelCoM.y)))}, z: {(localVector.z > 0f ? (0.5f * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (0.5f * bounds.z - (localBoundsCenter.z - localRelCoM.z)))}");
+                Debug.Log($"[BDArmory.TargetInfo.GetBoundsScaledBiasedVector] localVector: {localVector}, localBoundsCenter: {localBoundsCenter}, localRelCoM: {localRelCoM}, bounds: {bounds}, biasedVector: {biasedVector}, x: {(localVector.x > 0f ? (boundScale * bounds.x + (localBoundsCenter.x - localRelCoM.x)) : (boundScale * bounds.x - (localBoundsCenter.x - localRelCoM.x)))}, y: {(localVector.y > 0f ? (boundScale * bounds.y + (localBoundsCenter.y - localRelCoM.y)) : (boundScale * bounds.y - (localBoundsCenter.y - localRelCoM.y)))}, z: {(localVector.z > 0f ? (boundScale * bounds.z + (localBoundsCenter.z - localRelCoM.z)) : (boundScale * bounds.z - (localBoundsCenter.z - localRelCoM.z)))}");
             }*/
             return biasedVector;
         }

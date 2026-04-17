@@ -518,6 +518,11 @@ namespace BDArmory.Control
             UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
         public bool evasionMissileKinematic = false;
 
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_EvasionMissileEmergencyNotch", advancedTweakable = true, //Missile Emergency Notch Threshold
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.All)]
+        public float evasionMissileEmergencyNotchVel = 0f;
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_CollisionAvoidanceThreshold", advancedTweakable = true, //Vessel collision avoidance threshold
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 50f, stepIncrement = 1f, scene = UI_Scene.All)]
@@ -699,6 +704,7 @@ namespace BDArmory.Control
             { nameof(evasionNonlinearity), 90f },
             { nameof(evasionThreshold), 300f },
             { nameof(evasionTimeThreshold), 30f },
+            { nameof(evasionMissileEmergencyNotchVel), 200f },
             { nameof(vesselStandoffDistance), 5000f },
             { nameof(turnRadiusTwiddleFactorMin), 10f},
             { nameof(turnRadiusTwiddleFactorMax), 10f},
@@ -3444,6 +3450,7 @@ namespace BDArmory.Control
         }
 
         static string[] kinematicEvasionStateStrings = ["", " (Turning Hot)", " (Cranking)", " (Notching)", " (Turning Cold)", " (Notching & Diving)"];
+        bool emergencyNotch = false;
 
         void Evasive(FlightCtrlState s)
         {
@@ -3565,16 +3572,25 @@ namespace BDArmory.Control
                             radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
                         }
 
-                        if (weaponManager.isChaffing && Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > 50f)
+                        emergencyNotch = emergencyNotch && weaponManager.isChaffing;
+                        if (evasionMissileEmergencyNotchVel > 0 && weaponManager.isChaffing && (emergencyNotch || Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > evasionMissileEmergencyNotchVel))
                         {
+                            emergencyNotch = true;
                             // Emergency notch, get us notched ASAP!
+                            kinematicEvasionStatus = " (Emergency Notch)";
+                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.Append(" Emergency Notch!");
                             breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
                         }
                         else
                         {
+                            emergencyNotch = false;
                             // Standard notch
                             breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
                         }
+                    }
+                    else
+                    {
+                        emergencyNotch = false;
                     }
                     if (BDArmorySettings.DEBUG_LINES) debugBreakDirection = breakDirection;
 
