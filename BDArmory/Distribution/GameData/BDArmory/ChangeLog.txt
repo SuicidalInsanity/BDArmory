@@ -6,6 +6,7 @@
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
+	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
