@@ -62,6 +62,7 @@ namespace BDArmory.Utils
                 foreach (var partName in partNames)
                     BLparts.SetValue($"Part{++partIndex}", partName, true);
             }
+            AddPartsBlacklistsComments(fileNode);
             fileNode.Save(settingsConfigURL);
         }
         static HashSet<string> IgnoredPartNames;
@@ -114,15 +115,13 @@ namespace BDArmory.Utils
                 fileNode = ConfigNode.Load(settingsConfigURL);
             }
 
-            string announcerGunsComment = "Note: replace '_' with '.' in part names (hint: see a craft's loadmeta file for part names)."; // Note: reading the node doesn't seem to get the comment, so we need to reset it each time.
             bool addDefaultParts = false;
             if (!fileNode.HasNode("AnnouncerGuns"))
             {
-                fileNode.AddNode("AnnouncerGuns", announcerGunsComment);
+                fileNode.AddNode("AnnouncerGuns");
                 addDefaultParts = true;
             }
             ConfigNode Iparts = fileNode.GetNode("AnnouncerGuns");
-            Iparts.comment = announcerGunsComment;
             var partNames = Iparts.GetValues().ToHashSet(); // Get the existing part names, then add our ones.
             if (addDefaultParts)
             {
@@ -133,7 +132,19 @@ namespace BDArmory.Utils
             foreach (var partName in partNames)
                 Iparts.SetValue($"Part{++partIndex}", partName, true);
 
+            AddPartsBlacklistsComments(fileNode);
             fileNode.Save(settingsConfigURL);
+        }
+        /// <summary>
+        /// Add comments to the sections of the PartsBlacklist.cfg.
+        /// Note: this needs to be called before saving the file as the comments are lost each time the file is read.
+        /// </summary>
+        static void AddPartsBlacklistsComments(ConfigNode fileNode)
+        {
+            if (fileNode == null) return;
+            if (fileNode.HasNode("IgnoredParts")) fileNode.GetNode("IgnoredParts").comment = "Parts that are ignored by bullets and explosions.";
+            if (fileNode.HasNode("MaterialsBlacklist")) fileNode.GetNode("MaterialsBlacklist").comment = "Parts that are not allowed to have their material changed from the default.";
+            if (fileNode.HasNode("AnnouncerGuns"))fileNode.GetNode("AnnouncerGuns").comment = "Note: replace '_' with '.' in part names (hint: see a craft's loadmeta file for part names).";
         }
         static HashSet<string> materialsBlacklist;
         public static bool isMaterialBlackListpart(Part Part)
@@ -725,7 +736,7 @@ namespace BDArmory.Utils
                             hitPart.ReduceArmor(spallMass); //cm3
 
                             spallMass *= (Density / 1000000); //m2 -> cm2 -> cm3 -> kg
-                            
+
                             damage = hitPart.AddBallisticDamage(spallMass, spallCaliber, 1, blowthroughFactor, 1, 422.75f, explosionSource);
                             ApplyScore(hitPart, sourcevessel, 0, damage, "Spalling", explosionSource);
 
@@ -745,7 +756,7 @@ namespace BDArmory.Utils
                         if (ductility < 0.05f) //should really have this modified by thickness/blast force
                         {
                             var volumeToReduce = Mathf.CeilToInt(spallArea / 0.25f) * 2500 * (thickness / 10);//total failue of 50x50cm armor tile(s)
-                                                                                                                // m2 - > 50x50cm tiles -> cm2 -> cm3            
+                                                                                                              // m2 - > 50x50cm tiles -> cm2 -> cm3            
                             if (hardness > 500)
                             {
                                 spallMass = volumeToReduce * (Density / 1000000); //kg
@@ -921,7 +932,7 @@ namespace BDArmory.Utils
             //does the bullet suvive its impact?
             //calculate bullet lengh, in mm
             float bulletLength = CalculateBulletLength(projMass, newCaliber, sabot); //srf.Area in mmm2 x density of lead to get mass per 1 cm length of bullet / total mass to get total length,
-                                                                                                                        //+ 10 to accound for ogive/mushroom head post-deformation instead of perfect cylinder
+                                                                                     //+ 10 to accound for ogive/mushroom head post-deformation instead of perfect cylinder
             if (newCaliber > (bulletLength * 2)) //has the bullet flattened into a disc, and is no longer a viable penetrator?
             {
                 if (BDArmorySettings.DEBUG_ARMOR)
