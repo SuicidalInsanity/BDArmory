@@ -389,14 +389,14 @@ namespace BDArmory.Targeting
             if (currTime > glintInterval)
             {
                 prevGlint = futureGlint;
-                futureGlint = UnityEngine.Random.onUnitSphere * VectorUtils.Gaussian();
+                futureGlint = GetBoundsScaledBiasedVector(UnityEngine.Random.onUnitSphere, 0.5f * VectorUtils.Gaussian());
                 glintTime = glintUpdateTime;
                 currLocalGlint = prevGlint;
-                currGlint = GetBoundsScaledBiasedWorldVector(prevGlint, 0.5f);
+                currGlint = GetWorldAlignedVector(prevGlint);
                 return currGlint;
             }
             currLocalGlint = Vector3.LerpUnclamped(prevGlint, futureGlint, currTime * glintIntInv);
-            currGlint = GetBoundsScaledBiasedWorldVector(currLocalGlint, 0.5f);
+            currGlint = GetWorldAlignedVector(currLocalGlint);
             return currGlint;
         }
 
