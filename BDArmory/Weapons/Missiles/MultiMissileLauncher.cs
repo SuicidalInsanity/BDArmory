@@ -284,7 +284,7 @@ namespace BDArmory.Weapons.Missiles
 
                     if (missileLauncher.DetonationDistance == -1)
                     {
-                        if (missileLauncher.GuidanceMode == GuidanceModes.AAMLead || missileLauncher.GuidanceMode == GuidanceModes.AAMPure || missileLauncher.GuidanceMode == GuidanceModes.PN || missileLauncher.GuidanceMode == GuidanceModes.APN)
+                        if (missileLauncher.GuidanceMode == GuidanceModes.AAMLead || missileLauncher.GuidanceMode == GuidanceModes.AAMPure || missileLauncher.GuidanceMode == GuidanceModes.PN || missileLauncher.GuidanceMode == GuidanceModes.APN || missileLauncher.GuidanceMode == GuidanceModes.AAMLoft || missileLauncher.GuidanceMode == GuidanceModes.Kappa || missileLauncher.GuidanceMode == GuidanceModes.CLOSThreePoint || missileLauncher.GuidanceMode == GuidanceModes.CLOSLead)
                         {
                             missileLauncher.DetonationDistance = bRadius * 0.25f;
                         }

@@ -116,10 +116,10 @@ namespace BDArmory.Guidances
         }
 
         public static Vector3 GetCLOSTarget(Vector3 sensorPos, Vector3 currentPos, Vector3 currentVelocity, Vector3 targetPos, Vector3 targetVel,
-            float correctionFactor, float N, float deadzone, out float gLimit)
+            float correctionFactor, float N, float deadzone, float beamWidth, out float gLimit)
         {
             targetPos += targetVel * Time.fixedDeltaTime;
-            Vector3 accel = GetCLOSAccel(sensorPos, Vector3.zero, currentPos, currentVelocity, targetPos, targetVel, Vector3.zero, correctionFactor, N);
+            Vector3 accel = GetCLOSAccel(sensorPos, Vector3.zero, currentPos, currentVelocity, targetPos, targetVel, Vector3.zero, correctionFactor, N, beamWidth);
             gLimit = accel.magnitude;
 
             if (gLimit < deadzone)
@@ -132,13 +132,13 @@ namespace BDArmory.Guidances
         }
 
         public static Vector3 GetThreePointTarget(Vector3 sensorPos, Vector3 sensorVel, Vector3 currentPos, Vector3 currentVelocity, Vector3 targetPos, Vector3 targetVel,
-            float correctionFactor, float N, float deadzone, out float gLimit)
+            float correctionFactor, float N, float deadzone, float beamWidth, out float gLimit)
         {
             Vector3 relVelocity = targetVel - sensorVel;
             Vector3 relRange = targetPos - sensorPos;
             Vector3 angVel = Vector3.Cross(relRange, relVelocity) / relRange.sqrMagnitude;
 
-            Vector3 accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, targetPos, targetVel, angVel, correctionFactor, N);
+            Vector3 accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, targetPos, targetVel, angVel, correctionFactor, N, beamWidth);
 
             accel -= 2f * Vector3.Cross(currentVelocity, angVel);
             gLimit = accel.magnitude / 9.80665f;
@@ -153,7 +153,7 @@ namespace BDArmory.Guidances
         }
 
         public static Vector3 GetCLOSLeadTarget(Vector3 sensorPos, Vector3 sensorVel, Vector3 currentPos, Vector3 currentVelocity, Vector3 targetPos, Vector3 targetVel,
-            float correctionFactor, float N, float deadzone, float beamLeadFactor, out float gLimit, MissileLauncher ml)
+            float correctionFactor, float N, float deadzone, float beamWidth, float beamLeadFactor, float beamMinAlt, out float gLimit, MissileLauncher ml)
         {
             Vector3 relVelocity = targetVel - sensorVel;
             Vector3 relRange = targetPos - sensorPos;
@@ -161,17 +161,31 @@ namespace BDArmory.Guidances
 
             float currVel = currentVelocity.magnitude;
             if (currVel < 200f)
+            {
                 currentVelocity *= 200f / currVel;
+            }
 
             (float rangeM, Vector3 dirM) = (currentPos - sensorPos).MagNorm();
             (float rangeT, Vector3 dirT) = (targetPos - sensorPos).MagNorm();
             float leadTime = Mathf.Clamp((rangeT - rangeM) / (Mathf.Max(currVel, 200f) - Vector3.Dot(targetVel, dirT)), 0f, 8f);
 
-            Vector3 deltaLOS = (Mathf.Clamp01(beamLeadFactor) * leadTime / RSqr) * Vector3.Cross(relRange, relVelocity);
+            Vector3 angVel = Vector3.Cross(relRange, relVelocity) / RSqr;
+
+            Vector3 deltaLOS = (Mathf.Clamp01(beamLeadFactor) * leadTime) * angVel;
             Quaternion rotation = Quaternion.AngleAxis(deltaLOS.magnitude * Mathf.Rad2Deg, deltaLOS);
             Vector3 corrRelRange = rotation * relRange;
 
-            Vector3 angVel = Vector3.Cross(relRange, relVelocity) / RSqr;
+            // If we are using "elevated by k" method and the target rel alt < beamMinAlt
+            Vector3 up;
+            if (beamMinAlt > 0 && Vector3.Dot(relRange, (up = ml.vessel.up)) < beamMinAlt)
+            {
+                // We do not allow lead in the vertical direction below the target
+                float kCorrection = Vector3.Dot(relRange - corrRelRange, up);
+                if (kCorrection > 0f)
+                {
+                    corrRelRange += (kCorrection * up);
+                }
+            }
 
             // Once below the max leadTime, the LoS vector moves towards the target at half of angVel due to the nature of half-rectification
             // guidance, hence when we get the CLOS accel we use half of angVel
@@ -181,7 +195,7 @@ namespace BDArmory.Guidances
                 angVel *= (1f - beamLeadFactor);
             }
 
-            Vector3 accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, sensorPos + corrRelRange, targetVel, angVel, correctionFactor, N);
+            Vector3 accel = GetCLOSAccel(sensorPos, sensorVel, currentPos, currentVelocity, sensorPos + corrRelRange, targetVel, angVel, correctionFactor, N, beamWidth);
 
             ml.DrawDebugLine(sensorPos, sensorPos + corrRelRange);
 
@@ -219,7 +233,7 @@ namespace BDArmory.Guidances
         }*/
 
         public static Vector3 GetCLOSAccel(Vector3 sensorPos, Vector3 sensorVel, Vector3 currentPos, Vector3 currentVelocity, Vector3 targetPos, Vector3 targetVel, Vector3 beamAngVel,
-            float correctionFactor, float N)
+            float correctionFactor, float N, float beamWidth)
         {
             Vector3 beamDir = (targetPos - sensorPos).normalized;
             float onBeamDistance = Vector3.Dot(currentPos - sensorPos, beamDir);
@@ -228,6 +242,16 @@ namespace BDArmory.Guidances
             Vector3 beamVelocity = Vector3.Cross(beamAngVel, beamDir * onBeamDistance);
 
             (float beamError, Vector3 beamErrorV) = (currentPos - onBeamPos).MagNorm();
+
+            if (beamWidth > 0f)
+            {
+                // If beamWidth > 0 then reduce error by beamWidth at that point
+                beamError -= onBeamDistance * beamWidth;
+                if (beamError < 0)
+                {
+                    return Vector3.zero;
+                }
+            }
 
             (float currentSpeed, Vector3 velDir) = currentVelocity.MagNorm();
 
