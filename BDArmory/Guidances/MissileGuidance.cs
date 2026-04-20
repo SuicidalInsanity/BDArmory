@@ -177,10 +177,11 @@ namespace BDArmory.Guidances
 
             // If we are using "elevated by k" method and the target rel alt < beamMinAlt
             Vector3 up;
-            if (beamMinAlt > 0 && Vector3.Dot(relRange, (up = ml.vessel.up)) < beamMinAlt)
+            float altDiff;
+            if (beamMinAlt > 0 && (altDiff = Vector3.Dot(relRange, (up = ml.vessel.up))) < 1.25f * beamMinAlt)
             {
                 // We do not allow lead in the vertical direction below the target
-                float kCorrection = Vector3.Dot(relRange - corrRelRange, up);
+                float kCorrection = Mathf.Clamp01(4f * (beamMinAlt - altDiff) / beamMinAlt + 1f) * Vector3.Dot(relRange - corrRelRange, up);
                 if (kCorrection > 0f)
                 {
                     corrRelRange += (kCorrection * up);
