@@ -157,50 +157,51 @@ namespace BDArmory.Radar
 
         public override void OnStart(StartState state)
         {
-            if (HighLogic.LoadedSceneIsFlight)
+            base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            part.force_activate();
+
+            pingsData = new RWRSignatureData[dataCount];
+            MWSData = new RWRSignatureData[2 * dataCount];
+            //pingWorldPositions = new Vector3[dataCount];
+            RWRSignatureData.ResetRWRSDArray(ref pingsData);
+            launchWarnings = new RWRSignatureData[2 * dataCount]; //new List<TargetSignatureData>();
+            missileLockData = new RWRSignatureData[2 * dataCount];
+
+            rwrIconLabelStyle = new GUIStyle();
+            rwrIconLabelStyle.alignment = TextAnchor.MiddleCenter;
+            rwrIconLabelStyle.normal.textColor = Color.green;
+            rwrIconLabelStyle.fontSize = 12;
+            rwrIconLabelStyle.border = new RectOffset(0, 0, 0, 0);
+            rwrIconLabelStyle.clipping = TextClipping.Overflow;
+            rwrIconLabelStyle.wordWrap = false;
+            rwrIconLabelStyle.fontStyle = FontStyle.Bold;
+
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.minDistance = 500;
+            audioSource.maxDistance = 1000;
+            audioSource.spatialBlend = 1;
+            audioSource.dopplerLevel = 0;
+            audioSource.loop = false;
+
+            UpdateVolume();
+            BDArmorySetup.OnVolumeChange += UpdateVolume;
+
+            if (!WindowRectRWRInitialized)
             {
-                pingsData = new RWRSignatureData[dataCount];
-                MWSData = new RWRSignatureData[2 *dataCount];
-                //pingWorldPositions = new Vector3[dataCount];
-                RWRSignatureData.ResetRWRSDArray(ref pingsData);
-                launchWarnings = new RWRSignatureData[2 * dataCount]; //new List<TargetSignatureData>();
-                missileLockData = new RWRSignatureData[2 * dataCount];
-
-                rwrIconLabelStyle = new GUIStyle();
-                rwrIconLabelStyle.alignment = TextAnchor.MiddleCenter;
-                rwrIconLabelStyle.normal.textColor = Color.green;
-                rwrIconLabelStyle.fontSize = 12;
-                rwrIconLabelStyle.border = new RectOffset(0, 0, 0, 0);
-                rwrIconLabelStyle.clipping = TextClipping.Overflow;
-                rwrIconLabelStyle.wordWrap = false;
-                rwrIconLabelStyle.fontStyle = FontStyle.Bold;
-
-                audioSource = gameObject.AddComponent<AudioSource>();
-                audioSource.minDistance = 500;
-                audioSource.maxDistance = 1000;
-                audioSource.spatialBlend = 1;
-                audioSource.dopplerLevel = 0;
-                audioSource.loop = false;
-
-                UpdateVolume();
-                BDArmorySetup.OnVolumeChange += UpdateVolume;
-
-                if (!WindowRectRWRInitialized)
-                {
-                    BDArmorySetup.WindowRectRwr = new Rect(BDArmorySetup.WindowRectRwr.x, BDArmorySetup.WindowRectRwr.y, RwrDisplayRect.height + BorderSize, RwrDisplayRect.height + BorderSize + HeaderSize);
-                    // BDArmorySetup.WindowRectRwr = new Rect(40, Screen.height - RwrDisplayRect.height, RwrDisplayRect.height + BorderSize, RwrDisplayRect.height + BorderSize + HeaderSize);
-                    WindowRectRWRInitialized = true;
-                }
-
-                using (var mf = VesselModuleRegistry.GetMissileFires(vessel).GetEnumerator())
-                    while (mf.MoveNext())
-                    {
-                        if (mf.Current == null) continue;
-                        mf.Current.rwr = this; // Set the rwr on all weapon managers to this.
-                    }
-                //if (rwrEnabled) EnableRWR();
-                EnableRWR();
+                BDArmorySetup.WindowRectRwr = new Rect(BDArmorySetup.WindowRectRwr.x, BDArmorySetup.WindowRectRwr.y, RwrDisplayRect.height + BorderSize, RwrDisplayRect.height + BorderSize + HeaderSize);
+                // BDArmorySetup.WindowRectRwr = new Rect(40, Screen.height - RwrDisplayRect.height, RwrDisplayRect.height + BorderSize, RwrDisplayRect.height + BorderSize + HeaderSize);
+                WindowRectRWRInitialized = true;
             }
+
+            using (var mf = VesselModuleRegistry.GetMissileFires(vessel).GetEnumerator())
+                while (mf.MoveNext())
+                {
+                    if (mf.Current == null) continue;
+                    mf.Current.rwr = this; // Set the rwr on all weapon managers to this.
+                }
+            //if (rwrEnabled) EnableRWR();
+            EnableRWR();
         }
 
         void UpdateVolume()

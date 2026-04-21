@@ -21,13 +21,13 @@ namespace BDArmory.Weapons
 
         public override void OnStart(StartState state)
         {
+            base.OnStart(state);
             if (HighLogic.LoadedSceneIsFlight)
             {
                 part.force_activate();
                 part.OnJustAboutToBeDestroyed += DetonateEMPRoutine;
                 if (electroHits == null) { electroHits = new RaycastHit[100]; }
             }
-            base.OnStart(state);
         }
 
         public void DetonateEMPRoutine()

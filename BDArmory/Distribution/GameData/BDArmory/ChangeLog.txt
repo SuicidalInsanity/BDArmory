@@ -7,6 +7,7 @@
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
 	- Fix setting world velocity not accounting for Krakensbane properly in some cases.
+	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.

@@ -123,10 +123,11 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
             }
         }
 
-        public override void OnStart(PartModule.StartState state)
+        public override void OnStart(StartState state)
         {
-            this.enabled = true;
-            this.part.force_activate();
+            base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight) part.force_activate();
+            enabled = true;
             MultiMissileLauncher MML = part.FindModuleImplementing<MultiMissileLauncher>();
             if (MML == null || MML && MML.isClusterMissile && !MML.isLaunchedClusterMissile) MissileName = part.name;
             if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)

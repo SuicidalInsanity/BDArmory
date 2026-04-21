@@ -2692,11 +2692,11 @@ namespace BDArmory.UI
                         // }
                         // if (GUI.Button(SLineRect(++line), "Test Bounds"))
                         // {
+                        //     var v = FlightGlobals.ActiveVessel;
+                        //     var c = FlightCamera.fetch;
+                        //     var b = v.ViewBoundsFrom(v.GetColliderBounds(), c.transform);
+                        //     Debug.Log($"DEBUG Bounds viewed from Camera: {b}");
                         //     // TestBounds();
-                        //     var vessel = FlightGlobals.ActiveVessel;
-                        //     var localBounds = vessel.GetColliderBounds(makeLocal: true);
-                        //     var bounds = vessel.MakeBoundsLocal(localBounds, FlightCamera.fetch.transform.rotation);
-                        //     Debug.Log($"DEBUG Local Bounds: {localBounds}, Bounds: {bounds}, vessel.ref.position: {vessel.ReferenceTransform.position}, offset: {bounds.center - vessel.ReferenceTransform.position} ({(bounds.center - vessel.ReferenceTransform.position).magnitude})");
                         // }
                         // if (GUI.Button(SLineRect(++line), "Test Angle")) TestAngle();
                         // if (GUI.Button(SLineRect(++line), "Test Abs")) TestAbs();

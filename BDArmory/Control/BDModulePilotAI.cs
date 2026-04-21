@@ -3592,7 +3592,7 @@ namespace BDArmory.Control
                 AdjustThrottle(targetSpeed, false, useAB);
             }
 
-            Vessel missileThreat = weaponManager.incomingMissileVessel;
+            Vessel missileThreat = weaponManager.missileIsIncoming ? weaponManager.incomingMissileVessel : null;
             MissileBase missileThreatMB;
             float closingTime;
             string kinematicEvasionStatus = "";
