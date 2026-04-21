@@ -8190,7 +8190,7 @@ namespace BDArmory.Control
                     var pilotAI = PilotAI;
                     if (pilotAI && pilotAI.IsExtending && target.Vessel != pilotAI.extendTarget)
                     {
-                        pilotAI.StopExtending($"changed target from {pilotAI.extendTarget.GetName()} to {target.Vessel.GetName()}"); // Only stop extending if the target is different from the extending target
+                        pilotAI.StopExtending($"changed target from {(pilotAI.extendTarget != null ? pilotAI.extendTarget.GetName() : "null")} to {target.Vessel.GetName()}"); // Only stop extending if the target is different from the extending target
                     }
                 }
                 currentTarget = target;
