@@ -2830,7 +2830,7 @@ namespace BDArmory.Weapons.Missiles
         void UpdateThrustForces()
         {
             if (MissileState == MissileStates.PostThrust) return;
-            if (weaponClass == WeaponClasses.SLW && FlightGlobals.getAltitudeAtPos(vessel.CoM) > 0) return; //#710, no torp thrust out of water
+            if (weaponClass == WeaponClasses.SLW && vessel.altitude > 0) return; //#710, no torp thrust out of water
             if (currentThrust * Throttle > 0)
             {
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
@@ -3008,7 +3008,7 @@ namespace BDArmory.Weapons.Missiles
         }
         IEnumerator BoostRoutine()
         {
-            if (weaponClass == WeaponClasses.SLW && FlightGlobals.getAltitudeAtPos(vessel.CoM) > 0)
+            if (weaponClass == WeaponClasses.SLW && vessel.altitude > 0)
             {
                 yield return new WaitUntilFixed(() => vessel == null || vessel.LandedOrSplashed);//don't start torpedo thrust until underwater
                 if (vessel == null || vessel.Landed) Detonate(); //dropping torpedoes over land is just going to turn them into heavy, expensive bombs...
@@ -3075,7 +3075,7 @@ namespace BDArmory.Weapons.Missiles
                     while (gpe.MoveNext())
                     {
                         if (gpe.Current == null) continue;
-                        if ((!vessel.InVacuum() && Throttle > 0) && weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && FlightGlobals.getAltitudeAtPos(vessel.CoM) < 0)) //#710
+                        if ((!vessel.InVacuum() && Throttle > 0) && weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && vessel.altitude < 0)) //#710
                         {
                             if (Throttle == 0 || thrust == 0)
                                 gpe.Current.emit = false;
@@ -3283,7 +3283,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         emitter.Current.maxSize = Mathf.Clamp01(Throttle / Mathf.Clamp((float)vessel.atmDensity, 0.2f, 1f));
                         */
-                        if (weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && FlightGlobals.getAltitudeAtPos(vessel.CoM) < 0)) //#710
+                        if (weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && vessel.altitude < 0)) //#710
                         {
                             if (Throttle == 0 || cruiseThrust == 0)
                                 emitter.Current.emit = false;
@@ -3300,7 +3300,7 @@ namespace BDArmory.Weapons.Missiles
                     while (gpe.MoveNext())
                     {
                         if (gpe.Current == null) continue;
-                        if (weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && FlightGlobals.getAltitudeAtPos(vessel.CoM) < 0)) //#710
+                        if (weaponClass != WeaponClasses.SLW || (weaponClass == WeaponClasses.SLW && vessel.altitude < 0)) //#710
                         {
                             if (Throttle == 0 || cruiseThrust == 0)
                                 gpe.Current.emit = false;
