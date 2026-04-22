@@ -2589,7 +2589,7 @@ namespace BDArmory.Weapons.Missiles
 
                 if (!(BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)) return;
                 var distance = (TargetPosition - vessel.CoM).magnitude;
-                debugString.AppendLine($"Target distance: {(distance > 1000 ? $" {distance / 1000:F1} km" : $" {distance:F0} m")}, closing speed: {Vector3.Dot(vessel.Velocity() - TargetVelocity, GetForwardTransform()):F1} m/s");
+                debugString.AppendLine($"Target distance: {(distance > 1000 ? $" {distance / 1000:F1} km" : $" {distance:F0} m")}, closing speed: {Vector3.Dot(vessel.Velocity() - TargetVelocity, GetForwardTransform()):F1} m/s, ttgo: {TimeToImpact:F1} s");
             }
         }
 
@@ -2893,9 +2893,6 @@ namespace BDArmory.Weapons.Missiles
             {
                 deployed = true;
 
-                applyDeployedLiftDrag();
-                MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
-
                 using (var anim = deployStates.AsEnumerable().GetEnumerator())
                     while (anim.MoveNext())
                     {
@@ -2903,6 +2900,10 @@ namespace BDArmory.Weapons.Missiles
                         anim.Current.enabled = true;
                         anim.Current.speed = 1;
                     }
+
+                updateRadarCS = true;
+                applyDeployedLiftDrag();
+                MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
             }
         }
 
@@ -2945,9 +2946,6 @@ namespace BDArmory.Weapons.Missiles
             {
                 deployed = true;
 
-                applyDeployedLiftDrag(true);
-                MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
-
                 using (var anim = cruiseStates.AsEnumerable().GetEnumerator())
                     while (anim.MoveNext())
                     {
@@ -2955,6 +2953,10 @@ namespace BDArmory.Weapons.Missiles
                         anim.Current.enabled = true;
                         anim.Current.speed = 1;
                     }
+
+                updateRadarCS = true;
+                applyDeployedLiftDrag(true);
+                MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
             }
         }
         IEnumerator FlightAnimRoutine()
@@ -3178,6 +3180,8 @@ namespace BDArmory.Weapons.Missiles
 
             if (decoupleBoosters)
             {
+                updateRadarCS = true;
+
                 // We only apply any lift/drag area changes if parsedLiftArea[1] is valid
                 if (parsedLiftArea[1] >= 0f)
                 {

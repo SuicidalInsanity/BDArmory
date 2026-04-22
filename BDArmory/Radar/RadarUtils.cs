@@ -447,6 +447,7 @@ namespace BDArmory.Radar
 
                     ti.radarBaseSignatureNeedsUpdate = false;
                     ti.radarSignatureMatrixNeedsUpdate = false;
+                    ti.UpdateBounds();
                     missile.updateRadarCS = false;
 
                     if (updateJammers)
