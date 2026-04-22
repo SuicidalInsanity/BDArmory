@@ -4909,15 +4909,7 @@ namespace BDArmory.Weapons.Missiles
                     float tempDetDist = DetonationDistance;
                     if (tempDetDist == -1)
                     {
-                        if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure || GuidanceMode == GuidanceModes.PN || GuidanceMode == GuidanceModes.APN || GuidanceMode == GuidanceModes.AAMLoft || GuidanceMode == GuidanceModes.Kappa || GuidanceMode == GuidanceModes.CLOSThreePoint || GuidanceMode == GuidanceModes.CLOSLead) //|| GuidanceMode == GuidanceModes.AAMHybrid)
-                        {
-                            tempDetDist = GetBlastRadius() * 0.25f;
-                        }
-                        else
-                        {
-                            //DetonationDistance = GetBlastRadius() * 0.05f;
-                            tempDetDist = 0f;
-                        }
+                        tempDetDist = GetInitialDetonationDistance(GetBlastRadius());
                     }
                     output.AppendLine($"- Def. Proxy Range: {tempDetDist} m");
                     output.AppendLine($"- Adjustable Fuze: {adjustableProxyFuze}");

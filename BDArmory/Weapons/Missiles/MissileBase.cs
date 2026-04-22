@@ -2114,20 +2114,21 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
         {
             if (this.DetonationDistance == -1)
             {
-                if (GuidanceMode == GuidanceModes.AAMLead || GuidanceMode == GuidanceModes.AAMPure || GuidanceMode == GuidanceModes.PN || GuidanceMode == GuidanceModes.APN || GuidanceMode == GuidanceModes.AAMLoft || GuidanceMode == GuidanceModes.Kappa || GuidanceMode == GuidanceModes.CLOSThreePoint || GuidanceMode == GuidanceModes.CLOSLead) //|| GuidanceMode == GuidanceModes.AAMHybrid)
-                {
-                    DetonationDistance = GetBlastRadius() * 0.25f;
-                }
-                else
-                {
-                    //DetonationDistance = GetBlastRadius() * 0.05f;
-                    DetonationDistance = 0f;
-                }
+                DetonationDistance = GetInitialDetonationDistance(GetBlastRadius());
             }
             if (BDArmorySettings.DEBUG_MISSILES)
             {
                 Debug.Log($"[BDArmory.MissileBase]: DetonationDistance = : {DetonationDistance}");
             }
+        }
+
+        public float GetInitialDetonationDistance(float bRadius)
+        {
+            return GuidanceMode switch
+            {
+                GuidanceModes.AAMLead or GuidanceModes.AAMPure or GuidanceModes.PN or GuidanceModes.APN or GuidanceModes.AAMLoft or GuidanceModes.Kappa or GuidanceModes.CLOSThreePoint or GuidanceModes.CLOSLead => bRadius * 0.25f,
+                _ => 0f
+            };
         }
 
         protected void CollisionEnter(Collision col)
