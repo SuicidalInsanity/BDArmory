@@ -2646,13 +2646,17 @@ namespace BDArmory.Weapons.Missiles
                             heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(vessel.CoM, tempTargetPos - vessel.CoM), TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
                         }
 
-                        if (heatTarget.exists && CheckTargetEngagementEnvelope(heatTarget.targetInfo))
+                        if (heatTarget.exists && (heatTarget.isDecoy || CheckTargetEngagementEnvelope(heatTarget.targetInfo)))
                         {
                             if (BDArmorySettings.DEBUG_MISSILES)
                             {
                                 Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {(activeRadarRange < 0 && torpedo ? "Acoustic" : "Heat")} target acquired! Position: {heatTarget.position}, {(activeRadarRange < 0 && torpedo ? "Noise" : "Heat")}score: {heatTarget.signalStrength}");
                             }
                             TargetAcquired = true;
+                            if (!heatTarget.isDecoy)
+                            {
+                                targetVessel = heatTarget.targetInfo;
+                            }
                             TargetPosition = heatTarget.position;
                             TargetVelocity = heatTarget.velocity;
                             TargetAcceleration = heatTarget.acceleration;
@@ -2739,8 +2743,9 @@ namespace BDArmory.Weapons.Missiles
 
                         if (lockIndex >= 0)
                         {
-                            radarTarget = scannedTargets[lockIndex];
                             TargetAcquired = true;
+                            radarTarget = scannedTargets[lockIndex];
+                            targetVessel = radarTarget.targetInfo;
                             TargetPosition = radarTarget.predictedPositionWithChaffFactor(chaffEffectivity, chaffNotchVFac, chaffNotchRFac);
                             TargetVelocity = radarTarget.velocity;
                             TargetAcceleration = radarTarget.acceleration;

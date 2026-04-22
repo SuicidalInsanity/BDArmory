@@ -745,15 +745,12 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
 
         protected void AddTargetInfoToVessel()
         {
-            TargetInfo info = vessel.gameObject.AddComponent<TargetInfo>();
-            if (Team == null && FiredByWM)
+            TargetInfo info = vessel.gameObject.GetComponent<TargetInfo>();
+            if (!info)
             {
-                Team = FiredByWM.Team;
+                info = vessel.gameObject.AddComponent<TargetInfo>();
             }
-            info.Team = Team;
-            info.isMissile = true;
-            info.MissileBaseModule = this;
-            updateRadarCS = true;
+            SetTargetInfo(info);
         }
 
         public void SetTargetInfo(TargetInfo info)
@@ -930,7 +927,10 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     TargetPosition = heatTarget.position;
                     TargetVelocity = heatTarget.velocity;
                     TargetAcceleration = heatTarget.acceleration;
-                    //targetVessel = heatTarget.targetInfo;
+                    if (!heatTarget.isDecoy)
+                    {
+                        targetVessel = heatTarget.targetInfo;
+                    }
                     _lockFailTimer = 0;
 
                     // Update target information
