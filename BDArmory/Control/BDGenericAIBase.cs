@@ -317,7 +317,7 @@ namespace BDArmory.Control
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
-                GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.name} UUID: {vessel.id}\n{debugString.ToString()}");
+                GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.vesselName} UUID: {vessel.id}\n{debugString.ToString()}");
             }
         }
 

@@ -852,7 +852,7 @@ namespace BDArmory.Radar
 
                     if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        Debug.Log($"[BDArmory.ModuleRadar] Vessel: {vessel.name}, {(sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {name}, beginning lock checks.");
+                        Debug.Log($"[BDArmory.ModuleRadar] Vessel: {vessel.vesselName}, {(sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {name}, beginning lock checks.");
                     }
                     if (locked)
                     {

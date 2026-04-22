@@ -1895,7 +1895,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.name} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, scanning az/el: {directionAngle}/{elevationAngle} with az/el FoV: {azFov}/{elFov}.");
             }
 
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
@@ -2078,7 +2078,7 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.DEBUG_RADAR)
             {
-                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name} with UUID: {radar.vessel.id}, checking target: {(lockedVessel ? lockedVessel.name : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")}.");
+                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name} with UUID: {radar.vessel.id}, checking target: {(lockedVessel ? lockedVessel.vesselName : "null")} with UUID: {(lockedVessel ? lockedVessel.id : "null")}.");
             }
 
             // first: re-acquire lock if temporarily lost

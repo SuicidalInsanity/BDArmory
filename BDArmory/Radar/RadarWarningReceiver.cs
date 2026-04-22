@@ -370,7 +370,7 @@ namespace BDArmory.Radar
         public bool IsRadarMissileDetected(Vessel v)
         {
             int index = _missileLockHead;
-            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.name} Searching Locks for missile: {(v ? v.name : "null")}, with UUID: {(v ? v.id : "null")}, _missileLockHead: {_missileLockHead}, _missileLockSize: {_missileLockSize}");
+            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.vesselName} Searching Locks for missile: {(v ? v.name : "null")}, with UUID: {(v ? v.id : "null")}, _missileLockHead: {_missileLockHead}, _missileLockSize: {_missileLockSize}");
             for (int i = 0; i < _missileLockSize; i++)
             {
                 if (index >= missileLockData.Length)
@@ -378,7 +378,7 @@ namespace BDArmory.Radar
                     index = 0;
                 }
 
-                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel at idx: {index} is: {(missileLockData[index].vessel ? missileLockData[index].vessel.name : "null")}, with UUID: {(missileLockData[index].vessel ? missileLockData[index].vessel.id : "null")}, exists: {missileLockData[index].exists}, expirationTime: {missileLockData[index].expirationTime}");
+                //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel at idx: {index} is: {(missileLockData[index].vessel ? missileLockData[index].vessel.vesselName : "null")}, with UUID: {(missileLockData[index].vessel ? missileLockData[index].vessel.id : "null")}, exists: {missileLockData[index].exists}, expirationTime: {missileLockData[index].expirationTime}");
                 if (missileLockData[index++].vessel == v) return true;
             }
 
@@ -437,7 +437,7 @@ namespace BDArmory.Radar
         private void CleanMissileLocks()
         {
             float currentTime = Time.time;
-            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.name} with UUID: {vessel.id} Cleaning Locks, _missileLockSize: {_missileLockSize}, _missileLockHead: {_missileLockHead}, currTime: {currentTime}");
+            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.vesselName} with UUID: {vessel.id} Cleaning Locks, _missileLockSize: {_missileLockSize}, _missileLockHead: {_missileLockHead}, currTime: {currentTime}");
             while (_missileLockSize > 0)
             {
                 int idx = _missileLockHead;
@@ -454,7 +454,7 @@ namespace BDArmory.Radar
                 }
                 --_missileLockSize;
             }
-            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.name} Done Cleaning Locks! _missileLockSize: {_missileLockSize}, _missileLockHead: {_missileLockHead}");
+            //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarWarningReceiver] Vessel: {vessel.vesselName} Done Cleaning Locks! _missileLockSize: {_missileLockSize}, _missileLockHead: {_missileLockHead}");
         }
 
         private void CleanLaunchWarnings()

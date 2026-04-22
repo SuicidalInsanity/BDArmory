@@ -17,7 +17,7 @@ namespace BDArmory.Radar
 
         public string Name()
         {
-            return vessel ? vessel.name : "null";
+            return vessel ? vessel.vesselName : "null";
         }
     }
     public struct IRSTDisplayData

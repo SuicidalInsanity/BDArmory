@@ -2356,7 +2356,7 @@ namespace BDArmory.Weapons.Missiles
                         {
                             if (heatTarget.vessel)
                             {
-                                debugGuidanceTarget = $"{heatTarget.vessel.name} {heatTarget.signalStrength}";
+                                debugGuidanceTarget = $"{heatTarget.vessel.vesselName} {heatTarget.signalStrength}";
                             }
                             else if (heatTarget.isDecoy)
                             {
@@ -2378,11 +2378,11 @@ namespace BDArmory.Weapons.Missiles
                             {
                                 if (!BDArmorySettings.RADAR_NOTCHING)
                                 {
-                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength};";
+                                    debugGuidanceTarget = $"{radarTarget.vessel.vesselName} sig: {radarTarget.signalStrength};";
                                 }
                                 else
                                 {
-                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod:F2}; notchRMod: {radarTarget.notchRMod:F2}";
+                                    debugGuidanceTarget = $"{radarTarget.vessel.vesselName} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod:F2}; notchRMod: {radarTarget.notchRMod:F2}";
                                 }
                             }
                             else if (radarTarget.signalStrength > 0)
@@ -2720,7 +2720,7 @@ namespace BDArmory.Weapons.Missiles
 
                             currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
 
-                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} has currDist: {currDist}.");
+                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.vesselName} has currDist: {currDist}.");
 
                             //re-check engagement envelope, only lock appropriate targets
                             if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
@@ -2733,7 +2733,7 @@ namespace BDArmory.Weapons.Missiles
                             //if (!scannedTargets[i].exists)
                             //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {i} doesn't exist!.");
                             //if (scannedTargets[i].exists && Team.IsFriendly(scannedTargets[i].Team))
-                            //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} is friendly, continuing.");
+                            //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.vesselName} is friendly, continuing.");
 
                         }
 

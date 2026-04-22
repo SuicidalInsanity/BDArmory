@@ -47,7 +47,7 @@ namespace BDArmory.Targeting
 
         public string Name()
         {
-            return (vessel ? vessel.name : (isDecoy ? "Decoy" : "Null"));
+            return (vessel ? vessel.vesselName : (isDecoy ? "Decoy" : "Null"));
         }
 
         public Guid ID()
