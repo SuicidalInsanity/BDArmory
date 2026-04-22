@@ -1871,13 +1871,14 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
         {
             //Guard clauses
             //if (!TargetAcquired) return;
+            Vector3 missileVel = vessel.Velocity();
             var targetDistancePerFrame = Time.fixedDeltaTime * (TargetVelocity - BDKrakensbane.FrameVelocityV3f) + 0.5f * Time.fixedDeltaTime * Time.fixedDeltaTime * TargetAcceleration;
-            var missileDistancePerFrame = Time.fixedDeltaTime * (vessel.Velocity() - BDKrakensbane.FrameVelocityV3f) + 0.5f * Time.fixedDeltaTime * Time.fixedDeltaTime * vessel.acceleration_immediate;
+            var missileDistancePerFrame = Time.fixedDeltaTime * (missileVel - BDKrakensbane.FrameVelocityV3f) + 0.5f * Time.fixedDeltaTime * Time.fixedDeltaTime * vessel.acceleration_immediate;
 
             var futureTargetPosition = (TargetPosition + targetDistancePerFrame);
             var futureMissilePosition = (vessel.CoM + missileDistancePerFrame);
 
-            float relativeSpeed = (float)(TargetVelocity - vessel.Velocity()).magnitude * Time.fixedDeltaTime; // relativeSpeed is actually a distance!
+            float relativeSpeed = (float)(TargetVelocity - missileVel).magnitude * Time.fixedDeltaTime; // relativeSpeed is actually a distance!
 
             switch (DetonationDistanceState)
             {
@@ -1986,6 +1987,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                                     //We found a hit to other vessel, set transform.position to hit point (moves immediately, but doesn't update .CoM fields, etc)
                                                     vessel.SetPosition(hit.point - 0.1f * rayFuturePosition.direction);
                                                     DetonationDistanceState = DetonationDistanceStates.Detonate;
+                                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase] Contact Detonation! part: {hitPart} on vessel: {(hitPart.vessel ? hitPart.vessel.vesselName : "null")}");
                                                     Detonate();
                                                     return;
                                                 }
@@ -2001,8 +2003,9 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 else if (TargetAcquired && targetVessel != null && targetVessel.Vessel != null)
                                 {
                                     // For very high speed intercepts when missiles may phase through small vessels/missiles within a frame
-                                    Vector3 relPos = TargetPosition - vessel.CoM;
-                                    Vector3 relVel = TargetVelocity - vessel.Velocity();
+                                    // Use the real position and velocity for this
+                                    Vector3d relVel = targetVessel.Vessel.Velocity() - missileVel;
+                                    Vector3 relPos = targetVessel.Vessel.CoM - vessel.CoM;
                                     bool approaching = Vector3.Dot(relPos, relVel) < 0f;
                                     float targetRad = heatTarget.exists && heatTarget.vessel == null ? 1 : targetVessel.Vessel.GetRadius();
                                     // if target is a flare, return 1, else standard vessel radius
@@ -2016,6 +2019,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                         ray.origin += selfRad * ray.direction; // Start at the tip of the missile (assuming it's pointing roughly prograde in the relVel direction and is longest on that axis).
                                         if (Physics.Raycast(ray, out RaycastHit hit, relativeSpeed, (int)(LayerMasks.Parts | LayerMasks.EVA | LayerMasks.Wheels))) // Hit!
                                         {
+                                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase] Contact Detonation! Target vessel {targetVessel.Vessel.vesselName} hit by raycast!");
                                             vessel.SetPosition(hit.point - 0.1f * ray.direction); // Slightly back so that shaped charge explosives hit properly.
                                             shouldDetonate = true;
                                         }
@@ -2028,6 +2032,9 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                             {
                                                 // Set relative position to the same as at CPA point, but relative to the target's current position. This avoids having to move the target and wait an additional frame.
                                                 vessel.SetPosition(TargetPosition - AIUtils.PredictPosition(relPos, relVel, relAccel, cpaTime));
+
+                                                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase] Contact Detonation! Target vessel {targetVessel.Vessel.vesselName} hit by min sep! Dist at detonation: {AIUtils.PredictPosition(relPos, relVel, relAccel, cpaTime).magnitude}");
+
                                                 shouldDetonate = true;
                                             }
                                         }
@@ -2045,7 +2052,8 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         else
                         {
                             float optimalDistance = (float)(Math.Max(DetonationDistance, relativeSpeed));
-                            Vector3 targetPoint = (warheadType == WarheadTypes.ContinuousRod ? vessel.CoM - VectorUtils.GetUpDirection(TargetPosition) * (GetBlastRadius() > 0f ? Mathf.Min(GetBlastRadius() / 3f, DetonationDistance / 3f) : 5f) : vessel.CoM);
+                            float blastR;
+                            Vector3 targetPoint = (warheadType == WarheadTypes.ContinuousRod ? vessel.CoM + (Mathf.Sign(Vector3.Dot(TargetPosition - vessel.CoM, vessel.up)) * ((blastR = GetBlastRadius()) > 0f ? Mathf.Min(blastR, DetonationDistance) / 3f : 5f)) * vessel.up : vessel.CoM);
                             var hitCount = Physics.OverlapSphereNonAlloc(targetPoint, optimalDistance, proximityHitColliders, layerMask);
                             if (hitCount == proximityHitColliders.Length)
                             {

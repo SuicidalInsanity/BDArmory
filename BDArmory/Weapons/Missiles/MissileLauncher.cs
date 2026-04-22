@@ -329,6 +329,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float altitudeDetonationAlt = 0;
 
+        [KSPField]
+        public float proximityFuzeInhibitionAlt = -1;
+
         float currentThrust;
 
         public bool deployed;
@@ -385,8 +388,8 @@ namespace BDArmory.Weapons.Missiles
         public float waterImpactTolerance = 25;
 
         //ballistic options
-        [KSPField]
-        public bool indirect = false; //unused
+        //[KSPField]
+        //public bool indirect = false; //unused
 
         [KSPField]
         public bool vacuumSteerable = true;
@@ -2153,7 +2156,7 @@ namespace BDArmory.Weapons.Missiles
                     if (TimeIndex > fuzeArmingDelay)
                     {
                         CheckAltitudeDetonation();
-                        CheckDetonationState(); // this needs to be after UpdateGuidance()
+                        CheckDetonationState(preventProxyArming: (proximityFuzeInhibitionAlt > 0 && vessel.radarAltitude < proximityFuzeInhibitionAlt)); // this needs to be after UpdateGuidance()
                         CheckDetonationDistance();
                     }
                     else if (!impactFuzeArmingDelay)
@@ -2319,8 +2322,9 @@ namespace BDArmory.Weapons.Missiles
                         if (launcher.hasRCS) launcher.KillRCS();
                     }
 
-                    var distThreshold = 0.5f * GetBlastRadius();
-                    if (sqrDist < distThreshold * distThreshold) part.Destroy();
+                    // Use the proper logic within the fuze rather than using this
+                    //var distThreshold = 0.5f * GetBlastRadius();
+                    //if (sqrDist < distThreshold * distThreshold) part.Destroy();
                     if (FuseFailed) part.Destroy();
 
                     isTimed = true;
@@ -3633,7 +3637,7 @@ namespace BDArmory.Weapons.Missiles
                 if (warheadType == WarheadTypes.ContinuousRod) //Have CR missiles target slightly above target to ensure craft caught in planar blast AOE
                 {
                     // If target is above, the we offset below, if target is below, we offset above
-                    TargetPosition += vessel.up * (Mathf.Sign(Vector3.Dot(vessel.CoM - TargetPosition, vessel.up)) * (blastRadius > 0f ? Mathf.Min(blastRadius / 3f, DetonationDistance / 3f) : 5f));
+                    TargetPosition += (Mathf.Sign(Vector3.Dot(vessel.CoM - TargetPosition, vessel.up)) * (blastRadius > 0f ? Mathf.Min(blastRadius / 3f, DetonationDistance / 3f) : 5f)) * vessel.up;
                 }
                 DrawDebugLine(vessel.CoM + (part.rb.velocity * Time.fixedDeltaTime), TargetPosition);
 

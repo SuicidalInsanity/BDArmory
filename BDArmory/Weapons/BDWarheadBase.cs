@@ -266,7 +266,7 @@ namespace BDArmory.Weapons
                                 distanceFromStart = Vector3.Distance(part.vessel.transform.position, sourcevessel.transform.position);
                             }
                         }
-                        if (Checkproximity(distanceFromStart))
+                        if (CheckProximity(distanceFromStart))
                         {
                             Detonate();
                         }
@@ -291,7 +291,7 @@ namespace BDArmory.Weapons
             { hasDetonated = true; } // Don't trigger explosions on scene changes.
         }
 
-        private bool Checkproximity(float distanceFromStart)
+        private bool CheckProximity(float distanceFromStart)
         {
             bool detonate = false;
 
