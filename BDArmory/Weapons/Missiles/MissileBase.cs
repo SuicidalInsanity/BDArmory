@@ -1968,36 +1968,46 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 }
                                 if (hitCount > 0)
                                 {
-                                    Array.Sort<RaycastHit>(proximityHits, 0, hitCount, RaycastHitComparer.raycastHitComparer);
-
-                                    using (var hitsEnu = proximityHits.Take(hitCount).GetEnumerator())
+                                    int closestHitIndex = -1;
+                                    float closestDist = float.MaxValue;
+                                    for (int i = 0; i < proximityHits.Length; i++)
                                     {
-                                        while (hitsEnu.MoveNext())
+                                        RaycastHit hit = proximityHits[i];
+
+                                        if (closestDist < hit.distance) continue;
+
+                                        try
                                         {
-                                            RaycastHit hit = hitsEnu.Current;
+                                            Part hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                                            if (hitPart == null) continue;
+                                            if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
 
-                                            try
+                                            if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
                                             {
-                                                var hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
-                                                if (hitPart == null) continue;
-                                                if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
-
-                                                if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
-                                                {
-                                                    //We found a hit to other vessel, set transform.position to hit point (moves immediately, but doesn't update .CoM fields, etc)
-                                                    vessel.SetPosition(hit.point - 0.1f * rayFuturePosition.direction);
-                                                    DetonationDistanceState = DetonationDistanceStates.Detonate;
-                                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase] Contact Detonation! part: {hitPart} on vessel: {(hitPart.vessel ? hitPart.vessel.vesselName : "null")}");
-                                                    Detonate();
-                                                    return;
-                                                }
-                                            }
-                                            catch (Exception e)
-                                            {
-                                                // ignored
-                                                Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonationState: " + e.Message + "\n" + e.StackTrace);
+                                                closestHitIndex = i;
+                                                closestDist = hit.distance;
                                             }
                                         }
+                                        catch (Exception e)
+                                        {
+                                            // ignored
+                                            Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonationState: " + e.Message + "\n" + e.StackTrace);
+                                        }
+                                    }
+
+                                    if (closestHitIndex >= 0)
+                                    {
+                                        RaycastHit closestHit = proximityHits[closestHitIndex];
+                                        //We found a hit to other vessel, set transform.position to hit point (moves immediately, but doesn't update .CoM fields, etc)
+                                        vessel.SetPosition(closestHit.point - 0.1f * rayFuturePosition.direction);
+                                        DetonationDistanceState = DetonationDistanceStates.Detonate;
+                                        if (BDArmorySettings.DEBUG_MISSILES)
+                                        {
+                                            Part hitPart = closestHit.collider.gameObject.GetComponentInParent<Part>();
+                                            Debug.Log($"[BDArmory.MissileBase] Contact Detonation! part: {hitPart} on vessel: {(hitPart.vessel ? hitPart.vessel.vesselName : "null")}");
+                                        }
+                                        Detonate();
+                                        return;
                                     }
                                 }
                                 else if (TargetAcquired && targetVessel != null && targetVessel.Vessel != null)

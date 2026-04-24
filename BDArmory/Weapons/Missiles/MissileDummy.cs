@@ -1,4 +1,4 @@
-﻿using BDArmory.Utils;
+using BDArmory.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -80,6 +80,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 parentPart = null;
                 transform.parent = null;
+                transform.localScale = Vector3.one;
                 gameObject.SetActive(false);
             }
         }

@@ -559,7 +559,7 @@ namespace BDArmory.Weapons.Missiles
                     dummyScale.y *= scale;
                     dummyScale.z *= scale;
                 }
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale}");
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale} via ConfigNode");
                 return url;
 
             }
@@ -580,7 +580,7 @@ namespace BDArmory.Weapons.Missiles
                 dummyScale.z *= scale;
             }
             url = string.Format("{0}/{1}", cfgdir.parent.parent.url, mesh);
-            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale}");
+            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale} via mesh");
             return url;
         }
 
@@ -753,6 +753,7 @@ namespace BDArmory.Weapons.Missiles
 
                     launchTransforms[i].localScale = new Vector3(1f / Scale, 1f / Scale, 1f / (LengthTransform != null ? Length : Scale));
 
+                    dummy.transform.parent = null;
                     dummy.transform.localScale = dummyScale;
                     dummyThis.AttachAt(part, launchTransforms[i]);
                     if (adjustMissileVOffset && attachedMissileDiameter > 0) dummyThis.transform.localPosition = new Vector3(attachedMissileDiameter / 2, 0, 0);
