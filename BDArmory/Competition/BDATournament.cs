@@ -2084,7 +2084,7 @@ namespace BDArmory.Competition
             spawnProbe.SetPosition(spawnProbe.transform.position - BodyUtils.GetRadarAltitudeAtPos(spawnProbe.transform.position) * up);
             if (spawnProbe.altitude > 0) spawnProbe.Landed = true;
             else spawnProbe.Splashed = true;
-            spawnProbe.SetVelocity(Vector3.zero); // Set the velocity to zero so that warp goes in high mode.
+            spawnProbe.SetWorldVelocity(Vector3d.zero); // Set the velocity to zero so that warp goes in high mode.
                                                         // Kill all other vessels (including debris).
             foreach (var vessel in vesselsToKill)
                 SpawnUtils.RemoveVessel(vessel);
@@ -2117,12 +2117,12 @@ namespace BDArmory.Competition
                     spawnProbe.SetPosition(spawnProbe.transform.position - BodyUtils.GetRadarAltitudeAtPos(spawnProbe.transform.position) * up);
                     if (spawnProbe.altitude > 0) spawnProbe.Landed = true;
                     else spawnProbe.Splashed = true;
-                    spawnProbe.SetVelocity(Vector3.zero); // Set the velocity to zero so that warp goes in high mode.
+                    spawnProbe.SetWorldVelocity(Vector3d.zero); // Set the velocity to zero so that warp goes in high mode.
                 }
                 startTime = Time.time;
                 while (TimeWarp.WarpMode != TimeWarp.Modes.HIGH && Time.time - startTime < 3)
                 {
-                    spawnProbe.SetVelocity(Vector3.zero); // Set the velocity to zero so that warp goes in high mode.
+                    spawnProbe.SetWorldVelocity(Vector3d.zero); // Set the velocity to zero so that warp goes in high mode.
                     yield return null; // Give it a second to switch to high warp mode.
                 }
                 TimeWarp.fetch.WarpTo(warpTo);

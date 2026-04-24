@@ -19,6 +19,38 @@ namespace BDArmory.Competition.OrchestrationStrategies
 {
     public class WaypointFollowingStrategy : OrchestrationStrategy
     {
+        /*
+        public class Waypoint
+        {
+            //waypoint container class - holds coord data, scale, and WP name
+            public float latitude;
+            public float longitude;
+            public float altitude;
+            public string waypointName = "Waypoint";
+            public double waypointScale = 500;
+            public Waypoint(float latitude, float longitude, float altitude, string waypointName, double waypointScale) //really, this should become the waypointmarker, and be a class that contains both a dataset (lat/long coords) and a togglable model
+            {
+                this.latitude = latitude;
+                this.longitude = longitude;
+                this.altitude = altitude;
+                this.waypointName = waypointName;
+                this.waypointScale = waypointScale;
+            }
+        }
+        */
+        /// <summary>
+        /// Building coursebuilder tools will need:
+        /// A GUI, to spawn in new gates, move them, name course/points, and save data to a config node
+        /// A save utility class. Save Node will need:
+        /// CourseName string
+        /// WorldIndex int
+        /// list of WPs
+        /// >>each WP needs to hold a tuple - WP name string, Lat/Long/Alt Vector3d, WPScale double
+        /// >> these could be stored separately as a string, vector3d, double
+        /// </summary>
+
+
+
         private List<Waypoint> waypoints;
         private List<BDGenericAIBase> pilots;
         public static List<BDGenericAIBase> activePilots;
@@ -70,19 +102,14 @@ namespace BDArmory.Competition.OrchestrationStrategies
             var startedAt = Planetarium.GetUniversalTime();
             if (BDArmorySettings.WAYPOINT_GUARD_INDEX != -1)
             {
-                if (pilots.Count > 1)
-                    yield return new WaitWhile(() => BDACompetitionMode.Instance.competitionIsActive); //DoUpdate handles the deathmatch half of the combat waypoint race and ends things when only 1 team left
-                else yield return new WaitWhile(() => pilots.Any(
-                    pilot => pilot != null && pilot.WeaponManager != null && pilot.IsRunningWaypoints &&
-                    (pilot.aiType == AIType.SurfaceAI || (pilot.TakingOff || !pilot.vessel.LandedOrSplashed)))
-                    );                
+                yield return new WaitWhile(() => BDACompetitionMode.Instance.competitionIsActive); //DoUpdate handles the deathmatch half of the combat waypoint race and ends things when only 1 team left
             }
             else
             {
                 yield return new WaitWhile(() => pilots.Any(
                     pilot => pilot != null && pilot.WeaponManager != null && pilot.IsRunningWaypoints &&
-                    (pilot.aiType == AIType.SurfaceAI || (pilot.TakingOff || !pilot.vessel.LandedOrSplashed)))
-                    );    
+                    (pilot.TakingOff || (pilot.aiType switch { AIType.SurfaceAI => false, _ => true } && !pilot.vessel.LandedOrSplashed))
+                ));
             }
             var endedAt = Planetarium.GetUniversalTime();
 

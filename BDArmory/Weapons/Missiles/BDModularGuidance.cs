@@ -15,7 +15,6 @@ using System;
 using System.Collections.Generic;
 using UniLinq;
 using UnityEngine;
-using static BDArmory.Radar.RadarWarningReceiver;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -36,18 +35,19 @@ namespace BDArmory.Weapons.Missiles
         {
             get
             {
-                if (!_noWM && (field == null || !field.IsPrimaryWM || field.vessel != vessel))
+                if (!_noWM && (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel))
                 {
                     if (vessel && vessel.loaded)
                     {
-                        field = vessel.ActiveController().WM;
-                        _noWM = field == null;
+                        _weaponManager = vessel.ActiveController().WM;
+                        _noWM = _weaponManager == null;
                     }
-                    else field = null;
+                    else _weaponManager = null;
                 }
-                return field;
+                return _weaponManager;
             }
         }
+        MissileFire _weaponManager;
         bool _noWM = false; // If no WM is found the first time, don't check again.
 
         private readonly List<Part> _vesselParts = [];
@@ -577,7 +577,7 @@ namespace BDArmory.Weapons.Missiles
             MissileState = MissileStates.Cruise;
 
             _missileIgnited = true;
-            RadarWarningReceiver.WarnMissileLaunch(MissileReferenceTransform.position, GetForwardTransform(), TargetingMode == TargetingModes.Radar, vessel);
+            RadarWarningReceiver.WarnMissileLaunch(MissileReferenceTransform.position, GetForwardTransform(), TargetingMode == TargetingModes.Radar);
         }
 
         private bool ShouldExecuteNextStage()
@@ -635,15 +635,9 @@ namespace BDArmory.Weapons.Missiles
             return false;
         }
 
-        public static readonly int modularGuidanceAntiRadTargetTypes = new[] { RWRThreatTypes.SAM, RWRThreatTypes.Detection }.ToBits();
-
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                part.force_activate();
-            }
             SetupsFields();
 
             if (string.IsNullOrEmpty(GetShortName()))
@@ -651,9 +645,8 @@ namespace BDArmory.Weapons.Missiles
                 shortName = "Unnamed";
             }
 
+            part.force_activate();
             RefreshGuidanceMode();
-
-            antiradTargets = modularGuidanceAntiRadTargetTypes;
 
             UpdateTargetingMode((TargetingModes)Enum.Parse(typeof(TargetingModes), _targetingLabel));
 
@@ -684,8 +677,6 @@ namespace BDArmory.Weapons.Missiles
             }
             activeRadarRange = ActiveRadarRange;
             chaffEffectivity = ChaffEffectivity;
-            chaffNotchVFac = ChaffEffectivity;
-            chaffNotchRFac = ChaffEffectivity;
             missileCMRange = MissileCMRange;
             missileCMInterval = MissileCMInterval;
             hasIFF = HasIFF;
@@ -1137,7 +1128,7 @@ namespace BDArmory.Weapons.Missiles
                     }
                     else // Kill relative velocity to target
                         relVel = vessel.Velocity() - targetVelocity;
-                    rcsVector = -relVel.ProjectOnPlane(forwardDir);
+                    rcsVector = -Vector3.ProjectOnPlane(relVel, forwardDir);
                 }
             }
             else
@@ -1195,7 +1186,7 @@ namespace BDArmory.Weapons.Missiles
             Vector3 roll = referenceRoll != direction.normalized ? referenceRoll : commander.transform.forward;
 
             // Orient the control point towards direction (finger) with perpendicular as the up vector (thumb).
-            Vector3 perpendicular = roll.ProjectOnPlanePreNormalized(direction.normalized);
+            Vector3 perpendicular = Vector3.ProjectOnPlane(roll, direction.normalized);
             dynamic.transform.rotation = Quaternion.LookRotation(perpendicular, direction.normalized); // VAB orientation.
         }
 
@@ -1311,7 +1302,7 @@ namespace BDArmory.Weapons.Missiles
             TargetAcquired = false;
             TimeFired = -1;
             _missileIgnited = false;
-            _lockFailTimer = -1;
+            lockFailTimer = -1;
             guidanceActive = false;
             HasMissed = false;
             HasExploded = false;
@@ -1875,27 +1866,20 @@ namespace BDArmory.Weapons.Missiles
             return GetTransform(ForwardTransformAxis);
         }
 
-        public override float GetKinematicTime(float minSpeed, out float kinematicRange)
+        public override float GetKinematicTime()
         {
-            kinematicRange = 0f;
             if (!_missileIgnited) return -1f;
 
             float missileKinematicTime = (float)vessel.VesselDeltaV.TotalBurnTime;
-
             if (!vessel.InVacuum())
             {
-                float dragArea = vessel.parts.Sum(x => x.dragScalar);
+                float drag = vessel.parts.Sum(x => x.dragScalar);
                 float speed = (float)vessel.srfSpeed;
-                kinematicRange += speed * missileKinematicTime;
                 float mass = (float)vessel.totalMass;
-                float dragTerm = 0.008f * mass * dragArea * speed * speed * 0.5f * (float)vessel.atmDensity;
-                float dragTermMinSpeed = 0.008f * mass * dragArea * minSpeed * minSpeed * 0.5f * (float)vessel.atmDensity;
+                float dragTerm = 0.008f * mass * drag * 0.5f * (float)vessel.atmDensity;
+                float minSpeed = GetKinematicSpeed();
                 if (speed > minSpeed)
-                {
-                    float t = mass * (speed - minSpeed) / ((dragTerm + dragTermMinSpeed) / 2f); // Add time for missile to slow down to min speed
-                    missileKinematicTime += t;
-                    kinematicRange += (speed + minSpeed) / 2f * t;
-                }
+                    missileKinematicTime += mass / (minSpeed * dragTerm) - mass / (speed * dragTerm); ; // Add time for missile to slow down to min speed
             }
 
             return missileKinematicTime;

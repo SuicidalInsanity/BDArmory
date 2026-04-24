@@ -329,6 +329,7 @@ namespace BDArmory.UI
                 Debug.Log("[BDTeamIcons]=== Loading settings.cfg ===");
 
                 SettingsDataField.Load();
+                if (BDTISettings.MAX_DISTANCE_THRESHOLD < 1 || BDTISettings.MAX_DISTANCE_THRESHOLD > BDArmorySettings.MAX_GUARD_VISUAL_RANGE) BDTISettings.MAX_DISTANCE_THRESHOLD = BDArmorySettings.MAX_GUARD_VISUAL_RANGE;
             }
             catch (NullReferenceException)
             {
@@ -419,9 +420,8 @@ namespace BDArmory.UI
                 BDTISettings.DISTANCE_THRESHOLD = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRect(line++, 40), BDTISettings.DISTANCE_THRESHOLD, 10f, 250f), 10f);
                 GUI.Label(SRect(line++), $"{StringUtils.Localize("#LOC_BDArmory_Icon_opacity")} {BDTISettings.OPACITY * 100f:0}%");
                 BDTISettings.OPACITY = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRect(line++, 40), BDTISettings.OPACITY, 0f, 1f), 0.01f);
-                GUI.Label(SRect(line++), $"{StringUtils.Localize("#LOC_BDArmory_Icon_max_distance_threshold")} {(BDTISettings.MAX_DISTANCE_THRESHOLD > 0 ? $"{BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f:0}km" : "Unlimited")}");
-                BDTISettings.MAX_DISTANCE_THRESHOLD = GUIUtils.HorizontalSemiLogSlider(SRect(line++, 40), BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f, 1f, BDArmorySettings.MAX_GUARD_VISUAL_RANGE / 1000f, 1, true, false, ref cacheMaxDistanceThreshold) * 1000f;
-                
+                GUI.Label(SRect(line++), $"{StringUtils.Localize("#LOC_BDArmory_Icon_max_distance_threshold")} {(BDTISettings.MAX_DISTANCE_THRESHOLD < BDArmorySettings.MAX_GUARD_VISUAL_RANGE ? $"{BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f:0}km" : "Unlimited")}");
+                BDTISettings.MAX_DISTANCE_THRESHOLD = GUIUtils.HorizontalSemiLogSlider(SRect(line++, 40), BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f, 1f, BDArmorySettings.MAX_GUARD_VISUAL_RANGE / 1000f, 1, false, false, ref cacheMaxDistanceThreshold) * 1000f;
                 GUI.EndGroup();
                 IconOptionsGroup.height = 25f * line;
 

@@ -104,10 +104,11 @@ namespace BDArmory.Utils
         /// <summary>
         /// A double version of Mathf.Clamp.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Clamp(double value, double min, double max)
         {
-            return Math.Min(Math.Max(value, min), max);  // This is about 50% faster than using conditionals. Oddly, the same doesn't apply for float, which is considerably slower.
-            // return value < min ? min : value > max ? max : value;
+            return value < min ? min : value > max ? max : value;
         }
+
     }
 }

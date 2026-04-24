@@ -247,7 +247,6 @@ namespace BDArmory.UI
 
         public static string textureDir = "BDArmory/Textures/";
 
-        bool cursorOnGUI = false;
         bool drawCursor;
         Texture2D cursorTexture = GameDatabase.Instance.GetTexture(textureDir + "aimer", false);
         bool temporarilyShowMouse = false;
@@ -319,16 +318,12 @@ namespace BDArmory.UI
             get { return lgct ? lgct : lgct = GameDatabase.Instance.GetTexture(textureDir + "greenCircle3", false); }
         }
 
-        public const float largeGreenCircleScale = 256f / 230f; // Circle is 230 pixels in diameter vs. 256 texture size
-
         private Texture2D gct;
 
         public Texture2D greenCircleTexture
         {
             get { return gct ? gct : gct = GameDatabase.Instance.GetTexture(textureDir + "greenCircle2", false); }
         }
-
-        public const float greenCircleScale = 128f / 64f; // Circle is 64 pixels in diameter vs. 128 texture size
 
         private Texture2D gpct;
 
@@ -731,7 +726,6 @@ namespace BDArmory.UI
                 if (BDInputUtils.GetKeyDown(BDInputSettingsFields.DEBUG_CLEAR_DEV_CONSOLE)) Debug.ClearDeveloperConsole();
 #endif
                 if (temporarilyShowMouse != (temporarilyShowMouse = BDInputUtils.GetKey(BDInputSettingsFields.TEMPORARILY_SHOW_MOUSE))) UpdateCursorState();
-                if (cursorOnGUI && !GUIUtils.CheckMouseIsOnGui()) UpdateCursorState();
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
@@ -799,8 +793,7 @@ namespace BDArmory.UI
             if (HighLogic.LoadedSceneIsFlight)
             {
                 drawCursor = false;
-                cursorOnGUI = GUIUtils.CheckMouseIsOnGui();
-                if (!MapView.MapIsEnabled && !cursorOnGUI && !PauseMenu.isOpen)
+                if (!MapView.MapIsEnabled && !GUIUtils.CheckMouseIsOnGui() && !PauseMenu.isOpen)
                 {
                     if (weaponManager.selectedWeapon != null && weaponManager.weaponIndex > 0 &&
                         !weaponManager.guardMode)
@@ -824,12 +817,6 @@ namespace BDArmory.UI
                     {
                         Cursor.visible = false;
                         drawCursor = false;
-                        return;
-                    }
-
-                    if (!weaponManager.guardMode && weaponManager.isHMDEnabled)
-                    {
-                        Cursor.visible = false;
                         return;
                     }
                 }
@@ -876,7 +863,6 @@ namespace BDArmory.UI
                 { "targetWeightProtectTeammate", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
                 { "targetWeightProtectVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
                 { "targetWeightAttackVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
-                { "targetWeightUncontrolled", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
             };
         }
 
@@ -1902,19 +1888,6 @@ namespace BDArmory.UI
                         OnGUIWM.targetWeightAttackVIP = (float)field.currentValue;
                     }
 
-                    GUI.Label(LabelRect(++priorityLines, priorityLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_targetUncontrolled"), leftLabel); //target controllable
-                    if (!NumFieldsEnabled)
-                    {
-                        OnGUIWM.targetWeightUncontrolled = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(priorityLines, priorityLabelWidth), OnGUIWM.targetWeightUncontrolled, -10, 10), 0.1f);
-                        GUI.Label(RightLabelRect(priorityLines), OnGUIWM.targetWeightUncontrolled.ToString(), leftLabel);
-                    }
-                    else
-                    {
-                        var field = textNumFields["targetWeightUncontrolled"];
-                        field.tryParseValue(GUI.TextField(InputFieldRect(priorityLines, priorityLabelWidth), field.possibleValue, 4, field.style));
-                        OnGUIWM.targetWeightUncontrolled = (float)field.currentValue;
-                    }
-
                     priorityLines += 1.1f;
                     GUI.EndGroup();
                 }
@@ -1941,19 +1914,6 @@ namespace BDArmory.UI
                             OnGUIWM.DynamicRadarOverride = !OnGUIWM.DynamicRadarOverride;
                         }
                         moduleLines += 1.1f;
-                    }
-
-                    if (OnGUIWM.HMD && OnGUIWM.hasHMD)
-                    {
-                        numberOfModules++;
-                        bool isEnabled = OnGUIWM.isHMDEnabled;
-                        string label = StringUtils.Localize("#LOC_BDArmory_WMWindow_HMD");
-                        Rect HMDRect = new Rect(leftIndent, +(moduleLines * entryHeight), columnWidth - 2 * leftIndent, entryHeight);
-                        if (GUI.Button(HMDRect, label, isEnabled ? centerLabelOrange : centerLabel))
-                        {
-                            OnGUIWM.ToggleHMD();
-                        }
-                        moduleLines++;
                     }
 
                     //RWR
@@ -2616,7 +2576,6 @@ namespace BDArmory.UI
                         {
                             BDArmorySettings.DEBUG_AI = false;
                             BDArmorySettings.DEBUG_ARMOR = false;
-                            BDArmorySettings.DEBUG_HP = false;
                             BDArmorySettings.DEBUG_COMPETITION = false;
                             BDArmorySettings.DEBUG_DAMAGE = false;
                             BDArmorySettings.DEBUG_LINES = false;
@@ -2626,7 +2585,6 @@ namespace BDArmory.UI
                             BDArmorySettings.DEBUG_SPAWNING = false;
                             BDArmorySettings.DEBUG_TELEMETRY = false;
                             BDArmorySettings.DEBUG_WEAPONS = false;
-                            BDArmorySettings.DEBUG_APS = false;
                         }
                     }
                     if (BDArmorySettings.DEBUG_SETTINGS_TOGGLE)
@@ -2641,9 +2599,7 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_COMPETITION = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_COMPETITION, StringUtils.Localize("#LOC_BDArmory_Settings_DebugCompetition"));//"Debug Competition"
                         BDArmorySettings.DEBUG_RADAR = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_RADAR, StringUtils.Localize("#LOC_BDArmory_Settings_DebugRadar"));//"Debug Detectors"
                         BDArmorySettings.DEBUG_SPAWNING = GUI.Toggle(SQuarterRect(line, 3), BDArmorySettings.DEBUG_SPAWNING, StringUtils.Localize("#LOC_BDArmory_Settings_DebugSpawning"));//"Debug Spawning"
-                        BDArmorySettings.DEBUG_APS = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_APS, StringUtils.Localize("#LOC_BDArmory_Settings_DebugAPS"));//"Debug PointDefense"
-                        BDArmorySettings.DEBUG_HP = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_HP, StringUtils.Localize("#LOC_BDArmory_Settings_DebugHP"));//"Debug Armor"
-                        BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
+                        BDArmorySettings.DEBUG_OTHER = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_OTHER, StringUtils.Localize("#LOC_BDArmory_Settings_DebugOther"));//"Debug Other"
 
                         if (BDArmorySettings.DEBUG_OTHER && GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_Settings_ResetScrollZoom"))) GUIUtils.ResetScrollRate(); // Reset scroll-zoom.
                         if (BDArmorySettings.DEBUG_AI && GUI.Button(SLineRect(++line), "Debug Extending")) // Debug why a vessel is stuck in extending.
@@ -2689,14 +2645,6 @@ namespace BDArmory.UI
                         //         v.vesselType = VesselType.Plane;
                         //         var ti = RadarUtils.RenderVesselRadarSnapshot(v, EditorLogic.RootPart.transform);
                         //     }
-                        // }
-                        // if (GUI.Button(SLineRect(++line), "Test Bounds"))
-                        // {
-                        //     var v = FlightGlobals.ActiveVessel;
-                        //     var c = FlightCamera.fetch;
-                        //     var b = v.ViewBoundsFrom(v.GetColliderBounds(), c.transform);
-                        //     Debug.Log($"DEBUG Bounds viewed from Camera: {b}");
-                        //     // TestBounds();
                         // }
                         // if (GUI.Button(SLineRect(++line), "Test Angle")) TestAngle();
                         // if (GUI.Button(SLineRect(++line), "Test Abs")) TestAbs();
@@ -3197,11 +3145,9 @@ namespace BDArmory.UI
                         GUI.Label(SLeftSliderRect(++line, 1), $"{StringUtils.Localize("#LOC_BDArmory_Settings_APSThreshold")}:  ({BDArmorySettings.APS_THRESHOLD})", leftLabel);
                         BDArmorySettings.APS_THRESHOLD = Mathf.RoundToInt(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.APS_THRESHOLD, 1f, 356f));
                     }
-                    BDArmorySettings.IGNORE_TERRAIN_CHECK = GUI.Toggle(SLeftRect(++line), BDArmorySettings.IGNORE_TERRAIN_CHECK, StringUtils.Localize("#LOC_BDArmory_Settings_IgnoreTerrainCheck")); // Ignore Terrain Check
-                    BDArmorySettings.ALLOW_RETREAT_IF_ORBITING = GUI.Toggle(SRightRect(line), BDArmorySettings.ALLOW_RETREAT_IF_ORBITING, StringUtils.Localize("#LOC_BDArmory_Settings_RetreatIfOrbiting")); // Allow retreat if orbiting.
-                    BDArmorySettings.CHECK_WATER_TERRAIN = GUI.Toggle(SLeftRect(++line), BDArmorySettings.CHECK_WATER_TERRAIN, StringUtils.Localize("#LOC_BDArmory_Settings_CheckWaterTerrain")); // Check Water
-                    BDArmorySettings.WEAPONS_RESPECT_CROSSFEED = GUI.Toggle(SRightRect(line), BDArmorySettings.WEAPONS_RESPECT_CROSSFEED, StringUtils.Localize("#LOC_BDArmory_Settings_WeaponsRespectCrossfeed")); // Weapons Respect Crossfeed.
-                    BDArmorySettings.RADAR_NOTCHING = GUI.Toggle(SLeftRect(++line), BDArmorySettings.RADAR_NOTCHING, StringUtils.Localize("#LOC_BDArmory_Settings_RadarNotching")); // Radar Notching Toggle
+                    BDArmorySettings.IGNORE_TERRAIN_CHECK = GUI.Toggle(SLeftRect(++line), BDArmorySettings.IGNORE_TERRAIN_CHECK, StringUtils.Localize("#LOC_BDArmory_Settings_IGNORE_TERRAIN_CHECK")); // Ignore Terrain Check
+                    BDArmorySettings.CHECK_WATER_TERRAIN = GUI.Toggle(SLeftRect(++line), BDArmorySettings.CHECK_WATER_TERRAIN, StringUtils.Localize("#LOC_BDArmory_Settings_CHECK_WATER_TERRAIN")); // Check Water
+                    BDArmorySettings.RADAR_NOTCHING = GUI.Toggle(SLeftRect(++line), BDArmorySettings.RADAR_NOTCHING, StringUtils.Localize("#LOC_BDArmory_Settings_RADAR_NOTCHING")); // Radar Notching Toggle
                     if (BDArmorySettings.RADAR_NOTCHING)
                     {
                         GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_Notching_Factor")}:  ({BDArmorySettings.RADAR_NOTCHING_FACTOR})", leftLabel); // Notch Effectiveness Multiplier
@@ -3245,10 +3191,7 @@ namespace BDArmory.UI
                         GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_MissileExplosiveDamageMultiplier")}:  ({BDArmorySettings.EXP_DMG_MOD_MISSILE})", leftLabel);
                         BDArmorySettings.EXP_DMG_MOD_MISSILE = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.EXP_DMG_MOD_MISSILE, 0f, 10f), 0.25f);
 
-                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_HEATExplosiveDamageMultiplier")}:  ({BDArmorySettings.EXP_DMG_MOD_HEAT})", leftLabel);
-                        BDArmorySettings.EXP_DMG_MOD_HEAT = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.EXP_DMG_MOD_HEAT, 0f, 10f), 0.25f);
-
-                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_ExplosionImpulseMultiplier")}:  ({BDArmorySettings.EXP_IMP_MOD})", leftLabel);
+                        GUI.Label(SLeftSliderRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_Settings_ImplosiveDamageMultiplier")}:  ({BDArmorySettings.EXP_IMP_MOD})", leftLabel);
                         BDArmorySettings.EXP_IMP_MOD = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRightSliderRect(line), BDArmorySettings.EXP_IMP_MOD, 0f, 1f), 0.05f);
 
 
@@ -4575,6 +4518,7 @@ namespace BDArmory.UI
             if (BDArmorySettings.DEBUG_OTHER)
             {
                 Debug.Log("[BDArmory.BDArmorySetup]: Loaded vessel: " + v.vesselName + ", Velocity: " + v.Velocity() + ", packed: " + v.packed);
+                //v.SetWorldVelocity(Vector3d.zero);
             }
         }
 
@@ -4970,70 +4914,28 @@ namespace BDArmory.UI
             Debug.Log($"DEBUG inline x<0?-x:x took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {zx}, {zy}");
         }
 
-        public static void TestAngle()
-        {
-            Vector3 v = UnityEngine.Random.onUnitSphere, v2 = Vector3.zero;
-            var ax = Vector3.Cross(Vector3.up, v);
-            foreach (var angle in new List<float> { 0, 1e-8f, 1e-7f, 1e-6f, 1e-5f, 1e-4f, 1e-3f, 1e-2f, 2e-2f, 3e-2f, 4e-2f, 5e-2f, 1e-1f })
-            {
-                v2 = Quaternion.AngleAxis(angle, ax) * v;
-                Debug.Log($"DEBUG angle from v={v} to v rotated by {angle} is {Vector3.Angle(v, v2)} vs {VectorUtils.Angle(v, v2)} vs {(float)Vector3d.Angle(v, v2)}");
-            }
-            var watch = new System.Diagnostics.Stopwatch();
-            float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
-            Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
-            float a = 0;
-            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = Vector3.Angle(v, v2); } };
-            Debug.Log($"DEBUG Vector3.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-            a = 0;
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = VectorUtils.Angle(v, v2); } };
-            Debug.Log($"DEBUG VectorUtils.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-            a = 0;
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = (float)Vector3d.Angle(v, v2); } };
-            Debug.Log($"DEBUG (float)Vector3d.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
-        }
-
-        public static void TestBounds()
-        {
-            var watch = new System.Diagnostics.Stopwatch();
-            float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
-            Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
-            var vessel = FlightGlobals.ActiveVessel;
-            Bounds bounds = default;
-            Vector3 size = default;
-            // Current GetBounds
-            var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetBounds(false); } };
-            Debug.Log($"DEBUG vessel.GetBounds(false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetBounds(true); } };
-            Debug.Log($"DEBUG vessel.GetBounds(true) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            // Collider bounds
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetColliderBounds(); } };
-            Debug.Log($"DEBUG vessel.GetColliderBounds() took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetColliderBounds().size; } };
-            Debug.Log($"DEBUG vessel.GetColliderBounds().size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            // Renderer bounds, with and without LineRenderers/ParticleSystemRenderers
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(); } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds() took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds().size; } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds().size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(ignoreLineRenderers: false); } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(ignoreLineRenderers: false).size; } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(ignoreLineRenderers: false, ignoreParticleRenderers: false); } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false,ignoreParticleRenderers:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(ignoreLineRenderers: false, ignoreParticleRenderers: false).size; } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false,ignoreParticleRenderers:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            // Using cached model renderers vs current renderers
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:true); } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:true).size; } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:false); } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:false).size; } };
-            Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-        }
+        // public static void TestAngle()
+        // {
+        //     Vector3 v = UnityEngine.Random.onUnitSphere, v2=Vector3.zero;
+        //     var ax = Vector3.Cross(Vector3.up, v);
+        //     foreach (var angle in new List<float> { 0, 1e-8f, 1e-7f, 1e-6f, 1e-5f, 1e-4f, 1e-3f, 1e-2f, 2e-2f, 3e-2f, 4e-2f, 5e-2f, 1e-1f })
+        //     {
+        //         v2 = Quaternion.AngleAxis(angle, ax) * v;
+        //         Debug.Log($"DEBUG angle from v={v} to v rotated by {angle} is {Vector3.Angle(v, v2)} vs {VectorUtils.Angle(v, v2)} vs {(float)Vector3d.Angle(v, v2)}");
+        //     }
+        //     var watch = new System.Diagnostics.Stopwatch();
+        //     float μsResolution = 1e6f / System.Diagnostics.Stopwatch.Frequency;
+        //     Debug.Log($"DEBUG Clock resolution: {μsResolution}μs, {PROF_N} outer loops, {PROF_n} inner loops");
+        //     float a = 0;
+        //     var func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = Vector3.Angle(v,v2); } };
+        //     Debug.Log($"DEBUG Vector3.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+        //     a = 0;
+        //     func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = VectorUtils.Angle(v,v2); } };
+        //     Debug.Log($"DEBUG VectorUtils.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+        //     a = 0;
+        //     func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { a = (float)Vector3d.Angle(v,v2); } };
+        //     Debug.Log($"DEBUG (float)Vector3d.Angle took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {a}");
+        // }
 
         public static void TestUp()
         {

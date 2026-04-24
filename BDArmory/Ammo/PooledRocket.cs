@@ -1,4 +1,4 @@
-using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using UniLinq;
 using UnityEngine;
@@ -753,9 +753,9 @@ namespace BDArmory.Bullets
                 }
                 else
                 {
-                    bool cockpitPen = (16f * impactVelocity * BDAMath.Sqrt(rocketMass / caliber)) > Mathf.Max(20 / anglemultiplier, 1);
-                    ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker <= 0, penTicker <= 0, cockpitPen);
-
+                    float cockpitPen = (float)(16f * impactVelocity * BDAMath.Sqrt(rocketMass) / BDAMath.Sqrt(caliber));
+                    if (cockpitPen > Mathf.Max(20 / anglemultiplier, 1))
+                        ProjectileUtils.ApplyDamage(hitPart, hit, dmgMult, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team, ExplosionSourceType.Rocket, penTicker > 0 ? false : true, penTicker > 0 ? false : true, (cockpitPen > Mathf.Max(20 / anglemultiplier, 1)) ? true : false);
                     if (!explosive)
                     {
                         BDACompetitionMode.Instance.Scores.RegisterRocketStrike(sourceVesselName, hitPart.vessel.GetName()); //if non-explosive hit, add rocketstrike, else ExplosionFX adds rocketstrike from HE detonation
@@ -793,7 +793,7 @@ namespace BDArmory.Bullets
                 hasPenetrated = false;
                 //ProjectileUtils.ApplyDamage(hitPart, hit, 1, penetrationFactor, caliber, rocketMass * 1000, impactVelocity, bulletDmgMult, distanceFromStart, explosive, incendiary, false, sourceVessel, rocketName, team);
                 //not going to do ballistic damage if stopped by armor
-                //ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, caliber, tntMass, 0, sourceVesselName, ExplosionSourceType.Rocket, (rocketMass * 1000), penetrationFactor);
+                ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, caliber, tntMass, 0, sourceVesselName, ExplosionSourceType.Rocket, (rocketMass * 1000), penetrationFactor);
                 //the warhead exploding, on the other hand...
                 Detonate(hit.point, false, hitPart);
                 return true;

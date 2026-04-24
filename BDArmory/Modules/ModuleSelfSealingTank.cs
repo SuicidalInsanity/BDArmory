@@ -458,7 +458,7 @@ namespace BDArmory.Modules
         public void Extinguishtank()
         {
             isOnFire = true;
-            if (FireBottles > 0 || InertTank) //shouldn't be catching fire in the first place if inerted, but just in case
+            if (FireBottles > 0 || InertTank) //shouldn't be catching fire in the first place if interted, but just in case
             {
                 //if (engine != null && engine.EngineIgnited && engine.allowRestart)
                 //{

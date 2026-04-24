@@ -15,10 +15,10 @@ namespace BDArmory.Weapons.Missiles
 {
     public class ModuleMissileRearm : PartModule, IPartMassModifier, IPartCostModifier
     {
-        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileMass;
+        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? ammoCount : ammoCount - 1), 0) * missileMass;
 
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
-        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileCost;
+        public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? ammoCount : ammoCount - 1), 0) * missileCost;
         public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         private float missileMass = 0;
@@ -121,13 +121,12 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
             }
         }
 
-        public override void OnStart(StartState state)
+        public override void OnStart(PartModule.StartState state)
         {
-            base.OnStart(state);
-            if (HighLogic.LoadedSceneIsFlight) part.force_activate();
-            enabled = true;
+            this.enabled = true;
+            this.part.force_activate();
             MultiMissileLauncher MML = part.FindModuleImplementing<MultiMissileLauncher>();
-            if (MML == null || MML && MML.isClusterMissile && !MML.isLaunchedClusterMissile) MissileName = part.name;
+            if (MML == null || MML && MML.isClusterMissile) MissileName = part.name;
             if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
                 StartCoroutine(GetMissileValues(MML));
             //GameEvents.onEditorShipModified.Add(ShipModified);
@@ -169,18 +168,13 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                     if (parts.Current.partConfig == null || parts.Current.partPrefab == null)
                         continue;
                     if (parts.Current.partPrefab.partInfo.name != MissileName) continue;
-                    if (parts.Current.partPrefab.FindModuleImplementing<MissileLauncher>() == null)
-                    {
-                        Debug.LogError($"[BDArmory.ModuleMissileRearm] ERROR: Found part with sharing the name {MissileName} which does not contain a MissileLauncher module!");
-                        continue;
-                    }
                     missilePart = parts.Current;
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.ModuleMissileRearm]: found {missilePart.partPrefab.partInfo.name}");
                     break;
                 }
             if (missilePart == null)
             {
-                Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part ({MissileName}) on {part.partInfo.name}");
+                Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part on {part.partInfo.name}");
                 missileCost = 0;
                 missileMass = 0;
                 yield break;
@@ -213,14 +207,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         Debug.LogError("[BDArmory.ModuleMissileRearm]: Failed to parse maxOffBoresight configNode: " + e.Message);
                     }
                 }
-                UrlDir.UrlConfig partConfigTemp = (UrlDir.UrlConfig)GameDatabase.Instance.root.GetConfig(missilePart.partPrefab.partInfo.partUrl);
-                if (partConfigTemp == null)
-                {
-                    partConfigTemp = missilePart.partPrefab.partInfo.partUrlConfig;
-                    Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: GetConfig from partURL {missilePart.partPrefab.partInfo.partUrl} failed! Using missilePart.partPrefab.partInfo.partUrlConfig. Potentially multiple parts in one file!");
-                }
-                    
-                MML.subMunitionPath = MML.GetMeshurl(partConfigTemp);
+                MML.subMunitionPath = MML.GetMeshurl((UrlDir.UrlConfig)GameDatabase.Instance.root.GetConfig(missilePart.partPrefab.partInfo.partUrl));
             }
         }
 

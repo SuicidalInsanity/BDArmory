@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -392,7 +392,6 @@ namespace BDArmory.Armor
             {
                 armor.armorVolume /= 2;
             }
-            armor.maxSupportedArmor = (isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f;
             armor.ArmorSetup(null, null);
             StartCoroutine(updateDrag());
         }
@@ -400,12 +399,6 @@ namespace BDArmory.Armor
         {
             if (armor != null && armorTransforms != null)
             {
-                float tempMaxThickness = (isTriangularPanel ? 0.5f * Mathf.Min(Width, Length) : Mathf.Min(Width, Length)) * 1000f;
-                if (armor.Armor > tempMaxThickness)
-                {
-                    armor.Armor = tempMaxThickness;
-                    updateArmorStats();
-                }
                 armorthickness = Mathf.Clamp((armor.Armor / 10), 0.1f, 1500);
 
                 if (armorthickness != Oldthickness)

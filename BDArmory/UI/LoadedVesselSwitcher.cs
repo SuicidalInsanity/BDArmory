@@ -268,9 +268,7 @@ namespace BDArmory.UI
                         while (wm.MoveNext())
                         {
                             if (wm.Current == null) continue;
-                            //wm.Current.guardMode = _guardModeEnabled;
-                            if (wm.Current.guardMode != _guardModeEnabled)
-                                wm.Current.ToggleGuardMode();
+                            wm.Current.guardMode = _guardModeEnabled;
                         }
         }
 
