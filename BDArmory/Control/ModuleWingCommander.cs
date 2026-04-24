@@ -70,23 +70,21 @@ namespace BDArmory.Control
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            part.force_activate();
 
-            if (HighLogic.LoadedSceneIsFlight)
-            {
-                focusIndexes = new List<int>();
-                commandedPositions = new List<GPSTargetInfo>();
-                part.force_activate();
+            focusIndexes = new List<int>();
+            commandedPositions = new List<GPSTargetInfo>();
 
-                StartCoroutine(StartupRoutine());
+            StartCoroutine(StartupRoutine());
 
-                GameEvents.onGameStateSave.Add(SaveWingmen);
-                GameEvents.onVesselLoaded.Add(OnVesselLoaded);
-                GameEvents.onVesselDestroy.Add(OnVesselLoaded);
-                GameEvents.onVesselGoOnRails.Add(OnVesselLoaded);
-                MissileFire.OnChangeTeam += OnToggleTeam;
+            GameEvents.onGameStateSave.Add(SaveWingmen);
+            GameEvents.onVesselLoaded.Add(OnVesselLoaded);
+            GameEvents.onVesselDestroy.Add(OnVesselLoaded);
+            GameEvents.onVesselGoOnRails.Add(OnVesselLoaded);
+            MissileFire.OnChangeTeam += OnToggleTeam;
 
-                screenMessage = new ScreenMessage("", 2, ScreenMessageStyle.LOWER_CENTER);
-            }
+            screenMessage = new ScreenMessage("", 2, ScreenMessageStyle.LOWER_CENTER);
         }
 
         void OnToggleTeam(MissileFire mf, BDTeam team)

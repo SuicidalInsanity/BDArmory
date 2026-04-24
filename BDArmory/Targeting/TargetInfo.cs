@@ -225,9 +225,10 @@ namespace BDArmory.Targeting
                 var ml = VesselModuleRegistry.GetMissileBase(vessel, true);
                 if (ml != null)
                 {
-                    isMissile = true;
+                    ml.SetTargetInfo(this);
+                    /*isMissile = true;
                     MissileBaseModule = ml;
-                    Team = ml.Team;
+                    Team = ml.Team;*/
                 }
             }
 

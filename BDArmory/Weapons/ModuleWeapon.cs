@@ -372,9 +372,9 @@ namespace BDArmory.Weapons
             //}
             return ammoLeft;
         }
-        public string GetMissileType()
+        public MissileBase.MissileType GetMissileType()
         {
-            return string.Empty;
+            return MissileBase.MissileType.None;
         }
         public float GetEngageFOV()
         {
@@ -859,7 +859,8 @@ namespace BDArmory.Weapons
         [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_DefaultDetonationRange", guiActiveEditor = false)]//Fuzed Detonation Range
         public float defaultDetonationRange = 3500; // maxairDetrange works for altitude fuzing, use this for VT fuzing
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ProximityFuzeRadius"), UI_FloatRange(minValue = 0f, maxValue = 300f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ProximityFuzeRadius"),
+            UI_FloatSemiLogRange(minValue = 1f, maxValue = 1000f, sigFig = 2, withZero = true, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
         public float detonationRange = -1f; // give ability to set proximity range
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DetonateAtMinimumDistance"), UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled")]
@@ -2857,7 +2858,7 @@ namespace BDArmory.Weapons
                                                                 if (hullConduction) continue;//charge already flowing through hull to next part
                                                                 else
                                                                 {
-                                                                    EMPDamage -= 2 * Armor.Armour; //-2 EMP damage per mm of insulating armor charge has to pass through to get to conductive amterials on other side
+                                                                    EMPDamage -= 2 * Armor.Armor; //-2 EMP damage per mm of insulating armor charge has to pass through to get to conductive amterials on other side
                                                                     hullConduction = true;
                                                                     continue;
                                                                 }
@@ -2865,7 +2866,7 @@ namespace BDArmory.Weapons
                                                             else //and non-con hull
                                                             {
                                                                 if (!hullConduction)
-                                                                    EMPDamage -= 2 * Armor.Armour;
+                                                                    EMPDamage -= 2 * Armor.Armor;
                                                                 if (EMPDamage > 100)
                                                                 {
                                                                     EMPDamage /= 4;
@@ -3142,7 +3143,7 @@ namespace BDArmory.Weapons
                                 var Armor = partHit.FindModuleImplementing<HitpointTracker>();
                                 if (Armor != null && partHit.Rigidbody != null)
                                 {
-                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armour;
+                                    if (Armor.Diffusivity > 15) testShieldValue += Armor.Armor;
                                     if (Armor.HullMassAdjust >= 0) testShieldValue += (partHit.mass * 4);
                                 }
                             }
@@ -5846,7 +5847,7 @@ namespace BDArmory.Weapons
                         radarTarget = true;
                         slaved = true;
                         if (BDArmorySettings.DEBUG_WEAPONS)
-                            Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.vessel.vesselName} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
+                            Debug.Log($"[BDArmory.ModuleWeapon - {shortName} is tracking target {targetData.Name()} via radarlock from {targetData.lockedByRadar.part.partInfo.title}");
                         return;
                     }
                     else //no lock for our secondary target/fixed gun/no multitargeting? slave weapon to primary lock
@@ -5866,7 +5867,7 @@ namespace BDArmory.Weapons
                             targetAcquired = true;
                             targetAcquisitionType = TargetAcquisitionType.Slaved;
                             if (BDArmorySettings.DEBUG_WEAPONS)
-                                Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.vessel.name : weaponManager.vesselRadarData.lockedTargetData.vessel.name)}");
+                                Debug.Log($"[BDArmory.ModuleWeapon - {shortName} had no lock for {(visualTargetVessel != null ? visualTargetVessel.vesselName : "'unknown'")}; isVessel? {isVessel}; slaving to primary lock on {(isVessel ? weaponManager.slavedTarget.Name() : weaponManager.vesselRadarData.lockedTargetData.Name())}");
                             return;
                         }
                     }

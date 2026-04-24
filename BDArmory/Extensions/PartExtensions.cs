@@ -375,6 +375,37 @@ namespace BDArmory.Extensions
             }
             //return Dependencies.Get<DamageService>().GetPartArmor_svc(p);
         }
+
+        public static float GetRealArmorThickness(this Part p)
+        {
+            if (p == null) return 0f;
+            float realArmor = Dependencies.Get<DamageService>().GetPartRealArmor_svc(p);
+            if (float.IsNaN(realArmor))
+            {
+                if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[BDArmory.PartExtensions]: GetRealArmorThickness; realArmor is NaN");
+                return 0f;
+            }
+            else
+            {
+                return realArmor;
+            }
+        }
+
+        public static float GetRealArmorPercentage(this Part p)
+        {
+            if (p == null) return 0f;
+            float armorQtyP = Dependencies.Get<DamageService>().GetPartArmorQtyP_svc(p);
+            if (float.IsNaN(armorQtyP))
+            {
+                if (BDArmorySettings.DEBUG_ARMOR) Debug.Log("[BDArmory.PartExtensions]: GetRealArmorPercentage; armorQtyP is NaN");
+                return 0f;
+            }
+            else
+            {
+                return armorQtyP;
+            }
+        }
+
         public static float GetArmorMaxThickness(this Part p)
         {
             if (p == null) return 0f;
@@ -535,7 +566,14 @@ namespace BDArmory.Extensions
             if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
             {
                 var tweakScaleModule = part.Modules["TweakScale"];
-                massMultiplier = tweakScaleModule.Fields["MassScale"].GetValue<float>(tweakScaleModule);
+                var massMultiplierField = tweakScaleModule.Fields["MassScale"];
+                if (massMultiplierField == null)
+                {
+                    float linScale = part.GetTweakScaleMultiplier();
+                    return linScale * linScale * linScale; // Hacked together support for TweakScale Rescaled
+                    // This is gonna be inaccurate for *many* parts
+                }
+                massMultiplier = massMultiplierField.GetValue<float>(tweakScaleModule);
             }
             return massMultiplier;
         }
@@ -545,7 +583,12 @@ namespace BDArmory.Extensions
             if (tweakScaleInstalled && part.Modules.Contains("TweakScale"))
             {
                 var tweakScaleModule = part.Modules["TweakScale"];
-                dryCost = tweakScaleModule.Fields["DryCost"].GetValue<float>(tweakScaleModule);
+                var dryCostField = tweakScaleModule.Fields["DryCost"];
+                if (dryCostField == null)
+                {
+                    return -1;
+                }
+                dryCost = dryCostField.GetValue<float>(tweakScaleModule);
             }
             return dryCost;
         }

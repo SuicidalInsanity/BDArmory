@@ -47,7 +47,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
         //public float tntmass = 1;
         AvailablePart missilePart;
         public Part SpawnedMissile;
-        public bool SpawnMissile(Transform MissileTransform, float offset = 0, bool deductAmmo = true)
+        public bool SpawnMissile(Transform MissileTransform, float offset = 0, float vOffset = 0, bool deductAmmo = true)
         {
             if (railAmmo >= 1 || BDArmorySettings.INFINITE_ORDINANCE)
             {
@@ -61,8 +61,10 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         {
                             var partNode = new ConfigNode();
                             PartSnapshot(missilePart.partPrefab).CopyTo(partNode);
-                            //SpawnedMissile = CreatePart(partNode, MissileTransform.transform.position - MissileTransform.TransformDirection(missilePart.partPrefab.srfAttachNode.originalPosition),
-                            SpawnedMissile = CreatePart(partNode, offset > 0 ? (MissileTransform.position + MissileTransform.forward * offset) : MissileTransform.transform.position, MissileTransform.rotation, this.part);
+                            var position = MissileTransform.position;
+                            position += offset * MissileTransform.forward;
+                            position += vOffset * MissileTransform.right;
+                            SpawnedMissile = CreatePart(partNode, position, MissileTransform.rotation, this.part);
                             ModuleMissileRearm MMR = SpawnedMissile.FindModuleImplementing<ModuleMissileRearm>();
                             if (MMR != null) SpawnedMissile.RemoveModule(MMR);
                             if (!BDArmorySettings.INFINITE_ORDINANCE && deductAmmo)
@@ -121,10 +123,11 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
             }
         }
 
-        public override void OnStart(PartModule.StartState state)
+        public override void OnStart(StartState state)
         {
-            this.enabled = true;
-            this.part.force_activate();
+            base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight) part.force_activate();
+            enabled = true;
             MultiMissileLauncher MML = part.FindModuleImplementing<MultiMissileLauncher>();
             if (MML == null || MML && MML.isClusterMissile && !MML.isLaunchedClusterMissile) MissileName = part.name;
             if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)

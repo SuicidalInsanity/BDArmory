@@ -479,24 +479,19 @@ namespace BDArmory.Weapons.Missiles
 
         void ParseWeaponClass()
         {
-            missileType = missileType.ToLower();
-            if (missileType == "bomb")
+            weaponClass = _missileType switch
             {
-                weaponClass = WeaponClasses.Bomb;
-            }
-            else if (missileType == "torpedo" || missileType == "depthcharge")
-            {
-                weaponClass = WeaponClasses.SLW;
-            }
-            else
-            {
-                weaponClass = WeaponClasses.Missile;
-            }
+                MissileType.Bomb => WeaponClasses.Bomb,
+                MissileType.Torpedo => WeaponClasses.SLW,
+                MissileType.DepthCharge => WeaponClasses.SLW,
+                MissileType.ASWMissile => WeaponClasses.SLW,
+                _ => WeaponClasses.Missile
+            };
         }
 
         public override void OnStart(StartState state)
         {
-            //base.OnStart(state);
+            base.OnStart(state);
 
             if (useFuel)
             {
@@ -1080,7 +1075,7 @@ namespace BDArmory.Weapons.Missiles
             }
 
             // Moved mFA setting here instead of OnStart() to account for the need for this to be set for MMLs as well
-            if (maxOffBoresight < 180 && missileType.ToLower() == "missile" || missileType.ToLower() == "torpedo")
+            if (maxOffBoresight < 180 && _missileType == MissileType.Missile || _missileType == MissileType.Torpedo)
             {
                 UI_FloatRange mFA = (UI_FloatRange)Fields["missileFireAngle"].uiControlEditor;
                 mFA.maxValue = maxOffBoresight * 0.75f;
@@ -1295,7 +1290,7 @@ namespace BDArmory.Weapons.Missiles
                     activeRadarRangeGate.Add(activeRadarRangeFilter, 0f);           // TODO: tune & balance constants!
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: OnStart missile {shortName}: setting default activeRadarRangeGate with maxfilter/minrcs: {activeRadarRangeGate.maxTime}/{RadarUtils.MISSILE_DEFAULT_GATE_RCS}");
                 }
-                else if(activeRadarRangeFilter < activeRadarRangeGate.maxTime)
+                else if (activeRadarRangeFilter < activeRadarRangeGate.maxTime)
                 {
                     activeRadarRangeFilter = activeRadarRangeGate.maxTime;
                 }
@@ -1478,18 +1473,27 @@ namespace BDArmory.Weapons.Missiles
             if (multiLauncher && multiLauncher.turret) multiLauncher.turret.SetSlavedGuard(slavedGuard, this);
         }
 
-        public override void AimTurrets(Vector3 targetPos)
+        public override bool HasTurrets()
         {
-            base.AimTurrets(targetPos);
+            if (missileTurret) return true;
+            if (multiLauncher && multiLauncher.turret) return true;
+            return base.HasTurrets();
+        }
+
+        public override bool AimTurrets(Vector3 targetPos)
+        {
+            bool turrets = base.AimTurrets(targetPos);
             if (missileTurret)
             {
                 missileTurret.slavedTargetPosition = targetPos;
-                return;
+                return true;
             }
             if (multiLauncher && multiLauncher.turret)
             {
                 multiLauncher.turret.slavedTargetPosition = targetPos;
+                return true;
             }
+            return turrets;
         }
 
         public override float GetBlastRadius()
@@ -1564,7 +1568,14 @@ namespace BDArmory.Weapons.Missiles
                 SourceVessel = vessel;
             }
             FiredByWM = SourceVessel.ActiveController().WM;
-            if (FiredByWM != null) Team = FiredByWM.Team;
+            if (FiredByWM != null)
+            {
+                Team = FiredByWM.Team;
+            }
+            else
+            {
+                Debug.Log($"[BDArmory.MissileLauncher]: {vessel.vesselName}'s {shortName} could not acquire the firing vessel's WM and as a result Team is NOT correctly set!");
+            }
 
             if (multiLauncher)
             {
@@ -1577,7 +1588,9 @@ namespace BDArmory.Weapons.Missiles
                     if (reloadableRail && reloadableRail.ammoCount >= 1 || BDArmorySettings.INFINITE_ORDINANCE)
                     {
                         if (FiredByWM)
+                        {
                             FiredByWM.UpdateQueuedLaunches(targetVessel, this, true);
+                        }
                         if (radarTarget.exists && radarTarget.lockedByRadar && radarTarget.lockedByRadar.vessel != SourceVessel)
                         {
                             MissileFire datalinkwpm = radarTarget.lockedByRadar.vessel.ActiveController().WM;
@@ -1857,6 +1870,10 @@ namespace BDArmory.Weapons.Missiles
                 FiredByWM.UpdateQueuedLaunches(targetVessel, ml, false);
                 FiredByWM.UpdateMissilesAway(targetVessel, ml);
             }
+            else
+            {
+                Debug.Log($"[BDArmory.MissileLauncher]: {vessel.vesselName}'s reloadable missile {shortName} could not acquire the firing vessel's WM and as a result Team is NOT correctly set!");
+            }
 
             if (ml.radarTarget.exists && ml.radarTarget.lockedByRadar && ml.radarTarget.lockedByRadar.vessel != ml.SourceVessel)
             {
@@ -1964,7 +1981,7 @@ namespace BDArmory.Weapons.Missiles
                     tnt.Team = Team;
                     tnt.sourcevessel = SourceVessel;
                 }
-                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher]: Missile Launched!");
+                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: {Time.time} Missile Launched!");
                 if (BDArmorySettings.CAMERA_SWITCH_INCLUDE_MISSILES && SourceVessel.isActiveVessel) LoadedVesselSwitcher.Instance.ForceSwitchVessel(vessel);
             }
             catch (Exception e)
@@ -2094,7 +2111,7 @@ namespace BDArmory.Weapons.Missiles
 
             FloatingOriginCorrection();
 
-            try // FIXME Remove this once the fix is sufficiently tested.
+            try
             {
                 debugString.Length = 0;
 
@@ -2162,20 +2179,6 @@ namespace BDArmory.Weapons.Missiles
             catch (Exception e)
             {
                 Debug.LogError("[BDArmory.MissileLauncher]: DEBUG " + e.Message + "\n" + e.StackTrace);
-                // throw; // Re-throw the exception so behaviour is unchanged so we see it.
-                /* FIXME this is being caused by attempting to get the wm.Team in RadarUpdateMissileLock. A similar exception occurred in BDATeamIcons, line 239
-                    [ERR 12:05:24.391] Module MissileLauncher threw during OnFixedUpdate: System.NullReferenceException: Object reference not set to an instance of an object
-                        at BDArmory.Radar.RadarUtils.RadarUpdateMissileLock (UnityEngine.Ray ray, System.Single fov, BDArmory.Targeting.TargetSignatureData[]& dataArray, System.Single dataPersistTime, BDArmory.Weapons.Missiles.MissileBase missile) [0x00076] in /storage/github/BDArmory/BDArmory/Radar/RadarUtils.cs:972 
-                        at BDArmory.Weapons.Missiles.MissileBase.UpdateRadarTarget () [0x003d9] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileBase.cs:747 
-                        at BDArmory.Weapons.Missiles.MissileLauncher.UpdateGuidance () [0x000ba] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileLauncher.cs:1134 
-                        at BDArmory.Weapons.Missiles.MissileLauncher.OnFixedUpdate () [0x00593] in /storage/github/BDArmory/BDArmory/Weapons/Missiles/MissileLauncher.cs:1046 
-                        at Part.ModulesOnFixedUpdate () [0x000bd] in <4deecb19beb547f19b1ff89b4c59bd84>:0 
-                        UnityEngine.DebugLogHandler:LogFormat(LogType, Object, String, Object[])
-                        ModuleManager.UnityLogHandle.InterceptLogHandler:LogFormat(LogType, Object, String, Object[])
-                        UnityEngine.Debug:LogError(Object)
-                        Part:ModulesOnFixedUpdate()
-                        Part:FixedUpdate()
-                */
             }
             if (reloadableRail)
             {
@@ -2196,7 +2199,7 @@ namespace BDArmory.Weapons.Missiles
 
         void CheckAltitudeDetonation()
         {
-            switch(altitudeFuze)
+            switch (altitudeFuze)
             {
                 case AltitudeFuzeMode.DescendingMSL:
                     {
@@ -2349,7 +2352,7 @@ namespace BDArmory.Weapons.Missiles
                         {
                             if (heatTarget.vessel)
                             {
-                                debugGuidanceTarget = $"{heatTarget.vessel.GetName()} {heatTarget.signalStrength}";
+                                debugGuidanceTarget = $"{heatTarget.vessel.name} {heatTarget.signalStrength}";
                             }
                             else if (heatTarget.isDecoy)
                             {
@@ -2369,7 +2372,14 @@ namespace BDArmory.Weapons.Missiles
 
                             if (radarTarget.vessel)
                             {
-                                debugGuidanceTarget = $"{radarTarget.vessel.GetName()} {radarTarget.signalStrength}";
+                                if (!BDArmorySettings.RADAR_NOTCHING)
+                                {
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength};";
+                                }
+                                else
+                                {
+                                    debugGuidanceTarget = $"{radarTarget.vessel.name} sig: {radarTarget.signalStrength}; notchVMod: {radarTarget.notchVMod:F2}; notchRMod: {radarTarget.notchRMod:F2}";
+                                }
                             }
                             else if (radarTarget.signalStrength > 0)
                             {
@@ -2673,7 +2683,7 @@ namespace BDArmory.Weapons.Missiles
                         // pretend we have an active radar seeker for ground targets:
                         //TargetSignatureData[] scannedTargets = new TargetSignatureData[5];
                         if (scannedTargets == null) scannedTargets = new TargetSignatureData[BDATargetManager.LoadedVessels.Count];
-                        TargetSignatureData.ResetTSDArray(ref scannedTargets);
+                        //TargetSignatureData.ResetTSDArray(ref scannedTargets);
                         Ray ray = new Ray(vessel.CoM, GetForwardTransform());
 
                         // Missile's radar has gone active
@@ -2684,7 +2694,7 @@ namespace BDArmory.Weapons.Missiles
                         if (pingRWR) lastRWRPing = Time.time;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-                        RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
+                        int numLocked = RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                         float sqrThresh = terminalGuidanceDistance * terminalGuidanceDistance * 2.25f; // (terminalGuidanceDistance * 1.5f)^2
 
                         //float smallestAngle = maxOffBoresight;
@@ -2698,20 +2708,24 @@ namespace BDArmory.Weapons.Missiles
 
                         for (int i = 0; i < scannedTargets.Length; i++)
                         {
-                            if (scannedTargets[i].exists && (!hasIFF || !Team.IsFriendly(scannedTargets[i].Team)))
+                            if (i == numLocked) break;
+
+                            if (!scannedTargets[i].exists) continue;
+
+                            if (hasIFF && Team.IsFriendly(scannedTargets[i].Team)) continue;
+
+                            currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
+
+                            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} has currDist: {currDist}.");
+
+                            //re-check engagement envelope, only lock appropriate targets
+                            if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
                             {
-                                currDist = (scannedTargets[i].predictedPosition - tempTargetPos).sqrMagnitude;
+                                prevDist = currDist;
 
-                                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {scannedTargets[i].vessel.name} has currDist: {currDist}.");
-
-                                //re-check engagement envelope, only lock appropriate targets
-                                if (currDist < sqrThresh && currDist < prevDist && CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo))
-                                {
-                                    prevDist = currDist;
-
-                                    lockIndex = i;
-                                }
+                                lockIndex = i;
                             }
+
                             //if (!scannedTargets[i].exists)
                             //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Target: {i} doesn't exist!.");
                             //if (scannedTargets[i].exists && Team.IsFriendly(scannedTargets[i].Team))
@@ -2734,7 +2748,7 @@ namespace BDArmory.Weapons.Missiles
                             else
                                 RadarWarningReceiver.PingRWR(new Ray(vessel.CoM, radarTarget.predictedPosition - vessel.CoM), 45, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
 
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: Pitbull! Radar missileBase has gone active.  Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
+                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher][Terminal Guidance]: {shortName}: Pitbull! Radar missileBase has gone active. Radar sig strength: {radarTarget.signalStrength:0.0} - target: {radarTarget.vessel.name}");
                         }
                         else
                         {
@@ -4109,8 +4123,8 @@ namespace BDArmory.Weapons.Missiles
             float cruiseAccel = cruiseThrust / part.mass;
 
             float clampSpeed = Mathf.Clamp(optimumAirspeed, currentSpeed, 2f * currentSpeed); // Don't let the below speeds get out of control, leads to unrealistically high drag estimates
-            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost and currentSpeed
-            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed)/2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
+            float boostDragSpeed = Mathf.Min((boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost and currentSpeed
+            float cruiseDragSpeed = Mathf.Min((cruiseAccel * cruiseTimeLeft + boostAccel * boostTimeLeft + 2f * currentSpeed) / 2f, clampSpeed); // Average of speed after boost+cruise and currentSpeed
             
             float airDensity = (float)vessel.atmDensity;
             float boostDragAccel;

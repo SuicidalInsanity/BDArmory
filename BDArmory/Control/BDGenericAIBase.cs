@@ -312,7 +312,9 @@ namespace BDArmory.Control
 
         protected virtual void OnGUI()
         {
-            if (!pilotEnabled || !vessel.isActiveVessel) return;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
+
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.name}\n{debugString.ToString()}");

@@ -42,7 +42,11 @@ namespace BDArmory.Weapons
         [KSPEvent(guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DisableEngageOptions", active = true)]//Disable Engage Options
         public void ToggleEngageOptions()
         {
-            engageEnabled = !engageEnabled;
+            ToggleEngageOptionsImpl(!engageEnabled);
+        }
+        public void ToggleEngageOptionsImpl(bool setEnabled, bool applyToSymmetric = true)
+        {
+            engageEnabled = setEnabled;
 
             if (engageEnabled == false)
             {
@@ -53,20 +57,25 @@ namespace BDArmory.Weapons
                 Events["ToggleEngageOptions"].guiName = StringUtils.Localize("#LOC_BDArmory_DisableEngageOptions");//"Disable Engage Options"
             }
 
-            Fields["engageRangeMin"].guiActive = engageEnabled;
-            Fields["engageRangeMin"].guiActiveEditor = engageEnabled;
-            Fields["engageRangeMax"].guiActive = engageEnabled;
-            Fields["engageRangeMax"].guiActiveEditor = engageEnabled;
-            Fields["engageAir"].guiActive = engageEnabled;
-            Fields["engageAir"].guiActiveEditor = engageEnabled;
-            Fields["engageMissile"].guiActive = engageEnabled;
-            Fields["engageMissile"].guiActiveEditor = engageEnabled;
-            Fields["engageGround"].guiActive = engageEnabled;
-            Fields["engageGround"].guiActiveEditor = engageEnabled;
-            Fields["engageSLW"].guiActive = engageEnabled;
-            Fields["engageSLW"].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageRangeMin)].guiActive = engageEnabled;
+            Fields[nameof(engageRangeMin)].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageRangeMax)].guiActive = engageEnabled;
+            Fields[nameof(engageRangeMax)].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageAir)].guiActive = engageEnabled;
+            Fields[nameof(engageAir)].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageMissile)].guiActive = engageEnabled;
+            Fields[nameof(engageMissile)].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageGround)].guiActive = engageEnabled;
+            Fields[nameof(engageGround)].guiActiveEditor = engageEnabled;
+            Fields[nameof(engageSLW)].guiActive = engageEnabled;
+            Fields[nameof(engageSLW)].guiActiveEditor = engageEnabled;
 
             GUIUtils.RefreshAssociatedWindows(part);
+            if (applyToSymmetric)
+            {
+                foreach (var sympart in part.symmetryCounterparts)
+                    sympart.GetComponent<EngageableWeapon>().ToggleEngageOptionsImpl(setEnabled, false);
+            }
         }
         public void HideEngageOptions()
         {
@@ -96,30 +105,33 @@ namespace BDArmory.Weapons
 
         void OnEngageOptionsChanged(BaseField field, object obj)
         {
-            var wm = vessel.ActiveController().WM;
             var value = (bool)field.GetValue(this);
-            foreach (var part in part.symmetryCounterparts)
+            foreach (var sympart in part.symmetryCounterparts)
             {
-                var engageableWeapon = part.GetComponent<EngageableWeapon>();
+                var engageableWeapon = sympart.GetComponent<EngageableWeapon>();
                 if (engageableWeapon is not null)
                 {
-                    field.SetValue(value, engageableWeapon);
+                    // field.SetValue(value, engageableWeapon); // This doesn't work across hosts for some reason!
+                    field.FieldInfo.SetValue(engageableWeapon, value); // But this does, despite doing what the above is essentially doing‽
                 }
             }
 
+            var wm = vessel.ActiveController().WM;
             if (wm is not null) wm.weaponsListNeedsUpdating = true;
         }
 
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
-            var engageAirField = (UI_Toggle)Fields["engageAir"].uiControlFlight;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+
+            var engageAirField = (UI_Toggle)Fields[nameof(engageAir)].uiControlFlight;
             engageAirField.onFieldChanged = OnEngageOptionsChanged;
-            var engageMissileField = (UI_Toggle)Fields["engageMissile"].uiControlFlight;
+            var engageMissileField = (UI_Toggle)Fields[nameof(engageMissile)].uiControlFlight;
             engageMissileField.onFieldChanged = OnEngageOptionsChanged;
-            var engageGroundField = (UI_Toggle)Fields["engageGround"].uiControlFlight;
+            var engageGroundField = (UI_Toggle)Fields[nameof(engageGround)].uiControlFlight;
             engageGroundField.onFieldChanged = OnEngageOptionsChanged;
-            var engageSLWField = (UI_Toggle)Fields["engageSLW"].uiControlFlight;
+            var engageSLWField = (UI_Toggle)Fields[nameof(engageSLW)].uiControlFlight;
             engageSLWField.onFieldChanged = OnEngageOptionsChanged;
         }
 

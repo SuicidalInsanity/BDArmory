@@ -845,6 +845,10 @@ namespace BDArmory.Radar
 
                     DrainElectricity(); //physics behaviour, thus moved here from update
 
+                    if (BDArmorySettings.DEBUG_RADAR)
+                    {
+                        Debug.Log($"[BDArmory.ModuleRadar] Vessel: {vessel.name}, {(sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {name}, beginning lock checks.");
+                    }
                     if (locked)
                     {
                         for (int i = lockedTargets.Count - 1; i >= 0; --i) // We need to iterate backwards as UnlockTargetAt (in UpdateLock) can remove items from the lockedTargets list.
@@ -1084,7 +1088,7 @@ namespace BDArmory.Radar
                     lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
                     if (BDArmorySettings.DEBUG_RADAR)
-                        Debug.Log("[BDArmory.ModuleRadar]: - Acquired lock on target (" + (attemptedLocks[i].vessel != null ? attemptedLocks[i].vessel.name : null) + ")");
+                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()})");
 
                     vesselRadarData.AddRadarContact(this, lockedTarget, true);
                     //vesselRadarData.UpdateLockedTargets();
@@ -1216,6 +1220,7 @@ namespace BDArmory.Radar
             Vector3 vectorToTarget = lockedTarget.position - currPosition;
             if (VectorUtils.Angle(vectorToTarget, this.lockedTarget.position - currPosition) > multiLockFOV * 0.5f)
             {
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to FoV!");
                 UnlockTargetAt(index, true);
                 return;
             }
@@ -1224,6 +1229,7 @@ namespace BDArmory.Radar
                 new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
                 lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, true, index, lockedTarget.vessel))
             {
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to failed lock checks!");
                 UnlockTargetAt(index, true);
                 return;
             }
@@ -1232,6 +1238,7 @@ namespace BDArmory.Radar
             // MOVED FOV CHECK TO RadarUpdateLockTrack!
             if (!lockedTarget.exists)
             {
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: null at index: {index} unlocked as it does not exist!");
                 //UnlockAllTargets();
                 UnlockTargetAt(index, true);
                 return;

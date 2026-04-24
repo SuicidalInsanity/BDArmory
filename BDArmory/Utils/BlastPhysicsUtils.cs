@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 using BDArmory.Extensions;
@@ -10,7 +10,8 @@ namespace BDArmory.Utils
     {
         // This values represent percentage of the blast radius where we consider that the damage happens.
 
-        public static double clampScaledMaxPressure = CalculateIncidentImpulse(0.0674, 1, Math.Log10(0.0674));
+        public static readonly double clampScaledMaxPressure = CalculateIncidentImpulse(0.0674, 1, Math.Log10(0.0674));
+        public static readonly double clampScaledMinPressure = CalculateIncidentImpulse(40.0, 1, Math.Log10(40.0));
 
         // Methodology based on AASTP-1: MANUAL OF NATO SAFETY PRINCIPLES FOR THE STORAGE OF MILITARY AMMUNITION AND EXPLOSIVES
         // Link: http://www.rasrinitiative.org/pdfs/AASTP-1-Ed1-Chge-3-Public-Release-110810.pdf

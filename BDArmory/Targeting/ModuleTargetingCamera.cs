@@ -299,32 +299,31 @@ namespace BDArmory.Targeting
         public override void OnStart(StartState state)
         {
             base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            part.force_activate();
 
-            if (HighLogic.LoadedSceneIsFlight)
+            //GUI setup
+            if (!camRectInitialized)
             {
-                //GUI setup
-                if (!camRectInitialized)
-                {
-                    BDArmorySetup.WindowRectTargetingCam = new Rect(BDArmorySetup.WindowRectTargetingCam.x, BDArmorySetup.WindowRectTargetingCam.y, windowWidth, windowHeight);
-                    camRectInitialized = true;
-                }
-
-                cameraParentTransform = part.FindModelTransform(cameraTransformName);
-
-                eyeHolderTransform = part.FindModelTransform(eyeHolderTransformName);
-
-                ParseFovs();
-                UpdateSlewRate();
-
-                GameEvents.onVesselCreate.Add(Disconnect);
-
-                if (cameraEnabled)
-                {
-                    Debug.Log("[BDArmory.ModuleTargetingCamera]: saved gtp: " + bodyRelativeGTP);
-                    DelayedEnable();
-                }
-                TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, CameraTracking);
+                BDArmorySetup.WindowRectTargetingCam = new Rect(BDArmorySetup.WindowRectTargetingCam.x, BDArmorySetup.WindowRectTargetingCam.y, windowWidth, windowHeight);
+                camRectInitialized = true;
             }
+
+            cameraParentTransform = part.FindModelTransform(cameraTransformName);
+
+            eyeHolderTransform = part.FindModelTransform(eyeHolderTransformName);
+
+            ParseFovs();
+            UpdateSlewRate();
+
+            GameEvents.onVesselCreate.Add(Disconnect);
+
+            if (cameraEnabled)
+            {
+                Debug.Log("[BDArmory.ModuleTargetingCamera]: saved gtp: " + bodyRelativeGTP);
+                DelayedEnable();
+            }
+            TimingManager.FixedUpdateAdd(TimingManager.TimingStage.BetterLateThanNever, CameraTracking);
         }
 
         void Disconnect(Vessel v)

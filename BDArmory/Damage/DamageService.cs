@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using BDArmory.Services;
 
@@ -29,6 +29,8 @@ namespace BDArmory.Damage
         public abstract float GetPartDamage_svc(Part p);
 
         public abstract float GetPartArmor_svc(Part p);
+        public abstract float GetPartRealArmor_svc(Part p);
+        public abstract float GetPartArmorQtyP_svc(Part p);
         public abstract float GetPartMaxArmor_svc(Part p);
 
         public abstract float GetArmorDensity_svc(Part p);

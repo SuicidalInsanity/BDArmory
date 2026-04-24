@@ -39,6 +39,12 @@ namespace BDArmory.Weapons
 
         public override void OnStart(StartState state)
         {
+            base.OnStart(state);
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                part.force_activate();
+            }
+
             submunitions = new List<GameObject>();
             IEnumerator<Transform> sub = part.FindModelTransforms("submunition").AsEnumerable().GetEnumerator();
 

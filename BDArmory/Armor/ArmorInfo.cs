@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -46,7 +46,7 @@ namespace BDArmory.Armor
         public ArmorInfo(string name, string localizedName, float Density, float Strength, float Hardness, float yield, float youngModulus, float Ductility, float Diffusivity, float SafeUseTemp, float Stealth, float Cost, float defaultPenShrapnel, float defaultPenHEAT)
         {
             this.name = name;
-            this.localizedName = localizedName;
+            this.localizedName = (localizedName == "def" ? name : localizedName);
             this.Density = Density;
             this.Strength = Strength;
             this.Hardness = Hardness;

@@ -354,8 +354,6 @@ namespace BDArmory.WeaponMounts
         {
             base.OnStart(state);
 
-            part.force_activate();
-
             //setup anim
             if (!string.IsNullOrEmpty(deployAnimationName))
             {
@@ -373,6 +371,8 @@ namespace BDArmory.WeaponMounts
 
             if (HighLogic.LoadedSceneIsFlight)
             {
+                part.force_activate();
+
                 List<ModuleTurret>.Enumerator tur = part.FindModulesImplementing<ModuleTurret>().GetEnumerator();
                 while (tur.MoveNext())
                 {
@@ -522,10 +522,7 @@ namespace BDArmory.WeaponMounts
         public void SetSlavedGuard(bool slavedGuard, MissileBase ml)
         {
             _slavedGuard = slavedGuard;
-            if (slavedGuard)
-            {
-                _slavedGuardMissile = ml;
-            }
+            _slavedGuardMissile = slavedGuard ? ml : null;
         }
 
         public bool IsCurrentWMMissile()

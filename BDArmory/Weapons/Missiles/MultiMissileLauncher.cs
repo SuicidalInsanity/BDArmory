@@ -1,4 +1,4 @@
-﻿using BDArmory.Competition;
+using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
 using BDArmory.Guidances;
@@ -70,7 +70,7 @@ namespace BDArmory.Weapons.Missiles
         private int tubesFired = 0;
         [KSPField(isPersistant = true)]
         private bool LoadoutModified = false;
-        public BDTeam Team = BDTeam.Get("Neutral");
+        public BDTeam Team = null;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
     UI_FloatRange(minValue = 0.5f, maxValue = 2, stepIncrement = 0.05f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.Editor)]
@@ -138,6 +138,31 @@ namespace BDArmory.Weapons.Missiles
                     }
             }
         }
+        public bool IsDeployed => deployState == null || deployState.normalizedTime == 1; // Either doesn't have a deploy anim, or it's deployed.
+        public IEnumerator SetDeployed(bool deployed)
+        {
+            if (deployState != null)
+            {
+                deployState.enabled = true;
+                if (deployed)
+                {
+                    deployState.speed = deploySpeed / deployState.length;
+                    yield return new WaitWhileFixed(() => deployState != null && deployState.normalizedTime < 1);
+                }
+                else
+                {
+                    deployState.speed = -deploySpeed / deployState.length;
+                    yield return new WaitWhileFixed(() => deployState != null && deployState.normalizedTime > 0);
+                }
+                if (deployState != null)
+                {
+                    deployState.normalizedTime = deployed ? 1 : 0;
+                    deployState.speed = 0;
+                    deployState.enabled = false;
+                }
+            }
+        }
+
         public void Start()
         {
             MakeMissileArray();
@@ -313,7 +338,7 @@ namespace BDArmory.Weapons.Missiles
                 }
             if (missileSpawner.maxAmmo > 1)
             {
-                UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields["railAmmo"].uiControlEditor;
+                UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields[nameof(missileSpawner.railAmmo)].uiControlEditor;
                 Ammo.onFieldChanged = updateOffset;                
             }
 
@@ -351,12 +376,12 @@ namespace BDArmory.Weapons.Missiles
             }
             if (adjustMissileVOffset || !string.IsNullOrEmpty(lengthTransformName))
             {
-                UI_FloatRange AOffset = (UI_FloatRange)Fields["attachOffset"].uiControlEditor;
+                UI_FloatRange AOffset = (UI_FloatRange)Fields[nameof(attachOffset)].uiControlEditor;
                 AOffset.maxValue = offsetMax;
                 AOffset.minValue = -offsetMax;
                 AOffset.onFieldChanged = updateOffset;
             }
-            else Fields["attachOffset"].guiActiveEditor = false;
+            else Fields[nameof(attachOffset)].guiActiveEditor = false;
 
             UpdateLengthAndScale(Scale, Length, attachOffset);
         }
@@ -594,9 +619,10 @@ namespace BDArmory.Weapons.Missiles
 
         void UpdateFields(MissileLauncher MLConfig, bool configurableSettings)
         {
+            missileLauncher.guidanceActive = MLConfig.guidanceActive;
             missileLauncher.homingType = MLConfig.homingType; //these are all non-persistant, and need to be re-grabbed at launch
             missileLauncher.targetingType = MLConfig.targetingType;
-            missileLauncher.missileType = MLConfig.missileType;
+            missileLauncher.missileType = MLConfig.missileType.ToLower();
             missileLauncher.lockedSensorFOV = MLConfig.lockedSensorFOV;
             missileLauncher.lockedSensorFOVBias = MLConfig.lockedSensorFOVBias;
             missileLauncher.lockedSensorVelocityBias = MLConfig.lockedSensorVelocityBias;
@@ -611,6 +637,11 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.antiradTargetTypes = MLConfig.antiradTargetTypes;
             missileLauncher.steerMult = MLConfig.steerMult;
             missileLauncher.thrust = MLConfig.thrust;
+            missileLauncher.cruiseThrust = MLConfig.cruiseThrust;
+            missileLauncher.boostTime = MLConfig.boostTime;
+            missileLauncher.cruiseTime = MLConfig.cruiseTime;
+            missileLauncher.cruiseDelay = MLConfig.cruiseDelay;
+            missileLauncher.cruiseRangeTrigger = MLConfig.cruiseRangeTrigger;
             missileLauncher.maxAoA = MLConfig.maxAoA;
             missileLauncher.optimumAirspeed = MLConfig.optimumAirspeed;
             missileLauncher.maxTurnRateDPS = MLConfig.maxTurnRateDPS;
@@ -626,11 +657,13 @@ namespace BDArmory.Weapons.Missiles
             missileLauncher.terminalHomingType = MLConfig.terminalHomingType;
             missileLauncher.liftArea = MLConfig.liftArea;
             missileLauncher.dragArea = MLConfig.dragArea;
+            missileLauncher.simpleDrag = MLConfig.simpleDrag;
             missileLauncher.useSimpleDrag = MLConfig.useSimpleDrag;
             missileLauncher.simpleCoD = MLConfig.simpleCoD;
             missileLauncher.maxTorque = MLConfig.maxTorque;
             missileLauncher.simpleStableTorque = MLConfig.simpleStableTorque;
             missileLauncher.deployedDrag = MLConfig.deployedDrag;
+            missileLauncher.rndAngVel = MLConfig.rndAngVel;
             missileLauncher.maneuvergLimit = MLConfig.maneuvergLimit;
             missileLauncher.LoftMaxAltitude = MLConfig.LoftMaxAltitude;
             missileLauncher.LoftRangeOverride = MLConfig.LoftRangeOverride;
@@ -691,13 +724,13 @@ namespace BDArmory.Weapons.Missiles
                 missileLauncher.engageMissile = MLConfig.engageMissile;
                 missileLauncher.engageSLW = MLConfig.engageSLW;
                 missileLauncher.shortName = MLConfig.shortName;
-                missileLauncher.blastRadius = -1;
                 missileLauncher.blastRadius = MLConfig.blastRadius;
             }
             missileLauncher.GetBlastRadius();
             GUIUtils.RefreshAssociatedWindows(missileLauncher.part);
             missileLauncher.ParseLiftDragSteerTorque();
             // Because we already set the values from the true base config, we do **not** check the base config in SetFields
+            missileLauncher.ParseMissileType();
             missileLauncher.SetFields(false);
             missileLauncher.Sublabel = $"Guidance: {Enum.GetName(typeof(TargetingModes), missileLauncher.TargetingMode)}; Max Range: {Mathf.Round(missileLauncher.engageRangeMax / 100) / 10} km; Remaining: {missileLauncher.missilecount}";
         }
@@ -825,21 +858,18 @@ namespace BDArmory.Weapons.Missiles
                 //Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: Num of targets: {targetsAssigned.Count - 1}");
                 if (targetsAssigned.Count < 1)
                     if (FiredByWM.currentTarget != null) targetsAssigned.Add(FiredByWM.currentTarget);
+
+                Team = FiredByWM.Team;
             }
-            //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
-            if (deployState != null)
+            else
             {
-                deployState.enabled = true;
-                deployState.speed = deploySpeed / deployState.length;
-                yield return new WaitWhileFixed(() => deployState != null && deployState.normalizedTime < 1); //wait for animation here
-                if (deployState != null)
-                {
-                    deployState.normalizedTime = 1;
-                    deployState.speed = 0;
-                    deployState.enabled = false;
-                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MultiMissileLauncher]: deploy anim complete");
-                }
+                if (BDArmorySettings.DEBUG_MISSILES)
+                    Debug.Log($"[BDArmory.MultiMissileLauncher]: {vessel.vesselName}'s multilauncher could not acquire the firing vessel's WM and as a result targets are not assigned correctly! Team also set to Neutral!");
+                Team = BDTeam.Get("Neutral");
             }
+
+            //else Debug.Log($"[BDArmory.MultiMissileLauncherDebug]: weaponmanager null!"); 
+            yield return SetDeployed(true);
             if (missileSpawner == null) yield break; // Died while waiting.
             for (int m = tubesFired; m < launchTransforms.Length; m++)
             {
@@ -861,7 +891,7 @@ namespace BDArmory.Weapons.Missiles
                 launchTransforms[m].localScale = Vector3.zero;
                 //time to deduct ammo = !clustermissile or cluster missile still on plane
                 //time to not deduct ammo = in-flight clMsl
-                if (!missileSpawner.SpawnMissile(launchTransforms[m], offset * Length, !isLaunchedClusterMissile))
+                if (!missileSpawner.SpawnMissile(launchTransforms[m], offset * Length, adjustMissileVOffset ? attachedMissileDiameter / 2 : 0, !isLaunchedClusterMissile))
                 {
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.LogWarning($"[BDArmory.MissileLauncher]: Failed to spawn a missile in {missileSpawner} on {vessel.vesselName}");
                     continue;
@@ -914,9 +944,9 @@ namespace BDArmory.Weapons.Missiles
                     ml.decoupleForward = missileLauncher.decoupleForward;
                     ml.dropTime = missileLauncher.dropTime;
                     ml.decoupleSpeed = missileLauncher.decoupleSpeed;
+                    ml.rndAngVel = missileLauncher.rndAngVel;
                 }
                 ml.DetonateAtMinimumDistance = missileLauncher.DetonateAtMinimumDistance && missileLauncher.canDetMinDist;
-                ml.guidanceActive = true;
                 ml.detonationTime = missileLauncher.detonationTime;
                 ml.engageAir = missileLauncher.engageAir;
                 ml.engageGround = missileLauncher.engageGround;
@@ -1227,7 +1257,7 @@ namespace BDArmory.Weapons.Missiles
                                     targetGEOPos = VectorUtils.WorldPositionToGeoCoords(missileLauncher.TargetPosition, FlightGlobals.currentMainBody);
                                     break;
                                 case TargetingModes.Inertial:
-                                    targetGEOPos = VectorUtils.WorldPositionToGeoCoords(missileLauncher.TargetPosition, FlightGlobals.currentMainBody);
+                                    targetGEOPos = missileLauncher.targetGPSCoords;
                                     targetINScoords = missileLauncher.TargetINSCoords;
                                     TimeOfLastINS = missileLauncher.TimeOfLastINS;
                                     INStimetogo = missileLauncher.INStimetogo;
@@ -1395,22 +1425,8 @@ namespace BDArmory.Weapons.Missiles
                             Tgt.Current.Disengage(FiredByWM);
                     }
             }
-            if (deployState != null)
-            {
-                yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
-                if (deployState != null)
-                {
-                    deployState.enabled = true;
-                    deployState.speed = -deploySpeed / deployState.length;
-                    yield return new WaitWhileFixed(() => deployState != null && deployState.normalizedTime > 0);
-                    if (deployState != null)
-                    {
-                        deployState.normalizedTime = 0;
-                        deployState.speed = 0;
-                        deployState.enabled = false;
-                    }
-                }
-            }
+            if (deployState != null) yield return new WaitForSecondsFixed(deployTime); //wait for missile to clear bay
+            yield return SetDeployed(false);
             if (missileLauncher == null) yield break;
             if (tubesFired >= launchTransforms.Length) //add a timer for reloading a partially emptied MML if it hasn't been used for a while?
             {
@@ -1505,12 +1521,16 @@ namespace BDArmory.Weapons.Missiles
                 if (missileLauncher.MissileReferenceTransform.position.CloserToThan(targetV.CoM, ml.activeRadarRange))
                 {
                     TargetSignatureData[] scannedTargets = new TargetSignatureData[(int)FiredByWM.multiMissileTgtNum];
-                    RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
+                    int numLocked = RadarUtils.RadarUpdateMissileLock(new Ray(ml.transform.position, ml.GetForwardTransform()), ml.maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, ml, false);
                     TargetSignatureData lockedTarget = TargetSignatureData.noTarget;
 
                     for (int i = 0; i < scannedTargets.Length; i++)
                     {
-                        if (scannedTargets[i].exists && scannedTargets[i].vessel == targetV)
+                        if (i == numLocked) break;
+
+                        if (!scannedTargets[i].exists) continue;
+
+                        if (scannedTargets[i].vessel == targetV)
                         {
                             lockedTarget = scannedTargets[i];
                             if (BDArmorySettings.DEBUG_MISSILES)
