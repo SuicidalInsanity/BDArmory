@@ -8690,6 +8690,7 @@ namespace BDArmory.Control
                             {
                                 ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(foundCam.groundTargetPosition, vessel.mainBody);
                                 ml.TargetAcquired = true;
+                                ml.lockedCamera = foundCam;
                                 validTarget = true;
                             }
                             else if (vesselRadarData && vesselRadarData.locked)
@@ -8726,10 +8727,6 @@ namespace BDArmory.Control
                                 validTarget = true;
                             }
 
-                            if (laserPointDetected)
-                            {
-                                ml.lockedCamera = foundCam;
-                            }
                             if (guardMode && GPSDistanceCheck(VectorUtils.GetWorldSurfacePostion(ml.targetGPSCoords, vessel.mainBody), targetVessel)) validTarget = true;
                         }
 

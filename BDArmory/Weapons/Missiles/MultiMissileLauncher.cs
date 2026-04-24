@@ -514,12 +514,16 @@ namespace BDArmory.Weapons.Missiles
                                             mml.subMunitionPath = subMunitionPath;
                                             mml.PopulateMissileDummies(true);
                                             mml.LoadoutModified = true;
+                                            mml.loadedMissileName = MLConfig.GetShortName();
+                                            GUIUtils.RefreshAssociatedWindows(sym.Current);
                                             if (mml.missileSpawner)
                                             {
                                                 mml.missileSpawner.MissileName = subMunitionName;
                                                 mml.missileSpawner.UpdateMissileValues();
                                             }
                                             mml.UpdateFields(MLConfig, true);
+                                            mml.tntMass = tntMass;
+                                            mml.missileMass = missileMass;
                                             mml.missileLauncher.blastRadius = BlastPhysicsUtils.CalculateBlastRange(tntMass);
                                         }
                                 }
@@ -534,11 +538,22 @@ namespace BDArmory.Weapons.Missiles
             //check if part uses a MODEL node to grab an (external?) .mu file
             string url;
             //float invRescaleFactor = 1f / part.rescaleFactor;
-            dummyScale = Vector3.one; //new Vector3(invRescaleFactor, invRescaleFactor, invRescaleFactor);
+            //dummyScale = Vector3.one; //new Vector3(invRescaleFactor, invRescaleFactor, invRescaleFactor);
             if (cfgdir == null)
             {
                 Debug.Log($"[BDArmory.MultiMissileLauncher] cfgdir is null!");
+                dummyScale = Vector3.one;
                 return "";
+            }
+
+            if (cfgdir.config.HasValue("rescaleFactor"))
+            {
+                float scale = float.Parse(cfgdir.config.GetValue("rescaleFactor"));
+                dummyScale = new Vector3(scale, scale, scale);
+            }
+            else
+            {
+                dummyScale = new Vector3(1.25f, 1.25f, 1.25f);
             }
 
             if (cfgdir.config.HasNode("MODEL"))
@@ -552,13 +567,6 @@ namespace BDArmory.Weapons.Missiles
                     dummyScale.y *= float.Parse(strings[1]);
                     dummyScale.z *= float.Parse(strings[2]);
                 }
-                if (cfgdir.config.HasValue("rescaleFactor"))
-                {
-                    float scale = float.Parse(cfgdir.config.GetValue("rescaleFactor"));
-                    dummyScale.x *= scale;
-                    dummyScale.y *= scale;
-                    dummyScale.z *= scale;
-                }
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale} via ConfigNode");
                 return url;
 
@@ -571,13 +579,6 @@ namespace BDArmory.Weapons.Missiles
                 char[] sep = { '.' };
                 string[] words = mesh.Split(sep);
                 mesh = words[0];
-            }
-            if (cfgdir.config.HasValue("rescaleFactor"))
-            {
-                float scale = float.Parse(cfgdir.config.GetValue("rescaleFactor"));
-                dummyScale.x *= scale;
-                dummyScale.y *= scale;
-                dummyScale.z *= scale;
             }
             url = string.Format("{0}/{1}", cfgdir.parent.parent.url, mesh);
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MultiMissileLauncher]: Found model URL of {url} and scale {dummyScale} via mesh");
