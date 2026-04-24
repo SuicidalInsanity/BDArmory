@@ -582,7 +582,7 @@ namespace BDArmory.FX
                             else
                             {
                                 if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.NukeFX]: Applying " + blastImpulse.ToString("0.0") + " impulse to " + part + " of mass " + part.mass + " at distance " + realDistance + "m");
-                                rb.AddForceAtPosition((part.transform.position - Position).normalized * ((float)blastImpulse * (radiativeArea / 3f)), part.transform.position, ForceMode.Impulse);
+                                rb.AddForceAtPosition((part.transform.position - Position).normalized * ((float)blastImpulse), part.transform.position, ForceMode.Impulse);
                             }
                         }
                         // Add Reverse Negative Event

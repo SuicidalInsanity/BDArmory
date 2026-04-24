@@ -74,6 +74,7 @@ namespace BDArmory.FX
             parentVessel = parentPart.vessel;
             transform.SetParent(hit.collider.transform);
             transform.position = hit.point;
+            transform.rotation = Quaternion.FromToRotation(Vector3.up, hit.normal);
             parentPart.OnJustAboutToDie += OnParentDestroy;
             parentPart.OnJustAboutToBeDestroyed += OnParentDestroy;
             if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11
@@ -146,7 +147,9 @@ namespace BDArmory.FX
             if (!parentVessel || parentVessel.situation != Vessel.Situations.SPLASHED) return;
 
             var dist2Waterline = FlightGlobals.getAltitudeAtPos(transform.position);
-            if (dist2Waterline > holeRadius + 1) //1 meter margin for waves/etc
+            float HoleOrientation = Mathf.Clamp(1 - Mathf.Abs(Vector3.Dot(HBController.upDir.normalized, transform.up)), 0.05f, 1); //height modification of hole; holes that are perpendicualr to water are full height, holes in the upper deck parallel to sea would have 0 'depth', etc
+            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] Hole Dot: {Vector3.Dot(HBController.upDir.normalized, transform.up):F2}, holeOri: {HoleOrientation:F2}");
+            if (dist2Waterline > (holeRadius * HoleOrientation) + 1) //1 meter margin for waves/etc
             {
                 debugFlooding = false;
                 return;
@@ -253,6 +256,9 @@ namespace BDArmory.FX
                 if (BDArmorySettings.DEBUG_LINES)
                 {
                     GUIUtils.DrawTextureOnWorldPos(transform.position, debugFlooding ? BDArmorySetup.Instance.redDotTexture : BDArmorySetup.Instance.greenDotTexture, new Vector2(20, 20), 0);
+                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 10 , 1, Color.blue);
+                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 10, 1, Color.red);
+                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10, 1, Color.green);
                 }
             }
         }

@@ -308,7 +308,7 @@ namespace BDArmory.Armor
             part.DragCubes.ResetCubeWeights();
             part.DragCubes.ForceUpdate(true, true, false);
             part.DragCubes.SetDragWeights();
-            if (HighLogic.LoadedSceneIsEditor) GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
+            //if (HighLogic.LoadedSceneIsEditor) GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
         }
         public void UpdateStackNode(bool translateChidren)
         {
