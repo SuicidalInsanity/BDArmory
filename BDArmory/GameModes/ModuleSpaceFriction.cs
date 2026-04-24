@@ -76,28 +76,31 @@ namespace BDArmory.GameModes
         {
             get
             {
-                if (field == null || field.vessel != vessel)
-                    field = VesselModuleRegistry.GetModuleEngines(vessel).FirstOrDefault();
-                return field;
+                if (_engine == null || _engine.vessel != vessel)
+                    _engine = VesselModuleRegistry.GetModuleEngines(vessel).FirstOrDefault();
+                return _engine;
             }
         }
+        ModuleEngines _engine;
         MissileFire WeaponManager
         {
             get
             {
-                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
-                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return field;
+                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
+                    _weaponManager = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return _weaponManager;
             }
         }
+        MissileFire _weaponManager;
         IBDAIControl AI
         {
             get
             {
-                if (field == null || !field.pilotEnabled || field.vessel != vessel) field = vessel.ActiveController().AI;
-                return field;
+                if (_AI == null || !_AI.pilotEnabled || _AI.vessel != vessel) _AI = vessel.ActiveController().AI;
+                return _AI;
             }
         }
+        IBDAIControl _AI;
 
         void Start()
         {

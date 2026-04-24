@@ -75,11 +75,12 @@ namespace BDArmory.WeaponMounts
         {
             get
             {
-                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
-                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return field;
+                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
+                    _weaponManager = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return _weaponManager;
             }
         }
+        MissileFire _weaponManager;
 
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_RailsPlus")]//Rails++
         public void RailsPlus()

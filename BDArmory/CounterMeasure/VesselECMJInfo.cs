@@ -196,7 +196,7 @@ namespace BDArmory.CounterMeasure
             ti.radarLockbreakFactor = (ti.radarRCSReducedSignature == 0f) ? 0f :
                 Mathf.Max(Mathf.Clamp01(ti.radarRCSReducedSignature / ti.radarModifiedSignature) * (1f - (totalLBstrength / ti.radarRCSReducedSignature / 100f)), 0f); // 0 is minimum lockbreak factor
         }
-        void FixedUpdate()
+        void OnFixedUpdate()
         {
             if (UI.BDArmorySetup.GameIsPaused) return;
             //Debug.Log($"[ECMDebug]: jammer on {vessel.GetName()} active! Jammer strength: {jStrength}");
@@ -210,7 +210,7 @@ namespace BDArmory.CounterMeasure
                         float distance = (loadedvessels.Current.CoM - vessel.CoM).magnitude;
                         if (distance < jStrength * 10)
                         {
-                            RadarWarningReceiver.PingRWR(loadedvessels.Current, vessel.CoM, RadarWarningReceiver.RWRThreatTypes.Jamming, 0.2f, vessel);
+                            RadarWarningReceiver.PingRWR(loadedvessels.Current, vessel.CoM, RadarWarningReceiver.RWRThreatTypes.Jamming, 0.2f);
                             //Debug.Log($"[ECMDebug]: jammer on {vessel.GetName()} active! Pinging RWR on {loadedvessels.Current.GetName()}");
                         }
                     }

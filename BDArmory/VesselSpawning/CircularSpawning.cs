@@ -223,41 +223,7 @@ namespace BDArmory.VesselSpawning
             })();
             if (refDirection == Vector3.zero) refDirection = Vector3.forward; // This only happens within 0.02° of planetary poles (~100m).
             var vesselSpawnConfigs = new List<VesselSpawnConfig>();
-            if (BDArmorySettings.WAYPOINTS_MODE && !BDArmorySettings.WAYPOINTS_ONE_AT_A_TIME && !spawnAirborne)
-            {
-                //TODO - move over to SpawnCustomTemplate once TournamentCoordinator deprecated
-                    var direction = (Quaternion.AngleAxis(0, radialUnitVector) * refDirection).ProjectOnPlanePreNormalized(radialUnitVector).normalized;
-
-                    float craftSeparation = Mathf.Min(20f * Mathf.Log10(spawnDistance), 4f * BDAMath.Sqrt(spawnDistance));
-                    var spreadDirection = Vector3.Cross(radialUnitVector, direction);
-                    var facingDirection = direction;
-                int rankCount = 0;
-                float gridAdjustedSpawnCount = 0;
-                foreach (var craftUrl in spawnConfig.craftFiles)
-                {
-                    ++gridAdjustedSpawnCount;
-                    if (gridAdjustedSpawnCount > 3)
-                    {
-                        gridAdjustedSpawnCount = 1;
-                        rankCount++;
-                    }
-                    var position = spawnPoint
-                        + craftSeparation * (gridAdjustedSpawnCount == 1 ? 0 : gridAdjustedSpawnCount == 2 ? -gridAdjustedSpawnCount / 2 : gridAdjustedSpawnCount / 2) * spreadDirection
-                        + craftSeparation * rankCount * -facingDirection;
-                    vesselSpawnConfigs.Add(new VesselSpawnConfig(
-                        craftUrl,
-                        position,
-                        facingDirection,
-                        (float)spawnConfig.altitude,
-                        spawnPitch,
-                        spawnAirborne,
-                        spawnInOrbit,
-                        reuseURLVesselName: (BDATournament.Instance.tournamentStatus == TournamentStatus.Running && !BDATournament.Instance.fullTeams) || TournamentCoordinator.Instance.IsRunning
-                    ));
-                    ++spawnedVesselCount;
-                }
-            }
-            else if (spawnConfig.teamsSpecific == null)
+            if (spawnConfig.teamsSpecific == null)
             {
                 foreach (var craftUrl in spawnConfig.craftFiles)
                 {

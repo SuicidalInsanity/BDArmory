@@ -8,26 +8,6 @@ namespace BDArmory.Extensions
     public static class VectorExtensions
     {
         /// <summary>
-        /// Project a vector onto a plane defined by the plane normal (pre-normalized) and return the dot product.
-        /// 
-        /// This implementation assumes that the plane normal is already normalized,
-        /// skipping such checks and normalization that Vector3.ProjectOnPlane does,
-        /// which gives a speed-up by a factor of approximately 1.7.
-        /// </summary>
-        /// <param name="vector">The vector to project.</param>
-        /// <param name="planeNormal">The plane normal (pre-normalized).</param>
-        /// <returns>The dot product and the projected vector.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static (float, Vector3) DotProjectOnPlanePreNormalized(this Vector3 vector, Vector3 planeNormal)
-        {
-            float dot = Vector3.Dot(vector, planeNormal);
-            return (dot, new Vector3(
-                vector.x - planeNormal.x * dot,
-                vector.y - planeNormal.y * dot,
-                vector.z - planeNormal.z * dot));
-        }
-
-        /// <summary>
         /// Project a vector onto a plane defined by the plane normal (pre-normalized).
         /// 
         /// This implementation assumes that the plane normal is already normalized,

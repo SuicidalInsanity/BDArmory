@@ -73,6 +73,7 @@ namespace BDArmory.Control
         public string SurfaceTypeName = "Amphibious"; // hard code this for the moment until we have something better
         public bool PoweredSteering = true;
         public float MaxDrift = 180;
+        public float AvoidMass = 0f;
 
         public AIUtils.VehicleMovementType SurfaceType
             => (AIUtils.VehicleMovementType)Enum.Parse(typeof(AIUtils.VehicleMovementType), SurfaceTypeName);
@@ -145,10 +146,6 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_ManeuverRCS_enabledText", disabledText = "#LOC_BDArmory_AI_ManeuverRCS_disabledText", scene = UI_Scene.All),]//Maneuvers--Combat
         public bool ManeuverRCS = false;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinObstacleMass"),//Min obstacle mass
-            UI_FloatSemiLogRange(minValue = 0.1f, maxValue = 100f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
-        public float AvoidMass = 0f;
-
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_PreferredBroadsideDirection", advancedTweakable = true),//Preferred broadside direction
             UI_ChooseOption(options = new string[3] { "Port", "Either", "Starboard" }, scene = UI_Scene.All),]
         public string OrbitDirectionName = "Either";
@@ -177,9 +174,6 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
             { nameof(MaxSpeed), 400f },
             { nameof(MinEngagementRange), 20000f },
             { nameof(MaxEngagementRange), 30000f },
-        };
-        Dictionary<string, (float, float, float)> altSemiLogValues = new Dictionary<string, (float, float, float)> {
-            { nameof(AvoidMass), (10f, 1000000f, 2f) },
         };
 
         #endregion Declarations
@@ -309,15 +303,6 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                 (altMaxValues[s.Current], euic.maxValue) = (euic.maxValue, altMaxValues[s.Current]);
                 StartCoroutine(SetVar(s.Current, (float)typeof(BDModuleVTOLAI).GetField(s.Current).GetValue(this))); // change the value back to what it is now after fixed update, because changing the max value will clamp it down
             }
-            foreach (var fieldName in altSemiLogValues.Keys.ToList())
-            {
-                var field = (UI_FloatSemiLogRange)(HighLogic.LoadedSceneIsFlight ? Fields[fieldName].uiControlFlight : Fields[fieldName].uiControlEditor);
-                var temp = (field.minValue, field.maxValue, field.sigFig);
-                var altValues = altSemiLogValues[fieldName];
-                if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModuleVTOLAI]: Swapping semiLog limits of {fieldName} from {temp} to {altValues}");
-                field.UpdateLimits(altValues.Item1, altValues.Item2, altValues.Item3);
-                altSemiLogValues[fieldName] = temp;
-            }
         }
 
         IEnumerator SetVar(string name, float value)
@@ -330,8 +315,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
         {
             base.OnGUI();
 
-            if (!HighLogic.LoadedSceneIsFlight) return;
-            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
+            if (!pilotEnabled || !vessel.isActiveVessel) return;
 
             if (!BDArmorySettings.DEBUG_LINES) return;
             if (command == PilotCommands.Follow)
@@ -481,7 +465,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                         targetAltitude = CombatAltitude;
                         SetStatus($"Extending");
                         return;
-                    }
+                    }      
                     else
                     {
                         extendingTarget = null;
@@ -771,7 +755,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
                 targetRoll = VectorUtils.GetAngleOnPlane(rollTarget, upDir, vesselTransform.right);
             }
             else
-                rollTarget = Vector3.RotateTowards(upDir, -vesselTransform.right, targetRoll * Mathf.PI / 180f, 0f);
+                rollTarget = Vector3.RotateTowards(upDir, -vesselTransform.right, targetRoll * Mathf.PI / 180f, 0f); 
 
             float rollError = targetRoll - bank;
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) DebugLine($"target lat vel: {targetLatVelocity}, lat vel accel: {latAccel}; lateral vel: {latVel}, lat vel error: {latError}, target roll: {targetRoll}, bank: {bank}, roll error: {rollError}");

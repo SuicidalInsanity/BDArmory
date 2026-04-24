@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
 using BDArmory.Ammo;
 using BDArmory.Competition;
 using BDArmory.Control;
@@ -11,11 +15,7 @@ using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.Utils;
 using BDArmory.WeaponMounts;
-using BDArmory.Weapons.Missiles;
 using Expansions.Serenity;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 namespace BDArmory.GameModes
 {
@@ -24,7 +24,6 @@ namespace BDArmory.GameModes
         public static void CheckDamageFX(Part part, float caliber, float penetrationFactor, bool explosivedamage, bool incendiary, string attacker, RaycastHit hitLoc, bool firsthit = true, bool cockpitPen = false, Vector3 colliderLocalHitPoint = default)
         {      
             if (!BDArmorySettings.BATTLEDAMAGE || BDArmorySettings.PAINTBALL_MODE) return;
-			if (penetrationFactor < BDArmorySettings.BD_DAMAGE_PENETRATION) return;
             penetrationFactor = Mathf.Clamp(penetrationFactor, 0.01f, 4f);
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.ZOMBIE_MODE)
             //if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == -1)
@@ -40,7 +39,7 @@ namespace BDArmory.GameModes
             if (ProjectileUtils.IsIgnoredPart(part)) return; // Ignore ignored parts.
 
             double damageChance = Mathf.Clamp((BDArmorySettings.BD_DAMAGE_CHANCE * ((1f - part.GetDamagePercentage()) * 10f) * ((penetrationFactor - BDArmorySettings.BD_DAMAGE_PENETRATION) * 0.5f)), 0, 100); //more heavily damaged parts more likely to take battledamage
-            Vector3 hitPoint = (colliderLocalHitPoint == default || hitLoc.collider == null) ? hitLoc.point : hitLoc.collider.transform.TransformPoint(colliderLocalHitPoint);
+            Vector3 hitPoint = colliderLocalHitPoint == default ? hitLoc.point : hitLoc.collider.transform.TransformPoint(colliderLocalHitPoint);
 
             if (BDArmorySettings.BD_TANKS)
             {
@@ -83,7 +82,7 @@ namespace BDArmory.GameModes
                         {
                             Diceroll *= 0.66;
                         }
-                        if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.BattleDamageHandler]: Battery Dice Roll: {Diceroll}, needs {BDArmorySettings.BD_DAMAGE_CHANCE}");
+                        if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.BattleDamageHandler]: Battery Dice Roll: " + Diceroll);
                         if (Diceroll <= BDArmorySettings.BD_DAMAGE_CHANCE)
                         {
                             BulletHitFX.AttachFire(hitPoint, part, caliber, attacker);
@@ -137,7 +136,6 @@ namespace BDArmory.GameModes
             if (BDArmorySettings.BD_PROPULSION)
             {
                 BattleDamageTracker tracker = part.gameObject.AddOrGetComponent<BattleDamageTracker>();
-				if (penetrationFactor < 0.8f) return;
                 tracker.Part = part;
                 if (part.isEngine() && part.GetDamagePercentage() < 0.95f) //first hit's free
                 {
@@ -254,82 +252,27 @@ namespace BDArmory.GameModes
                 if (BDArmorySettings.BD_GIMBALS) //engine gimbal damage
                 {
                     var gimbal = part.FindModuleImplementing<ModuleGimbal>();
-					if (penetrationFactor < 0.65f) return;
-                    if (gimbal != null && part.GetDamagePercentage() < 0.95f) //first hit's free)
+                    if (gimbal != null)
                     {
-                        float HEBonus = 1;
+                        double HEBonus = 1;
                         if (explosivedamage)
                         {
-                            HEBonus = 0.8f;
+                            HEBonus = 1.4;
                         }
                         if (incendiary)
                         {
-                            HEBonus = 0.95f;
+                            HEBonus = 1.25;
                         }
                         //gimbal.gimbalRange *= (1 - (((1 - part.GetDamagePercentatge()) * HEBonus) / BDArmorySettings.BD_PROP_DAM_RATE)); //HE does bonus damage
                         double Diceroll = UnityEngine.Random.Range(0, 100);
                         if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.BattleDamageHandler]: Gimbal DiceRoll: " + Diceroll);
-                        if (Diceroll <= (damageChance * HEBonus))
+                        if (Diceroll <= (BDArmorySettings.BD_DAMAGE_CHANCE * HEBonus))
                         {
-                            if (gimbal.gimbalRangeXN + gimbal.gimbalRangeXP + gimbal.gimbalRangeYN + gimbal.gimbalRangeYP > 0)
+                            gimbal.enabled = false;
+                            gimbal.gimbalRange = 0;
+                            if (incendiary)
                             {
-                                double ActuatorRoll = UnityEngine.Random.Range(0, 100);
-                                if (ActuatorRoll <= 88)
-                                {
-                                    if (ActuatorRoll <= 22)
-                                    {
-                                        if (gimbal.gimbalRangeXN > 2) { gimbal.gimbalRangeXN *= (part.GetDamagePercentage() * HEBonus); }
-                                        else gimbal.gimbalRangeXN = 0;
-                                    }
-                                    else if (ActuatorRoll <= 44)
-                                    {
-                                        if (gimbal.gimbalRangeXP > 2) { gimbal.gimbalRangeXP *= (part.GetDamagePercentage() * HEBonus); }
-                                        else gimbal.gimbalRangeXP = 0;
-                                    }
-                                    else if (ActuatorRoll <= 66)
-                                    {
-                                        if (gimbal.gimbalRangeYP > 2) { gimbal.gimbalRangeYP *= (part.GetDamagePercentage() * HEBonus); }
-                                        else gimbal.gimbalRangeYP = 0;
-                                    }
-                                    else
-                                    {
-                                        if (gimbal.gimbalRangeYN > 2) { gimbal.gimbalRangeYN *= (part.GetDamagePercentage() * HEBonus); }
-                                        else gimbal.gimbalRangeYN = 0;
-                                    }
-                                    if (Diceroll <= ((BDArmorySettings.BD_DAMAGE_CHANCE / HEBonus) / 2))
-                                    {
-                                        BulletHitFX.AttachFire(hitPoint, part, caliber, attacker, 10);
-                                    }
-                                }
-                                else
-                                {
-                                    gimbal.enabled = false;
-                                    gimbal.gimbalRange = 0;
-                                    if (incendiary)
-                                    {
-                                        BulletHitFX.AttachFire(hitPoint, part, caliber, attacker, 20);
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if (gimbal.gimbalRange < 3)
-                                {
-                                    gimbal.enabled = false;
-                                    gimbal.gimbalRange = 0;
-                                    if (incendiary)
-                                    {
-                                        BulletHitFX.AttachFire(hitPoint, part, caliber, attacker, 20);
-                                    }
-                                }
-                                else
-                                {
-                                    gimbal.gimbalRange *= (part.GetDamagePercentage() * HEBonus);
-                                    if (Diceroll <= ((BDArmorySettings.BD_DAMAGE_CHANCE / HEBonus) / 2))
-                                    {
-                                        BulletHitFX.AttachFire(hitPoint, part, caliber, attacker, 10);
-                                    }
-                                }
+                                BulletHitFX.AttachFire(hitPoint, part, caliber, attacker, 20);
                             }
                         }
                     }
@@ -401,7 +344,6 @@ namespace BDArmory.GameModes
             //Subsystems
             if (BDArmorySettings.BD_SUBSYSTEMS && firsthit)
             {
-				if (penetrationFactor < 0.8) return;
                 double Diceroll = UnityEngine.Random.Range(0, 100);
                 bool subsysCrit = false;
                 if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log("[BDArmory.BattleDamageHandler]: Subsystem DiceRoll: " + Diceroll + "; needs: " + damageChance);

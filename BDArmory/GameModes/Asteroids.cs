@@ -383,7 +383,7 @@ namespace BDArmory.GameModes
                 var position = spawnPoint + offset;
                 position += (altitude - BodyUtils.GetRadarAltitudeAtPos(position, false)) * upDirection;
                 asteroid.transform.position = position;
-                asteroid.SetVelocity(initialSpeed * upDirection + initialSpeedVariation * UnityEngine.Random.insideUnitSphere);
+                asteroid.SetWorldVelocity(initialSpeed * upDirection + initialSpeedVariation * UnityEngine.Random.insideUnitSphere);
                 // Apply a gaussian random torque to the asteroid.
                 asteroid.rootPart.Rigidbody.angularVelocity = Vector3.zero;
                 asteroid.rootPart.Rigidbody.AddTorque(VectorUtils.GaussianVector3d(Vector3d.zero, 300 * Vector3d.one), ForceMode.Acceleration);
@@ -428,7 +428,7 @@ namespace BDArmory.GameModes
                 var impactPosition = asteroid.transform.position + asteroid.srf_velocity * TimeWarp.fixedDeltaTime;
                 FXMonger.ExplodeWithDebris(impactPosition, Math.Pow(asteroid.GetTotalMass(), 0.3d) / 12d, null);
                 asteroid.transform.position += 10000f * upDirection; // Put the asteroid where it won't immediately die on re-activating, since we apparently can't reposition it immediately upon activation.
-                asteroid.SetVelocity(Vector3.zero); // Also, reset its velocity.
+                asteroid.SetWorldVelocity(Vector3.zero); // Also, reset its velocity.
                 asteroid.Landed = false;
                 asteroid.Splashed = false;
                 asteroid.gameObject.SetActive(false);
@@ -642,7 +642,7 @@ namespace BDArmory.GameModes
         Coroutine floatingCoroutine;
         public Vector3d anomalousAttraction = Vector3d.zero;
         int vesselCount = 0;
-        Vector3 averageVelocity = default;
+        Vector3d averageVelocity = default;
         System.Random RNG;
 
         // Pooling of asteroids
@@ -756,8 +756,9 @@ namespace BDArmory.GameModes
                 if (asteroid != null)
                 {
                     asteroid.SetPosition(position);
-                    Vector3 worldVelocity = inOrbit ? averageVelocity : Vector3.zero;
-                    asteroid.SetVelocity(worldVelocity);
+                    Vector3d worldVelocity = inOrbit ? averageVelocity : Vector3d.zero;
+                    if (BDKrakensbane.IsActive) worldVelocity -= BDKrakensbane.FrameVelocityV3f; // SetWorldVelocity does not take Krakensbane into account.
+                    asteroid.SetWorldVelocity(worldVelocity);
                     asteroid.gameObject.SetActive(true);
                     StartCoroutine(SetInitialRotation(asteroid));
                     asteroids[i] = asteroid;
