@@ -1,4 +1,4 @@
-﻿using BDArmory.Modules;
+using BDArmory.Modules;
 using BDArmory.Targeting;
 using UnityEngine;
 
@@ -14,6 +14,11 @@ namespace BDArmory.Radar
         public float signalPersistTime;
         public float velAngle;
         public int jammedIndex;
+
+        public string Name()
+        {
+            return vessel ? vessel.name : "null";
+        }
     }
     public struct IRSTDisplayData
     {

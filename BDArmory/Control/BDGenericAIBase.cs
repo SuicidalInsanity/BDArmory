@@ -35,12 +35,11 @@ namespace BDArmory.Control
         {
             get
             {
-                if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-                    _weaponManager = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
-                return _weaponManager;
+                if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+                    field = vessel && vessel.loaded ? vessel.ActiveController().WM : null;
+                return field;
             }
         }
-        MissileFire _weaponManager;
 
         /// <summary>
         /// The default is BDAirspeedControl. If you want to use something else, just override ActivatePilot  (and, potentially, DeactivatePilot), and make it use something else.
@@ -313,7 +312,9 @@ namespace BDArmory.Control
 
         protected virtual void OnGUI()
         {
-            if (!pilotEnabled || !vessel.isActiveVessel) return;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
+
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.name}\n{debugString.ToString()}");
@@ -581,18 +582,19 @@ namespace BDArmory.Control
                 }
 
                 ++activeWaypointIndex;
-                if (activeWaypointIndex >= waypoints.Count && activeWaypointLap > waypointLapLimit)
-                {
-                    if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]: Waypoints complete");
-                    waypoints = null;
-                    ReleaseCommand();
-                    if (BDArmorySettings.WAYPOINT_GUARD_INDEX >= 0 && !weaponManager.guardMode) weaponManager.guardMode = true;
-                    return;
-                }
-                else if (activeWaypointIndex >= waypoints.Count && activeWaypointLap <= waypointLapLimit)
+                if (activeWaypointIndex >= waypoints.Count)
                 {
                     activeWaypointIndex = 0;
                     activeWaypointLap++;
+
+                    if (activeWaypointLap > waypointLapLimit)
+                    {
+                        if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]: Waypoints complete");
+                        waypoints = null;
+                        ReleaseCommand();
+                        if (BDArmorySettings.WAYPOINT_GUARD_INDEX >= 0 && !weaponManager.guardMode) weaponManager.guardMode = true;
+                        return;
+                    }
                 }
                 UpdateWaypoint(); // Call ourselves again for the new waypoint to follow.
                 //Modify AI maxSpeed if the gate we just pased has a speed limit

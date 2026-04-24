@@ -10,6 +10,8 @@ namespace BDArmory.Utils
     {
         private static System.Random RandomGen = new System.Random();
 
+        private static readonly double RadToDeg = 180.0 / Math.PI;
+
         /// <summary>
         /// A slightly more efficient `Vector3.Sign` function, still requires a sqrt so it is best replaced with
         /// `VectorUtils.GetAngleOnPlane`, however that requires orthogonality from `fromDirection`. This function
@@ -187,9 +189,10 @@ namespace BDArmory.Utils
                 return Vector3d.zero;
             }
 
-            double lat = body.GetLatitude(worldPosition);
-            double longi = body.GetLongitude(worldPosition);
-            double alt = body.GetAltitude(worldPosition);
+            //double lat = body.GetLatitude(worldPosition);
+            //double longi = body.GetLongitude(worldPosition);
+            //double alt = body.GetAltitude(worldPosition);
+            body.GetLatLonAlt(worldPosition, out double lat, out double longi, out double alt);
             return new Vector3d(lat, longi, alt);
         }
 
@@ -371,24 +374,27 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
-        /// A more accurate Angle that is maintains precision down to an angle of 1e-5
-        /// (as compared to (float)Vector3d.Angle) instead of the 1e-2 that Vector3.Angle gives.
-        /// Additionally, it's around 30% faster than Vector3.Angle and 12% faster than (float)Vector3d(from, to).
+        /// A more accurate Angle that maintains precision down to an angle of 1e-5
+        /// instead of the 1e-2 that Vector3.Angle gives (as compared to (float)Vector3d.Angle).
+        /// Additionally, it's around 30% faster than Vector3.Angle.
+        /// 
+        /// Note: When called with Vector3 inputs, the inputs are automatically cast to Vector3d
+        /// with insignificant overhead, so explicit overloads aren't necessary.
         /// </summary>
         /// <param name="from"></param>
         /// <param name="to"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Angle(Vector3 from, Vector3 to)
+        public static float Angle(Vector3d from, Vector3d to)
         {
-            double num = ((Vector3d)from).sqrMagnitude * ((Vector3d)to).sqrMagnitude;
+            double num = from.sqrMagnitude * to.sqrMagnitude;
             if (num < 1e-30)
             {
                 return 0f;
             }
 
             double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / Math.Sqrt(num), -1.0, 1.0);
-            return (float)(Math.Acos(num2) * 57.295779513082325);
+            return (float)(Math.Acos(num2) * RadToDeg);
         }
 
         /// <summary>
@@ -405,10 +411,10 @@ namespace BDArmory.Utils
         /// <param name="to">Second vector.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3 from, Vector3 to)
+        public static float AnglePreNormalized(Vector3d from, Vector3d to)
         {
-            float num2 = Mathf.Clamp(Vector3.Dot(from, to), -1f, 1f);
-            return Mathf.Acos(num2) * 57.29578f;
+            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to), -1d, 1d);
+            return (float)(Math.Acos(num2) * RadToDeg);
         }
 
         /// <summary>
@@ -425,15 +431,47 @@ namespace BDArmory.Utils
         /// <param name="toMag">Second vector magnitude.</param>
         /// <returns>The angle between the two vectors.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float AnglePreNormalized(Vector3 from, Vector3 to, float fromMag, float toMag)
+        public static float AnglePreNormalized(Vector3d from, Vector3d to, float fromMag, float toMag)
         {
-            float num = fromMag * toMag;
+            // Using (double) here should help with precision when the magnitudes get very small or very big
+            double num = (double)fromMag * (double)toMag;
             if (num < 1E-15f)
                 return 0f;
 
-            float num2 = Mathf.Clamp(Vector3.Dot(from, to) / (fromMag * toMag), -1f, 1f);
-            return Mathf.Acos(num2) * Mathf.Rad2Deg;
+            double num2 = BDAMath.Clamp(Vector3d.Dot(from, to) / num, -1d, 1d);
+            return (float)(Math.Acos(num2) * RadToDeg);
         }
+
+        // No accuracy or efficiency gain (aside from the case where maxRadiansDelta > angle between the vectors
+        /*[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 RotateTowards(Vector3 current, Vector3 target, float maxRadiansDelta, bool constantMag = false)
+        {
+            float currSqrMag = 1f;
+            if (constantMag)
+            {
+                currSqrMag = current.sqrMagnitude;
+            }
+
+            float currAngle = Angle(current, target);
+
+            if (currAngle < (maxRadiansDelta *= Mathf.Rad2Deg)) 
+            {
+                if (constantMag)
+                {
+                    target *= BDAMath.Sqrt(currSqrMag / target.sqrMagnitude);
+                }
+                return target;
+            }
+
+            current = Vector3.Slerp(current, target, maxRadiansDelta / currAngle);
+
+            if (constantMag)
+            {
+                current *= BDAMath.Sqrt(currSqrMag / current.sqrMagnitude);
+            }
+
+            return current;
+        }*/
 
         /// <summary>
         /// Get AoA and Sideslip of a vector, relative to axes defined by forward and up.
@@ -448,19 +486,19 @@ namespace BDArmory.Utils
         /// <param name="sideslip">Sideslip output.</param>
         /// <returns>The AoA and Sideslip angle, in degrees, of "dir" relative to the axes defined by forward and up.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void GetAoASideslip(Vector3 dir, Vector3 forward, Vector3 up, out float AoA, out float sideslip)
+        public static void GetAoASideslip(Vector3d dir, Vector3d forward, Vector3d up, out float AoA, out float sideslip)
         {
             // Get the left vector to fully define the coordinate system
-            Vector3 left = Vector3.Cross(up, forward);
+            Vector3d left = Vector3d.Cross(up, forward);
 
             // Get the projections
-            float x = Vector3.Dot(dir, forward);
-            float y = Vector3.Dot(dir, left);
-            float z = Vector3.Dot(dir, up);
+            double x = Vector3d.Dot(dir, forward);
+            double y = Vector3d.Dot(dir, left);
+            double z = Vector3d.Dot(dir, up);
 
             // Return the AoA/sideslip
-            AoA = -Mathf.Rad2Deg * Mathf.Atan2(z, x);
-            sideslip = -Mathf.Rad2Deg * Mathf.Atan2(y, x);
+            AoA = (float)(-RadToDeg * Math.Atan2(z, x));
+            sideslip = (float)(-RadToDeg * Math.Atan2(y, x));
         }
 
         /// <summary>
@@ -475,18 +513,18 @@ namespace BDArmory.Utils
         /// <param name="left">Left vector.</param>
         /// <returns>The angle of "dir" relative to "forward", in degrees, projected onto a plane defined by "forward" and "left".</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetAngleOnPlane(Vector3 dir, Vector3 forward, Vector3 left)
+        public static float GetAngleOnPlane(Vector3d dir, Vector3d forward, Vector3d left)
         {
             // Get the projections
-            float x = Vector3.Dot(dir, forward);
-            float y = Vector3.Dot(dir, left);
+            double x = Vector3d.Dot(dir, forward);
+            double y = Vector3d.Dot(dir, left);
 
             // Check for if the desired vector is straight up/down
-            if (Mathf.Abs(x) < 2f * Vector3.kEpsilon && Mathf.Abs(y) < 2f * Vector3.kEpsilon)
+            if (Math.Abs(x) < 2E-5 && Math.Abs(y) < 2E-5)
                 return 0f;
 
             // Return the azimuth/elevation
-            return Mathf.Rad2Deg * Mathf.Atan2(y, x);
+            return (float) (RadToDeg * Math.Atan2(y, x));
         }
 
         /// <summary>
@@ -506,6 +544,19 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
+        /// Get elevation angle of a vector, relative to an up vector, with both vectors being normalized
+        /// 
+        /// </summary>
+        /// <param name="dir">Direction vector.</param>
+        /// <param name="up">Up vector.</param>
+        /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float GetElevationPreNorm(Vector3d dir, Vector3d up)
+        {
+            return 90f - AnglePreNormalized(up, dir);
+        }
+
+        /// <summary>
         /// Get elevation angle of a vector, relative to an up vector.
         /// Note that this basically an alternate form of Vector3.Angle,
         /// somewhat optimized for the case where the up vector is a
@@ -519,16 +570,16 @@ namespace BDArmory.Utils
         /// <param name="up">Up vector.</param>
         /// <returns>The angle of "dir" relative to "up", in degrees, as an elevation angle, with range -90° to 90°.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetElevation(Vector3 dir, Vector3 up)
+        public static float GetElevation(Vector3d dir, Vector3d up)
         {
-            float dirMag = dir.magnitude;
-            if (dirMag < 1E-15f)
+            double dirMag = Vector3d.Magnitude(dir);
+            if (dirMag < 1E-15)
             {
                 return 0f;
             }
 
-            float num2 = Mathf.Clamp(Vector3.Dot(up, dir) / dirMag, -1f, 1f);
-            return 90f - (float)Math.Acos(num2) * 57.29578f;
+            double num2 = BDAMath.Clamp(Vector3d.Dot(up, dir) / dirMag, -1d, 1d);
+            return 90f - (float)(Math.Acos(num2) * RadToDeg);
         }
 
         /// <summary>

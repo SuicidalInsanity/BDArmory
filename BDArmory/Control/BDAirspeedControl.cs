@@ -119,7 +119,7 @@ namespace BDArmory.Control
                 return;
             }
 
-            requestEngineAccel = Mathf.Clamp(requestEngineAccel, -engineAccel, engineAccel);
+            // requestEngineAccel = Mathf.Clamp(requestEngineAccel, -engineAccel, engineAccel); // This clamp breaks the braking logic when flying downwards due to gravAccel
 
             float requestThrottle = (requestEngineAccel - dragAccel) / engineAccel;
 
@@ -200,7 +200,7 @@ namespace BDArmory.Control
             float accelError = (actualCurrentAccel - estimatedCurrentAccel); // /2 -- why divide by 2 here?
             dragAccel = accelError;
 
-            possibleAccel += accel; // This assumes that the acceleration from engines is in the same direction as the original possibleAccel.
+            possibleAccel = accel - dragAccel; // This assumes that the acceleration from engines is in the same direction as the original possibleAccel.
             forceAfterburner = forceAfterburner || (afterburnerPriority == 100f);
             allowAfterburner = allowAfterburner && (afterburnerPriority != 0f);
 
@@ -280,6 +280,7 @@ namespace BDArmory.Control
     {
         public float targetSpeed;
         public float signedSrfSpeed;
+        public bool useBrakes = true;
         public Vessel vessel;
         public bool preventNegativeZeroPoint = false;
 
@@ -327,7 +328,7 @@ namespace BDArmory.Control
                 zeroPoint = (zeroPoint + lastThrottle * zeroMult) * (1 - zeroMult);
                 if (preventNegativeZeroPoint && zeroPoint < 0) zeroPoint = 0;
                 SetThrottle(s, lastThrottle);
-                vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, (targetSpeed * signedSrfSpeed < -5));
+                vessel.ActionGroups.SetGroup(KSPActionGroup.Brakes, useBrakes);
             }
         }
 
@@ -503,7 +504,7 @@ namespace BDArmory.Control
         private float lerpRate;
         private bool lockAttitude = false;
         public bool PIDActive = false;
-        public  List<ModuleEngines> rcsEngines = new List<ModuleEngines>();
+        public List<ModuleEngines> rcsEngines = new List<ModuleEngines>();
         private bool facingDesiredRotation;
         public float throttle;
         public float throttleActual;
@@ -564,7 +565,7 @@ namespace BDArmory.Control
         private void UpdateThrottle(FlightCtrlState s)
         {
             facingDesiredRotation = VectorUtils.Angle((useReverseThrust ? -1 : 1) * vessel.ReferenceTransform.up, thrustDirection) < alignmentToleranceforBurn;
- 
+
             throttleActual = facingDesiredRotation ? throttle : 0;
 
             // Move actual throttle towards throttle target gradually.
@@ -599,7 +600,7 @@ namespace BDArmory.Control
                 lastEpsilon = rcsEpsilon;
             }
 
-            if (RCSVector == Vector3.zero) 
+            if (RCSVector == Vector3.zero)
             {
                 RCSEngineControl(s);
                 return;

@@ -472,7 +472,8 @@ namespace BDArmory.Control
         {
             base.OnGUI();
 
-            if (!pilotEnabled || !vessel.isActiveVessel) return;
+            if (!HighLogic.LoadedSceneIsFlight) return;
+            if (!pilotEnabled || !vessel || !vessel.isActiveVessel) return;
 
             if (!BDArmorySettings.DEBUG_LINES) return;
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, PIDActive ? debugTargetPosition : fc.attitude * 1000, 5, Color.red); // The point we're asked to turn to
@@ -611,7 +612,7 @@ namespace BDArmory.Control
                         vessel.ActionGroups.SetGroup(KSPActionGroup.RCS, true);
 
                         Vector3 incomingVector = FromTo(vessel, weaponManager.incomingMissileVessel);
-                        Vector3 dodgeVector = Vector3.ProjectOnPlane(vessel.ReferenceTransform.up, incomingVector.normalized);
+                        Vector3 dodgeVector = vessel.ReferenceTransform.up.ProjectOnPlanePreNormalized(incomingVector.normalized);
 
                         fc.attitude = dodgeVector;
                         fc.alignmentToleranceforBurn = 70;
@@ -753,7 +754,7 @@ namespace BDArmory.Control
                         fc.throttle = 1f;
                         fc.alignmentToleranceforBurn = 25f;
 
-                        rcsVector = -Vector3.ProjectOnPlane(relVel, vesselTransform.up);
+                        rcsVector = -relVel.ProjectOnPlanePreNormalized(vesselTransform.up);
                     }
                     break;
                 case StatusMode.Firing:
@@ -771,9 +772,13 @@ namespace BDArmory.Control
                             float minSpeed = Mathf.Clamp(targetSpeed - margin, minFiringSpeed, firingSpeed);
                             float maxSpeed = Mathf.Clamp(targetSpeed + margin, minFiringSpeed, firingSpeed);
                             if (minFiringSpeed == 0 || relVel.sqrMagnitude > maxSpeed * maxSpeed)
-                                rcsVector = -Vector3.ProjectOnPlane(relVel, FromTo(vessel, targetVessel));
+                            {
+                                rcsVector = -relVel.ProjectOnPlane(FromTo(vessel, targetVessel));
+                            }
                             else if (relVel.sqrMagnitude < minSpeed * minSpeed)
-                                rcsVector = Vector3.ProjectOnPlane(relVel, FromTo(vessel, targetVessel));
+                            {
+                                rcsVector = relVel.ProjectOnPlane(FromTo(vessel, targetVessel));
+                            }
                         }
 
                         if (weaponManager.currentGun && GunReady(weaponManager.currentGun))
@@ -859,7 +864,7 @@ namespace BDArmory.Control
                             else if (hasPropulsion && targetVessel != null && (AngularVelocity(vessel, targetVessel, 5f) > firingAngularVelocityLimit || killAngOngoing))
                             {
                                 SetStatus("Maneuvering (Kill Angular Velocity)");
-                                fc.attitude = -Vector3.ProjectOnPlane(RelVel(vessel, targetVessel), vessel.PredictPosition(timeToCPA)).normalized;
+                                fc.attitude = -RelVel(vessel, targetVessel).ProjectOnPlane(vessel.PredictPosition(timeToCPA)).normalized;
                                 fc.throttle = 1;
                                 fc.alignmentToleranceforBurn = 45f;
                             }
@@ -868,7 +873,7 @@ namespace BDArmory.Control
                                 SetStatus("Maneuvering (Increasing Velocity)");
                                 Vector3 relPos = targetVessel.CoM - vessel.CoM;
                                 float r = Mathf.Clamp01(currentRange / interceptRanges.y);
-                                Vector3 lateralOffset = Vector3.ProjectOnPlane(relVel, relPos).normalized * Mathf.Max(interceptRanges.z, currentRange);
+                                Vector3 lateralOffset = relVel.ProjectOnPlane(relPos).normalized * Mathf.Max(interceptRanges.z, currentRange);
                                 fc.thrustDirection = Vector3.Lerp(relVel - targetVessel.perturbation, relPos + lateralOffset, r).normalized;
                                 if (UseForwardThrust(fc.thrustDirection))
                                     fc.attitude = fc.thrustDirection;
@@ -1338,7 +1343,7 @@ namespace BDArmory.Control
 
         private Vector3 Intercept(Vector3 relPos, Vector3 relVel)
         {
-            Vector3 lateralVel = Vector3.ProjectOnPlane(-relVel, relPos);
+            Vector3 lateralVel = -relVel.ProjectOnPlane(relPos);
             Vector3 lateralOffset = lateralVel.normalized * interceptRanges.z;
             return relPos + lateralOffset;
         }
@@ -1359,7 +1364,11 @@ namespace BDArmory.Control
                     EngageableWeapon engageableWeapon = currentWeapon as EngageableWeapon;
                     minRange = Mathf.Max(engageableWeapon.GetEngagementRangeMin(), minRange);
                     maxRange = engageableWeapon.GetEngagementRangeMax();
-                    usingProjectile = weaponManager.selectedWeapon.GetWeaponClass() != WeaponClasses.Missile;
+                    usingProjectile = currentWeapon.GetWeaponClass() switch
+                    {
+                        WeaponClasses.Missile or WeaponClasses.Bomb or WeaponClasses.SLW => false,
+                        _ => true
+                    };
                     if (usingProjectile)
                     {
                         missileTryLaunchTime = 0f;
@@ -1671,7 +1680,7 @@ namespace BDArmory.Control
             if (!((evadingGunfire && evasionEngines) && (currentStatusMode == StatusMode.Maneuvering || currentStatusMode == StatusMode.Firing))) return;
 
             var weaponManager = WeaponManager;
-            Vector3 relVelProjected = Vector3.ProjectOnPlane(weaponManager.incomingThreatVessel ? RelVel(vessel, weaponManager.incomingThreatVessel) : vessel.GetObtVelocity(), threatRelativePosition);
+            Vector3 relVelProjected = (weaponManager.incomingThreatVessel ? RelVel(vessel, weaponManager.incomingThreatVessel) : vessel.GetObtVelocity()).ProjectOnPlane(threatRelativePosition);
             Vector3 evasionDir = evasionErraticness * Vector3.Project(evasionNonLinearityDirection, relVelProjected).normalized;
             Vector3 thrustDir = (fc.thrustDirection == Vector3.zero ? fc.attitude : fc.thrustDirection);
             evasionDir = evasionErraticness == 0 ? thrustDir : Vector3.Lerp(evasionDir, thrustDir + evasionDir, fc.throttle).normalized;
@@ -1706,7 +1715,7 @@ namespace BDArmory.Control
             else if (evadingGunfire && evasionRCS) // Quickly move RCS vector
             {
                 var weaponManager = WeaponManager;
-                Vector3 relVelProjected = Vector3.ProjectOnPlane(weaponManager.incomingThreatVessel ? RelVel(vessel, weaponManager.incomingThreatVessel) : vessel.GetObtVelocity(), threatRelativePosition);
+                Vector3 relVelProjected = (weaponManager.incomingThreatVessel ? RelVel(vessel, weaponManager.incomingThreatVessel) : vessel.GetObtVelocity()).ProjectOnPlane(threatRelativePosition);
                 inputVec = Vector3.Cross(Vector3.Project(evasionNonLinearityDirection, relVelProjected), threatRelativePosition).normalized;
                 fc.rcsLerpRate = 100f / Time.fixedDeltaTime; // instant changes, don't Lerp
                 fc.rcsRotate = false;
@@ -1854,7 +1863,7 @@ namespace BDArmory.Control
                         Vector3.Dot(-engine.thrustTransforms[0].forward, vesselTransform.forward) > 0.5f ||
                         Vector3.Dot(-engine.thrustTransforms[0].forward, vesselTransform.forward) < -0.5f)
                         rcsEngines.Add(engine); //grab engines pointing sideways. Not grabbing fore/aft engines since while those would impart some torque,
-                                                //ship design is generally going to be long and anrrow, so torque imparted would be minimal while adding noticable forward/reverse vel
+                                                //ship design is generally going to be long and narrow, so torque imparted would be minimal while adding noticable forward/reverse vel
                     if (engine.MaxThrustOutputVac(true) > 0) //just in case someone has mounted jets to the side of their space cruiser for some reason
                     {
                         engine.Activate();

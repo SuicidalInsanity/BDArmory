@@ -177,30 +177,34 @@ namespace BDArmory.Radar
             get { return displayedTargets[lockedTargetIndexes[activeLockedTargetIndex]]; }
         }
 
-        public TargetSignatureData activeIRTarget(Vessel desiredTarget, MissileFire mf)
+        public TargetSignatureData activeIRTarget(Vessel desiredTarget, MissileFire mf, bool ranging = false)
         {
             TargetSignatureData data;
             float targetMagnitude = 0;
             int brightestTarget = 0;
             for (int i = 0; i < displayedIRTargets.Count; i++)
             {
+                IRSTDisplayData IRSTdata = displayedIRTargets[i];
                 if (desiredTarget != null)
                 {
-                    if (displayedIRTargets[i].vessel == desiredTarget)
+                    if (IRSTdata.vessel == desiredTarget)
                     {
-                        data = displayedIRTargets[i].targetData;
+                        // If we need ranging data and no ranging data...
+                        if (ranging && !IRSTdata.detectedByIRST.irstRanging) return TargetSignatureData.noTarget;
+
+                        data = IRSTdata.targetData;
                         return data;
                     }
                 }
                 else
                 {
-                    if (displayedIRTargets[i].targetData.Team == mf.Team) continue;
-                    if (displayedIRTargets[i].magnitude > targetMagnitude)
+                    if (IRSTdata.targetData.Team == mf.Team) continue;
+                    if (ranging && !IRSTdata.detectedByIRST.irstRanging) continue;
+                    if (IRSTdata.magnitude > targetMagnitude)
                     {
-                        targetMagnitude = displayedIRTargets[i].magnitude;
+                        targetMagnitude = IRSTdata.magnitude;
                         brightestTarget = i;
                     }
-
                 }
             }
             if (targetMagnitude > 0)
@@ -269,20 +273,22 @@ namespace BDArmory.Radar
                 return (TargetSignatureData.noTarget, false);
         }
 
-        // The function previously did this, no clue why, but I've split off this behavior
-        // into its own function
-        public TargetSignatureData detectedRadarTargetGetRadar(Vessel desiredTarget, MissileFire mf) //passive sonar torpedoes, but could also be useful for LOAL missiles fired at detected but not locked targets, etc.
+        // Used for INS stuff
+        public (TargetSignatureData, bool) detectedRadarTargetGetRadar(Vessel desiredTarget, MissileFire mf) //passive sonar torpedoes, but could also be useful for LOAL missiles fired at detected but not locked targets, etc.
         {
             int temp = detectedRadarTargetIndex(desiredTarget, mf);
             if (temp >= 0)
             {
                 RadarDisplayData t = displayedTargets[temp];
                 TargetSignatureData tempData = t.targetData;
-                tempData.lockedByRadar = t.detectedByRadar;
-                return tempData;
+                if (!t.locked)
+                {
+                    tempData.lockedByRadar = t.detectedByRadar;
+                }
+                return (tempData, t.locked);
             }
             else
-                return TargetSignatureData.noTarget;
+                return (TargetSignatureData.noTarget, false);
         }
 
         public TargetSignatureData detectedRadarTarget() //passive sonar torpedoes, but could also be useful for LOAL missiles fired at detected but not locked targets ,etc.
@@ -763,7 +769,8 @@ namespace BDArmory.Radar
             }
             weaponManager.slavingTurrets = true;
             TargetSignatureData lockedTarget = lockedTargetData.targetData;
-            weaponManager.slavedPosition = lockedTarget.predictedPositionWithChaffFactor(lockedTargetData.detectedByRadar.radarChaffClutterFactor);
+            ModuleRadar detectedRadar = lockedTargetData.detectedByRadar;
+            weaponManager.slavedPosition = lockedTarget.predictedPositionWithChaffFactor(detectedRadar.radarChaffClutterFactor, detectedRadar._radarChaffNotchVFac, detectedRadar._radarChaffNotchRFac);
             weaponManager.slavedVelocity = lockedTarget.velocity;
             weaponManager.slavedAcceleration = lockedTarget.acceleration;
             weaponManager.slavedTarget = lockedTarget;
@@ -1007,7 +1014,7 @@ namespace BDArmory.Radar
                 && (!guardModeActive || // If not in Guard Mode
                     !radar.locked || // Or the radar isn't locked
                     (priorityLock && !radar.lockedTarget.targetInfo.isMissile) || // Or we're a priority lock
-                    weaponManager.GetMissilesAway(radar.lockedTarget.targetInfo)[1] == 0 || // Or we're not guiding a missile
+                    weaponManager.GetMissilesAway(radar.lockedTarget.targetInfo).numSARH == 0 || // Or we're not guiding a missile
                     VectorUtils.Angle(relativePos, radar.lockedTarget.position - radar.currPosition) < radar.multiLockFOV * 0.5f)) // Or we're within the multiLockFOV
             );
         }
@@ -2169,9 +2176,36 @@ namespace BDArmory.Radar
             rData.magnitude = magnitude;
             rData.targetData = contactData;
             rData.pingPosition = UpdatedPingPosition(contactData.position, irst);
-            displayedIRTargets.Add(rData);
 
-            return;
+            int replaceIndex = -1;
+            for (int i = 0; i < displayedIRTargets.Count; i++)
+            {
+                IRSTDisplayData t = displayedIRTargets[i];
+                if (t.vessel == rData.vessel)
+                {
+                    // If contact exists and we're a ranging IRST, skip
+                    if (!irst.irstRanging) return;
+
+                    // If contact exists and it's already detected by ranging IRST, skip
+                    if (t.detectedByIRST && t.detectedByIRST.irstRanging) return;
+
+                    replaceIndex = i;
+                    break;
+                }
+            }
+
+            if (replaceIndex >= 0)
+            {
+                // If it is an existing target, replace the data
+                displayedIRTargets[replaceIndex] = rData;
+                return;
+            }
+            else
+            {
+                // We're adding new data
+                displayedIRTargets.Add(rData);
+                return;
+            }
         }
 
         public void TargetNext()

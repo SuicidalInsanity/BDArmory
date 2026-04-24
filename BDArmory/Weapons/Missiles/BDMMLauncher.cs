@@ -1,6 +1,5 @@
 using UnityEngine;
 
-using BDArmory.Control;
 using BDArmory.Utils;
 
 namespace BDArmory.Weapons.Missiles
@@ -9,6 +8,8 @@ namespace BDArmory.Weapons.Missiles
     {
         public override void OnStart(StartState state)
         {
+            base.OnStart(state);
+            if (!HighLogic.LoadedSceneIsFlight) return;
             part.force_activate();
         }
 

@@ -28,7 +28,8 @@ namespace BDArmory.VesselSpawning.SpawnStrategies
             Debug.Log("[BDArmory.BDAScoreService] PointSpawnStrategy spawning.");
 
             // TODO: support body targeting; fixed as Kerbin for now
-            var worldIndex = FlightGlobals.GetBodyIndex(FlightGlobals.GetBodyByName("Kerbin"));
+            var kerbin = FlightGlobals.GetBodyByName("Kerbin");
+            var worldIndex = FlightGlobals.GetBodyIndex(kerbin ?? FlightGlobals.currentMainBody);
 
             // spawn the given craftUrl at the given location/heading/pitch
             // yield return spawner.SpawnVessel(craftUrl, latitude, longitude, altitude, heading, pitch);
@@ -38,7 +39,7 @@ namespace BDArmory.VesselSpawning.SpawnStrategies
             // Essentially, the differences in the spawning strategies are so large, that I don't think the currently defined interface is really suitable.
             // One option would be to remove the "VesselSpawner spawner" from the "public IEnumerator Spawn(VesselSpawner spawner);" in SpawnStrategy.cs and get the appropriate vessel spawner instance directly in each SpawnStrategy.Spawn function, which would then call the specific spawning functions of the vessel spawner instead of "spawner.Spawn(spawnConfig)" as below.
             // E.g., yield return SingleVesselSpawning.Instance.SpawnVessel(craftUrl, latitude, longitude, altitude, heading, pitch);
-            yield return spawner.Spawn(new SpawnConfig(worldIndex, latitude, longitude, altitude, false, false, 0, null, null, "", new List<string>{craftUrl}));
+            yield return spawner.Spawn(new SpawnConfig(worldIndex, latitude, longitude, altitude, false, false, 0, null, null, "", new List<string> { craftUrl }));
 
             // wait for spawner to finish
             yield return new WaitWhile(() => spawner.vesselsSpawning);

@@ -31,6 +31,9 @@ namespace BDArmory.Weapons
         [KSPField]
         public float maxDeviation = -1f;
 
+        [KSPField]
+        public float bulletDmgMult = 1f;
+
         public void ParseWarheadType()
         {
             _warheadType = BulletInfo.bullets[warheadType];
@@ -56,9 +59,8 @@ namespace BDArmory.Weapons
             if (maxDeviation < 0) maxDeviation = _warheadType.subProjectileDispersion;
             FireBullet(_warheadType, _warheadType.projectileCount, sourceInfo, graphicsInfo, nukeInfo,
                         true, _warheadType.projectileTTL + (detTime < 0.0f ? 0.0f : detTime), TimeWarp.fixedDeltaTime, detRange, detTime,
-                        false, null, null, false, 1f, 1f,
+                        false, null, null, false, 1f, bulletDmgMult,
                         true, currentSpeed, 0f, transform.up, true, maxDeviation);
-
         }
 
         protected override void WarheadSpecificSetup()

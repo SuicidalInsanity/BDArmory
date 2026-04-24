@@ -388,10 +388,10 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                                         {
                                             KerbalEVA eva = LOShit.collider.gameObject.GetComponentUpwards<KerbalEVA>();
                                             Part p = eva ? eva.part : LOShit.collider.gameObject.GetComponentInParent<Part>();
-                                            if (p == hitPart)
+                                            /*if (p == hitPart)
                                             {
                                                 ProjectileUtils.CalculateShrapnelDamage(hitPart, hit, 200, (float)ammoExplosionYield, dist, this.part.vessel.GetName(), ExplosionSourceType.BattleDamage, part.mass);
-                                            }
+                                            }*/
                                         }
                                     }
                                 }

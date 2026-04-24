@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
@@ -26,7 +26,7 @@ namespace BDArmory.Armor
         public HullInfo(string name, string localizedName, float massMod, float costMod, float healthMod, float ignitionTemp, float maxTemp, float ImpactMod, float radarMod)
         {
             this.name = name;
-            this.localizedName = localizedName;
+            this.localizedName = (localizedName == "def" ? name : localizedName);
             this.massMod = massMod;
             this.costMod = costMod;
             this.healthMod = healthMod;

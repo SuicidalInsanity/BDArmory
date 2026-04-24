@@ -13,6 +13,7 @@ using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.UI;
 using BDArmory.VesselSpawning;
+using BDArmory.Modules;
 
 namespace BDArmory.Utils
 {
@@ -57,6 +58,7 @@ namespace BDArmory.Utils
         static public Dictionary<Vessel, List<KerbalSeat>> registryKerbalSeat;
         static public Dictionary<Vessel, List<KerbalEVA>> registryKerbalEVA;
         static public Dictionary<Vessel, List<ModuleWheelBase>> registryRepulsorModule;
+        static public Dictionary<Vessel, List<ModuleHMD>> registryModuleHMD;
 
         // Named Modules (where the modules are only known by name, we don't actually have instances of them; they come from DLLs that aren't dependencies).
         static public Dictionary<Vessel, Dictionary<string, List<Part>>> registryNamedModuleParts; // Parts per vessel containing the named module.
@@ -84,6 +86,7 @@ namespace BDArmory.Utils
             registryKerbalSeat ??= [];
             registryKerbalEVA ??= [];
             registryRepulsorModule ??= [];
+            registryModuleHMD ??= [];
             updateModuleCallbacks ??= [];
             vesselPartCounts ??= [];
             registryNamedModuleParts ??= [];
@@ -114,6 +117,7 @@ namespace BDArmory.Utils
             registryKerbalSeat.Clear();
             registryKerbalEVA.Clear();
             registryRepulsorModule.Clear();
+            registryModuleHMD.Clear();
             registryNamedModuleParts.Clear();
 
             updateModuleCallbacks.Clear();
@@ -288,6 +292,11 @@ namespace BDArmory.Utils
                 registryRepulsorModule[vessel] = vessel.FindPartModulesImplementing<ModuleWheelBase>();
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Specialised registry entry for {vessel.vesselName} updated to have {registryRepulsorModule[vessel].Count} modules of type {typeof(ModuleWheelBase).Name}.");
             }
+            if (registryModuleHMD.ContainsKey(vessel) && (partsAdded || registryModuleHMD[vessel].Count > 0))
+            {
+                registryModuleHMD[vessel] = vessel.FindPartModulesImplementing<ModuleHMD>();
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Specialised registry entry for {vessel.vesselName} updated to have {registryModuleHMD[vessel].Count} modules of type {typeof(ModuleHMD).Name}.");
+            }
 
             // Named module registry.
             if (registryNamedModuleParts.ContainsKey(vessel))
@@ -344,6 +353,7 @@ namespace BDArmory.Utils
             if (typeof(T) == typeof(KerbalSeat)) { return GetKerbalSeats(vessel) as List<T>; }
             if (typeof(T) == typeof(KerbalEVA)) { return GetKerbalEVAs(vessel) as List<T>; }
             if (typeof(T) == typeof(ModuleWheelBase)) { return GetRepulsorModules(vessel) as List<T>; }
+            if (typeof(T) == typeof(ModuleHMD)) { return GetModuleHMDs(vessel) as List<T>; }
 
             if (!registry.ContainsKey(vessel))
             { Instance.AddVesselToRegistry(vessel); }
@@ -393,6 +403,7 @@ namespace BDArmory.Utils
             if (typeof(T) == typeof(KerbalSeat)) { return GetKerbalSeats(vessel).Count; }
             if (typeof(T) == typeof(KerbalEVA)) { return GetKerbalEVAs(vessel).Count; }
             if (typeof(T) == typeof(ModuleWheelBase)) { return GetRepulsorModules(vessel).Count; }
+            if (typeof(T) == typeof(ModuleHMD)) { return GetModuleHMDs(vessel).Count; }
             if (!registry.ContainsKey(vessel) || !registry[vessel].ContainsKey(typeof(T))) { Instance.UpdateVesselModulesInRegistry<T>(vessel); }
             return registry[vessel][typeof(T)].Count;
         }
@@ -450,6 +461,7 @@ namespace BDArmory.Utils
             registryKerbalSeat = registryKerbalSeat.Where(kvp => kvp.Key != null && kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null and empty vessel entries.
             registryKerbalEVA = registryKerbalEVA.Where(kvp => kvp.Key != null && kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null and empty vessel entries.
             registryRepulsorModule = registryRepulsorModule.Where(kvp => kvp.Key != null && kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null and empty vessel entries.
+            registryModuleHMD = registryModuleHMD.Where(kvp => kvp.Key != null && kvp.Value.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null and empty vessel entries.
             // Named module registry.
             registryNamedModuleParts = registryNamedModuleParts.Where(kvp => kvp.Key != null).ToDictionary(kvp => kvp.Key, kvp => kvp.Value); // Remove null vessel entries. We can't clear the empty entries as we want to know if there are none.
         }
@@ -759,6 +771,18 @@ namespace BDArmory.Utils
             }
             return registryRepulsorModule[vessel];
         }
+
+        public static List<ModuleHMD> GetModuleHMDs(Vessel vessel)
+        {
+            if (vessel == null || !vessel.loaded) return [];
+            if (!registryModuleHMD.ContainsKey(vessel))
+            {
+                registryModuleHMD.Add(vessel, vessel.FindPartModulesImplementing<ModuleHMD>());
+                vesselPartCounts[vessel] = vessel.Parts.Count;
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.VesselModuleRegistry]: Vessel {vessel.vesselName} added to specialised {typeof(ModuleHMD).Name} registry with {registryModuleHMD[vessel].Count} modules.");
+            }
+            return registryModuleHMD[vessel];
+        }
         #endregion
 
 #if DEBUG
@@ -875,13 +899,12 @@ namespace BDArmory.Utils
     ///   {
     ///       get
     ///       {
-    ///           if (_weaponManager == null || !_weaponManager.IsPrimaryWM || _weaponManager.vessel != vessel)
-    ///               _weaponManager = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
-    ///           if (_weaponManager != null && _weaponManager.vessel != vessel) _weaponManager = null;
-    ///           return _weaponManager;
+    ///           if (field == null || !field.IsPrimaryWM || field.vessel != vessel)
+    ///               field = (vessel != null && vessel.loaded) ? vessel.ActiveController().WM : null;
+    ///           if (field != null && field.vessel != vessel) field = null;
+    ///           return field;
     ///       }
     ///   }
-    ///   MissileFire _weaponManager;
     /// Note: Take a local copy if accessing it repeatedly without the possibility of it changing.
     /// Note: The secondary check is necessary if vessel is FlightGlobals.ActiveVessel due to the DeathCam switch delay while the vessel is being removed.
     ///   
@@ -890,11 +913,10 @@ namespace BDArmory.Utils
     ///   {
     ///     get
     ///     {
-    ///       if (_AI == null || !_AI.pilotEnabled || _AI.vessel != vessel) _AI = vessel.ActiveController().AI;
-    ///       return _AI;
+    ///       if (field == null || !field.pilotEnabled || field.vessel != vessel) field = vessel.ActiveController().AI;
+    ///       return field;
     ///     }
     ///   }
-    ///   IBDAIControl _AI;
     /// Note: Take a local copy if accessing it repeatedly without the possibility of it changing.
     ///   
     /// 3. Accessing a field of the active AI, depending on the AI's type:
@@ -1075,6 +1097,7 @@ namespace BDArmory.Utils
         {
             TimingManager.FixedUpdateRemove(TimingManager.TimingStage.Precalc, UpdateVesselType); // Do it only once.
             if (Vessel == null) return;
+            if (Vessel.vesselType == VesselType.EVA) return; // Don't mess with EVA kerbals as it breaks them.
             var origType = Vessel.vesselType;
             Vessel.StripTypeFromName();
             if (AI != null)

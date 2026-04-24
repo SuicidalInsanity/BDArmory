@@ -1,15 +1,15 @@
-using KSP.UI.Screens;
-using System.Collections.Generic;
-using System.Collections;
-using System.Linq;
-using System;
-using UnityEngine;
-using static UnityEngine.GUILayout;
-
 using BDArmory.Control;
+using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
-using BDArmory.Extensions;
+using KSP.UI.Screens;
+using LibNoise.Models;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using static UnityEngine.GUILayout;
 
 namespace BDArmory.UI
 {
@@ -494,6 +494,7 @@ namespace BDArmory.UI
                             nameof(AI.vesselCollisionAvoidanceLookAheadPeriod),
                             nameof(AI.vesselCollisionAvoidanceStrength),
                             nameof(AI.vesselStandoffDistance),
+                            nameof(AI.AvoidMass), 
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
@@ -575,6 +576,7 @@ namespace BDArmory.UI
                             nameof(AI.WeaveFactor),
                             nameof(AI.MinEngagementRange),
                             nameof(AI.MaxEngagementRange),
+                            nameof(AI.AvoidMass),
                         }.ToDictionary(key => key, key =>
                         {
                             var (value, minValue, maxValue, meta) = GetAIFieldLimits(aiType, ActiveAI, key);
@@ -849,8 +851,8 @@ namespace BDArmory.UI
                             var (min, max, rounding, sigFig, withZero, reducedPrecisionAtMin) = GetFieldLimits(fieldName);
                             if (!cacheSemiLogLimits.ContainsKey(fieldName)) { cacheSemiLogLimits[fieldName] = null; }
                             var cache = cacheSemiLogLimits[fieldName];
-                            if (value != (value = GUIUtils.HorizontalSemiLogSlider(SettingSliderRect(line, width), value, min, max, sigFig, withZero, reducedPrecisionAtMin, ref cache)) && rounding > 0)
-                                value = BDAMath.RoundToUnit(value, rounding);
+                            value = GUIUtils.HorizontalSemiLogSlider(SettingSliderRect(line, width), value, min, max, sigFig, withZero, reducedPrecisionAtMin, ref cache);
+                            // Rounding is built into GUIUtils.HorizontalSemiLogSlider.
                         }
                         else
                         {
@@ -1420,6 +1422,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselCollisionAvoidanceLookAheadPeriod, nameof(AI.vesselCollisionAvoidanceLookAheadPeriod), "CollisionAvoidanceLookAheadPeriod", $"{AI.vesselCollisionAvoidanceLookAheadPeriod:0.0}s");
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselCollisionAvoidanceStrength, nameof(AI.vesselCollisionAvoidanceStrength), "CollisionAvoidanceStrength", $"{AI.vesselCollisionAvoidanceStrength:0.0} ({AI.vesselCollisionAvoidanceStrength / Time.fixedDeltaTime:0}°/s)");
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselStandoffDistance, nameof(AI.vesselStandoffDistance), "StandoffDistance", $"{AI.vesselStandoffDistance:0}m");
+                                    evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", AI.AvoidMass < 10 ? $"{AI.AvoidMass:0.0}t" : $"{AI.AvoidMass:0}t");
                                     #endregion
 
                                     #region Extending
@@ -1754,7 +1757,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxDrift, nameof(AI.MaxDrift), "MaxDrift", $"{AI.MaxDrift:0}°");
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.TargetPitch, nameof(AI.TargetPitch), "TargetPitch", $"{AI.TargetPitch:0.0}°");
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.BankAngle, nameof(AI.BankAngle), "BankAngle", $"{AI.BankAngle:0}°");
-                                        line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", $"{AI.AvoidMass:0}t");
+                                        line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", AI.AvoidMass < 10 ? $"{AI.AvoidMass:0.0}t" : $"{AI.AvoidMass:0}t");
 
                                         if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
                                         {
@@ -2000,7 +2003,8 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     {
                                         GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS_Context"), contextLabel);
                                     }
-
+                                    line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", AI.AvoidMass < 10 ? $"{AI.AvoidMass:0.0}t" : $"{AI.AvoidMass:0}t");
+                                    line += 0.25f;
                                     GUI.EndGroup();
                                     sectionHeights[Section.Control] = Mathf.Lerp(sectionHeight, line, 0.15f);
                                     line += 0.1f;

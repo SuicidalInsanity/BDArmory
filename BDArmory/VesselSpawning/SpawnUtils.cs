@@ -255,14 +255,13 @@ namespace BDArmory.VesselSpawning
                     if (withInitialVelocity)
                     {
                         var pilot = ai as BDModulePilotAI;
-                        if (pilot != null) { vessel.SetWorldVelocity(pilot.idleSpeed * vessel.transform.up); }
+                        if (pilot != null) { vessel.SetVelocity(pilot.idleSpeed * vessel.transform.up); }
                     }
                     var orbitalAI = ai as BDModuleOrbitalAI;
                     if (orbitalAI && vessel.altitude > vessel.mainBody.MinSafeAltitude()) // In space with an orbital AI. Set it in a circular orbit.
                     {
                         Vector3d orbitVelocity = Math.Sqrt(FlightGlobals.getGeeForceAtPosition(vessel.CoM, vessel.mainBody).magnitude * (vessel.mainBody.Radius + vessel.altitude)) * FlightGlobals.currentMainBody.getRFrmVel(vessel.CoM).normalized;
-                        if (BDKrakensbane.IsActive) orbitVelocity -= BDKrakensbane.FrameVelocityV3f;
-                        vessel.SetWorldVelocity(orbitVelocity);
+                        vessel.SetVelocity(orbitVelocity);
                     }
                 }
                 if (weaponManager.guardMode)
@@ -805,7 +804,7 @@ namespace BDArmory.VesselSpawning
                 FlightGlobals.ForceSetActiveVessel(spawnProbe);
                 while (spawnProbe != null && FlightGlobals.ActiveVessel != spawnProbe)
                 {
-                    spawnProbe.SetWorldVelocity(Vector3d.zero);
+                    spawnProbe.SetVelocity(Vector3.zero);
                     LoadedVesselSwitcher.Instance.ForceSwitchVessel(spawnProbe);
                     yield return waitForFixedUpdate;
                 }

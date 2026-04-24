@@ -27,6 +27,33 @@ namespace BDArmory.Utils
             }
         }
 
+        public static void DrawTextureOnWorldPosFoV(Vector3 worldPos, Texture texture, float scaledFoV, float wobble)
+        {
+            var cam = GetMainCamera();
+            if (cam == null) return;
+            var guiMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.identity;
+            Vector3 screenPos = cam.WorldToViewportPoint(worldPos);
+            if (screenPos.z < 0) return; //dont draw if point is behind camera
+            if (screenPos.x != Mathf.Clamp01(screenPos.x)) return; //dont draw if off screen
+            if (screenPos.y != Mathf.Clamp01(screenPos.y)) return;
+
+            // Divide scaled FoV by cam FoV to get the % of the screen, and then multiply by screen width
+            scaledFoV *= Screen.width / cam.fieldOfView;
+
+            float xPos = screenPos.x * Screen.width - (0.5f * scaledFoV);
+            float yPos = (1 - screenPos.y) * Screen.height - (0.5f * scaledFoV);
+            if (wobble > 0)
+            {
+                xPos += UnityEngine.Random.Range(-wobble / 2, wobble / 2);
+                yPos += UnityEngine.Random.Range(-wobble / 2, wobble / 2);
+            }
+            Rect iconRect = new Rect(xPos, yPos, scaledFoV, scaledFoV);
+
+            GUI.DrawTexture(iconRect, texture);
+            GUI.matrix = guiMatrix;
+        }
+
         public static void DrawTextureOnWorldPos(Vector3 worldPos, Texture texture, Vector2 size, float wobble)
         {
             var cam = GetMainCamera();
@@ -34,6 +61,28 @@ namespace BDArmory.Utils
             var guiMatrix = GUI.matrix;
             GUI.matrix = Matrix4x4.identity;
             Vector3 screenPos = cam.WorldToViewportPoint(worldPos);
+            if (screenPos.z < 0) return; //dont draw if point is behind camera
+            if (screenPos.x != Mathf.Clamp01(screenPos.x)) return; //dont draw if off screen
+            if (screenPos.y != Mathf.Clamp01(screenPos.y)) return;
+            float xPos = screenPos.x * Screen.width - (0.5f * size.x);
+            float yPos = (1 - screenPos.y) * Screen.height - (0.5f * size.y);
+            if (wobble > 0)
+            {
+                xPos += UnityEngine.Random.Range(-wobble / 2, wobble / 2);
+                yPos += UnityEngine.Random.Range(-wobble / 2, wobble / 2);
+            }
+            Rect iconRect = new Rect(xPos, yPos, size.x, size.y);
+
+            GUI.DrawTexture(iconRect, texture);
+            GUI.matrix = guiMatrix;
+        }
+
+        public static void DrawTextureOnScreenPos(Vector3 screenPos, Texture texture, Vector2 size, float wobble)
+        {
+            var cam = GetMainCamera();
+            if (cam == null) return;
+            var guiMatrix = GUI.matrix;
+            GUI.matrix = Matrix4x4.identity;
             if (screenPos.z < 0) return; //dont draw if point is behind camera
             if (screenPos.x != Mathf.Clamp01(screenPos.x)) return; //dont draw if off screen
             if (screenPos.y != Mathf.Clamp01(screenPos.y)) return;
@@ -93,6 +142,16 @@ namespace BDArmory.Utils
                 guiPos = Vector2.zero;
                 return false;
             }
+        }
+
+        public static Vector3 WorldToViewportPoint(Vector3 worldPos)
+        {
+            var cam = GetMainCamera();
+            if (cam == null)
+            {
+                return Vector2.zero;
+            }
+            return cam.WorldToViewportPoint(worldPos);
         }
 
         public static void DrawLineBetweenWorldPositions(Vector3 worldPosA, Vector3 worldPosB, float width, Color color)
@@ -542,12 +601,13 @@ namespace BDArmory.Utils
         /// <returns></returns>
         public static float HorizontalSemiLogSlider(Rect rect, float value, float minValue, float maxValue, float sigFig, bool withZero, bool reducedPrecisionAtMin, ref (float, float)[] cache)
         {
-            if (cache == null || cache.Length != 3)
+            if (cache == null || cache.Length != 4)
             {
                 cache = [
-                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)),
-                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)),
-                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin))
+                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Current slider value
+                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Min slider value
+                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Max slider value
+                    (sigFig, Mathf.Pow(10f, 1 - sigFig)) // Slider rounding
                 ];
             }
             else
@@ -555,9 +615,11 @@ namespace BDArmory.Utils
                 if (value != cache[0].Item1) cache[0] = (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (minValue != cache[1].Item1) cache[1] = (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (maxValue != cache[2].Item1) cache[2] = (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
+                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - sigFig));
             }
             float sliderValue = cache[0].Item2;
-            if (sliderValue != (sliderValue = GUI.HorizontalSlider(rect, sliderValue, cache[1].Item2, cache[2].Item2)))
+            float sliderRounding = cache[3].Item2;
+            if (sliderValue != (sliderValue = BDAMath.RoundToUnit(GUI.HorizontalSlider(rect, sliderValue, cache[1].Item2, cache[2].Item2), sliderRounding)))
             {
                 cache[0] = (value, sliderValue);
                 return UI_FloatSemiLogRange.FromSliderValue(sliderValue, minValue, sigFig, withZero, reducedPrecisionAtMin);
