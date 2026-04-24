@@ -10,6 +10,7 @@ using BDArmory.Extensions;
 using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.ModIntegration;
 
 namespace BDArmory.Damage
 {
@@ -329,7 +330,11 @@ namespace BDArmory.Damage
             {
                 isProcWheel = true;
             }
-            if (part.Modules.Contains("ModuleB9PartSwitch") || part.Modules.Contains("ModulePartVariants"))
+            if (B9PartSwitch.hasB9Module && part.Modules.Contains("ModuleB9PartSwitch") && !SimpleRepaint.CheckForSimpleRepaint(part, B9PartSwitch.B9PSModule))
+            {
+                isVariantPart = true;
+            }
+            if (!isVariantPart && part.Modules.Contains("ModulePartVariants") && !SimpleRepaint.CheckForSimpleRepaint(part, typeof(ModulePartVariants)))
             {
                 isVariantPart = true;
             }

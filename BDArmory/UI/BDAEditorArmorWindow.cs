@@ -11,6 +11,7 @@ using BDArmory.Damage;
 using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
+using BDArmory.ModIntegration;
 
 namespace BDArmory.UI
 {

@@ -17,6 +17,7 @@ using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.Radar;
 using BDArmory.GameModes.Waypoints;
+using BDArmory.ModIntegration;
 
 namespace BDArmory.Control
 {
