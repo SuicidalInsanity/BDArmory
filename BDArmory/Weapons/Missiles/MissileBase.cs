@@ -602,6 +602,10 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
         [KSPField] public float terminalSeekerTimeout = -1;
         protected float nextRWRPing = 0;
         public int antiradTargets { get; protected set; }
+
+        [KSPField]
+        public bool antiradTargetPrediction = true;
+
         public bool radarLOALSearching { get; protected set; } = false;
         private bool hasLostLock = false;
         protected bool checkMiss = false;
@@ -1528,7 +1532,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     TargetPosition = source;
                     // Because the reference frame is constantly rotating, this is not gonna be hugely accurate over time...
                     // but then again, ARMs vs moving targets isn't really supposed to be that good of a matchup to begin with
-                    if (lastPingTime > 0)
+                    if (antiradTargetPrediction && lastPingTime > 0)
                     {
                         TargetVelocity = (TargetPosition - prevPos) / (Time.time - lastPingTime);
                     }
@@ -1560,7 +1564,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
             if (targetGPSCoords != Vector3d.zero)
             {
-                TargetPosition = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody) + TargetVelocity * (Time.time - lastPingTime);
+                TargetPosition = antiradTargetPrediction ? VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody) + TargetVelocity * (Time.time - lastPingTime) : VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody);
                 if (BDArmorySettings.DEBUG_LINES)
                     DrawDebugLine(vessel.CoM, TargetPosition, Color.blue);
             }
