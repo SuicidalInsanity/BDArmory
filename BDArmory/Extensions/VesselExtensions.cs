@@ -325,7 +325,7 @@ namespace BDArmory.Extensions
                 r * new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
             ];
             return new Bounds(
-                viewer.InverseTransformDirection(t.TransformDirection(bounds.center) + t.position),
+                viewer.InverseTransformDirection(t.TransformDirection(bounds.center) + t.position - viewer.position),
                 new Vector3(
                     2f * corners.Max(c => Mathf.Abs(c.x)),
                     2f * corners.Max(c => Mathf.Abs(c.y)),

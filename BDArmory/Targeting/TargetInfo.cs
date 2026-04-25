@@ -425,7 +425,7 @@ namespace BDArmory.Targeting
         public void UpdateBounds()
         {
             GetVesselTransform();
-            Bounds tempBounds = vessel.GetColliderBounds();
+            Bounds tempBounds = isMissile ? vessel.GetRendererBounds() : vessel.GetColliderBounds();
             localBoundsCenter = tempBounds.center;
             bounds = tempBounds.size;
             timeOfLastCoMUpdate = 0f;

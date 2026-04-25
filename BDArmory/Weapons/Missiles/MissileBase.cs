@@ -578,7 +578,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
 
         //GPS stuff
         public Vector3d targetGPSCoords;
-        public float lastPingTime;
+        public float lastPingTime = -1f;
         //heat stuff
         public TargetSignatureData heatTarget;
         private TargetSignatureData predictedHeatTarget;
@@ -1504,7 +1504,9 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 //{
                 //    if ((VectorUtils.WorldPositionToGeoCoords(source, vessel.mainBody) - VectorUtils.WorldPositionToGeoCoords(targetVessel.Vessel.CoM, vessel.mainBody)).sqrMagnitude > Mathf.Max(400, 0.013f * (!vessel.InVacuum() ? (float)targetVessel.Vessel.srf_velocity.sqrMagnitude : (float)targetVessel.Vessel.obt_velocity.sqrMagnitude)) return;
                 //}
-                if (Time.time - lastPingTime < persistTime) return; //if multiple radar sources in boresite, filter the ones we don't want. How does the misisle know this interval?
+
+                // Given that we have a position filter, this ping time based filter is not needed and will worsen the performance of ARMs against vessels with multiple radars
+                //if (Time.time - lastPingTime < persistTime) return; //if multiple radar sources in boresite, filter the ones we don't want. How does the misisle know this interval?
                 // presumably, the launching craft has held the intended target in boresight fo a few seconds before launch, and the missile can log the charateristics of the intended radar source pre-launch.
                 //persistTime is a bit shorter than actual radar sweep interval, so there's some margin built in as ping times shift slightly due to maneuvering changing relative location on radar scope.
                 //Technically, ARH should probably be able to log signal *strength* as well as type and frequency to help filter out extraneous radar sources to prevent getting decoyed by a different source...
@@ -1512,18 +1514,29 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 // Ping was close to the previous target position and is within the boresight of the missile.
                 //this needs to look at previous ping, and filter ping that's closest to previous position. Easy, if they all happened at the same time. If they're coming in one at a time...
                 //var staticLaunchThresholdSqr = maxStaticLaunchRange * maxStaticLaunchRange / 16f; //this is a huge threshold. 7.5km for the stock HARM. shouldn't it instead be something akin to MissileFire.GPSDistanceCheck? Only have it grab pings that are within ~20m of previous ping?
-                var pingDistanceThreshold = (BodyUtils.GetRadarAltitudeAtPos(source) < 20 ? 50 : 350) * Mathf.Max(1, persistTime); //ground stuff likely not going to move > 50m/s, air stuff... min 350m should be sufficient? Anything with slow ping time will get extended threshold, and faster stuff will be pinging more than 1/s
+                float pingDistanceThreshold = (BodyUtils.GetRadarAltitudeAtPos(source) < 20 ? 50 : 350) * Mathf.Max(1, persistTime); //ground stuff likely not going to move > 50m/s, air stuff... min 350m should be sufficient? Anything with slow ping time will get extended threshold, and faster stuff will be pinging more than 1/s
                 pingDistanceThreshold *= pingDistanceThreshold;
                 //if ((source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).sqrMagnitude < staticLaunchThresholdSqr && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
 
+                Vector3 prevPos = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody);
+
                 //should this be predicted ping pos instead of last ping pos? targetGPSCoords + (lastPingCoords - targetGPSCoords) * (lastPingCoords - targetGPSCoords).distance?
-                if ((source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).sqrMagnitude < pingDistanceThreshold && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
+                if ((source - prevPos).sqrMagnitude < pingDistanceThreshold && VectorUtils.Angle(source - transform.position, GetForwardTransform()) < maxOffBoresight)
                 {
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Radar ping! Adjusting target position by {(source - VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody)).magnitude} to {TargetPosition}, ping type {type} from vessel {v.vesselName}");
                     TargetAcquired = true;
                     TargetPosition = source;
+                    // Because the reference frame is constantly rotating, this is not gonna be hugely accurate over time...
+                    // but then again, ARMs vs moving targets isn't really supposed to be that good of a matchup to begin with
+                    if (lastPingTime > 0)
+                    {
+                        TargetVelocity = (TargetPosition - prevPos) / (Time.time - lastPingTime);
+                    }
+                    else
+                    {
+                        TargetVelocity = Vector3.zero;
+                    }
                     targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody);
-                    TargetVelocity = Vector3.zero;
                     TargetAcceleration = Vector3.zero;
                     _lockFailTimer = 0;
                     lastPingTime = Time.time;
@@ -1547,7 +1560,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
             if (targetGPSCoords != Vector3d.zero)
             {
-                TargetPosition = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody);
+                TargetPosition = VectorUtils.GetWorldSurfacePostion(targetGPSCoords, vessel.mainBody) + TargetVelocity * (Time.time - lastPingTime);
                 if (BDArmorySettings.DEBUG_LINES)
                     DrawDebugLine(vessel.CoM, TargetPosition, Color.blue);
             }
