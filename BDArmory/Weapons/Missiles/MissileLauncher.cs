@@ -2431,7 +2431,12 @@ namespace BDArmory.Weapons.Missiles
                 UpdateTerminalGuidance();
             }
 
-            if (MissileState != MissileStates.Idle && MissileState != MissileStates.Drop) //guidance
+            if (MissileState == MissileStates.Idle)
+            {
+                return;
+            }
+
+            if (MissileState != MissileStates.Drop) //guidance
             {
                 //guidance and attitude stabilisation scales to atmospheric density. //use part.atmDensity
                 float atmosMultiplier = Mathf.Clamp01(2.5f * (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(vessel.CoM), FlightGlobals.getExternalTemperature(vessel.CoM), FlightGlobals.currentMainBody));
@@ -2560,14 +2565,16 @@ namespace BDArmory.Weapons.Missiles
                         }
                     }
                     else
-                        aeroTorque = MissileGuidance.DoAeroForces(this, TargetPosition, currLiftArea, currDragArea, .25f, aeroTorque, currMaxTorque, currMaxTorqueAero, 0.1f, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin);
+                    {
+                        aeroTorque = MissileGuidance.DoAeroForces(this, TargetPosition, currLiftArea, currDragArea, .25f, aeroTorque, currMaxTorque, currMaxTorqueAero, 0.1f, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin, false);
+                    }
                 }
                 else
                 {
                     CheckMiss();
                     if (aero)
                     {
-                        aeroTorque = MissileGuidance.DoAeroForces(this, TargetPosition, currLiftArea, currDragArea, .25f, aeroTorque, currMaxTorque, currMaxTorqueAero, 0.1f, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin);
+                        aeroTorque = MissileGuidance.DoAeroForces(this, TargetPosition, currLiftArea, currDragArea, .25f, aeroTorque, currMaxTorque, currMaxTorqueAero, 0.1f, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin, false);
                     }
                 }
 
@@ -2579,6 +2586,13 @@ namespace BDArmory.Weapons.Missiles
                 if (hasRCS && !guidanceActive)
                 {
                     KillRCS();
+                }
+            }
+            else
+            {
+                if (aero)
+                {
+                    aeroTorque = MissileGuidance.DoAeroForces(this, TargetPosition, currLiftArea, currDragArea, .25f, aeroTorque, currMaxTorque, currMaxTorqueAero, 0.1f, MissileGuidance.DefaultLiftCurve, MissileGuidance.DefaultDragCurve, torqueLimiter, torqueMargin, false);
                 }
             }
 

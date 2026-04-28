@@ -99,6 +99,7 @@ IMPROVEMENTS / FIXES
 		- Fix debug readouts for radar missiles, now when lacking a target they should properly display "No target!", seeker timeout time will also now display correctly.
 		- Fix active sonar torpedoes diving to the seafloor if they lose lock immediately on launch.
 		- Fix SARH missiles not respecting IFF and target envelope settings when relocking after having lost the primary target when "canRelock" is true.
+		- Fix laser AGM missiles never timing out during search mode. Now, when a laser missile searches for a TGP, it'll time out after "seekerTimeout" seconds. If a missile loses guidance from its guiding TGP, it'll first search for it for "seekerTimeout" seconds before initiating a search for other TGPs.
 		- Added "proximityFuzeInhibitionAlt" to MissileLauncher missiles. When they are below this radar altitude, missiles will not proximity fuze on targets. By default, this is set to -1, which disables the feature.
 		- Added "beamWidth" to all CLOS guidance types and "beamLeadMinAlt" to CLOSLead.
 			- "beamWidth" allows for the simulation of the increasing inaccuracy of beam-riding missiles with range, due to angular resolution. If the beam is taken as a cone, it is essentially the ratio of the radius of the cone to the height of the cone, I.E. for every meter of distance the missile travels, the potential error, relative to the beam centerline increases by "beamWidth" meters.

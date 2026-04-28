@@ -10843,7 +10843,7 @@ namespace BDArmory.Control
                 //go with an approximation for drop time. Will cause inaccuracies if, say, there's an NPC bomber dropping parachute bombs or something, but better than returning 0, and good enough for things like extending for a bombing run
             }
             var bombPart = bomb.GetPart(); // We know the selected weapon is a bomb at this point.
-            showBombAimer = bombPart != null && vessel.verticalSpeed < 50 && AltitudeTrigger(); // Situational conditions for showing the aimer.
+            showBombAimer = bombPart != null && AltitudeTrigger(); // Situational conditions for showing the aimer. //&& vessel.verticalSpeed < 50 
             if (!showBombAimer)
             {
                 bombAimerPosition = vessel.CoM + vessel.Velocity() * 2; //reset bombAimerPosition
@@ -10906,8 +10906,9 @@ namespace BDArmory.Control
                 atmDensity = (float)FlightGlobals.getAtmDensity(FlightGlobals.getStaticPressure(currPos), FlightGlobals.getExternalTemperature(), FlightGlobals.currentMainBody);
                 simSpeedSquared = simVelocity.sqrMagnitude;
                 upDirection = VectorUtils.GetUpDirection(currPos);
-                var simVelocityDir = simVelocity.normalized;
-                var lastSimSpeed = simVelocity.magnitude;
+                //var simVelocityDir = simVelocity.normalized;
+                //var lastSimSpeed = simVelocity.magnitude;
+                (float lastSimSpeed, Vector3 simVelocityDir) = simVelocity.MagNorm();
 
                 // Position update before the velocity update so that they're in sync.
                 prevPos = currPos;
@@ -10984,16 +10985,16 @@ namespace BDArmory.Control
                 }
 
                 // AoA varies wildly for some bombs, e.g., JDAM (10—30°), B-83 (4—3.5°). The following is a rough approx from fitting data points from a JDAM and a B-83.
-                AoA = liftArea > 0 && launcher != null && simTime > launcher.dropTime ?
+                /*AoA = liftArea > 0 && launcher != null && simTime > launcher.dropTime ?
                     Mathf.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - launcher.dropTime)) :
-                    0;
+                    0;*/
                 pointingDirection = Vector3.RotateTowards(simVelocityDir, upDirection, Mathf.Deg2Rad * AoA, 0);
 
                 if (launcher != null && launcher.aero)
                 {
                     // Lift
-                    liftForce = 0.5f * atmDensity * simSpeedSquared * liftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * Mathf.Max(MissileGuidance.DefaultLiftCurve.Evaluate(AoA), 0);
-                    simAcceleration += liftForce / ordnanceMass * -simVelocity.ProjectOnPlanePreNormalized(pointingDirection).normalized;
+                    //liftForce = 0.5f * atmDensity * simSpeedSquared * liftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * Mathf.Max(MissileGuidance.DefaultLiftCurve.Evaluate(AoA), 0);
+                    //simAcceleration += liftForce / ordnanceMass * -simVelocity.ProjectOnPlanePreNormalized(pointingDirection).normalized;
 
                     // Drag
                     dragForce = 0.5f * atmDensity * simSpeedSquared * dragArea * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * Mathf.Max(MissileGuidance.DefaultDragCurve.Evaluate(AoA), 0f);

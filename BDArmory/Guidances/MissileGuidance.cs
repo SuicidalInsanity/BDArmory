@@ -2013,7 +2013,7 @@ namespace BDArmory.Guidances
         }
 
         public static Vector3 DoAeroForces(MissileLauncher ml, Vector3 targetPosition, float liftArea, float dragArea, float steerMult,
-            Vector3 previousTorque, float maxTorque, float maxTorqueAero, float maxAoA, FloatCurve liftCurve, FloatCurve dragCurve, bool torqueLimiter, float torqueMargin)
+            Vector3 previousTorque, float maxTorque, float maxTorqueAero, float maxAoA, FloatCurve liftCurve, FloatCurve dragCurve, bool torqueLimiter, float torqueMargin, bool activeGuidance = true)
         {
             Rigidbody rb = ml.part.rb;
             if (rb == null || rb.mass == 0) return Vector3.zero;
@@ -2093,10 +2093,20 @@ namespace BDArmory.Guidances
                 //if (ml.torqueAoALimit.x > 0)
                 //    AoALim = Mathf.Min(maxAoA + Mathf.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
 
-                Vector3 targetDirection = (targetPosition - ml.vessel.CoM).normalized;
-                float targetAngle = VectorUtils.AnglePreNormalized(velNorm, targetDirection);
-                if (targetAngle > AoALim)
-                    targetDirection = Vector3.Slerp(velNorm, targetDirection, AoALim / targetAngle);
+                Vector3 targetDirection;
+                float targetAngle;
+                if (activeGuidance)
+                {
+                    targetDirection = (targetPosition - ml.vessel.CoM).normalized;
+                    targetAngle = VectorUtils.AnglePreNormalized(velNorm, targetDirection);
+                    if (targetAngle > AoALim)
+                        targetDirection = Vector3.Slerp(velNorm, targetDirection, AoALim / targetAngle);
+                }
+                else
+                {
+                    targetAngle = 0f;
+                    targetDirection = velNorm;
+                }
                 float turningAngle = VectorUtils.AnglePreNormalized(forward, targetDirection);
 
                 Vector3 finalTorque;
@@ -2207,7 +2217,7 @@ namespace BDArmory.Guidances
                     finalTorque = aeroTorque;
                 }
 
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) ml.debugString.AppendLine($"achieved g: {(ml.vessel.acceleration.ProjectOnPlanePreNormalized(velNorm).magnitude) * (1f / 9.81f):F2}, lift g: {liftForce / ml.part.mass * (1f / 9.81f):F2}, CL: {liftCurve.Evaluate(AoA):F2}\nAoA: {AoA:F2}, AoALim: {AoALim:F2}, MaxAoA: {maxAoA:F2}\nTargetAngle: {targetAngle:F2}, TurningAngle: {turningAngle:F2}, forward: {forward}, targetDirection: {targetDirection}\nmaxTorque (Aero): {maxTorque:F2} ({maxTorqueAero * dynamicq:F2}), currTorque: {finalTorque.magnitude:F2}, aeroTorque: {aeroTorque.magnitude:F2}\nliftArea: {liftArea}, dragArea: {dragArea}");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) ml.debugString.AppendLine($"achieved g: {(ml.vessel.acceleration.ProjectOnPlanePreNormalized(velNorm).magnitude) * (1f / 9.81f):F2}, lift g: {liftForce / ml.part.mass * (1f / 9.81f):F2}, CL: {liftCurve.Evaluate(AoA):F2}\nAoA: {AoA:F2}, AoALim: {AoALim:F2}, MaxAoA: {maxAoA:F2}\nTargetAngle: {targetAngle:F2}, TurningAngle: {turningAngle:F2}, forward: {forward}, targetDirection: {targetDirection}\nmaxTorque (Aero): {maxTorque:F2} ({maxTorqueAero * dynamicq:F2}), currTorque: {(Vector3.Dot(finalTorque, aeroTorque) > 0 ? "+" : "-")}{finalTorque.magnitude:F2}, aeroTorque: -{aeroTorque.magnitude:F2}\nliftArea: {liftArea}, dragArea: {dragArea}");
 
                 finalTorque = ml.transform.InverseTransformDirection(finalTorque).ProjectOnPlanePreNormalized(Vector3.forward);
 
@@ -2220,6 +2230,15 @@ namespace BDArmory.Guidances
             {
                 Vector3 finalTorque = Vector3.Lerp(previousTorque, Vector3.zero, 0.25f).ProjectOnPlanePreNormalized(Vector3.forward);
                 rb.AddRelativeTorque(finalTorque);
+
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    Vector3 aeroTorque = Vector3.Cross(new Vector3d(liftForce * forceDirection.x - dragForce * velNorm.x,
+                                                                liftForce * forceDirection.y - dragForce * velNorm.y,
+                                                                liftForce * forceDirection.z - dragForce * velNorm.z),
+                                                                forcePos - ml.vessel.CoM);
+                    ml.debugString.AppendLine($"achieved g: {(ml.vessel.acceleration.ProjectOnPlanePreNormalized(velNorm).magnitude) * (1f / 9.81f):F2}, lift g: {liftForce / ml.part.mass * (1f / 9.81f):F2}, CL: {liftCurve.Evaluate(AoA):F2}\nAoA: {AoA:F2}\nmaxTorque (Aero): {maxTorque:F2} ({maxTorqueAero * dynamicq:F2}), currTorque: {(Vector3.Dot(finalTorque, aeroTorque) > 0 ? "+" : "-")}{finalTorque.magnitude:F2}, aeroTorque: {aeroTorque.magnitude:F2}\nliftArea: {liftArea}, dragArea: {dragArea}");
+                }
                 return finalTorque;
             }
         }

@@ -1014,7 +1014,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     if ((!isCLOS || lockedCamera) && CMSmoke.RaycastSmoke(smokeRay))
                     {
                         float angle = VectorUtils.FullRangePerlinNoise(0.75f * Time.time, 10) * BDArmorySettings.SMOKE_DEFLECTION_FACTOR;
-                        TargetPosition = isCLOS ? 
+                        TargetPosition = isCLOS ?
                             VectorUtils.RotatePointAround(lockedCamera.targetPointPosition, smokeRay.origin, vessel.up, angle) :
                             VectorUtils.RotatePointAround(lastLaserPoint, vessel.CoM, vessel.up, angle);
                         lastLaserPoint = TargetPosition;
@@ -1025,7 +1025,11 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         TargetPosition = lastLaserPoint;
                         _lockFailTimer += Time.fixedDeltaTime;
                         if (_lockFailTimer > seekerTimeout)
+                        {
                             TargetAcquired = false;
+                            // Reset _lockFailTimer for search
+                            _lockFailTimer = 0f;
+                        }
                     }
 
                     TargetVelocity = Vector3.zero;
@@ -1043,7 +1047,16 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Laser guided missileBase actively found laser point. Enabling guidance.");
                     lockedCamera = foundCam;
                     TargetAcquired = true;
+                    _lockFailTimer = 0;
                     SetLaserTargeting();
+                }
+                else
+                {
+                    _lockFailTimer += Time.fixedDeltaTime;
+                    if (_lockFailTimer > seekerTimeout)
+                    {
+                        guidanceActive = false;
+                    }
                 }
             }
         }
