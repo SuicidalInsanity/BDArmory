@@ -3810,7 +3810,7 @@ namespace BDArmory.Control
                             }
                             float attemptStartTime = Time.time;
                             float attemptDuration = targetScanInterval * 0.75f;
-                            while (Time.time - attemptStartTime < attemptDuration && ((CurrentMissile.TargetingMode == TargetingModes.Laser && !laserPointDetected) || (foundCam && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude > targetToleranceSqr)))
+                            while (Time.time - attemptStartTime < attemptDuration && ((CurrentMissile.TargetingMode == TargetingModes.Laser && !laserPointDetected) || (foundCam && guardTarget && (foundCam.groundTargetPosition - guardTarget.CoM).sqrMagnitude > targetToleranceSqr)))
                             {
                                 yield return wait;
                             }
