@@ -48,45 +48,12 @@ namespace BDArmory.Control
 
         //int focusIndex = 0;
         List<int> focusIndexes;
+        static int _guiCheckIndex = -1;
 
         [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_WingCommander_Guiname3")]//ToggleGUI
         public void ToggleGUI()
         {
             showGUI = !showGUI;
-            if (_guiCheckIndex < 0) _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
-            if (!showGUI)
-            {
-                GUIUtils.UpdateGUIRect(new Rect(), _guiCheckIndex);
-                return;
-            }
-            if (!guiInit)
-            {
-                windowSize = BDArmorySetup.WindowRectWingCommander.size;
-                wingmanButtonStyle = new GUIStyle(BDArmorySetup.ButtonStyle)
-                {
-                    alignment = TextAnchor.MiddleLeft,
-                    wordWrap = false,
-                    fontSize = 11
-                };
-                wingmanButtonSelectedStyle = new GUIStyle(BDArmorySetup.SelectedButtonStyle)
-                {
-                    alignment = wingmanButtonStyle.alignment,
-                    wordWrap = wingmanButtonStyle.wordWrap,
-                    fontSize = wingmanButtonStyle.fontSize
-                };
-                labelStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label)
-                {
-                    alignment = TextAnchor.MiddleLeft
-                };
-                sliderStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically.
-                sliderThumbStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.horizontalSliderThumb);
-                guiInit = true;
-            }
-
-            RefreshFriendlies();
-
-            //TEMPORARY
-            wingmen = [.. friendlies.Where(f => f != null)];
         }
 
         public override void OnStart(StartState state)
@@ -163,14 +130,7 @@ namespace BDArmory.Control
                     friendlies.Add(ac.AI);
                 }
 
-            //TEMPORARY
-            wingmen = [];
-            using var fs = friendlies.GetEnumerator();
-            while (fs.MoveNext())
-            {
-                if (fs.Current == null) continue;
-                wingmen.Add(fs.Current);
-            }
+            wingmen = [.. friendlies.Where(f => f != null)];
         }
 
         void RefreshWingmen()
@@ -185,8 +145,8 @@ namespace BDArmory.Control
             var wm = WeaponManager;
             if (wm != null) wingmen.RemoveAll(wingman => wingman == null || (wingman.WeaponManager && wingman.WeaponManager.Team != wm.Team));
 
-            List<int> uniqueIndexes = new List<int>();
-            List<int>.Enumerator fIndexes = focusIndexes.GetEnumerator();
+            List<int> uniqueIndexes = [];
+            using List<int>.Enumerator fIndexes = focusIndexes.GetEnumerator();
             while (fIndexes.MoveNext())
             {
                 int clampedIndex = Mathf.Clamp(fIndexes.Current, 0, wingmen.Count - 1);
@@ -195,7 +155,6 @@ namespace BDArmory.Control
                     uniqueIndexes.Add(clampedIndex);
                 }
             }
-            fIndexes.Dispose();
             focusIndexes = [.. uniqueIndexes];
         }
 
@@ -207,21 +166,20 @@ namespace BDArmory.Control
             }
 
             savedWingmen = string.Empty;
-            List<IBDAIControl>.Enumerator pilots = wingmen.GetEnumerator();
+            using List<IBDAIControl>.Enumerator pilots = wingmen.GetEnumerator();
             while (pilots.MoveNext())
             {
                 if (pilots.Current == null) continue;
                 savedWingmen += pilots.Current.vessel.id + ",";
             }
-            pilots.Dispose();
         }
 
         void LoadWingmen()
         {
-            wingmen = new List<IBDAIControl>();
+            wingmen = [];
 
             if (savedWingmen == string.Empty) return;
-            IEnumerator<string> wingIDs = savedWingmen.Split(new char[] { ',' }).AsEnumerable().GetEnumerator();
+            using IEnumerator<string> wingIDs = savedWingmen.Split(new char[] { ',' }).AsEnumerable().GetEnumerator();
             while (wingIDs.MoveNext())
             {
                 using (var vs = BDATargetManager.LoadedVessels.GetEnumerator())
@@ -234,10 +192,46 @@ namespace BDArmory.Control
                         if (pilot != null) wingmen.Add(pilot);
                     }
             }
-            wingIDs.Dispose();
         }
 
-        public bool showGUI = false;
+        public bool showGUI
+        {
+            get; private set
+            {
+                field = value;
+                if (_guiCheckIndex < 0) _guiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+                if (value)
+                {
+                    if (!guiInit)
+                    {
+                        windowSize = BDArmorySetup.WindowRectWingCommander.size;
+                        wingmanButtonStyle = new(BDArmorySetup.ButtonStyle)
+                        {
+                            alignment = TextAnchor.MiddleLeft,
+                            wordWrap = false,
+                            fontSize = 11
+                        };
+                        wingmanButtonSelectedStyle = new(BDArmorySetup.SelectedButtonStyle)
+                        {
+                            alignment = wingmanButtonStyle.alignment,
+                            wordWrap = wingmanButtonStyle.wordWrap,
+                            fontSize = wingmanButtonStyle.fontSize
+                        };
+                        labelStyle = new(BDArmorySetup.BDGuiSkin.label) { alignment = TextAnchor.MiddleLeft };
+                        sliderStyle = new(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically.
+                        sliderThumbStyle = new(BDArmorySetup.BDGuiSkin.horizontalSliderThumb);
+                        guiInit = true;
+                    }
+
+                    RefreshFriendlies();
+                }
+                else
+                {
+                    GUIUtils.UpdateGUIRect(new Rect(), _guiCheckIndex);
+                    showAGWindow = false;
+                }
+            }
+        } = false;
         bool guiInit = false;
         float buttonHeight = 24;
         float margin = 6;
@@ -256,13 +250,31 @@ namespace BDArmory.Control
             {
                 if (resizingWindow && Event.current.type == EventType.MouseUp) { resizingWindow = false; }
                 BDArmorySetup.SetGUIOpacity();
+                var guiMatrix = GUI.matrix;
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectWingCommander.position);
-                BDArmorySetup.WindowRectWingCommander = GUI.Window(1293293, BDArmorySetup.WindowRectWingCommander, WingmenWindow, StringUtils.Localize("#LOC_BDArmory_WingCommander_Title"),//"WingCommander"
+                BDArmorySetup.WindowRectWingCommander = GUI.Window(
+                    GUIUtility.GetControlID(FocusType.Passive),
+                    BDArmorySetup.WindowRectWingCommander,
+                    WingmenWindow,
+                    StringUtils.Localize("#LOC_BDArmory_WingCommander_Title"),//"WingCommander"
                     BDArmorySetup.BDGuiSkin.window);
                 ResizeWindow();
-                BDArmorySetup.SetGUIOpacity(false);
 
-                if (showAGWindow) AGWindow();
+                if (showAGWindow)
+                {
+                    if (BDArmorySettings.UI_SCALE_ACTUAL != 1) { GUI.matrix = guiMatrix; GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, agWindowRect.position); }
+                    agWindowRect = GUILayout.Window(
+                        GUIUtility.GetControlID(FocusType.Passive),
+                        agWindowRect,
+                        AGWindow,
+                        StringUtils.Localize("#LOC_BDArmory_WingCommander_ActionGroups"), // "Action Groups"
+                        BDArmorySetup.BDGuiSkin.window
+                    );
+                    GUIUtils.RepositionWindow(ref agWindowRect);
+                    GUIUtils.UpdateGUIRect(agWindowRect, _agGuiCheckIndex);
+                    GUIUtils.UseMouseEventInRect(agWindowRect);
+                }
+                BDArmorySetup.SetGUIOpacity(false);
             }
 
             //command position diamonds
@@ -298,6 +310,7 @@ namespace BDArmory.Control
             BDArmorySetup.WindowRectWingCommander.size = windowSize;
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectWingCommander);
             GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectWingCommander, _guiCheckIndex);
+            GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectWingCommander);
         }
 
         delegate void CommandFunction(IBDAIControl wingman, int index, object data);
@@ -354,7 +367,6 @@ namespace BDArmory.Control
             lag = GUILayout.HorizontalSlider(lag, 0f, 100f, sliderStyle, sliderThumbStyle);
             GUILayout.EndHorizontal();
             // TODO: Add custom formation window.
-            // TODO: Fix AGWindow
 
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
@@ -426,9 +438,7 @@ namespace BDArmory.Control
 
         void CommandAG(IBDAIControl wingman, int index, object ag)
         {
-            //Debug.Log("object to string: "+ag.ToString());
             KSPActionGroup actionGroup = (KSPActionGroup)ag;
-            //Debug.Log("ag to string: " + actionGroup.ToString());
             wingman.CommandAG(actionGroup);
         }
 
@@ -442,44 +452,35 @@ namespace BDArmory.Control
             showAGWindow = !showAGWindow;
         }
 
-        public bool showAGWindow;
-        float agWindowHeight = 10;
-        public Rect agWindowRect;
-        static int _guiCheckIndex = -1;
-
-
-        void AGWindow()
+        bool showAGWindow
         {
-            float width = 100;
-            float buttonHeight = 20;
-            float buttonGap = 3;
-            float agMargin = 5;
-            float newHeight = 0;
-            agWindowRect = new Rect(BDArmorySetup.WindowRectWingCommander.x + BDArmorySetup.WindowRectWingCommander.width, BDArmorySetup.WindowRectWingCommander.y, width, agWindowHeight);
-            GUI.Box(agWindowRect, string.Empty, BDArmorySetup.BDGuiSkin.window);
-            GUI.BeginGroup(agWindowRect);
-            newHeight += agMargin;
-            GUIStyle titleStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label);
-            titleStyle.alignment = TextAnchor.MiddleCenter;
-            GUI.Label(new Rect(agMargin, 5, width - (2 * agMargin), 20), StringUtils.Localize("#LOC_BDArmory_WingCommander_ActionGroups"), titleStyle);//"Action Groups"
-            newHeight += 20;
-            float startButtonY = newHeight;
-            // float buttonLine = 0;
-            int i = -1;
-            IEnumerator<KSPActionGroup> ag = Enum.GetValues(typeof(KSPActionGroup)).Cast<KSPActionGroup>().GetEnumerator();
-            while (ag.MoveNext())
+            get; set
             {
-                i++;
-                if (i <= 1) continue;
-                // CommandButton(CommandAG, ag.Current.ToString(), ref buttonLine, startButtonY, agMargin, buttonGap, width - (2 * agMargin), buttonHeight, true, false, ag.Current);
-                CommandButton(CommandAG, ag.Current.ToString(), true, false, ag.Current);
-                newHeight += buttonHeight + buttonGap;
+                field = value;
+                if (_agGuiCheckIndex < 0) _agGuiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+                if (value)
+                {
+                    agWindowRect.position = BDArmorySetup.WindowRectWingCommander.position + BDArmorySettings.UI_SCALE_ACTUAL * new Vector2(BDArmorySetup.WindowRectWingCommander.width, 0);
+                }
+                else
+                {
+                    GUIUtils.UpdateGUIRect(new Rect(), _agGuiCheckIndex);
+                }
             }
-            ag.Dispose();
-            newHeight += agMargin;
-            GUI.EndGroup();
+        } = false;
+        Rect agWindowRect;
+        static int _agGuiCheckIndex = -1;
 
-            agWindowHeight = newHeight;
+        void AGWindow(int id)
+        {
+            GUILayout.BeginVertical(GUILayout.MinWidth(100)); // Width of title
+            foreach (var actionGroup in Enum.GetValues(typeof(KSPActionGroup)).Cast<KSPActionGroup>())
+            {
+                if (actionGroup <= KSPActionGroup.None) continue;
+                CommandButton(CommandAG, actionGroup.ToString(), true, false, actionGroup);
+            }
+            GUILayout.EndVertical();
+            GUI.DragWindow();
         }
 
         void SelectAll(IBDAIControl wingman, int index, object data)

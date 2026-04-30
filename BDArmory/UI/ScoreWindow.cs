@@ -140,7 +140,6 @@ namespace BDArmory.UI
                 );
             }
             BDArmorySetup.SetGUIOpacity(false);
-            GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectScores, _guiCheckIndexScores);
         }
 
         #region Scores
@@ -235,6 +234,7 @@ namespace BDArmory.UI
             if (resizingWindow && Event.current.type == EventType.Repaint)
             { windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL; }
             #endregion
+            GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectScores, _guiCheckIndexScores);
             GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectScores);
         }
 
