@@ -268,7 +268,6 @@ namespace BDArmory.UI
 
         private void WindowWaypointSpawner(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, _windowWidth - _buttonSize - _margin, _buttonSize + _margin));
             if (GUI.Button(new Rect(_windowWidth - _buttonSize - (_margin - 2), _margin, _buttonSize - 2, _buttonSize - 2), " X", BDArmorySetup.CloseButtonStyle))
             {
                 SetVisible(false);
@@ -669,6 +668,7 @@ spawnFields["alt"].currentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
 
             line += 1.25f; // Bottom internal margin
             _windowHeight = (line * _lineHeight);
+            GUI.DragWindow();
         }
 
         public void SetVisible(bool visible)

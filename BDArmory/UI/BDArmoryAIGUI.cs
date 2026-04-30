@@ -940,7 +940,6 @@ namespace BDArmory.UI
             float contentIndent = contentMargin + columnIndent;
             float contentWidth = 2 * ColumnWidth - 2 * contentMargin - columnIndent;
 
-            GUI.DragWindow(new Rect(contentIndent + _windowMargin, _windowMargin, contentWidth + _windowMargin - 4 * _buttonSize, _windowMargin + _buttonSize));
             GUI.Label(new Rect(contentIndent, contentTop, contentWidth - 4 * _buttonSize, entryHeight), StringUtils.Localize("#LOC_BDArmory_AIWindow_title"), Title);
             #region AI Selection
             if (ActiveAI != null)
@@ -958,16 +957,16 @@ namespace BDArmory.UI
             }
             #endregion
 
-            if (GUI.Button(TitleButtonRect(1), "X", windowBDAAIGUIEnabled ? BDArmorySetup.BDGuiSkin.button : BDArmorySetup.BDGuiSkin.box)) //Exit Button
+            if (GUI.Button(TitleButtonRect(1), "X", BDArmorySetup.CloseButtonStyle)) //Exit Button
             {
                 if (button) button.SetFalse();
                 else HideAIGUI(); // In case the button is disabled.
             }
-            if (GUI.Button(TitleButtonRect(2), "i", infoLinkEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Infolink button
+            if (GUI.Button(TitleButtonRect(3,2), "Info", infoLinkEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Infolink button
             { infoLinkEnabled = !infoLinkEnabled; }
-            if (GUI.Button(TitleButtonRect(3), "?", contextTipsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Context labels button
+            if (GUI.Button(TitleButtonRect(5,2), "Help", contextTipsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Context labels button
             { contextTipsEnabled = !contextTipsEnabled; }
-            if (GUI.Button(TitleButtonRect(4), "#", NumFieldsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Numeric fields button
+            if (GUI.Button(TitleButtonRect(6), "#", NumFieldsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Numeric fields button
             {
                 NumFieldsEnabled = !NumFieldsEnabled;
                 SyncInputFieldsNow(!NumFieldsEnabled);
@@ -2370,6 +2369,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                     autoResizingWindow = false;
                 }
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

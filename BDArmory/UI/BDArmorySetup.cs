@@ -563,50 +563,70 @@ namespace BDArmory.UI
 
         void ConfigureStyles()
         {
-            centerLabel = new GUIStyle();
-            centerLabel.alignment = TextAnchor.UpperCenter;
-            centerLabel.normal.textColor = Color.white;
+            centerLabel = new GUIStyle
+            {
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
-            settingsTitleStyle = new GUIStyle(centerLabel);
-            settingsTitleStyle.alignment = TextAnchor.MiddleCenter;
-            settingsTitleStyle.fontSize = 16;
-            settingsTitleStyle.fontStyle = FontStyle.Bold;
+            settingsTitleStyle = new GUIStyle(centerLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 16,
+                fontStyle = FontStyle.Bold
+            };
 
-            centerLabelRed = new GUIStyle();
-            centerLabelRed.alignment = TextAnchor.UpperCenter;
-            centerLabelRed.normal.textColor = Color.red;
+            centerLabelRed = new GUIStyle
+            {
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = Color.red }
+            };
 
-            centerLabelOrange = new GUIStyle();
-            centerLabelOrange.alignment = TextAnchor.UpperCenter;
-            centerLabelOrange.normal.textColor = XKCDColors.BloodOrange;
+            centerLabelOrange = new GUIStyle
+            {
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = XKCDColors.BloodOrange }
+            };
 
-            centerLabelBlue = new GUIStyle();
-            centerLabelBlue.alignment = TextAnchor.UpperCenter;
-            centerLabelBlue.normal.textColor = XKCDColors.AquaBlue;
+            centerLabelBlue = new GUIStyle
+            {
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = XKCDColors.AquaBlue }
+            };
 
-            leftLabel = new GUIStyle();
-            leftLabel.alignment = TextAnchor.UpperLeft;
-            leftLabel.normal.textColor = Color.white;
+            leftLabel = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
-            leftLabelBold = new GUIStyle();
-            leftLabelBold.alignment = TextAnchor.UpperLeft;
-            leftLabelBold.normal.textColor = Color.white;
-            leftLabelBold.fontStyle = FontStyle.Bold;
+            leftLabelBold = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                fontStyle = FontStyle.Bold,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
-            infoLinkStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label);
-            infoLinkStyle.alignment = TextAnchor.UpperLeft;
+            infoLinkStyle = new GUIStyle(BDGuiSkin.label)
+            {
+                alignment = TextAnchor.UpperLeft
+            };
             infoLinkStyle.normal.textColor = Color.white;
 
-            middleLeftLabel = new GUIStyle(leftLabel);
-            middleLeftLabel.alignment = TextAnchor.MiddleLeft;
+            middleLeftLabel = new GUIStyle(leftLabel)
+            {
+                alignment = TextAnchor.MiddleLeft
+            };
 
             middleLeftLabelOrange = new GUIStyle(middleLeftLabel);
             middleLeftLabelOrange.normal.textColor = XKCDColors.BloodOrange;
 
-            targetModeStyle = new GUIStyle();
-            targetModeStyle.alignment = TextAnchor.MiddleRight;
-            targetModeStyle.fontSize = 9;
-            targetModeStyle.normal.textColor = Color.white;
+            targetModeStyle = new GUIStyle
+            {
+                alignment = TextAnchor.MiddleRight,
+                fontSize = 9,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
             targetModeStyleSelected = new GUIStyle(targetModeStyle);
             targetModeStyleSelected.normal.textColor = XKCDColors.BloodOrange;
@@ -614,40 +634,52 @@ namespace BDArmory.UI
             waterMarkStyle = new GUIStyle(middleLeftLabel);
             waterMarkStyle.normal.textColor = XKCDColors.LightBlueGrey;
 
-            leftLabelRed = new GUIStyle();
-            leftLabelRed.alignment = TextAnchor.UpperLeft;
-            leftLabelRed.normal.textColor = Color.red;
+            leftLabelRed = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.red }
+            };
 
-            rightLabelRed = new GUIStyle();
-            rightLabelRed.alignment = TextAnchor.UpperRight;
-            rightLabelRed.normal.textColor = Color.red;
+            rightLabelRed = new GUIStyle
+            {
+                alignment = TextAnchor.UpperRight,
+                normal = new GUIStyleState { textColor = Color.red }
+            };
 
-            leftLabelGray = new GUIStyle();
-            leftLabelGray.alignment = TextAnchor.UpperLeft;
-            leftLabelGray.normal.textColor = Color.gray;
+            leftLabelGray = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.gray }
+            };
 
             rippleSliderStyle = new GUIStyle(BDGuiSkin.horizontalSlider);
             rippleThumbStyle = new GUIStyle(BDGuiSkin.horizontalSliderThumb);
             rippleSliderStyle.fixedHeight = rippleThumbStyle.fixedHeight = 0;
 
-            kspTitleLabel = new GUIStyle();
-            kspTitleLabel.normal.textColor = BDGuiSkin.window.normal.textColor;
-            kspTitleLabel.font = BDGuiSkin.window.font;
-            kspTitleLabel.fontSize = BDGuiSkin.window.fontSize;
-            kspTitleLabel.fontStyle = BDGuiSkin.window.fontStyle;
-            kspTitleLabel.alignment = TextAnchor.UpperCenter;
+            kspTitleLabel = new GUIStyle
+            {
+                font = BDGuiSkin.window.font,
+                fontSize = BDGuiSkin.window.fontSize,
+                fontStyle = BDGuiSkin.window.fontStyle,
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = BDGuiSkin.window.normal.textColor }
+            };
 
-            redErrorStyle = new GUIStyle(BDGuiSkin.label);
+            redErrorStyle = new GUIStyle(BDGuiSkin.label)
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = 24,
+                alignment = TextAnchor.UpperCenter
+            };
             redErrorStyle.normal.textColor = Color.red;
-            redErrorStyle.fontStyle = FontStyle.Bold;
-            redErrorStyle.fontSize = 24;
-            redErrorStyle.alignment = TextAnchor.UpperCenter;
 
             redErrorShadowStyle = new GUIStyle(redErrorStyle);
             redErrorShadowStyle.normal.textColor = new Color(0, 0, 0, 0.75f);
 
-            textFieldStyle = new GUIStyle(GUI.skin.textField);
-            textFieldStyle.alignment = TextAnchor.MiddleRight;
+            textFieldStyle = new GUIStyle(GUI.skin.textField)
+            {
+                alignment = TextAnchor.MiddleRight
+            };
 
             stylesConfigured = true;
         }
@@ -1085,13 +1117,11 @@ namespace BDArmory.UI
             float windowColumns = 1;
             int buttonNumber = 0;
 
-            GUI.DragWindow(new Rect(_windowMargin + _buttonSize, 0, columnWidth - 2 * _windowMargin - numberOfButtons * _buttonSize, _windowMargin + _buttonSize));
-
             line += 1.25f;
             line += 0.25f;
 
             //title
-            GUI.Label(new Rect(_windowMargin + _buttonSize, _windowMargin, columnWidth - 2 * _windowMargin - numberOfButtons * _buttonSize, _windowMargin + _buttonSize), StringUtils.Localize("#LOC_BDArmory_WMWindow_title") + "          ", kspTitleLabel);
+            GUI.Label(new Rect(_windowMargin + _buttonSize, _windowMargin, columnWidth - 2 * _windowMargin - numberOfButtons * _buttonSize, _windowMargin + _buttonSize), StringUtils.Localize("#LOC_BDArmory_WMWindow_title"), kspTitleLabel);
 
             // Version.
             GUI.Label(new Rect(columnWidth - _windowMargin - (numberOfButtons - 1) * _buttonSize - 100, 23, 57, 10), Version, waterMarkStyle);
@@ -1143,7 +1173,7 @@ namespace BDArmory.UI
 
             //infolink
             GUIStyle iStyle = infoLinkEnabled ? BDGuiSkin.box : BDGuiSkin.button;
-            if (GUI.Button(new Rect(columnWidth - _windowMargin - ++buttonNumber * _buttonSize, _windowMargin, _buttonSize, _buttonSize), "i", iStyle))
+            if (GUI.Button(new Rect(columnWidth - _windowMargin - (buttonNumber += 2) * _buttonSize, _windowMargin, 2 * _buttonSize, _buttonSize), "Info", iStyle))
             {
                 infoLinkEnabled = !infoLinkEnabled;
             }
@@ -2211,6 +2241,7 @@ namespace BDArmory.UI
             WindowRectToolbar.height = toolWindowHeight;
             WindowRectToolbar.width = toolWindowWidth;
             numberOfButtons = buttonNumber + 1;
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref WindowRectToolbar, previousWindowHeight);
         }
 #if DEBUG
@@ -2468,7 +2499,6 @@ namespace BDArmory.UI
             {
                 windowSettingsEnabled = false;
             }
-            GUI.DragWindow(new Rect(0, 0, settingsWidth, 25));
             if (editKeys)
             {
                 InputSettings();
@@ -4320,6 +4350,7 @@ namespace BDArmory.UI
             line += 1.5f; // Bottom internal margin
             settingsHeight = (line * settingsLineHeight);
             WindowRectSettings.height = settingsHeight;
+            GUI.DragWindow();
             if (!scalingUI) GUIUtils.RepositionWindow(ref WindowRectSettings);
             GUIUtils.UseMouseEventInRect(WindowRectSettings);
         }
@@ -5025,13 +5056,13 @@ namespace BDArmory.UI
             func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(ignoreLineRenderers: false, ignoreParticleRenderers: false).size; } };
             Debug.Log($"DEBUG vessel.GetRendererBounds(ignoreLineRenderers:false,ignoreParticleRenderers:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
             // Using cached model renderers vs current renderers
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:true); } };
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached: true); } };
             Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:true).size; } };
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached: true).size; } };
             Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:true).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached:false); } };
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { bounds = vessel.GetRendererBounds(useCached: false); } };
             Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false) took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {bounds}");
-            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached:false).size; } };
+            func = [MethodImpl(MethodImplOptions.AggressiveInlining)] () => { for (int i = 0; i < PROF_n; ++i) { size = vessel.GetRendererBounds(useCached: false).size; } };
             Debug.Log($"DEBUG vessel.GetRendererBounds(useCached:false).size took {ProfileFunc(func, PROF_N) / PROF_n:G3}μs to give {size}");
         }
 

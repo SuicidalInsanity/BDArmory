@@ -289,7 +289,6 @@ namespace BDArmory.Control
         void WingmenWindow(int windowID)
         {
             float height = buttonStartY;
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectWingCommander.width - buttonStartY - margin - margin, buttonStartY));
 
             //close buttton
             float xSize = buttonStartY - margin - margin;
@@ -358,7 +357,7 @@ namespace BDArmory.Control
             //resize window
             height += ((commandButtonLine - 1) * (buttonHeight + buttonGap));
             BDArmorySetup.WindowRectWingCommander.height = height;
-            GUI.DragWindow(BDArmorySetup.WindowRectWingCommander);
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectWingCommander);
         }
 

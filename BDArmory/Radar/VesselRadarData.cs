@@ -1177,7 +1177,6 @@ namespace BDArmory.Radar
         //=============================================
         private void WindowRadar(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectRadar.width - 18, 30));
             if (GUI.Button(new Rect(BDArmorySetup.WindowRectRadar.width - 18, 2, 16, 16), "X", GUI.skin.button)) //this won't actually close radar GUI, just turn all radars off. This intentional?
             {
                 DisableAllRadars();
@@ -1380,6 +1379,7 @@ namespace BDArmory.Radar
             {
                 resizingWindow = true;
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint && resizingWindow)
             {

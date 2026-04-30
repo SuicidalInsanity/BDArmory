@@ -388,7 +388,6 @@ namespace BDArmory.UI
         void TeamIconGUI(int windowID)
         {
             float line = 0;
-            GUI.DragWindow(new Rect(0, 0, WindowRectGUI.width, 25));
             BDTISettings.TEAMICONS = GUI.Toggle(new Rect(5, 25, toolWindowWidth, 20), BDTISettings.TEAMICONS, StringUtils.Localize("#LOC_BDArmory_Enable_Icons"), BDArmorySetup.BDGuiSkin.toggle);
             if (BDTISettings.TEAMICONS)
             {
@@ -456,6 +455,7 @@ namespace BDArmory.UI
             }
             toolWindowHeight = Mathf.Lerp(toolWindowHeight, 50 + (BDTISettings.TEAMICONS ? IconOptionsGroup.height + TeamColorsGroup.height : 0) + 15, 0.35f);
             WindowRectGUI.height = toolWindowHeight;
+            GUI.DragWindow();
         }
     }
 }

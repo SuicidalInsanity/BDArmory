@@ -454,7 +454,6 @@ namespace BDArmory.UI
                 }
             }
 
-            GUI.DragWindow(new Rect(leftButtonCount * _buttonHeight + _margin, 0f, windowSize.x - (leftButtonCount + rightButtonCount) * _buttonHeight - 3f * _margin, _titleHeight));
             GUI.Label(new Rect(windowSize.x - rightButtonCount * _buttonHeight - _margin - 70f, 4f, 70f, _titleHeight - 4f), BDArmorySetup.Version);
 
             float height = _titleHeight;
@@ -582,6 +581,7 @@ namespace BDArmory.UI
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingWindow = true;
+            else GUI.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint) windowSize.x += Mouse.delta.x / BDArmorySettings.UI_SCALE_ACTUAL;
             #endregion
         }

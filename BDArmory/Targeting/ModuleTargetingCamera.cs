@@ -800,7 +800,6 @@ namespace BDArmory.Targeting
             windowIsOpen = true;
             var guiMatrix = GUI.matrix;
 
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectTargetingCam.width - 18, controlsStartY));
             if (GUI.Button(new Rect(BDArmorySetup.WindowRectTargetingCam.width - 18, 2, 16, 16), "X", GUI.skin.button))
             {
                 DisableCamera();
@@ -880,6 +879,7 @@ namespace BDArmory.Targeting
             {
                 ResizingWindow = true;
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint && ResizingWindow)
             {

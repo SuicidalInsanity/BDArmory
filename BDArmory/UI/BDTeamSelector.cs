@@ -62,7 +62,6 @@ namespace BDArmory.UI
         {
             height = margin;
             GUI.Label(new Rect(margin, height, width - 2 * margin, buttonHeight), StringUtils.Localize("#LOC_BDArmory_SelectTeam"), BDArmorySetup.BDGuiSkin.label);
-            GUI.DragWindow(new Rect(margin, margin, width - 2 * margin - buttonHeight, buttonHeight));
             if (GUI.Button(new Rect(width - 18, 2, 18, 18), "X"))
             {
                 SetVisible(false);
@@ -161,6 +160,7 @@ namespace BDArmory.UI
 
             height += margin;
             window.height = scrollable ? Screen.height / 2 + buttonHeight + buttonGap + 2 * margin : height;
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref window);
             GUIUtils.UseMouseEventInRect(window);
         }
