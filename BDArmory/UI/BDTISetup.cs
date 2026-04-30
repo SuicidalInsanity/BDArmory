@@ -396,7 +396,7 @@ namespace BDArmory.UI
                     ScreenMessages.PostScreenMessage(StringUtils.Localize("#LOC_BDArmory_Icons_PSA"), 7.0f, ScreenMessageStyle.UPPER_CENTER);
                     showPSA = true;
                 }
-                GUI.BeginGroup(IconOptionsGroup, GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                GUI.BeginGroup(IconOptionsGroup, GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                 BDTISettings.TEAMNAMES = GUI.Toggle(SRect(line++), BDTISettings.TEAMNAMES, StringUtils.Localize("#LOC_BDArmory_Icon_teams"), BDArmorySetup.BDGuiSkin.toggle);
                 BDTISettings.VESSELNAMES = GUI.Toggle(SRect(line++), BDTISettings.VESSELNAMES, StringUtils.Localize("#LOC_BDArmory_Icon_names"), BDArmorySetup.BDGuiSkin.toggle);
                 BDTISettings.SCORE = GUI.Toggle(SRect(line++), BDTISettings.SCORE, StringUtils.Localize("#LOC_BDArmory_Icon_score"), BDArmorySetup.BDGuiSkin.toggle);
@@ -425,14 +425,14 @@ namespace BDArmory.UI
                 IconOptionsGroup.height = 25f * line;
 
                 TeamColorsGroup.y = IconOptionsGroup.y + IconOptionsGroup.height;
-                GUI.BeginGroup(TeamColorsGroup, GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                GUI.BeginGroup(TeamColorsGroup, GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                 line = 0;
                 using (var teamManagers = weaponManagers.GetEnumerator())
                     while (teamManagers.MoveNext())
                     {
                         line++;
                         Rect buttonRect = new Rect(30, -20 + (line * 25), 190, 20);
-                        GUIStyle vButtonStyle = showColorSelect ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button;
+                        GUIStyle vButtonStyle = showColorSelect ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle;
                         if (GUI.Button(buttonRect, $"{teamManagers.Current.Key}", vButtonStyle))
                         {
                             showColorSelect = !showColorSelect;

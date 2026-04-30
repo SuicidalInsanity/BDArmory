@@ -38,19 +38,26 @@ namespace BDArmory.UI
         private void Start()
         {
             textScale = Mathf.Max(10, Mathf.CeilToInt(10 * BDTISettings.ICONSCALE));
-            IconUIStyle = new GUIStyle();
-            IconUIStyle.fontStyle = FontStyle.Bold;
-            IconUIStyle.fontSize = textScale;
-            IconUIStyle.normal.textColor = XKCDColors.Red;//replace with BDATISetup defined value varable.
+            IconUIStyle = new GUIStyle
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = textScale,
+                normal = new GUIStyleState { textColor = XKCDColors.Red }//replace with BDATISetup defined value varable.
+            };
 
-            DropshadowStyle = new GUIStyle();
-            DropshadowStyle.fontStyle = FontStyle.Bold;
-            DropshadowStyle.fontSize = textScale;
-            DropshadowStyle.normal.textColor = Color.black;
+            DropshadowStyle = new GUIStyle
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = textScale,
+                normal = new GUIStyleState { textColor = Color.black }
+            };
 
-            mIStyle = new GUIStyle();
-            mIStyle.fontStyle = FontStyle.Normal;
-            mIStyle.fontSize = textScale;
+            mIStyle = new GUIStyle
+            {
+                fontStyle = FontStyle.Normal,
+                fontSize = textScale
+            };
+
             Missilecolor = XKCDColors.Yellow;
 
             IconMat = new Material(Shader.Find("KSP/Particles/Alpha Blended"));

@@ -82,9 +82,9 @@ namespace BDArmory.UI
             {
                 alignment = TextAnchor.MiddleLeft,
                 wordWrap = true,
-                fontSize = BDArmorySettings.SCORES_FONT_SIZE
+                fontSize = BDArmorySettings.SCORES_FONT_SIZE,
+                normal = new GUIStyleState { textColor = Color.white }
             };
-            leftLabel.normal.textColor = Color.white;
             rightLabel = new GUIStyle(leftLabel)
             {
                 alignment = TextAnchor.MiddleRight,
@@ -158,9 +158,9 @@ namespace BDArmory.UI
 
         private void WindowScores(int id)
         {
-            if (GUI.Button(new Rect(0, 0, _buttonSize, _buttonSize), "UI", BDArmorySettings.SCORES_PERSIST_UI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) { BDArmorySettings.SCORES_PERSIST_UI = !BDArmorySettings.SCORES_PERSIST_UI; }
-            if (GUI.Button(new Rect(_buttonSize, 0, _buttonSize, _buttonSize), "-", BDArmorySetup.BDGuiSkin.button)) AdjustFontSize(false);
-            if (GUI.Button(new Rect(2 * _buttonSize, 0, _buttonSize, _buttonSize), "+", BDArmorySetup.BDGuiSkin.button)) AdjustFontSize(true);
+            if (GUI.Button(new Rect(0, 0, _buttonSize, _buttonSize), "UI", BDArmorySettings.SCORES_PERSIST_UI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) { BDArmorySettings.SCORES_PERSIST_UI = !BDArmorySettings.SCORES_PERSIST_UI; }
+            if (GUI.Button(new Rect(_buttonSize, 0, _buttonSize, _buttonSize), "-", BDArmorySetup.ButtonStyle)) AdjustFontSize(false);
+            if (GUI.Button(new Rect(2 * _buttonSize, 0, _buttonSize, _buttonSize), "+", BDArmorySetup.ButtonStyle)) AdjustFontSize(true);
             if (GUI.Button(new Rect(windowSize.x - 3 * _buttonSize, 0, _buttonSize, _buttonSize), "T", showTeamScores ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) { showTeamScores = !showTeamScores; ResetWindowSize(); }
             if (GUI.Button(new Rect(windowSize.x - 2 * _buttonSize, 0, _buttonSize, _buttonSize), "W", weightsVisible ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) SetWeightsVisible(!weightsVisible);
             if (GUI.Button(new Rect(windowSize.x - _buttonSize, 0, _buttonSize, _buttonSize), " X", BDArmorySetup.CloseButtonStyle)) SetVisible(false);

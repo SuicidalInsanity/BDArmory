@@ -1177,7 +1177,7 @@ namespace BDArmory.Radar
         //=============================================
         private void WindowRadar(int windowID)
         {
-            if (GUI.Button(new Rect(BDArmorySetup.WindowRectRadar.width - 18, 2, 16, 16), "X", GUI.skin.button)) //this won't actually close radar GUI, just turn all radars off. This intentional?
+            if (GUI.Button(new Rect(BDArmorySetup.WindowRectRadar.width - 18, 2, 16, 16), " X", BDArmorySetup.CloseButtonStyleDark)) //this won't actually close radar GUI, just turn all radars off. This intentional?
             {
                 DisableAllRadars();
                 BDArmorySetup.SaveConfig();
@@ -1771,7 +1771,7 @@ namespace BDArmory.Radar
                 if (v.Current == null) continue;
                 if (!v.Current.vessel || !v.Current.vessel.loaded) continue;
                 bool linked = externalVRDs.Contains(v.Current);
-                GUIStyle style = linked ? BDArmorySetup.BDGuiSkin.box : GUI.skin.button;
+                GUIStyle style = linked ? BDArmorySetup.SelectedButtonStyle : GUI.skin.button;
                 if (
                     GUI.Button(
                         new Rect(8, 8 + (linkRectEntryHeight * numberOfAvailableLinks), linkRectWidth - 16,

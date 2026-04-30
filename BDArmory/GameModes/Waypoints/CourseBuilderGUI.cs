@@ -111,14 +111,20 @@ namespace BDArmory.UI
             _ready = false;
             StartCoroutine(WaitForBdaSettings());
 
-            leftLabel = new GUIStyle();
-            leftLabel.alignment = TextAnchor.UpperLeft;
-            leftLabel.normal.textColor = Color.white;
-            listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-            listStyle.fixedHeight = 18; //make list contents slightly smaller
-            centreLabel = new GUIStyle();
-            centreLabel.alignment = TextAnchor.UpperCenter;
-            centreLabel.normal.textColor = Color.white;
+            leftLabel = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
+            listStyle = new GUIStyle(BDArmorySetup.ButtonStyle)
+            {
+                fixedHeight = 18 //make list contents slightly smaller
+            };
+            centreLabel = new GUIStyle
+            {
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
             // Spawn fields
             spawnFields = new Dictionary<string, NumericInputField> {
@@ -277,12 +283,12 @@ namespace BDArmory.UI
             float line = 0.25f;
             var rects = new List<Rect>();
 
-            if (GUI.Button(SLeftButtonRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_WP_LoadCourse")}", ShowLoadMenu ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Load Course
+            if (GUI.Button(SLeftButtonRect(++line), $"{StringUtils.Localize("#LOC_BDArmory_WP_LoadCourse")}", ShowLoadMenu ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))//Load Course
             {
                 ShowLoadMenu = !ShowLoadMenu;
             }
 
-            if (GUI.Button(SRightButtonRect(line), $"{StringUtils.Localize("#LOC_BDArmory_WP_NewCourse")}", ShowNewCourse ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Load Course
+            if (GUI.Button(SRightButtonRect(line), $"{StringUtils.Localize("#LOC_BDArmory_WP_NewCourse")}", ShowNewCourse ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))//Load Course
             {
                 ShowNewCourse = !ShowNewCourse;
             }
@@ -292,7 +298,7 @@ namespace BDArmory.UI
                 int i = 0;
                 foreach (var wpCourse in WaypointCourses.CourseLocations)
                 {
-                    if (GUI.Button(SQuarterRect(line, i++), wpCourse.name, i - 1 == selected_index ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SQuarterRect(line, i++), wpCourse.name, i - 1 == selected_index ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                     {
                         switch (Event.current.button)
                         {
@@ -358,7 +364,7 @@ namespace BDArmory.UI
                 newCourseName = GUI.TextField(SLeftButtonRect(++line), newCourseName);
                 if (!string.IsNullOrEmpty(newCourseName))
                 {
-                    if (GUI.Button(SQuarterRect(line, 2), StringUtils.Localize("#LOC_BDArmory_WP_Create"), BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SQuarterRect(line, 2), StringUtils.Localize("#LOC_BDArmory_WP_Create"), BDArmorySetup.ButtonStyle))
                     {
                         Vector3d spawnCoords = Vector3d.zero;
                         FlightGlobals.currentMainBody.GetLatLonAlt(FlightGlobals.ActiveVessel.CoM, out spawnCoords.x, out spawnCoords.y, out spawnCoords.z);
@@ -378,7 +384,7 @@ namespace BDArmory.UI
                         }
                         loadedGates.Clear();
                     }
-                    if (GUI.Button(SQuarterRect(line, 3), StringUtils.Localize("#LOC_BDArmory_WP_Record"), BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SQuarterRect(line, 3), StringUtils.Localize("#LOC_BDArmory_WP_Record"), BDArmorySetup.ButtonStyle))
                     {
                         Vector3d spawnCoords = Vector3d.zero;
                         FlightGlobals.currentMainBody.GetLatLonAlt(FlightGlobals.ActiveVessel.CoM, out spawnCoords.x, out spawnCoords.y, out spawnCoords.z);
@@ -421,13 +427,13 @@ namespace BDArmory.UI
                     if (spawnFields["interval"].currentValue != recordingIncrement) recordingIncrement = (float)spawnFields["interval"].currentValue;
 
                     line += 0.25f;
-                    if (GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_WP_FinishRecording"), BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_WP_FinishRecording"), BDArmorySetup.ButtonStyle))
                     {
                         recording = false;
                     }
                     line++;
                 }
-                if (GUI.Button(SQuarterRect(line, 0), StringUtils.Localize("#LOC_BDArmory_WP_Spawnpoint"), moddingSpawnPoint ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(SQuarterRect(line, 0), StringUtils.Localize("#LOC_BDArmory_WP_Spawnpoint"), moddingSpawnPoint ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                 {
                     if (Event.current.button == 0)
                     {
@@ -444,7 +450,7 @@ namespace BDArmory.UI
                 int i = 1;
                 foreach (var gate in WaypointCourses.CourseLocations[selected_index].waypoints)
                 {
-                    if (GUI.Button(SQuarterRect(line, i++), gate.name, Math.Max(i - 2, 0) == selected_gate_index ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SQuarterRect(line, i++), gate.name, Math.Max(i - 2, 0) == selected_gate_index ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                     {
                         moddingSpawnPoint = false;
                         selected_gate_index = Math.Max(i - 2, 0);
@@ -494,7 +500,7 @@ namespace BDArmory.UI
                 if (!recording)
                 {
                     txtName = GUI.TextField(SRightButtonRect(++line), txtName);
-                    if (GUI.Button(SLeftButtonRect(line), selected_gate_index < WaypointCourses.CourseLocations[selected_index].waypoints.Count - 1 ? StringUtils.Localize("InsertGate") : StringUtils.Localize("#LOC_BDArmory_WP_AddGate"), BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.Button(SLeftButtonRect(line), selected_gate_index < WaypointCourses.CourseLocations[selected_index].waypoints.Count - 1 ? StringUtils.Localize("InsertGate") : StringUtils.Localize("#LOC_BDArmory_WP_AddGate"), BDArmorySetup.ButtonStyle))
                     {
                         string newName = string.IsNullOrEmpty(txtName.Trim()) ? $"{StringUtils.Localize("#LOC_BDArmory_WP_AddGate")} {(WaypointCourses.CourseLocations[selected_index].waypoints.Count.ToString())}" : txtName.Trim();
                         AddGate(newName);
@@ -531,37 +537,37 @@ namespace BDArmory.UI
                 GUI.Label(rects[1], StringUtils.Localize("#autoLOC_463478"), centreLabel); //longitude
                 GUI.Label(rects[2], StringUtils.Localize("#autoLOC_463493"), centreLabel); //Altitude
                 rects = SRight3Rects(++line);
-                if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue - (movementIncrement / 100)); //having lat/long increase by 1 per frame while the button is held is going to cause gates to go *flying* across the continent
                     if (spawnFields["lat"].currentValue < -90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue + 180);
                 }
                 spawnFields["lat"].tryParseValue(GUI.TextField(rects[0], spawnFields["lat"].possibleValue, 8, spawnFields["lat"].style));
-                if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue + (movementIncrement / 100));
                     if (spawnFields["lat"].currentValue > 90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue - 180);
                 }
 
-                if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue - (movementIncrement / 100));
                     if (spawnFields["lon"].currentValue < -180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue + 360);
                 }
                 spawnFields["lon"].tryParseValue(GUI.TextField(rects[1], spawnFields["lon"].possibleValue, 8, spawnFields["lon"].style));
-                if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue + (movementIncrement / 100));
                     if (spawnFields["lon"].currentValue > 180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue - 360);
                 }
 
-                if (GUI.RepeatButton(SFieldButtonRect(line, 16), "<", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 16), "<", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["alt"].SetCurrentValue(spawnFields["alt"].currentValue - movementIncrement);
                     if (spawnFields["alt"].currentValue < 0) spawnFields["alt"].SetCurrentValue(0);
                 }
                 spawnFields["alt"].tryParseValue(GUI.TextField(rects[2], spawnFields["alt"].possibleValue, 8, spawnFields["alt"].style));
-                if (GUI.RepeatButton(SFieldButtonRect(line, 22), ">", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.RepeatButton(SFieldButtonRect(line, 22), ">", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["alt"].SetCurrentValue(spawnFields["alt"].currentValue + movementIncrement);
                     if (spawnFields["alt"].currentValue > (FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000)) spawnFields["alt"].SetCurrentValue((FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000));
@@ -577,30 +583,30 @@ namespace BDArmory.UI
                 rects = SRight3Rects(++line);
                 if (!moddingSpawnPoint)
                 {
-                    if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.ButtonStyle))
                     {
                         spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].currentValue - movementIncrement);
                     }
                     spawnFields["diameter"].tryParseValue(GUI.TextField(rects[0], spawnFields["diameter"].possibleValue, 8, spawnFields["diameter"].style));
-                    if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.ButtonStyle))
                     {
                         spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].currentValue + movementIncrement);
                         if (spawnFields["diameter"].currentValue > 1000) spawnFields["diameter"].SetCurrentValue(1000);
                     }
                     if (spawnFields["diameter"].currentValue < 5) spawnFields["diameter"].SetCurrentValue(5);
-                    if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.ButtonStyle))
                     {
                         spawnFields["speed"].SetCurrentValue(spawnFields["speed"].currentValue - (movementIncrement));
                         if (spawnFields["speed"].currentValue < 0) spawnFields["speed"].SetCurrentValue(-1);
                     }
                     spawnFields["speed"].tryParseValue(GUI.TextField(rects[1], spawnFields["speed"].possibleValue, 8, spawnFields["speed"].style));
-                    if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.BDGuiSkin.button))
+                    if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.ButtonStyle))
                     {
                         spawnFields["speed"].SetCurrentValue(spawnFields["speed"].currentValue + movementIncrement);
                         if (spawnFields["speed"].currentValue > 3000) spawnFields["speed"].SetCurrentValue(3000);
                     }
                 }
-                if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 1 : 16), "<", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 1 : 16), "<", BDArmorySetup.ButtonStyle))
                 {
                     if (movementIncrement >= 2)
                         spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue - 1);
@@ -614,7 +620,7 @@ namespace BDArmory.UI
                     if (spawnFields["increment"].currentValue < 0.001f) spawnFields["increment"].SetCurrentValue(0.001f);
                 }
                 spawnFields["increment"].tryParseValue(GUI.TextField(rects[moddingSpawnPoint ? 0 : 2], spawnFields["increment"].possibleValue, 8, spawnFields["increment"].style));
-                if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 7 : 22), ">", BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 7 : 22), ">", BDArmorySetup.ButtonStyle))
                 {
                     spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue + 1);
                     if (spawnFields["increment"].currentValue > 1000) spawnFields["increment"].SetCurrentValue(1000);
@@ -656,12 +662,12 @@ spawnFields["alt"].currentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
                 line += 0.3f;
             }
 
-            if (selected_index >= 0 && GUI.Button(SLeftButtonRect(++line), StringUtils.Localize("#autoLOC_900627") + StringUtils.Localize("#autoLOC_6003085"), showCoursePath ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //view path
+            if (selected_index >= 0 && GUI.Button(SLeftButtonRect(++line), StringUtils.Localize("#autoLOC_900627") + StringUtils.Localize("#autoLOC_6003085"), showCoursePath ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) //view path
             {
                 showCoursePath = !showCoursePath;
             }
 
-            if (selected_index >= 0 && GUI.Button(SRightButtonRect(line), StringUtils.Localize("Snap Camera"), BDArmorySetup.BDGuiSkin.button)) //view path
+            if (selected_index >= 0 && GUI.Button(SRightButtonRect(line), StringUtils.Localize("Snap Camera"), BDArmorySetup.ButtonStyle)) //view path
             {
                 SnapCameraToGate();
             }

@@ -67,9 +67,8 @@ namespace BDArmory.Control
                     alignment = TextAnchor.MiddleLeft,
                     wordWrap = false,
                     fontSize = 11
-                    // fixedHeight = buttonHeight
                 };
-                wingmanButtonSelectedStyle = new GUIStyle(BDArmorySetup.BoxStyle)
+                wingmanButtonSelectedStyle = new GUIStyle(BDArmorySetup.SelectedButtonStyle)
                 {
                     alignment = wingmanButtonStyle.alignment,
                     wordWrap = wingmanButtonStyle.wordWrap,
@@ -306,7 +305,7 @@ namespace BDArmory.Control
         Vector2 wingmenScrollPos = default;
         void WingmenWindow(int windowID)
         {
-            if (GUI.Button(new Rect(windowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), "X", BDArmorySetup.CloseButtonStyle))
+            if (GUI.Button(new Rect(windowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), " X", BDArmorySetup.CloseButtonStyle))
             {
                 showGUI = false;
             }
@@ -366,7 +365,7 @@ namespace BDArmory.Control
 
         void CommandButton(CommandFunction func, string buttonLabel, bool sendToWingmen, bool pressed, object data = null)
         {
-            if (GUILayout.Button(buttonLabel, pressed ? BDArmorySetup.BoxStyle : BDArmorySetup.ButtonStyle))
+            if (GUILayout.Button(buttonLabel, pressed ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 if (sendToWingmen)
                 {

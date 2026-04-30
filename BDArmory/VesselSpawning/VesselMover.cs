@@ -982,9 +982,11 @@ namespace BDArmory.VesselSpawning
         GUIStyle messageShadowStyle;
         void ConfigureStyles()
         {
-            messageStyle = new GUIStyle(HighLogic.Skin.label);
-            messageStyle.fontSize = 22;
-            messageStyle.alignment = TextAnchor.UpperCenter;
+            messageStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 22,
+                alignment = TextAnchor.UpperCenter
+            };
 
             messageShadowStyle = new GUIStyle(messageStyle);
             messageShadowStyle.normal.textColor = new Color(0, 0, 0, 0.75f);
@@ -1408,7 +1410,7 @@ namespace BDArmory.VesselSpawning
                 focusKerbalNameField = newCustomKerbal;
                 notThisFrame = true;
             }
-            if (GUILayout.Button("X", removeKerbals ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.CloseButtonStyle, GUILayout.Width(27)))
+            if (GUILayout.Button(" X", removeKerbals ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.CloseButtonStyle, GUILayout.Width(27)))
             {
                 // Remove selected Kerbals!
                 removeKerbals = !removeKerbals;

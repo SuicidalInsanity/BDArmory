@@ -80,12 +80,12 @@ namespace BDArmory.UI
         // private bool _continuousVesselSpawning = false;
 
         // button styles for info buttons
-        private static GUIStyle redLight = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-        private static GUIStyle yellowLight = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-        private static GUIStyle greenLight = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-        private static GUIStyle blueLight = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-        private static GUIStyle ItVessel = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-        private static GUIStyle ItVesselSelected = new GUIStyle(BDArmorySetup.BDGuiSkin.box);
+        private static GUIStyle redLight = new(BDArmorySetup.ButtonStyle);
+        private static GUIStyle yellowLight = new(BDArmorySetup.ButtonStyle);
+        private static GUIStyle greenLight = new(BDArmorySetup.ButtonStyle);
+        private static GUIStyle blueLight = new(BDArmorySetup.ButtonStyle);
+        private static GUIStyle ItVessel = new(BDArmorySetup.ButtonStyle);
+        private static GUIStyle ItVesselSelected = new(BDArmorySetup.SelectedButtonStyle);
 
         public static GUISkin VSPUISkin = HighLogic.Skin;
 
@@ -357,25 +357,25 @@ namespace BDArmory.UI
         {
             int leftButtonCount = 0, rightButtonCount = 0;
 
-            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "↕", BDArmorySettings.VESSEL_SWITCHER_WINDOW_SORTING ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "↕", BDArmorySettings.VESSEL_SWITCHER_WINDOW_SORTING ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 BDArmorySettings.VESSEL_SWITCHER_WINDOW_SORTING = !BDArmorySettings.VESSEL_SWITCHER_WINDOW_SORTING;
                 BDArmorySetup.SaveConfig();
             }
-            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "↔", BDArmorySettings.VESSEL_SWITCHER_WINDOW_ALIGNED ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "↔", BDArmorySettings.VESSEL_SWITCHER_WINDOW_ALIGNED ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 BDArmorySettings.VESSEL_SWITCHER_WINDOW_ALIGNED = !BDArmorySettings.VESSEL_SWITCHER_WINDOW_ALIGNED;
             }
-            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "t", BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "t", BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE = !BDArmorySettings.VESSEL_SWITCHER_WINDOW_OLD_DISPLAY_STYLE;
                 BDArmorySetup.SaveConfig();
             }
-            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "Sc", ScoreWindow.Instance.IsVisible ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "Sc", ScoreWindow.Instance.IsVisible ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 ScoreWindow.Instance.SetVisible(!ScoreWindow.Instance.IsVisible);
             }
-            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "UI", BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(leftButtonCount++ * _buttonHeight + _margin, 4f, _buttonHeight, _buttonHeight), "UI", BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI = !BDArmorySettings.VESSEL_SWITCHER_PERSIST_UI;
                 BDArmorySetup.SaveConfig();
@@ -386,7 +386,7 @@ namespace BDArmory.UI
                 SetVisible(false);
                 return;
             }
-            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "T", _teamsAssigned ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "T", _teamsAssigned ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 if (Event.current.button == 1) // Right click => original teams.
                 {
@@ -400,17 +400,17 @@ namespace BDArmory.UI
                     MassTeamSwitch(_teamsAssigned);
                 }
             }
-            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "P", _autoPilotEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "P", _autoPilotEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 // Toggle autopilots for everyone
                 ToggleAutopilots();
             }
-            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "G", _guardModeEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "G", _guardModeEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 // switch everyon onto different teams
                 ToggleGuardModes();
             }
-            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), camMode, _autoCameraSwitch ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), camMode, _autoCameraSwitch ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 if (Event.current.button == 1) //right click
                 {
@@ -440,7 +440,7 @@ namespace BDArmory.UI
                     Debug.Log("[BDArmory.LoadedVesselSwitcher]: Setting AutoCameraSwitch");
                 }
             }
-            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "M", BDACompetitionMode.Instance.killerGMenabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(windowSize.x - ++rightButtonCount * _buttonHeight - _margin, 4, _buttonHeight, _buttonHeight), "M", BDACompetitionMode.Instance.killerGMenabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 if (Event.current.button == 1)
                 {
@@ -657,7 +657,7 @@ namespace BDArmory.UI
 
             // Team toggle
             Rect teamButtonRect = new(_margin + vesselButtonWidth + _offset + 3 * _buttonHeight, height, _buttonHeight, _buttonHeight);
-            if (GUI.Button(teamButtonRect, "T", BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(teamButtonRect, "T", BDArmorySetup.ButtonStyle))
             {
                 if (Event.current.button == 1)
                 {
@@ -715,7 +715,7 @@ namespace BDArmory.UI
             public Vessel vessel;
             public bool isThreat;
             public float distSqr;
-            public GUIStyle targetStyle = BDArmorySetup.BDGuiSkin.button;
+            public GUIStyle targetStyle = BDArmorySetup.ButtonStyle;
         }
         readonly List<(string, List<VSVesselData>)> VSEntryData = [];
         /// <summary>
@@ -931,8 +931,8 @@ namespace BDArmory.UI
                 wm = wm,
                 ai = wm.AI,
                 vesselName = wm.vessel.vesselName,
-                vesselButtonStyle = new GUIStyle(wm.team == "IT" ? (wm.vessel.isActiveVessel ? ItVesselSelected : ItVessel) : wm.vessel.isActiveVessel ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button),
-                guardStyle = wm.guardMode ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button
+                vesselButtonStyle = new GUIStyle(wm.team == "IT" ? (wm.vessel.isActiveVessel ? ItVesselSelected : ItVessel) : wm.vessel.isActiveVessel ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle),
+                guardStyle = wm.guardMode ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle
             };
 
             VSEntryString.Clear();
@@ -1004,7 +1004,7 @@ namespace BDArmory.UI
             if (vd.ai != null)
             {
                 vd.status = vd.ai.currentStatus;
-                vd.aiStyle = new GUIStyle(vd.ai.pilotEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                vd.aiStyle = new GUIStyle(vd.ai.pilotEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                 if (vd.wm.underFire)
                 {
                     var distSqr = (vd.wm.vessel.CoM - vd.wm.incomingThreatPosition).sqrMagnitude;
@@ -1040,7 +1040,7 @@ namespace BDArmory.UI
                 }
             }
 
-            vd.xStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
+            vd.xStyle = new GUIStyle(BDArmorySetup.ButtonStyle);
             if (BDACompetitionMode.Instance.Scores.Players.Contains(vd.vesselName))
             {
                 var scoreData = BDACompetitionMode.Instance.Scores.ScoreData[vd.vesselName];

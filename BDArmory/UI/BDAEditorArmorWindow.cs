@@ -139,8 +139,10 @@ namespace BDArmory.UI
             //steelValue = ProjectileUtils.CalculatePenetration(30, newCaliber, 0.388f, 1109, 0.15f, 7850, 940, 30, 0.8f, false);
             steelValue = ProjectileUtils.CalculatePenetration(30, 1109, 0.388f, 0.8f);
             exploValue = 940 * 1.15f * 7.85f;
-            listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-            listStyle.fixedHeight = 18; //make list contents slightly smaller
+            listStyle = new GUIStyle(BDArmorySetup.ButtonStyle)
+            {
+                fixedHeight = 18 //make list contents slightly smaller
+            };
             SetupLegalityValues();
         }
 
@@ -376,7 +378,7 @@ namespace BDArmory.UI
         void WindowArmor(int windowID)
         {
             GUIUtils.PreventClickThrough(windowRect, "BDAArmorLOCK");
-            if (GUI.Button(new Rect(windowRect.width - 18, 2, 16, 16), "X"))
+            if (GUI.Button(new Rect(windowRect.width - 18, 2, 16, 16), " X", BDArmorySetup.CloseButtonStyle))
             {
                 toolbarButton.SetFalse();
             }
@@ -389,7 +391,7 @@ namespace BDArmory.UI
 
             GUIStyle style = BDArmorySetup.BDGuiSkin.label;
 
-            if (useNumField != (useNumField = GUI.Toggle(new Rect(windowRect.width - 36, 2, 16, 16), useNumField, "#", useNumField ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+            if (useNumField != (useNumField = GUI.Toggle(new Rect(windowRect.width - 36, 2, 16, 16), useNumField, "#", useNumField ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
             {
                 if (!useNumField && thicknessField != null && thicknessField.ContainsKey("Thickness")) thicknessField["Thickness"].tryParseValueNow();
             }
@@ -398,7 +400,7 @@ namespace BDArmory.UI
 
             style.fontStyle = FontStyle.Normal;
 
-            if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHPVisualizer"), HPvisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHPVisualizer"), HPvisualizer ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
                 HPvisualizer = !HPvisualizer;
                 if (HPvisualizer)
@@ -414,7 +416,7 @@ namespace BDArmory.UI
 
             if (!BDArmorySettings.RESET_ARMOUR)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorVisualizer"), Visualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorVisualizer"), Visualizer ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                 {
                     Visualizer = !Visualizer;
                     if (Visualizer)
@@ -430,7 +432,7 @@ namespace BDArmory.UI
 
             if (!BDArmorySettings.RESET_HULL)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHullVisualizer"), HullVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorHullVisualizer"), HullVisualizer ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                 {
                     HullVisualizer = !HullVisualizer;
                     if (HullVisualizer)
@@ -446,7 +448,7 @@ namespace BDArmory.UI
 
             if (!FerramAerospace.hasFAR)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorLiftVisualizer"), LiftVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_ArmorLiftVisualizer"), LiftVisualizer ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                 {
                     LiftVisualizer = !LiftVisualizer;
                     if (LiftVisualizer)
@@ -462,7 +464,7 @@ namespace BDArmory.UI
 
             //if (BDArmorySettings.RUNWAY_PROJECT)
             {
-                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_partTreeVisualizer"), TreeVisualizer ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                if (GUI.Button(new Rect(10, line * lineHeight, 280, lineHeight), StringUtils.Localize("#LOC_BDArmory_partTreeVisualizer"), TreeVisualizer ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                 {
                     TreeVisualizer = !TreeVisualizer;
                     if (TreeVisualizer)
@@ -541,11 +543,11 @@ namespace BDArmory.UI
             if (!FerramAerospace.hasFAR)
             {
                 line += 0.5f;
-                resourcePick = GUI.Toggle(new Rect(10, line++ * lineHeight, 280, lineHeight), resourcePick, StringUtils.Localize("#LOC_BDArmory_DryMassWhitelist"), resourcePick ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                resourcePick = GUI.Toggle(new Rect(10, line++ * lineHeight, 280, lineHeight), resourcePick, StringUtils.Localize("#LOC_BDArmory_DryMassWhitelist"), resourcePick ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                 if (resourcePick)
                 {
                     vesselResourceBoxRect.y = line * lineHeight - 2;
-                    GUI.Box(vesselResourceBoxRect, "", BDArmorySetup.BDGuiSkin.box); // l,r,t,b = 3,3,3,3 with slight overlap of the toggle
+                    GUI.Box(vesselResourceBoxRect, "", BDArmorySetup.SelectedButtonStyle); // l,r,t,b = 3,3,3,3 with slight overlap of the toggle
                     int pos = 0;
                     using (var res = vesselResources.GetEnumerator())
                         while (res.MoveNext())
@@ -554,7 +556,7 @@ namespace BDArmory.UI
                             if (res.Current.name.Contains("Intake")) continue; //don't include intake air, since that will always be present                            
                             int resID = res.Current.id;
                             var buttonName = res.Current.displayName.Length <= 17 ? res.Current.displayName : res.Current.displayName.Remove(14) + "...";
-                            if (GUI.Button(new Rect(pos % 2 == 0 ? 13 : 152f, (line + (int)(pos / 2)) * lineHeight + 1, 135, lineHeight), $"{buttonName}", vesselResourceIDs.Contains(resID) ? BDArmorySetup.BDGuiSkin.button : BDArmorySetup.BDGuiSkin.box)) // match BDGUIComboBox's layout
+                            if (GUI.Button(new Rect(pos % 2 == 0 ? 13 : 152f, (line + (int)(pos / 2)) * lineHeight + 1, 135, lineHeight), $"{buttonName}", vesselResourceIDs.Contains(resID) ? BDArmorySetup.ButtonStyle : BDArmorySetup.SelectedButtonStyle)) // match BDGUIComboBox's layout
                             {
                                 if (!vesselResourceIDs.Contains(resID))
                                 {
@@ -615,7 +617,7 @@ namespace BDArmory.UI
                 if (GameSettings.ADVANCED_TWEAKABLES)
                 {
                     line += 0.5f;
-                    ArmorStats = GUI.Toggle(new Rect(10, (line + armorLines) * lineHeight, 280, lineHeight), ArmorStats, StringUtils.Localize("#LOC_BDArmory_ArmorStats"), ArmorStats ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                    ArmorStats = GUI.Toggle(new Rect(10, (line + armorLines) * lineHeight, 280, lineHeight), ArmorStats, StringUtils.Localize("#LOC_BDArmory_ArmorStats"), ArmorStats ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                     StatLines++;
                     if (ArmorStats)
                     {
@@ -1243,7 +1245,7 @@ namespace BDArmory.UI
                             }
                             else
                                 if (partLimitCheck.TryGetValue(part.Key, out var qty))
-                                listedpartCount = qty.Count;
+                                    listedpartCount = qty.Count;
                             if (CompSettings.partBlacklist.TryGetValue(part.Key, out float bQ))
                             {
                                 if (bQ >= 0 && listedpartCount > bQ)
@@ -1363,7 +1365,7 @@ namespace BDArmory.UI
                                         }
                                         break;
                                     }
-                                case "ModuleCommand":                                
+                                case "ModuleCommand":
                                     {
                                         int crewCount = kvp.Value[0].FindModuleImplementing<ModuleCommand>().minimumCrew;
                                         if (crewCount <= 0)
@@ -1398,7 +1400,7 @@ namespace BDArmory.UI
                         }
                     }
                 }
-                StringBuilder evaluationstring = new StringBuilder();                
+                StringBuilder evaluationstring = new StringBuilder();
                 if (CompSettings.CompVesselChecksEnabled)
                 {
                     CalculateTotalLift(); //update wing lading/lift stack values if GUI not open

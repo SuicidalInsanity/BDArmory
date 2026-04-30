@@ -68,9 +68,9 @@ namespace BDArmory.Radar
 
         [KSPField] public float RWRMWSRange = 20000; //range of the MWS in m
         [KSPField] public float RWRMWSUpdateRate = 0.5f; //interval in s between MWS updates,
-        //only here for performance and spam reasons, human pilot won't need a super high
-        //update rate and we don't want the warning sound to be played at every frame
-        
+                                                         //only here for performance and spam reasons, human pilot won't need a super high
+                                                         //update rate and we don't want the warning sound to be played at every frame
+
         public bool performMWSCheck = true;
         public float TimeOfLastMWSUpdate = -1f;
         private RWRSignatureData[] MWSData;
@@ -168,14 +168,16 @@ namespace BDArmory.Radar
             launchWarnings = new RWRSignatureData[2 * dataCount]; //new List<TargetSignatureData>();
             missileLockData = new RWRSignatureData[2 * dataCount];
 
-            rwrIconLabelStyle = new GUIStyle();
-            rwrIconLabelStyle.alignment = TextAnchor.MiddleCenter;
-            rwrIconLabelStyle.normal.textColor = Color.green;
-            rwrIconLabelStyle.fontSize = 12;
-            rwrIconLabelStyle.border = new RectOffset(0, 0, 0, 0);
-            rwrIconLabelStyle.clipping = TextClipping.Overflow;
-            rwrIconLabelStyle.wordWrap = false;
-            rwrIconLabelStyle.fontStyle = FontStyle.Bold;
+            rwrIconLabelStyle = new GUIStyle
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 12,
+                border = new RectOffset(0, 0, 0, 0),
+                clipping = TextClipping.Overflow,
+                wordWrap = false,
+                fontStyle = FontStyle.Bold,
+                normal = new GUIStyleState { textColor = Color.green }
+            };
 
             audioSource = gameObject.AddComponent<AudioSource>();
             audioSource.minDistance = 500;
@@ -280,7 +282,7 @@ namespace BDArmory.Radar
                 PlayWarningSound(RWRThreatTypes.MWS, sqrDist);
             }
         }
-        
+
         public void ResetMWSSlots()
         {
             MWSSlots = 0;
@@ -604,7 +606,7 @@ namespace BDArmory.Radar
                     openIndex = i;
                     break;
                 }
-                
+
                 // Consider swapping this to a vessel check, since we know the vessel anyways.
                 if ((tempPing.signalType == type) && ((tempPing.pingPosition - currPos).sqrMagnitude < sqrThresh))
                     break;
@@ -693,7 +695,7 @@ namespace BDArmory.Radar
 
         internal void WindowRwr(int windowID)
         {
-            if (GUI.Button(new Rect(BDArmorySetup.WindowRectRwr.width - 18, 2, 16, 16), "X", GUI.skin.button))
+            if (GUI.Button(new Rect(BDArmorySetup.WindowRectRwr.width - 18, 2, 16, 16), " X", BDArmorySetup.CloseButtonStyleDark))
             {
                 displayRWR = false;
                 BDArmorySetup.SaveConfig();

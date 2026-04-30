@@ -253,9 +253,11 @@ namespace BDArmory.Competition
 
         public void UpdateGUIElements()
         {
-            statusStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label);
-            statusStyle.fontStyle = FontStyle.Bold;
-            statusStyle.alignment = TextAnchor.UpperLeft;
+            statusStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label)
+            {
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperLeft
+            };
             dateStyle = new GUIStyle(statusStyle);
             int shadowOffset = 2;
             if (BDArmorySetup.GAME_UI_ENABLED)

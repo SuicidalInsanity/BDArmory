@@ -588,7 +588,7 @@ namespace BDArmory.VesselSpawning
                 {
                     if (string.IsNullOrEmpty(templateName.Current.name) || templateName.Current.customVesselSpawnConfigs.Count == 0) continue; // Skip any empty or unnamed templates.
                     GUILayout.BeginHorizontal();
-                    if (GUILayout.Button(templateName.Current.name, BDArmorySetup.BDGuiSkin.button))
+                    if (GUILayout.Button(templateName.Current.name, BDArmorySetup.ButtonStyle))
                     {
                         LoadTemplate(templateName.Current.name, Event.current.button == 1); // Right click to reload templates from disk.
                         HideTemplateSelection();
@@ -751,12 +751,12 @@ namespace BDArmory.VesselSpawning
             BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_REPLACE_TEAM = GUILayout.Toggle(BDArmorySettings.CUSTOM_SPAWN_TEMPLATE_REPLACE_TEAM, StringUtils.Localize("#LOC_BDArmory_Settings_CustomSpawnTemplate_ReplaceTeam"));
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Clear"), BDArmorySetup.BDGuiSkin.button))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Clear"), BDArmorySetup.ButtonStyle))
             {
                 currentVesselSpawnConfig.craftURL = null;
                 HideVesselSelection();
             }
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_ClearAll"), BDArmorySetup.BDGuiSkin.button))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_ClearAll"), BDArmorySetup.ButtonStyle))
             {
                 foreach (var team in customSpawnConfig.customVesselSpawnConfigs)
                     foreach (var member in team)
@@ -766,7 +766,7 @@ namespace BDArmory.VesselSpawning
             {
                 folderSelectionMode = !folderSelectionMode;
             }
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Refresh"), BDArmorySetup.BDGuiSkin.button, GUILayout.Width(vesselSelectionWindowRect.width / 6)))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Refresh"), BDArmorySetup.ButtonStyle, GUILayout.Width(vesselSelectionWindowRect.width / 6)))
             {
                 craftBrowser.UpdateList();
             }
@@ -870,7 +870,7 @@ namespace BDArmory.VesselSpawning
                 {
                     ProtoCrewMember crewMember = kerbals.Current;
                     if (crewMember == null || SelectedCrewMembers.Contains(crewMember.name) || ObserverCrewMembers.Contains(crewMember.name) || ActiveCrewMembers.Contains(crewMember.name)) continue;
-                    if (GUILayout.Button($"{crewMember.name}, {crewMember.gender}, {crewMember.trait}", BDArmorySetup.BDGuiSkin.button))
+                    if (GUILayout.Button($"{crewMember.name}, {crewMember.gender}, {crewMember.trait}", BDArmorySetup.ButtonStyle))
                     {
                         SelectedCrewMembers.Remove(currentVesselSpawnConfig.kerbalName);
                         SelectedCrewMembers.Add(crewMember.name);
@@ -881,20 +881,20 @@ namespace BDArmory.VesselSpawning
             GUILayout.EndScrollView();
             GUILayout.Space(10);
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Clear"), BDArmorySetup.BDGuiSkin.button))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Clear"), BDArmorySetup.ButtonStyle))
             {
                 SelectedCrewMembers.Remove(currentVesselSpawnConfig.kerbalName);
                 currentVesselSpawnConfig.kerbalName = null;
                 HideCrewSelection();
             }
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_ClearAll"), BDArmorySetup.BDGuiSkin.button))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_ClearAll"), BDArmorySetup.ButtonStyle))
             {
                 SelectedCrewMembers.Clear();
                 foreach (var team in customSpawnConfig.customVesselSpawnConfigs)
                     foreach (var member in team)
                         member.kerbalName = null;
             }
-            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Refresh"), BDArmorySetup.BDGuiSkin.button))
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_CraftBrowser_Refresh"), BDArmorySetup.ButtonStyle))
             { RefreshSelectedCrew(); }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();

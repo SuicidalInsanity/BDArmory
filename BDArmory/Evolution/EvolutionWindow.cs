@@ -124,7 +124,7 @@ namespace BDArmory.Evolution
             float line = 0.25f;
             float offset = _titleHeight + _margin;
 
-            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show")) + " " + StringUtils.Localize("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))//Show/hide evolution options
+            if (GUI.Button(SLineRect(++line), (BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? StringUtils.Localize("#LOC_BDArmory_Generic_Hide") : StringUtils.Localize("#LOC_BDArmory_Generic_Show")) + " " + StringUtils.Localize("#LOC_BDArmory_Evolution_Options"), BDArmorySettings.SHOW_EVOLUTION_OPTIONS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))//Show/hide evolution options
             {
                 BDArmorySettings.SHOW_EVOLUTION_OPTIONS = !BDArmorySettings.SHOW_EVOLUTION_OPTIONS;
             }
@@ -196,7 +196,7 @@ namespace BDArmory.Evolution
                     buttonText = "Cancel";
                     break;
             }
-            if (GUI.Button(new Rect(_margin, offset, nextButton ? 2 * _windowWidth / 3 - _margin : _windowWidth - 2 * _margin, _lineHeight), buttonText, BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(_margin, offset, nextButton ? 2 * _windowWidth / 3 - _margin : _windowWidth - 2 * _margin, _lineHeight), buttonText, BDArmorySetup.ButtonStyle))
             {
                 switch (status)
                 {

@@ -47,16 +47,20 @@ namespace BDArmory.UI
         private Vector2 scrollInfoVector;
         void Start()
         {
-            labelStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label);
-            labelStyle.alignment = TextAnchor.UpperLeft;
+            labelStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label)
+            {
+                alignment = TextAnchor.UpperLeft
+            };
             labelStyle.normal.textColor = Color.white;
 
-            titleStyle = new GUIStyle();
-            titleStyle.normal.textColor = BDArmorySetup.BDGuiSkin.window.normal.textColor;
-            titleStyle.font = BDArmorySetup.BDGuiSkin.window.font;
-            titleStyle.fontSize = BDArmorySetup.BDGuiSkin.window.fontSize;
-            titleStyle.fontStyle = BDArmorySetup.BDGuiSkin.window.fontStyle;
-            titleStyle.alignment = TextAnchor.UpperCenter;
+            titleStyle = new GUIStyle
+            {
+                font = BDArmorySetup.BDGuiSkin.window.font,
+                fontSize = BDArmorySetup.BDGuiSkin.window.fontSize,
+                fontStyle = BDArmorySetup.BDGuiSkin.window.fontStyle,
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = BDArmorySetup.BDGuiSkin.window.normal.textColor }
+            };
         }
 
         public void Open(ModuleWeapon weapon, Vector2 position)
@@ -222,7 +226,7 @@ namespace BDArmory.UI
             float line = 0.5f;
             string labelString = GUIstring.ToString() + countString.ToString();
             GUI.Label(new Rect(margin, 0.5f * buttonHeight, width - 2 * margin, buttonHeight), StringUtils.Localize("#LOC_BDArmory_Ammo_Setup"), titleStyle);
-            if (GUI.Button(new Rect(width - 26, 2, 24, 24), "X", BDArmorySetup.CloseButtonStyle))
+            if (GUI.Button(new Rect(width - 26, 2, 24, 24), " X", BDArmorySetup.CloseButtonStyle))
             {
                 beltString = string.Empty;
                 GUIstring = string.Empty;

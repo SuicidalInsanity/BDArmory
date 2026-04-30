@@ -111,7 +111,7 @@ namespace BDArmory.UI
 
         private void WindowRemoteOrchestration(int id)
         {
-            if (GUI.Button(new Rect(BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, 2, _titleHeight / 2, _titleHeight / 2), "X", BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, 2, _titleHeight / 2, _titleHeight / 2), " X", BDArmorySetup.CloseButtonStyle))
             {
                 SetVisible(false);
             }
@@ -157,7 +157,7 @@ namespace BDArmory.UI
                     buttonText = "Cancel";
                     break;
             }
-            if (GUI.Button(new Rect(_margin, offset, nextButton ? 2 * width / 3 - _margin : width - 2 * _margin, _titleHeight), buttonText, BDArmorySetup.BDGuiSkin.button))
+            if (GUI.Button(new Rect(_margin, offset, nextButton ? 2 * width / 3 - _margin : width - 2 * _margin, _titleHeight), buttonText, BDArmorySetup.ButtonStyle))
             {
                 switch (BDAScoreService.Instance.status)
                 {
@@ -170,7 +170,7 @@ namespace BDArmory.UI
                         break;
                 }
             }
-            //if (nextButton && GUI.Button(new Rect(2 * width / 3, offset, width / 3 - _margin, _titleHeight), "Next", BDArmorySetup.BDGuiSkin.button))
+            //if (nextButton && GUI.Button(new Rect(2 * width / 3, offset, width / 3 - _margin, _titleHeight), "Next", BDArmorySetup.ButtonStyle))
             //{
             //    BDAScoreService.Instance.waitStartedAt = -1;
             //}
