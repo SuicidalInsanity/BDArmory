@@ -494,7 +494,8 @@ namespace BDArmory.UI
                             nameof(AI.vesselCollisionAvoidanceLookAheadPeriod),
                             nameof(AI.vesselCollisionAvoidanceStrength),
                             nameof(AI.vesselStandoffDistance),
-                            nameof(AI.AvoidMass), 
+                            nameof(AI.AvoidMass),
+                            nameof(AI.retreatDistance),
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
@@ -770,7 +771,7 @@ namespace BDArmory.UI
         const float labelWidth = 200;
         const float sliderIndent = contentInnerMargin + labelWidth;
 
-        Rect TitleButtonRect(float offset, float width = 1)
+        Rect TitleButtonRect(float offset, float width = 1) // offset is counted from the right edge of the window
         {
             return new Rect((ColumnWidth * 2) - _windowMargin - (offset * _buttonSize), _windowMargin, width * _buttonSize, _buttonSize);
         }
@@ -939,7 +940,6 @@ namespace BDArmory.UI
             float contentIndent = contentMargin + columnIndent;
             float contentWidth = 2 * ColumnWidth - 2 * contentMargin - columnIndent;
 
-            GUI.DragWindow(new Rect(contentIndent + _windowMargin, _windowMargin, contentWidth + _windowMargin - 4 * _buttonSize, _windowMargin + _buttonSize));
             GUI.Label(new Rect(contentIndent, contentTop, contentWidth - 4 * _buttonSize, entryHeight), StringUtils.Localize("#LOC_BDArmory_AIWindow_title"), Title);
             #region AI Selection
             if (ActiveAI != null)
@@ -957,16 +957,16 @@ namespace BDArmory.UI
             }
             #endregion
 
-            if (GUI.Button(TitleButtonRect(1), "X", windowBDAAIGUIEnabled ? BDArmorySetup.BDGuiSkin.button : BDArmorySetup.BDGuiSkin.box)) //Exit Button
+            if (GUI.Button(TitleButtonRect(1), "X", BDArmorySetup.CloseButtonStyle)) //Exit Button
             {
                 if (button) button.SetFalse();
                 else HideAIGUI(); // In case the button is disabled.
             }
-            if (GUI.Button(TitleButtonRect(2), "i", infoLinkEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Infolink button
+            if (GUI.Button(TitleButtonRect(3,2), "Info", infoLinkEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Infolink button
             { infoLinkEnabled = !infoLinkEnabled; }
-            if (GUI.Button(TitleButtonRect(3), "?", contextTipsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Context labels button
+            if (GUI.Button(TitleButtonRect(5,2), "Help", contextTipsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Context labels button
             { contextTipsEnabled = !contextTipsEnabled; }
-            if (GUI.Button(TitleButtonRect(4), "#", NumFieldsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Numeric fields button
+            if (GUI.Button(TitleButtonRect(6), "#", NumFieldsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Numeric fields button
             {
                 NumFieldsEnabled = !NumFieldsEnabled;
                 SyncInputFieldsNow(!NumFieldsEnabled);
@@ -1423,6 +1423,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselCollisionAvoidanceStrength, nameof(AI.vesselCollisionAvoidanceStrength), "CollisionAvoidanceStrength", $"{AI.vesselCollisionAvoidanceStrength:0.0} ({AI.vesselCollisionAvoidanceStrength / Time.fixedDeltaTime:0}°/s)");
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselStandoffDistance, nameof(AI.vesselStandoffDistance), "StandoffDistance", $"{AI.vesselStandoffDistance:0}m");
                                     evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", AI.AvoidMass < 10 ? $"{AI.AvoidMass:0.0}t" : $"{AI.AvoidMass:0}t");
+                                    evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.retreatDistance, nameof(AI.retreatDistance), "RetreatDistance", $"{0.001f * AI.retreatDistance:G3}km");
                                     #endregion
 
                                     #region Extending
@@ -1620,6 +1621,8 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade/extend nonlinearity
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Dodge"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //collision avoid
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_standoff"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //standoff distance
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_AvoidMass"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //obstacle avoidance mass
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_RetreatDistance"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //retreat distance
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Extend"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend distances
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_ExtendVars"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend target dist/angle/vel
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_ExtendVel"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend target velocity
@@ -2366,6 +2369,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                     autoResizingWindow = false;
                 }
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

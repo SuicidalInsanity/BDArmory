@@ -161,7 +161,6 @@ namespace BDArmory.UI
             if (GUI.Button(new Rect(0, 0, _buttonSize, _buttonSize), "UI", BDArmorySettings.SCORES_PERSIST_UI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) { BDArmorySettings.SCORES_PERSIST_UI = !BDArmorySettings.SCORES_PERSIST_UI; }
             if (GUI.Button(new Rect(_buttonSize, 0, _buttonSize, _buttonSize), "-", BDArmorySetup.BDGuiSkin.button)) AdjustFontSize(false);
             if (GUI.Button(new Rect(2 * _buttonSize, 0, _buttonSize, _buttonSize), "+", BDArmorySetup.BDGuiSkin.button)) AdjustFontSize(true);
-            GUI.DragWindow(new Rect(3 * _buttonSize, 0, windowSize.x - _buttonSize * 6, _buttonSize));
             if (GUI.Button(new Rect(windowSize.x - 3 * _buttonSize, 0, _buttonSize, _buttonSize), "T", showTeamScores ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) { showTeamScores = !showTeamScores; ResetWindowSize(); }
             if (GUI.Button(new Rect(windowSize.x - 2 * _buttonSize, 0, _buttonSize, _buttonSize), "W", weightsVisible ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) SetWeightsVisible(!weightsVisible);
             if (GUI.Button(new Rect(windowSize.x - _buttonSize, 0, _buttonSize, _buttonSize), " X", BDArmorySetup.CloseButtonStyle)) SetVisible(false);
@@ -232,6 +231,7 @@ namespace BDArmory.UI
                     resizingWindow = true;
                 }
             }
+            else GUI.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint)
             { windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL; }
             #endregion
@@ -355,7 +355,6 @@ namespace BDArmory.UI
         }
         void WindowWeights(int id)
         {
-            GUI.DragWindow(new Rect(4 * _buttonSize, 0, weightsWindowRect.width - 5 * _buttonSize, _buttonSize));
             if (GUI.Button(new Rect(0, 0, 4 * _buttonSize, _buttonSize), "Defaults", BDArmorySetup.ButtonStyle)) ResetDefaultWeights();
             if (GUI.Button(new Rect(weightsWindowRect.width - _buttonSize, 0, _buttonSize, _buttonSize), " X", BDArmorySetup.CloseButtonStyle)) SetWeightsVisible(false);
             GUILayout.BeginVertical(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
@@ -374,6 +373,7 @@ namespace BDArmory.UI
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref weightsWindowRect);
             GUIUtils.UpdateGUIRect(weightsWindowRect, _guiCheckIndexWeights);
             GUIUtils.UseMouseEventInRect(weightsWindowRect);

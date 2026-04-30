@@ -298,7 +298,6 @@ namespace BDArmory.UI
         (float, float)[] cacheVesselSpawnDistance;
         private void WindowVesselSpawner(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, _windowWidth - _buttonSize - _margin, _buttonSize + _margin));
             if (GUI.Button(new Rect(_windowWidth - _buttonSize - (_margin - 2), _margin, _buttonSize - 2, _buttonSize - 2), " X", BDArmorySetup.CloseButtonStyle))
             {
                 SetVisible(false);
@@ -1127,6 +1126,7 @@ namespace BDArmory.UI
 
             line += 1.25f; // Bottom internal margin
             _windowHeight = (line * _lineHeight);
+            GUI.DragWindow();
         }
 
         IEnumerator StartCompetitionOnceSpawned()
@@ -1192,7 +1192,6 @@ namespace BDArmory.UI
         }
         void ObserverWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, observerWindowRect.width, 20));
             GUILayout.BeginVertical();
             observerSelectionScrollPos = GUILayout.BeginScrollView(observerSelectionScrollPos, GUI.skin.box, GUILayout.Width(observerWindowRect.width - 15), GUILayout.MaxHeight(observerWindowRect.height - 20));
             int count = 0;
@@ -1220,6 +1219,7 @@ namespace BDArmory.UI
                     Observers = potentialObservers.Where(o => o != null).ToHashSet();
             }
             GUILayout.EndVertical();
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref observerWindowRect);
             GUIUtils.UpdateGUIRect(observerWindowRect, _observerGUICheckIndex);
             GUIUtils.UseMouseEventInRect(observerWindowRect);

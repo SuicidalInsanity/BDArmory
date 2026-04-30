@@ -541,13 +541,12 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_StandoffDistance", advancedTweakable = true, //Min Approach Distance
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 1000f, stepIncrement = 50f, scene = UI_Scene.All)]
-
         public float vesselStandoffDistance = 200f; // try to avoid getting closer than 200m
 
-        // [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ExtendMultiplier", advancedTweakable = true, //Extend Distance Multiplier
-        //     groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
-        //     UI_FloatRange(minValue = 0f, maxValue = 2f, stepIncrement = .1f, scene = UI_Scene.All)]
-        // public float extendMult = 1f;
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_RetreatDistance", advancedTweakable = true,
+            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
+            UI_FloatSemiLogRange(minValue = 1000f, maxValue = 20000f, sigFig = 2, withZero = false, scene = UI_Scene.All)]
+        public float retreatDistance = 4000f; // Repeatedly retreat this far when under attack while orbiting. The new 2km orbit is centered at this distance from the current position.
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ExtendDistanceAirToAir", advancedTweakable = true, //Extend Distance Air-To-Air
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
@@ -2287,7 +2286,7 @@ namespace BDArmory.Control
                     Vector3 flyTo;
                     if (weaponManager.incomingThreatVessel != null)
                     {
-                        flyTo = vessel.CoM + (vessel.CoM - weaponManager.incomingThreatVessel.CoM).ProjectOnPlanePreNormalized(upDirection).normalized * 4000; // Aim for 4km away.
+                        flyTo = vessel.CoM + (vessel.CoM - weaponManager.incomingThreatVessel.CoM).ProjectOnPlanePreNormalized(upDirection).normalized * retreatDistance; // Aim for the retreat distance.
                         flyTo += (float)(defaultAltitude - BodyUtils.GetRadarAltitudeAtPos(flyTo)) * upDirection; // Aim for the default altitude.
                         assignedPositionWorld = flyTo; // Update the orbiting position for once we've finished retreating.
                     }
@@ -2299,8 +2298,8 @@ namespace BDArmory.Control
                     if (distanceSqr > 9e6f) // But stop retreating once within 3km of the target position (orbit radius is 2km, so this ought to give a smoother transition).
                     {
                         retreating = true;
-                        var retreatDistance = BDAMath.Sqrt(distanceSqr) - 3000;
-                        SetStatus($"Retreating {Mathf.Min(retreatDistance, 1000):0}{(retreatDistance >= 1000 ? "+" : "")}m");
+                        var retreatDistanceRemaining = BDAMath.Sqrt(distanceSqr) - 3000;
+                        SetStatus($"Retreating {Mathf.Min(retreatDistanceRemaining, 1000):0}{(retreatDistanceRemaining >= 1000 ? "+" : "")}m");
                         AdjustThrottle(maxSpeed, false);
                         FlyToPosition(s, flyTo);
                         return;

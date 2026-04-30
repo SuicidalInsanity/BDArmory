@@ -111,7 +111,6 @@ namespace BDArmory.UI
 
         private void WindowRemoteOrchestration(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, _titleHeight));
             if (GUI.Button(new Rect(BDArmorySettings.REMOTE_ORCHESTRATION_WINDOW_WIDTH - _titleHeight / 2 - 2, 2, _titleHeight / 2, _titleHeight / 2), "X", BDArmorySetup.BDGuiSkin.button))
             {
                 SetVisible(false);
@@ -179,6 +178,7 @@ namespace BDArmory.UI
 
             _windowHeight = offset;
 
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectRemoteOrchestration); // Prevent it from going off the screen edges.
         }
     }

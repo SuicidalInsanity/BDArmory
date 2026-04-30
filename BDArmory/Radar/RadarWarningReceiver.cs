@@ -693,14 +693,12 @@ namespace BDArmory.Radar
 
         internal void WindowRwr(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectRwr.width - 18, 30));
             if (GUI.Button(new Rect(BDArmorySetup.WindowRectRwr.width - 18, 2, 16, 16), "X", GUI.skin.button))
             {
                 displayRWR = false;
                 BDArmorySetup.SaveConfig();
             }
             GUI.BeginGroup(new Rect(BorderSize / 2, HeaderSize + (BorderSize / 2), RwrDisplayRect.width, RwrDisplayRect.height));
-            //GUI.DragWindow(RwrDisplayRect);
 
             GUI.DrawTexture(RwrDisplayRect, VesselRadarData.omniBgTexture, ScaleMode.StretchToFill, false);
             float pingSize = 32 * BDArmorySettings.RWR_WINDOW_SCALE;
@@ -775,13 +773,13 @@ namespace BDArmory.Radar
             GUI.EndGroup();
 
             // Resizing code block.
-            RWRresizeRect =
-                new Rect(BDArmorySetup.WindowRectRwr.width - 18, BDArmorySetup.WindowRectRwr.height - 18, 16, 16);
+            RWRresizeRect = new Rect(BDArmorySetup.WindowRectRwr.width - 18, BDArmorySetup.WindowRectRwr.height - 18, 16, 16);
             GUI.DrawTexture(RWRresizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && RWRresizeRect.Contains(Event.current.mousePosition))
             {
                 resizingWindow = true;
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint && resizingWindow)
             {

@@ -581,7 +581,6 @@ namespace BDArmory.VesselSpawning
         CustomSpawnConfig templateToRemove = null;
         public void TemplateSelectionWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, templateSelectionWindowRect.width, 20));
             GUILayout.BeginVertical();
             templateSelectionScrollPos = GUILayout.BeginScrollView(templateSelectionScrollPos, GUI.skin.box, GUILayout.Width(templateSelectionWindowRect.width - 15), GUILayout.MaxHeight(templateSelectionWindowRect.height - 10));
             using (var templateName = customSpawnConfigs.GetEnumerator())
@@ -608,6 +607,7 @@ namespace BDArmory.VesselSpawning
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref templateSelectionWindowRect);
             GUIUtils.UpdateGUIRect(templateSelectionWindowRect, _templateGUICheckIndex);
             GUIUtils.UseMouseEventInRect(templateSelectionWindowRect);
@@ -696,7 +696,6 @@ namespace BDArmory.VesselSpawning
 
         public void VesselSelectionWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, vesselSelectionWindowRect.width, 20));
             GUILayout.BeginVertical();
             selectionFilter = GUIUtils.TextField(selectionFilter, " Filter", "CSTFilterField");
             if (focusFilterField)
@@ -774,6 +773,7 @@ namespace BDArmory.VesselSpawning
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref vesselSelectionWindowRect);
             GUIUtils.UpdateGUIRect(vesselSelectionWindowRect, _vesselGUICheckIndex);
             GUIUtils.UseMouseEventInRect(vesselSelectionWindowRect);
@@ -863,7 +863,6 @@ namespace BDArmory.VesselSpawning
         public void CrewSelectionWindow(int windowID)
         {
             KerbalRoster kerbalRoster = HighLogic.CurrentGame.CrewRoster;
-            GUI.DragWindow(new Rect(0, 0, crewSelectionWindowRect.width, 20));
             GUILayout.BeginVertical();
             crewSelectionScrollPos = GUILayout.BeginScrollView(crewSelectionScrollPos, GUI.skin.box, GUILayout.Width(crewSelectionWindowRect.width - 15), GUILayout.MaxHeight(crewSelectionWindowRect.height - 60));
             using (var kerbals = kerbalRoster.Kerbals(ProtoCrewMember.KerbalType.Crew).GetEnumerator())
@@ -899,6 +898,7 @@ namespace BDArmory.VesselSpawning
             { RefreshSelectedCrew(); }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
+            GUI.DragWindow();
             GUIUtils.RepositionWindow(ref crewSelectionWindowRect);
             GUIUtils.UpdateGUIRect(crewSelectionWindowRect, _crewGUICheckIndex);
             GUIUtils.UseMouseEventInRect(crewSelectionWindowRect);
