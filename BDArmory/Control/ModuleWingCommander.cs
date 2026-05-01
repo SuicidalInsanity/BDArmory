@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UniLinq;
 using UnityEngine;
 
 using BDArmory.Competition;
+using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Extensions;
 
 namespace BDArmory.Control
 {
@@ -694,18 +695,22 @@ namespace BDArmory.Control
             if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.CloseButtonStyle))
             { formationWindowScale = Mathf.Max(0.25f, formationWindowScale / 2f); }
 
+            var leaderAC = ActiveController.GetActiveController(vessel);
+            var teamColor = BDATeamIcons.GetTeamColor(leaderAC.WM);
             var dragRect = new Rect(formationIconOffset.x + formationWindowSize.x / 2, formationIconOffset.y, formationIconScale, formationIconScale);
-            GUI.DrawTexture(dragRect, BDArmorySetup.Instance.redDotTexture, ScaleMode.StretchToFill, true);
+            FormationTextures.DrawFormationIcon(leaderAC.AI, Color.black, dragRect); // Command leader in black
             if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = 0;
             foreach (var wingmanIndex in wingmanIndices)
             {
+                if (wingmanIndex > wingmen.Count) continue; // This shouldn't really happen... FIXME figure out if it does and why. FIXME when vessels are destroyed, the indices get mixed up.
+                var wingmanAC = ActiveController.GetActiveController(wingmen[wingmanIndex].vessel);
                 var formationPosition = GetFormationPosition(wingmanIndex);
                 dragRect = new Rect(formationIconOffset.x + formationPosition.x / formationWindowScale + formationWindowSize.x / 2, formationIconOffset.y - formationPosition.y / formationWindowScale, formationIconScale, formationIconScale);
                 GUI.Label(
                     new Rect(dragRect.position + new Vector2(-80, formationIconScale / 2), new(200, 50)),
-                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}{(wingmanIndex < wingmen.Count ? $"\n{wingmen[wingmanIndex].vessel.vesselName}" : "")}",
+                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}{(wingmanAC != null ? $"\n{wingmanAC.Vessel.vesselName}" : "")}",
                     formationLabelStyle);
-                GUI.DrawTexture(dragRect, BDArmorySetup.Instance.directionTriangleIcon, ScaleMode.StretchToFill, true);
+                FormationTextures.DrawFormationIcon(wingmanAC.AI, teamColor, dragRect); // Wingmen in team colors
                 if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = wingmanIndex + 1;
             }
 
@@ -729,6 +734,32 @@ namespace BDArmory.Control
                     }
                 }
             }
+        }
+
+        static class FormationTextures
+        {
+            public static void DrawFormationIcon(IBDAIControl ai, Color color, Rect rect)
+            {
+                var texture = ai.aiType switch // Matches the classifications in ActiveController.
+                {
+                    AIType.PilotAI => Plane,
+                    AIType.VTOLAI => Vtol,
+                    AIType.SurfaceAI => (ai as BDModuleSurfaceAI).SurfaceType switch
+                    {
+                        AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious or AIUtils.VehicleMovementType.Stationary => Tank,
+                        AIUtils.VehicleMovementType.Water or AIUtils.VehicleMovementType.Submarine => Boat,
+                        _ => Generic
+                    },
+                    _ => Generic
+                };
+                GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true, 1, color, 0, 0);
+            }
+            // Note: Use white and transparent PNGs for these textures to allow blending to any color.
+            static Texture2D Boat { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "boat"), false); } } = null;
+            static Texture2D Plane { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "plane"), false); } } = null;
+            static Texture2D Tank { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "tank"), false); } } = null;
+            static Texture2D Vtol { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "vtol"), false); } } = null;
+            static Texture2D Generic { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "generic"), false); } } = null;
         }
         #endregion
     }

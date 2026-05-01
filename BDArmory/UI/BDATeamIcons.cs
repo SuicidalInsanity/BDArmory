@@ -524,6 +524,6 @@ namespace BDArmory.UI
         /// </summary>
         /// <param name="wm"></param>
         /// <returns></returns>
-        public Color GetTeamColor(MissileFire wm) => BDTISetup.Instance.ColorAssignments.GetValueOrDefault(wm.Team.Name, Color.gray);
+        public static Color GetTeamColor(MissileFire wm) => BDTISetup.Instance.ColorAssignments.GetValueOrDefault(wm.Team.Name, Color.gray);
     }
 }
