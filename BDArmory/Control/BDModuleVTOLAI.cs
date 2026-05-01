@@ -614,6 +614,13 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
             // follow
             if (command == PilotCommands.Follow)
             {
+                if (commandLeader == null)
+                {
+                    ReleaseCommand(false, false);
+                    SetStatus($"Lost the command leader");
+                    targetDirection = vesselTransform.up;
+                    return;
+                }
                 leftPath = true;
                 if (collisionDetectionTicker == 5)
                     checkBypass(commandLeader.vessel);
@@ -939,7 +946,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
 
         Vector3 GetFormationPosition()
         {
-            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * this.GetLocalFormationPosition(commandFollowIndex);
+            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * commandLeader.GetFormationPosition(commandFollowIndex);
         }
 
         #endregion WingCommander

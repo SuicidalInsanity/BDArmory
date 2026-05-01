@@ -46,8 +46,7 @@ namespace BDArmory.Control
 
         ScreenMessage screenMessage;
 
-        //int focusIndex = 0;
-        List<int> focusIndexes;
+        List<int> wingmanIndices;
         static int _guiCheckIndex = -1;
 
         [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_WingCommander_Guiname3")]//ToggleGUI
@@ -62,7 +61,7 @@ namespace BDArmory.Control
             if (!HighLogic.LoadedSceneIsFlight) return;
             part.force_activate();
 
-            focusIndexes = new List<int>();
+            wingmanIndices = new List<int>();
             commandedPositions = new List<GPSTargetInfo>();
 
             StartCoroutine(StartupRoutine());
@@ -139,14 +138,14 @@ namespace BDArmory.Control
             {
                 wingmen = new List<IBDAIControl>();
                 //focusIndex = 0;
-                focusIndexes.Clear();
+                wingmanIndices.Clear();
                 return;
             }
             var wm = WeaponManager;
             if (wm != null) wingmen.RemoveAll(wingman => wingman == null || (wingman.WeaponManager && wingman.WeaponManager.Team != wm.Team));
 
             List<int> uniqueIndexes = [];
-            using List<int>.Enumerator fIndexes = focusIndexes.GetEnumerator();
+            using List<int>.Enumerator fIndexes = wingmanIndices.GetEnumerator();
             while (fIndexes.MoveNext())
             {
                 int clampedIndex = Mathf.Clamp(fIndexes.Current, 0, wingmen.Count - 1);
@@ -155,7 +154,7 @@ namespace BDArmory.Control
                     uniqueIndexes.Add(clampedIndex);
                 }
             }
-            focusIndexes = [.. uniqueIndexes];
+            wingmanIndices = [.. uniqueIndexes];
         }
 
         void SaveWingmen(ConfigNode cfg)
@@ -179,18 +178,18 @@ namespace BDArmory.Control
             wingmen = [];
 
             if (savedWingmen == string.Empty) return;
-            using IEnumerator<string> wingIDs = savedWingmen.Split(new char[] { ',' }).AsEnumerable().GetEnumerator();
+            using IEnumerator<string> wingIDs = savedWingmen.Split([',']).AsEnumerable().GetEnumerator();
             while (wingIDs.MoveNext())
             {
-                using (var vs = BDATargetManager.LoadedVessels.GetEnumerator())
-                    while (vs.MoveNext())
-                    {
-                        if (vs.Current == null || !vs.Current.loaded || VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType)) continue;
+                using var vs = BDATargetManager.LoadedVessels.GetEnumerator();
+                while (vs.MoveNext())
+                {
+                    if (vs.Current == null || !vs.Current.loaded || VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType)) continue;
 
-                        if (vs.Current.id.ToString() != wingIDs.Current) continue;
-                        var pilot = vs.Current.ActiveController().AI;
-                        if (pilot != null) wingmen.Add(pilot);
-                    }
+                    if (vs.Current.id.ToString() != wingIDs.Current) continue;
+                    var pilot = vs.Current.ActiveController().AI;
+                    if (pilot != null) wingmen.Add(pilot);
+                }
             }
         }
 
@@ -218,6 +217,7 @@ namespace BDArmory.Control
                             fontSize = wingmanButtonStyle.fontSize
                         };
                         labelStyle = new(BDArmorySetup.BDGuiSkin.label) { alignment = TextAnchor.MiddleLeft };
+                        formationLabelStyle = new(labelStyle) { alignment = TextAnchor.MiddleCenter, wordWrap = false, clipping = TextClipping.Overflow };
                         sliderStyle = new(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically.
                         sliderThumbStyle = new(BDArmorySetup.BDGuiSkin.horizontalSliderThumb);
                         guiInit = true;
@@ -229,6 +229,7 @@ namespace BDArmory.Control
                 {
                     GUIUtils.UpdateGUIRect(new Rect(), _guiCheckIndex);
                     showAGWindow = false;
+                    showFormationWindow = false;
                 }
             }
         } = false;
@@ -239,7 +240,7 @@ namespace BDArmory.Control
         Vector2 windowSize = new(240, 415);
         GUIStyle wingmanButtonStyle;
         GUIStyle wingmanButtonSelectedStyle;
-        GUIStyle labelStyle;
+        GUIStyle labelStyle, formationLabelStyle;
         GUIStyle sliderStyle, sliderThumbStyle;
 
         void OnGUI()
@@ -248,7 +249,12 @@ namespace BDArmory.Control
             if (!BDArmorySetup.GAME_UI_ENABLED) return;
             if (showGUI)
             {
-                if (resizingWindow && Event.current.type == EventType.MouseUp) { resizingWindow = false; }
+                if (Event.current.type == EventType.MouseUp)
+                {
+                    if (resizingWindow) resizingWindow = false;
+                    else if (resizingFormationWindow) resizingFormationWindow = false;
+                    else if (formationDragIndex >= 0) formationDragIndex = -1;
+                }
                 BDArmorySetup.SetGUIOpacity();
                 var guiMatrix = GUI.matrix;
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectWingCommander.position);
@@ -258,7 +264,15 @@ namespace BDArmory.Control
                     WingmenWindow,
                     StringUtils.Localize("#LOC_BDArmory_WingCommander_Title"),//"WingCommander"
                     BDArmorySetup.BDGuiSkin.window);
-                ResizeWindow();
+                if (resizingWindow)
+                {
+                    windowSize.x = Mathf.Clamp(windowSize.x, 240, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
+                    windowSize.y = Mathf.Clamp(windowSize.y, 415, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                }
+                BDArmorySetup.WindowRectWingCommander.size = windowSize;
+                GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectWingCommander);
+                GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectWingCommander, _guiCheckIndex);
+                GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectWingCommander);
 
                 if (showAGWindow)
                 {
@@ -273,6 +287,26 @@ namespace BDArmory.Control
                     GUIUtils.RepositionWindow(ref agWindowRect);
                     GUIUtils.UpdateGUIRect(agWindowRect, _agGuiCheckIndex);
                     GUIUtils.UseMouseEventInRect(agWindowRect);
+                }
+                if (showFormationWindow)
+                {
+                    if (BDArmorySettings.UI_SCALE_ACTUAL != 1) { GUI.matrix = guiMatrix; GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, formationWindowRect.position); }
+                    formationWindowRect = GUI.Window(
+                        GUIUtility.GetControlID(FocusType.Passive),
+                        formationWindowRect,
+                        FormationWindow,
+                        StringUtils.Localize("#LOC_BDArmory_WingCommander_FormationWindow"), // "Formation Window"
+                        BDArmorySetup.BDGuiSkin.window
+                    );
+                    if (resizingFormationWindow)
+                    {
+                        formationWindowSize.x = Mathf.Clamp(formationWindowSize.x, 200, Screen.width - formationWindowRect.x);
+                        formationWindowSize.y = Mathf.Clamp(formationWindowSize.y, 100, Screen.height - formationWindowRect.y);
+                    }
+                    formationWindowRect.size = formationWindowSize;
+                    GUIUtils.RepositionWindow(ref formationWindowRect);
+                    GUIUtils.UpdateGUIRect(formationWindowRect, _formationGuiCheckIndex);
+                    GUIUtils.UseMouseEventInRect(formationWindowRect);
                 }
                 BDArmorySetup.SetGUIOpacity(false);
             }
@@ -300,19 +334,6 @@ namespace BDArmory.Control
                 ScaleMode.StretchToFill, true);
         }
 
-        private void ResizeWindow()
-        {
-            if (resizingWindow)
-            {
-                windowSize.x = Mathf.Clamp(windowSize.x, 240, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
-                windowSize.y = Mathf.Clamp(windowSize.y, 415, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
-            }
-            BDArmorySetup.WindowRectWingCommander.size = windowSize;
-            GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectWingCommander);
-            GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectWingCommander, _guiCheckIndex);
-            GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectWingCommander);
-        }
-
         delegate void CommandFunction(IBDAIControl wingman, int index, object data);
 
         Vector2 wingmenScrollPos = default;
@@ -327,15 +348,15 @@ namespace BDArmory.Control
             int i = 0;
             foreach (var wingman in wingmen)
             {
-                if (GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus})", focusIndexes.Contains(i) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
+                if (GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus})", wingmanIndices.Contains(i) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
                 {
-                    if (focusIndexes.Contains(i))
+                    if (wingmanIndices.Contains(i))
                     {
-                        focusIndexes.Remove(i);
+                        wingmanIndices.Remove(i);
                     }
                     else
                     {
-                        focusIndexes.Add(i);
+                        wingmanIndices.Add(i);
                     }
                 }
                 ++i;
@@ -343,7 +364,7 @@ namespace BDArmory.Control
             GUILayout.EndScrollView();
 
             //command buttons
-            if (wingmen.Count == focusIndexes.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
+            if (wingmen.Count == wingmanIndices.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
             else CommandButton(SelectAll, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectAll"), false, false);//"Select All"
 
             commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle);//"Command Self"
@@ -366,7 +387,10 @@ namespace BDArmory.Control
             GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_WingCommander_Lag")}: {lag:0}", labelStyle, GUILayout.Width(80));//Lag
             lag = GUILayout.HorizontalSlider(lag, 0f, 100f, sliderStyle, sliderThumbStyle);
             GUILayout.EndHorizontal();
-            // TODO: Add custom formation window.
+            if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_WingCommander_FormationWindow"), showFormationWindow ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
+            {
+                showFormationWindow = !showFormationWindow;
+            }
 
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
@@ -383,7 +407,7 @@ namespace BDArmory.Control
                 {
                     if (wingmen.Count > 0)
                     {
-                        using List<int>.Enumerator index = focusIndexes.GetEnumerator();
+                        using List<int>.Enumerator index = wingmanIndices.GetEnumerator();
                         while (index.MoveNext())
                         {
                             func(wingmen[index.Current], index.Current, data);
@@ -419,13 +443,13 @@ namespace BDArmory.Control
         {
             RefreshFriendlies();
             int i = 0;
-            using (var wingman = friendlies.GetEnumerator())
-                while (wingman.MoveNext())
-                {
-                    if (wingman.Current == null) continue;
-                    wingman.Current.CommandFollow(this, i);
-                    i++;
-                }
+            using var wingman = friendlies.GetEnumerator();
+            while (wingman.MoveNext())
+            {
+                if (wingman.Current == null) continue;
+                wingman.Current.CommandFollow(this, i);
+                i++;
+            }
         }
         public int GetFreeWingIndex()
         {
@@ -487,16 +511,16 @@ namespace BDArmory.Control
         {
             for (int i = 0; i < wingmen.Count; i++)
             {
-                if (!focusIndexes.Contains(i))
+                if (!wingmanIndices.Contains(i))
                 {
-                    focusIndexes.Add(i);
+                    wingmanIndices.Add(i);
                 }
             }
         }
 
         void SelectNone(IBDAIControl wingman, int index, object data)
         {
-            focusIndexes.Clear();
+            wingmanIndices.Clear();
         }
 
         void CommandFlyTo(IBDAIControl wingman, int index, object data)
@@ -514,7 +538,7 @@ namespace BDArmory.Control
 
         IEnumerator CommandPosition(IBDAIControl wingman, PilotCommands command)
         {
-            if (focusIndexes.Count == 0 && !commandSelf)
+            if (wingmanIndices.Count == 0 && !commandSelf)
             {
                 yield break;
             }
@@ -604,5 +628,108 @@ namespace BDArmory.Control
                 ScreenMessages.PostScreenMessage(screenMessage);
             }
         }
+
+        #region Formation Position
+        bool showFormationWindow
+        {
+            get; set
+            {
+                field = value;
+                if (_formationGuiCheckIndex < 0) _formationGuiCheckIndex = GUIUtils.RegisterGUIRect(new Rect());
+                if (value)
+                {
+                    if (formationWindowRect == default) formationWindowRect = new Rect(
+                        BDArmorySetup.WindowRectWingCommander.position + BDArmorySettings.UI_SCALE_ACTUAL * new Vector2(BDArmorySetup.WindowRectWingCommander.width, 0),
+                        formationWindowSize
+                    );
+                }
+                else
+                {
+                    GUIUtils.UpdateGUIRect(new Rect(), _formationGuiCheckIndex);
+                }
+            }
+        } = false;
+        static int _formationGuiCheckIndex = -1;
+        Rect formationWindowRect = default;
+        bool resizingFormationWindow = false;
+        Vector2 formationWindowSize = new(500, 300);
+        float formationWindowScale = 2f;
+        const float formationIconScale = 32;
+        Vector2 formationIconOffset = new(-formationIconScale / 2, 50);
+        int formationDragIndex = -1;
+
+        Dictionary<int, Vector2> formation = [];
+        /// <summary>
+        /// Get the formation position in local coordinates.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public Vector2 GetFormationPosition(int index)
+        {
+            if (formation.TryGetValue(index, out Vector2 position))
+            {
+                return position;
+            }
+            else // Fall back to the default formation position.
+            {
+                float indexF = index;
+                indexF++;
+
+                float rightSign = indexF % 2 == 0 ? -1 : 1;
+                float positionFactor = Mathf.Ceil(indexF / 2);
+                float right = rightSign * positionFactor * spread;
+                float back = -positionFactor * lag;
+                return new Vector2(right, back);
+            }
+        }
+
+        void FormationWindow(int id)
+        {
+            if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), " X", BDArmorySetup.CloseButtonStyle))
+            { showFormationWindow = false; }
+            if (GUI.Button(new Rect(formationWindowSize.x - 3 * buttonHeight, margin, 2 * buttonHeight - margin, buttonHeight - margin), "Reset", BDArmorySetup.CloseButtonStyle))
+            { formation.Clear(); }
+            if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "-", BDArmorySetup.CloseButtonStyle))
+            { formationWindowScale *= 2f; }
+            if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.CloseButtonStyle))
+            { formationWindowScale = Mathf.Max(0.25f, formationWindowScale / 2f); }
+
+            var dragRect = new Rect(formationIconOffset.x + formationWindowSize.x / 2, formationIconOffset.y, formationIconScale, formationIconScale);
+            GUI.DrawTexture(dragRect, BDArmorySetup.Instance.redDotTexture, ScaleMode.StretchToFill, true);
+            if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = 0;
+            foreach (var wingmanIndex in wingmanIndices)
+            {
+                var formationPosition = GetFormationPosition(wingmanIndex);
+                dragRect = new Rect(formationIconOffset.x + formationPosition.x / formationWindowScale + formationWindowSize.x / 2, formationIconOffset.y - formationPosition.y / formationWindowScale, formationIconScale, formationIconScale);
+                GUI.Label(
+                    new Rect(dragRect.position + new Vector2(-80, formationIconScale / 2), new(200, 50)),
+                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}{(wingmanIndex < wingmen.Count ? $"\n{wingmen[wingmanIndex].vessel.vesselName}" : "")}",
+                    formationLabelStyle);
+                GUI.DrawTexture(dragRect, BDArmorySetup.Instance.directionTriangleIcon, ScaleMode.StretchToFill, true);
+                if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = wingmanIndex + 1;
+            }
+
+            var resizeRect = new Rect(formationWindowSize.x - 16, formationWindowSize.y - 16, 16, 16);
+            GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
+            if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingFormationWindow = true;
+            else if (formationDragIndex < 0) GUI.DragWindow();
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                if (resizingFormationWindow) formationWindowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                else if (formationDragIndex >= 0)
+                {
+                    if (formationDragIndex == 0)
+                    {
+                        formationIconOffset += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                    }
+                    else
+                    {
+                        formation[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                    }
+                }
+            }
+        }
+        #endregion
     }
 }

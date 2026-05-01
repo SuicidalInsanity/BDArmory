@@ -838,6 +838,13 @@ namespace BDArmory.Control
                 // follow
                 if (command == PilotCommands.Follow && SurfaceType != AIUtils.VehicleMovementType.Stationary)
                 {
+                    if (commandLeader == null)
+                    {
+                        ReleaseCommand(false, false);
+                        SetStatus($"Lost the command leader");
+                        targetDirection = vesselTransform.up;
+                        return;
+                    }
                     leftPath = true;
                     if (collisionDetectionTicker == 5)
                         checkBypass(commandLeader.vessel);
@@ -897,7 +904,7 @@ namespace BDArmory.Control
                             SetStatus($"Lap {activeWaypointLap}, Waypoint {activeWaypointIndex} ({waypointRange:F0}m)");
                         else
                             SetStatus($"Waypoint {activeWaypointIndex} ({waypointRange:F0}m)");
-                    }                   
+                    }
                     return;
                 }
 
@@ -1346,7 +1353,7 @@ namespace BDArmory.Control
 
         Vector3 GetFormationPosition()
         {
-            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * this.GetLocalFormationPosition(commandFollowIndex);
+            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * commandLeader.GetFormationPosition(commandFollowIndex);
         }
 
         #endregion WingCommander

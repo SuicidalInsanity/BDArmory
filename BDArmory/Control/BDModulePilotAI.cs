@@ -5158,7 +5158,7 @@ namespace BDArmory.Control
                 velocityTransform.rotation = commandLeader.vessel.ReferenceTransform.rotation;
             }
 
-            Vector3d pos = velocityTransform.TransformPoint(this.GetLocalFormationPosition(commandFollowIndex));// - lateralVelVector - verticalVelVector;
+            Vector3d pos = velocityTransform.TransformPoint(commandLeader.GetFormationPosition(commandFollowIndex));
 
             velocityTransform.localPosition = origVLPos;
             velocityTransform.rotation = origVRot;
