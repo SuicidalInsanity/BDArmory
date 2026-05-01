@@ -30,7 +30,7 @@ namespace BDArmory.Control
         List<int> selectedWingmen = []; // The indices of the friendlies that are selected.
         List<IBDAIControl> wingmen = []; // Wingmen are those that we have commanded to follow.
 
-        [KSPField(isPersistant = true)] public string savedWingmen = string.Empty;
+        // [KSPField(isPersistant = true)] public string savedWingmen = string.Empty;
 
         public string guiTitle = "WingCommander:";
 
@@ -190,7 +190,7 @@ namespace BDArmory.Control
             if (wingmen.Contains(ai)) wingmen.Remove(ai);
         }
 
-        /* FIXME Temporarily disable load/save of wingmen (I'm not sure that it was functional anyway).
+        /* FIXME Temporarily disable load/save of wingmen (this doesn't seem to be functional anyway).
         void SaveWingmen(ConfigNode cfg)
         {
             if (wingmen == null)
