@@ -616,7 +616,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
             {
                 if (commandLeader == null)
                 {
-                    ReleaseCommand(false, false);
+                    ReleaseCommand();
                     SetStatus($"Lost the command leader");
                     targetDirection = vesselTransform.up;
                     return;

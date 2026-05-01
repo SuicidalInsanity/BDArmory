@@ -1114,15 +1114,15 @@ namespace BDArmory.Control
 
         public void SetTeam(BDTeam team)
         {
+            if (Team == team) return; // We're already on this team!
             if (HighLogic.LoadedSceneIsFlight)
             {
                 SetTarget(null); // Without this, friendliesEngaging never gets updated
-                using (var wpnMgr = VesselModuleRegistry.GetMissileFires(vessel).GetEnumerator())
-                    while (wpnMgr.MoveNext())
-                    {
-                        if (wpnMgr.Current == null) continue;
-                        wpnMgr.Current.Team = team;
-                    }
+                foreach (var wpnMgr in VesselModuleRegistry.GetMissileFires(vessel))
+                {
+                    if (wpnMgr == null) continue;
+                    wpnMgr.Team = team;
+                }
 
                 if (vessel.gameObject.GetComponent<TargetInfo>())
                 {
@@ -1134,14 +1134,14 @@ namespace BDArmory.Control
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
-                using (var editorPart = EditorLogic.fetch.ship.Parts.GetEnumerator())
-                    while (editorPart.MoveNext())
-                        using (var wpnMgr = editorPart.Current.FindModulesImplementing<MissileFire>().GetEnumerator())
-                            while (wpnMgr.MoveNext())
-                            {
-                                if (wpnMgr.Current == null) continue;
-                                wpnMgr.Current.Team = team;
-                            }
+                foreach (var editorPart in EditorLogic.fetch.ship.Parts)
+                {
+                    foreach (var wpnMgr in editorPart.FindModulesImplementing<MissileFire>())
+                    {
+                        if (wpnMgr == null) continue;
+                        wpnMgr.Team = team;
+                    }
+                }
             }
         }
 
@@ -2752,7 +2752,7 @@ namespace BDArmory.Control
             float timer = timeout;
             float currAngle = 999f;
 
-            while(timer > 0 && ml && targetVessel)
+            while (timer > 0 && ml && targetVessel)
             {
                 Vector3 target = lead ? MissileGuidance.GetAirToAirFireSolution(ml, targetVessel.CoM, targetVessel.Velocity(), loft, loftFac) : targetVessel.CoM;
                 ml.AimTurrets(target);
@@ -2950,8 +2950,8 @@ namespace BDArmory.Control
                                 ml.SetSlavedGuard(true);
 
                                 float attemptLockEndTime = Time.time + 2;
-                                while ((hasTurrets ? AimMissileTurret(targetVessel, ml, attemptLockEndTime, false, false, 1f) : 
-                                       (ml && Time.time < attemptLockEndTime && targetVessel)) && 
+                                while ((hasTurrets ? AimMissileTurret(targetVessel, ml, attemptLockEndTime, false, false, 1f) :
+                                       (ml && Time.time < attemptLockEndTime && targetVessel)) &&
                                        (!vesselRadarData.locked || (vesselRadarData.lockedTargetData.vessel != targetVessel)))
                                 {
                                     bool lockSuccess = false;
@@ -7016,7 +7016,7 @@ namespace BDArmory.Control
                                         }
                                     }
 
-                                    
+
                                     if (currMissileType != MissileType.Torpedo || currMissileType != MissileType.ASWMissile) continue;
 
                                     if (distance < candidateYield) continue; //don't use explosives within their blast radius
@@ -9448,7 +9448,7 @@ namespace BDArmory.Control
                                 if (((weapon.Current.engageAir && targetsAssigned[TurretID].isFlying) ||
                                     (weapon.Current.engageGround && targetsAssigned[TurretID].isLandedOrSurfaceSplashed) ||
                                     (weapon.Current.engageSLW && targetsAssigned[TurretID].isUnderwater)) //check engagement envelope
-                                    && weapon.Current.turret? TargetInTurretRange(weapon.Current.turret, 7, targetsAssigned[TurretID].Vessel.CoM, weapon.Current) : 
+                                    && weapon.Current.turret ? TargetInTurretRange(weapon.Current.turret, 7, targetsAssigned[TurretID].Vessel.CoM, weapon.Current) :
                                     TargetInCustomTurretRange(weapon.Current, 7, targetsAssigned[TurretID].Vessel.CoM))
                                 {
                                     weapon.Current.visualTargetVessel = targetsAssigned[TurretID].Vessel; // if target within turret fire zone, assign
@@ -10199,7 +10199,7 @@ namespace BDArmory.Control
                         //TODO - don't assign two missiles on the same custom turret to two different targets check
                         customTurreted = true;
                     }
-                    if (logging) 
+                    if (logging)
                         Debug.Log($"[PD Missile Debug - {vessel.GetName()}]viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : GetLaunchAuthorization(targetVessel, this, currMissile))}");
                     if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile))
                     {
@@ -10612,7 +10612,7 @@ namespace BDArmory.Control
             if (gTarget == default) gTarget = guardTarget.CoM;
             if (weapon != null && (gTarget - weapon.fireTransforms[0].transform.position).sqrMagnitude > (weapon.engageRangeMax * 1.25f) * (weapon.engageRangeMax * 1.25f)) return false; //target too far away
             else if (msl != null && (gTarget - msl.MissileReferenceTransform.position).sqrMagnitude > (msl.engageRangeMax * 1.25f) * (msl.engageRangeMax * 1.25f)) return false; //target too far away
-            Transform turretTransform = weapon != null? weapon.customTurret[0].bottomTransform : msl != null? msl.customTurret[0].bottomTransform : null; //might be an issue if grabbing non-servo; servos are proper Z+ forward Y+ up that turrets are, hinges...
+            Transform turretTransform = weapon != null ? weapon.customTurret[0].bottomTransform : msl != null ? msl.customTurret[0].bottomTransform : null; //might be an issue if grabbing non-servo; servos are proper Z+ forward Y+ up that turrets are, hinges...
             if (turretTransform == null) return false;
             Vector3 direction = gTarget - turretTransform.position;
             if (weapon != null && weapon.bulletDrop) // Account for bullet drop (rough approximation not accounting for target movement).

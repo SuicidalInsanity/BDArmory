@@ -1027,7 +1027,7 @@ namespace BDArmory.Competition
                         // foreach (var leader in leaders)
                         //     BDATargetManager.ReportVessel(pilot.vessel, leader.WeaponManager);
 
-                        pilot.ReleaseCommand();
+                        pilot.ReleaseCommand(false, true);
                         pilot.CommandAttack(centerGPS);
                         pilot.vessel.altimeterDisplayState = AltimeterDisplayState.AGL;
                     }
@@ -1999,7 +1999,7 @@ namespace BDArmory.Competition
                                     attackGPS.z = (float)BodyUtils.GetTerrainAltitudeAtPos(center) + 1000; // Target 1km above the terrain at the center.
                                     if (BDArmorySettings.RUNWAY_PROJECT_ROUND == 77) pAI.minAltitude = 5; //set minAlt to 5 so AI doesn't go into Gaining Alt routine while below MinAlt and will maintain a stright-up course
                                 }
-                                pilot.ReleaseCommand();
+                                pilot.ReleaseCommand(false, true);
                                 pilot.CommandAttack(attackGPS);
                             }
                             break;

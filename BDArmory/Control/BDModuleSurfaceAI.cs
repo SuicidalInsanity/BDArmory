@@ -840,7 +840,7 @@ namespace BDArmory.Control
                 {
                     if (commandLeader == null)
                     {
-                        ReleaseCommand(false, false);
+                        ReleaseCommand();
                         SetStatus($"Lost the command leader");
                         targetDirection = vesselTransform.up;
                         return;

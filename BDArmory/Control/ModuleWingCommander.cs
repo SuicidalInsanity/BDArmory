@@ -26,31 +26,28 @@ namespace BDArmory.Control
             }
         }
 
-        public List<IBDAIControl> friendlies;
+        public List<IBDAIControl> friendlies = []; // All the available wingmen.
+        List<int> selectedWingmen = []; // The indices of the friendlies that are selected.
+        List<IBDAIControl> wingmen = []; // Wingmen are those that we have commanded to follow.
 
-        List<IBDAIControl> wingmen;
         [KSPField(isPersistant = true)] public string savedWingmen = string.Empty;
 
-        //[KSPField(guiActive = false, guiActiveEditor = false, guiName = "")]
         public string guiTitle = "WingCommander:";
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WingCommander_Guiname1"), UI_FloatRange(minValue = 20f, maxValue = 200f, stepIncrement = 1, scene = UI_Scene.Editor)]//Formation Spread
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WingCommander_FormationSpread"), UI_FloatRange(minValue = 20f, maxValue = 200f, stepIncrement = 1, scene = UI_Scene.Editor)]//Formation Spread
         public float spread = 100;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WingCommander_Guiname2"), UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1, scene = UI_Scene.Editor)]//Formation Lag
-        public float lag = 7;
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WingCommander_FormationLag"), UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1, scene = UI_Scene.Editor)]//Formation Lag
+        public float lag = 50;
 
         [KSPField(isPersistant = true)] public bool commandSelf;
 
-        List<GPSTargetInfo> commandedPositions;
+        List<GPSTargetInfo> commandedPositions = [];
         bool drawMouseDiamond;
-
         ScreenMessage screenMessage;
-
-        List<int> wingmanIndices;
         static int _guiCheckIndex = -1;
 
-        [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_WingCommander_Guiname3")]//ToggleGUI
+        [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_WingCommander_ToggleGUI")]//ToggleGUI
         public void ToggleGUI()
         {
             showGUI = !showGUI;
@@ -62,24 +59,34 @@ namespace BDArmory.Control
             if (!HighLogic.LoadedSceneIsFlight) return;
             part.force_activate();
 
-            wingmanIndices = new List<int>();
-            commandedPositions = new List<GPSTargetInfo>();
-
             StartCoroutine(StartupRoutine());
 
-            GameEvents.onGameStateSave.Add(SaveWingmen);
+            // GameEvents.onGameStateSave.Add(SaveWingmen);
             GameEvents.onVesselLoaded.Add(OnVesselLoaded);
             GameEvents.onVesselDestroy.Add(OnVesselLoaded);
             GameEvents.onVesselGoOnRails.Add(OnVesselLoaded);
+            GameEvents.onVesselPartCountChanged.Add(OnVesselPartCountChanged);
             MissileFire.OnChangeTeam += OnToggleTeam;
 
             screenMessage = new ScreenMessage("", 2, ScreenMessageStyle.LOWER_CENTER);
         }
 
+        /// <summary>
+        /// Stuff to do when *any* vessel changes team.
+        /// </summary>
         void OnToggleTeam(MissileFire mf, BDTeam team)
         {
             RefreshFriendlies();
-            RefreshWingmen();
+            var ac = ActiveController.GetActiveController(vessel);
+            if (ac == null || mf != ac.WM) return; // It wasn't us that changed team.
+
+            // While technically, if the leader switched to the same team at the same time, we'd still be on the same team, the simplest solution is to release anyway. They can issue a new command if needed.
+            if (ac.AI != null) ac.AI.ReleaseCommand(); // Stop doing whatever the traitorous leader told us.
+
+            // Release anyone we were commanding - they're now our enemies.
+            foreach (var wingman in wingmen.Where(w => w != null).ToList())
+                wingman.ReleaseCommand();
+            wingmen.Clear();
         }
 
         IEnumerator StartupRoutine()
@@ -91,15 +98,16 @@ namespace BDArmory.Control
 
             RefreshFriendlies();
             RefreshWingmen();
-            LoadWingmen();
+            // LoadWingmen();
         }
 
         void OnDestroy()
         {
-            GameEvents.onGameStateSave.Remove(SaveWingmen);
+            // GameEvents.onGameStateSave.Remove(SaveWingmen);
             GameEvents.onVesselLoaded.Remove(OnVesselLoaded);
             GameEvents.onVesselDestroy.Remove(OnVesselLoaded);
             GameEvents.onVesselGoOnRails.Remove(OnVesselLoaded);
+            GameEvents.onVesselPartCountChanged.Remove(OnVesselPartCountChanged);
             MissileFire.OnChangeTeam -= OnToggleTeam;
         }
 
@@ -112,52 +120,77 @@ namespace BDArmory.Control
             }
         }
 
+        void OnVesselPartCountChanged(Vessel v)
+        {
+            // Check if the vessel lost its WM and if so drop it.
+            if (v != vessel) return;
+            var ac = ActiveController.GetActiveController(v);
+            if (ac.AI == null) return;
+            if (ac.WM == null && ac.AI.commandLeader != null)
+            {
+                ac.AI.commandLeader.RefreshFriendlies();
+                ac.AI.ReleaseCommand();
+            }
+        }
+
         void RefreshFriendlies()
         {
             var wm = WeaponManager;
-            if (!wm) return;
-            friendlies = new List<IBDAIControl>();
-            using (var vs = BDATargetManager.LoadedVessels.GetEnumerator())
-                while (vs.MoveNext())
-                {
-                    if (vs.Current == null) continue;
-                    if (!vs.Current.loaded || vs.Current == vessel || VesselModuleRegistry.IgnoredVesselTypes.Contains(vs.Current.vesselType)) continue;
-
-                    var ac = vs.Current.ActiveController();
-                    if (ac == null) continue; // Since this is called on vessel destroy, we need to check that the vessel module isn't null.
-                    if (ac.AI == null) continue;
-                    if (ac.WM == null || ac.WM.Team != wm.Team) continue;
-                    friendlies.Add(ac.AI);
-                }
-
-            wingmen = [.. friendlies.Where(f => f != null)];
-        }
-
-        void RefreshWingmen()
-        {
-            if (wingmen == null)
+            if (wm == null) // We're dead, abort!
             {
-                wingmen = new List<IBDAIControl>();
-                //focusIndex = 0;
-                wingmanIndices.Clear();
+                friendlies.Clear();
+                wingmen.Clear();
+                selectedWingmen.Clear();
                 return;
             }
-            var wm = WeaponManager;
-            if (wm != null) wingmen.RemoveAll(wingman => wingman == null || (wingman.WeaponManager && wingman.WeaponManager.Team != wm.Team));
-
-            List<int> uniqueIndexes = [];
-            using List<int>.Enumerator fIndexes = wingmanIndices.GetEnumerator();
-            while (fIndexes.MoveNext())
+            var previouslySelected = selectedWingmen.Select(index => friendlies[index]).Where(ai => ai != null).ToList();
+            friendlies.Clear();
+            selectedWingmen.Clear();
+            int index = 0;
+            foreach (var v in BDATargetManager.LoadedVessels)
             {
-                int clampedIndex = Mathf.Clamp(fIndexes.Current, 0, wingmen.Count - 1);
-                if (!uniqueIndexes.Contains(clampedIndex))
-                {
-                    uniqueIndexes.Add(clampedIndex);
-                }
+                if (v == null) continue;
+                if (!v.loaded || v == vessel || VesselModuleRegistry.IgnoredVesselTypes.Contains(v.vesselType)) continue;
+
+                var ac = v.ActiveController();
+                if (ac == null) continue; // Since this is called on vessel destroy, we need to check that the vessel module isn't null.
+                if (ac.AI == null) continue;
+                if (ac.WM == null || ac.WM.Team != wm.Team) continue;
+                friendlies.Add(ac.AI);
+                if (previouslySelected.Contains(ac.AI)) selectedWingmen.Add(index);
+                ++index;
             }
-            wingmanIndices = [.. uniqueIndexes];
         }
 
+        /// <summary>
+        /// Refresh the wingmen by removing any that are dead or traitors.
+        /// Note: this doesn't add any new wingmen - they haven't been commanded to follow yet.
+        /// </summary>
+        void RefreshWingmen()
+        {
+            var wm = WeaponManager;
+            if (wm == null) // We're dead, abort!
+            {
+                wingmen.Clear();
+                return;
+            }
+
+            // Filter out dead allies and traitors.
+            wingmen = [.. wingmen.Where(ai => ai != null && friendlies.Contains(ai))];
+        }
+
+        public void AddWingman(IBDAIControl ai)
+        {
+            if (ai == null) return;
+            if (!wingmen.Contains(ai)) wingmen.Add(ai);
+        }
+        public void RemoveWingman(IBDAIControl ai)
+        {
+            if (ai == null) return;
+            if (wingmen.Contains(ai)) wingmen.Remove(ai);
+        }
+
+        /* FIXME Temporarily disable load/save of wingmen (I'm not sure that it was functional anyway).
         void SaveWingmen(ConfigNode cfg)
         {
             if (wingmen == null)
@@ -193,6 +226,7 @@ namespace BDArmory.Control
                 }
             }
         }
+        */
 
         public bool showGUI
         {
@@ -218,7 +252,7 @@ namespace BDArmory.Control
                             fontSize = wingmanButtonStyle.fontSize
                         };
                         labelStyle = new(BDArmorySetup.BDGuiSkin.label) { alignment = TextAnchor.MiddleLeft };
-                        formationLabelStyle = new(labelStyle) { alignment = TextAnchor.MiddleCenter, wordWrap = false, clipping = TextClipping.Overflow };
+                        formationLabelStyle = new(labelStyle) { alignment = TextAnchor.LowerCenter, wordWrap = false, clipping = TextClipping.Overflow };
                         sliderStyle = new(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically.
                         sliderThumbStyle = new(BDArmorySetup.BDGuiSkin.horizontalSliderThumb);
                         guiInit = true;
@@ -347,17 +381,17 @@ namespace BDArmory.Control
 
             wingmenScrollPos = GUILayout.BeginScrollView(wingmenScrollPos, GUI.skin.box);
             int i = 0;
-            foreach (var wingman in wingmen)
+            foreach (var wingman in friendlies)
             {
-                if (GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus})", wingmanIndices.Contains(i) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
+                if (wingman != null && GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus})", selectedWingmen.Contains(i) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
                 {
-                    if (wingmanIndices.Contains(i))
+                    if (selectedWingmen.Contains(i))
                     {
-                        wingmanIndices.Remove(i);
+                        selectedWingmen.Remove(i);
                     }
                     else
                     {
-                        wingmanIndices.Add(i);
+                        selectedWingmen.Add(i);
                     }
                 }
                 ++i;
@@ -365,7 +399,7 @@ namespace BDArmory.Control
             GUILayout.EndScrollView();
 
             //command buttons
-            if (wingmen.Count == wingmanIndices.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
+            if (friendlies.Count == selectedWingmen.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
             else CommandButton(SelectAll, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectAll"), false, false);//"Select All"
 
             commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle);//"Command Self"
@@ -404,23 +438,21 @@ namespace BDArmory.Control
         {
             if (GUILayout.Button(buttonLabel, pressed ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
+                var ai = ActiveController.GetActiveController(vessel).AI;
+                if (ai != null && ai.currentCommand == PilotCommands.Follow) // Avoid follow loops.
+                {
+                    ai.ReleaseCommand();
+                }
                 if (sendToWingmen)
                 {
-                    if (wingmen.Count > 0)
+                    foreach (var index in selectedWingmen)
                     {
-                        using List<int>.Enumerator index = wingmanIndices.GetEnumerator();
-                        while (index.MoveNext())
-                        {
-                            func(wingmen[index.Current], index.Current, data);
-                        }
+                        func(friendlies[index], index, data);
                     }
 
-                    if (commandSelf)
+                    if (commandSelf && ai != null && func != CommandFollow) // Don't chase your own tail!
                     {
-                        foreach (var ai in VesselModuleRegistry.GetModules<IBDAIControl>(vessel))
-                        {
-                            func(ai, -1, data); // Note: this commands *all* AIs on the vessel.
-                        }
+                        func(ai, -1, data);
                     }
                 }
                 else
@@ -437,27 +469,25 @@ namespace BDArmory.Control
 
         void CommandFollow(IBDAIControl wingman, int index, object data)
         {
-            wingman.CommandFollow(this, index);
+            wingman.CommandFollow(this, wingman.commandFollowIndex < 0 ? GetFreeWingIndex(false) : wingman.commandFollowIndex); // Get a new index or reuse an existing one.
         }
 
         public void CommandAllFollow()
         {
             RefreshFriendlies();
             int i = 0;
-            using var wingman = friendlies.GetEnumerator();
-            while (wingman.MoveNext())
+            foreach (var wingman in friendlies)
             {
-                if (wingman.Current == null) continue;
-                wingman.Current.CommandFollow(this, i);
-                i++;
+                if (wingman == null) continue;
+                wingman.CommandFollow(this, i++);
             }
         }
-        public int GetFreeWingIndex()
+        public int GetFreeWingIndex(bool refresh = true)
         {
-            RefreshFriendlies();
+            if (refresh) RefreshFriendlies();
             int freeIndex = 0;
-            while (friendlies.Select(f => f.commandFollowIndex).Contains(freeIndex))
-                ++freeIndex;
+            var usedIndices = friendlies.Select(f => f.commandFollowIndex).ToList();
+            while (usedIndices.Contains(freeIndex)) ++freeIndex;
             return freeIndex;
         }
 
@@ -510,18 +540,12 @@ namespace BDArmory.Control
 
         void SelectAll(IBDAIControl wingman, int index, object data)
         {
-            for (int i = 0; i < wingmen.Count; i++)
-            {
-                if (!wingmanIndices.Contains(i))
-                {
-                    wingmanIndices.Add(i);
-                }
-            }
+            selectedWingmen = [.. Enumerable.Range(0, friendlies.Count)];
         }
 
         void SelectNone(IBDAIControl wingman, int index, object data)
         {
-            wingmanIndices.Clear();
+            selectedWingmen.Clear();
         }
 
         void CommandFlyTo(IBDAIControl wingman, int index, object data)
@@ -539,7 +563,7 @@ namespace BDArmory.Control
 
         IEnumerator CommandPosition(IBDAIControl wingman, PilotCommands command)
         {
-            if (wingmanIndices.Count == 0 && !commandSelf)
+            if (selectedWingmen.Count == 0 && !commandSelf)
             {
                 yield break;
             }
@@ -659,15 +683,15 @@ namespace BDArmory.Control
         Vector2 formationIconOffset = new(-formationIconScale / 2, 50);
         int formationDragIndex = -1;
 
-        Dictionary<int, Vector2> formation = [];
+        readonly Dictionary<int, Vector2> formationPosition = []; // Formation index => formation position
         /// <summary>
         /// Get the formation position in local coordinates.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">Formation index</param>
         /// <returns></returns>
         public Vector2 GetFormationPosition(int index)
         {
-            if (formation.TryGetValue(index, out Vector2 position))
+            if (formationPosition.TryGetValue(index, out Vector2 position))
             {
                 return position;
             }
@@ -689,7 +713,7 @@ namespace BDArmory.Control
             if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), " X", BDArmorySetup.CloseButtonStyle))
             { showFormationWindow = false; }
             if (GUI.Button(new Rect(formationWindowSize.x - 3 * buttonHeight, margin, 2 * buttonHeight - margin, buttonHeight - margin), "Reset", BDArmorySetup.CloseButtonStyle))
-            { formation.Clear(); }
+            { formationPosition.Clear(); }
             if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "-", BDArmorySetup.CloseButtonStyle))
             { formationWindowScale *= 2f; }
             if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.CloseButtonStyle))
@@ -700,17 +724,17 @@ namespace BDArmory.Control
             var dragRect = new Rect(formationIconOffset.x + formationWindowSize.x / 2, formationIconOffset.y, formationIconScale, formationIconScale);
             FormationTextures.DrawFormationIcon(leaderAC.AI, Color.black, dragRect); // Command leader in black
             if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = 0;
-            foreach (var wingmanIndex in wingmanIndices)
+            foreach (var wingman in wingmen)
             {
-                if (wingmanIndex > wingmen.Count) continue; // This shouldn't really happen... FIXME figure out if it does and why. FIXME when vessels are destroyed, the indices get mixed up.
-                var wingmanAC = ActiveController.GetActiveController(wingmen[wingmanIndex].vessel);
+                if (wingman == null) continue;
+                int wingmanIndex = wingman.commandFollowIndex;
                 var formationPosition = GetFormationPosition(wingmanIndex);
                 dragRect = new Rect(formationIconOffset.x + formationPosition.x / formationWindowScale + formationWindowSize.x / 2, formationIconOffset.y - formationPosition.y / formationWindowScale, formationIconScale, formationIconScale);
                 GUI.Label(
                     new Rect(dragRect.position + new Vector2(-80, formationIconScale / 2), new(200, 50)),
-                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}{(wingmanAC != null ? $"\n{wingmanAC.Vessel.vesselName}" : "")}",
+                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}\n{wingman.vessel.vesselName}",
                     formationLabelStyle);
-                FormationTextures.DrawFormationIcon(wingmanAC.AI, teamColor, dragRect); // Wingmen in team colors
+                FormationTextures.DrawFormationIcon(wingman, teamColor, dragRect); // Wingmen in team colors
                 if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = wingmanIndex + 1;
             }
 
@@ -730,7 +754,7 @@ namespace BDArmory.Control
                     }
                     else
                     {
-                        formation[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                        formationPosition[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
                     }
                 }
             }

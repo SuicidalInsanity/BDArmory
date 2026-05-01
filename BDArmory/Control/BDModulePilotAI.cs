@@ -3289,7 +3289,7 @@ namespace BDArmory.Control
             if (command != PilotCommands.Free && (vesselPos - flightCenter).sqrMagnitude < radius * radius * 1.5f)
             {
                 if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDModulePilotAI]: AI Pilot reached command destination.");
-                ReleaseCommand(false, false);
+                ReleaseCommand(false);
             }
 
             useVelRollTarget = true;

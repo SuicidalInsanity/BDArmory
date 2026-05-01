@@ -74,12 +74,11 @@ namespace BDArmory.Control
         {
             get
             {
-                if (_commandLeader == null || _commandLeader.vessel == null || !_commandLeader.vessel.isActiveAndEnabled) return null; // Vessel's don't immediately become null on dying if they're the active vessel.
-                return _commandLeader;
+                if (field == null || field.vessel == null || !field.vessel.isActiveAndEnabled) return null; // Vessel's don't immediately become null on dying if they're the active vessel.
+                return field;
             }
-            protected set { _commandLeader = value; }
+            protected set { field = value; }
         }
-        ModuleWingCommander _commandLeader;
 
         protected PilotCommands command;
         PilotCommands previousCommand;
@@ -276,7 +275,6 @@ namespace BDArmory.Control
             {
                 part.OnJustAboutToBeDestroyed += DeactivatePilot;
                 GameEvents.onVesselWasModified.Add(onVesselWasModified);
-                MissileFire.OnChangeTeam += OnToggleTeam;
                 GameEvents.onPartDie.Add(OnPartDie);
 
                 activeVessel = vessel;
@@ -306,7 +304,6 @@ namespace BDArmory.Control
             part.OnJustAboutToBeDestroyed -= DeactivatePilot;
             GameEvents.onVesselWasModified.Remove(onVesselWasModified);
             GameEvents.onVesselDestroy.Remove(RemoveAutopilot);
-            MissileFire.OnChangeTeam -= OnToggleTeam;
             GameEvents.onPartDie.Remove(OnPartDie);
         }
 
@@ -318,14 +315,6 @@ namespace BDArmory.Control
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
                 GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.name}\n{debugString.ToString()}");
-            }
-        }
-
-        protected virtual void OnToggleTeam(MissileFire mf, BDTeam team)
-        {
-            if (mf.vessel == vessel || (commandLeader && commandLeader.vessel == mf.vessel))
-            {
-                ReleaseCommand();
             }
         }
 
@@ -412,12 +401,13 @@ namespace BDArmory.Control
 
         #region WingCommander
 
-        public virtual void ReleaseCommand(bool resetAssignedPosition = true, bool storeCommand = true)
+        public virtual void ReleaseCommand(bool resetAssignedPosition = true, bool storeCommand = false)
         {
             if (!vessel || command == PilotCommands.Free) return;
             if (BDArmorySettings.DEBUG_AI) Debug.Log("[BDArmory.BDGenericAIBase]:" + vessel.vesselName + " was released from command.");
             previousCommand = command;
             command = PilotCommands.Free;
+            if (commandLeader != null) commandLeader.RemoveWingman(this);
 
             if (!storeCommand) // Clear the previous command.
             {
@@ -441,6 +431,7 @@ namespace BDArmory.Control
             command = PilotCommands.Follow;
             commandLeader = leader;
             commandFollowIndex = followerIndex;
+            leader.AddWingman(this);
         }
 
         public virtual void CommandAG(KSPActionGroup ag)
@@ -501,7 +492,18 @@ namespace BDArmory.Control
                     CommandFlyTo(assignedPositionGeo);
                     break;
                 case PilotCommands.Follow:
-                    CommandFollow(commandLeader, commandFollowIndex);
+                    // Check that the follow command is still valid before resuming it.
+                    if (commandLeader != null && commandFollowIndex >= 0 && WeaponManager is var wm && wm != null && commandLeader.WeaponManager is var cwm && cwm != null && cwm.Team == wm.Team)
+                    {
+                        CommandFollow(commandLeader, commandFollowIndex);
+                    }
+                    else // Otherwise, revert to Free.
+                    {
+                        commandLeader = null;
+                        commandFollowIndex = -1;
+                        previousCommand = PilotCommands.Free;
+                        return false;
+                    }
                     break;
                 case PilotCommands.Waypoints:
                     CommandFollowWaypoints();
