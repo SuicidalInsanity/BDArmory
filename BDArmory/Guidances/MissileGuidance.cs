@@ -651,8 +651,9 @@ namespace BDArmory.Guidances
                 }
                 else
                 {
-                    vF = velDirection.ProjectOnPlanePreNormalized(upDirection).normalized;
-                    vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * upDirection);
+                    Vector3 targetLocalUp = VectorUtils.GetUpDirection(predictedImpactPoint);
+                    vF = velDirection.ProjectOnPlanePreNormalized(targetLocalUp).normalized;
+                    vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetLocalUp);
                 }
 
                 // Gains for velocity error and positional error
