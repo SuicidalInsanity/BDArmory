@@ -665,15 +665,15 @@ namespace BDArmory.Guidances
                 {
                     loftState = MissileBase.LoftStates.Midcourse;
 
-                    if (shapingAngle != 0f)
+                    /*if (shapingAngle != 0f)
                     {
                         // As we get closer to the target we want to focus on the positional error, not the velocity error
                         float factor = Mathf.Min(0.5f * (R - terminalHomingRange) / terminalHomingRange, 1f);
                         vF = factor * vF + (1f - factor) * currVel;
-                    }
+                    }*/
 
                     // Dynamic pressure times the lift area
-                    float q = (float)(0.5f * ml.vessel.atmDensity * ml.vessel.srfSpeed * ml.vessel.srfSpeed);
+                    float q = (float)(0.5 * ml.vessel.atmDensity * ml.vessel.srfSpeed * ml.vessel.srfSpeed);
 
                     // Needs to be changed if the lift and drag curves are changed
                     float Lalpha = 2.864788975654117f * q * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER; // CLmax/AoA(CLmax) * q * S * Lift Multiplier, I.E. linearized Lift/AoA (not CL/AoA)
@@ -684,30 +684,35 @@ namespace BDArmory.Guidances
                     // Pre-calculation since it's used a lot
                     float TL = thrust / Lalpha;
 
-                    // Ching-Fang Lin's derivation of a missile under thrust. Doesn't work well best I can tell.
-                    //if (thrust > D0)
-                    //{
-                    //    float F2sqr = Lalpha * (thrust - D0) * (TL * TL + 1f) * (TL * TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed) * (2 * eta + TL));
-                    //    float F2 = BDAMath.Sqrt(Mathf.Abs(F2sqr));
+                    // Ching-Fang Lin's derivation of a missile under thrust.
+                    if (thrust > D0)
+                    {
+                        float F2sqr = Lalpha * (thrust - D0) * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed) * (2f * eta + TL));
+                        float F2 = BDAMath.Sqrt(Mathf.Abs(F2sqr));
 
-                    //    float sinF2R = Mathf.Sin(F2 * R);
-                    //    float cosF2R = Mathf.Cos(F2 * R);
+                        float eFR = Mathf.Exp(F2 * R);
+                        float enFR = Mathf.Exp(-F2 * R);
 
-                    //    K1 = F2 * R * (sinF2R - F2 * R) / (2f - 2f * cosF2R - F2 * R * sinF2R);
-                    //    K2 = F2sqr * R * R * (1f - cosF2R) / (2f - 2f * cosF2R - F2 * R * sinF2R);
-                    //}
-                    //else
-                    //{
+                        float sinhF2R = 0.5f * (eFR - enFR);
+                        float coshF2R = 0.5f * (eFR + enFR);
+                        float denom = (2f - 2f * coshF2R - F2 * R * sinhF2R);
+
+                        K1 = F2 * R * (sinhF2R - F2 * R) / denom;
+                        K2 = F2sqr * R * R * (1f - coshF2R) / denom;
+                    }
+                    else
+                    {
                         // General derivation of aerodynamic constant for Kappa guidance
-                        float Fsqr = D0 * Lalpha * (TL + 1) * (TL + 1) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed) * (2 * eta + TL));
+                        float Fsqr = D0 * Lalpha * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed) * (2f * eta + TL));
                         float F = BDAMath.Sqrt(Fsqr);
 
                         float eFR = Mathf.Exp(F * R);
                         float enFR = Mathf.Exp(-F * R);
+                        float denom = (eFR * (F * R - 2f) - enFR * (F * R + 2f) + 4f);
 
-                        K1 = (2f * Fsqr * R * R - F * R * (eFR - enFR)) / (eFR * (F * R - 2f) - enFR * (F * R + 2f) + 4f);
-                        K2 = (Fsqr * R * R * (eFR + enFR - 2f)) / (eFR * (F * R - 2f) - enFR * (F * R + 2f) + 4f);
-                    //}
+                        K1 = (2f * Fsqr * R * R - F * R * (eFR - enFR)) / denom;
+                        K2 = (Fsqr * R * R * (eFR + enFR - 2f)) / denom;
+                    }
                 }
                 else
                 {
