@@ -105,9 +105,17 @@ namespace BDArmory.UI
                 style.normal.background = prefabColorPreview;
                 if (GUI.Button(new Rect(HorizPos + (pcOffset * 20) + 10, VertPos + displayTextureHeight + 5, 15, 15), new GUIContent(""), style))
                 {
-                    selectedColor = presetColor;
-                    selectedColorPreview.SetPixel(0, 0, presetColor);
-                    selectedColorPreview.Apply();
+                    switch (Event.current.button)
+                    {
+                        case 1: // right click
+                            BDTISetup.Instance.ColorPresets[pcOffset] = selectedColor;
+                            break;
+                        default:
+                            selectedColor = presetColor;
+                            selectedColorPreview.SetPixel(0, 0, presetColor);
+                            selectedColorPreview.Apply();
+                            break;
+                    }
                 }
             }
             for (int pcOffset = 8; pcOffset < 16; pcOffset++)
@@ -118,9 +126,17 @@ namespace BDArmory.UI
                 style.normal.background = prefabColorPreview;
                 if (GUI.Button(new Rect(HorizPos + ((pcOffset * 20) - 160) + 10, VertPos + displayTextureHeight + 25, 15, 15), new GUIContent(""), style))
                 {
-                    selectedColor = presetColor;
-                    selectedColorPreview.SetPixel(0, 0, presetColor);
-                    selectedColorPreview.Apply();
+                    switch (Event.current.button)
+                    {
+                        case 1: // right click
+                            BDTISetup.Instance.ColorPresets[pcOffset] = selectedColor;
+                            break;
+                        default:
+                            selectedColor = presetColor;
+                            selectedColorPreview.SetPixel(0, 0, presetColor);
+                            selectedColorPreview.Apply();
+                            break;
+                    }
                 }
             }
             // box for chosen color
