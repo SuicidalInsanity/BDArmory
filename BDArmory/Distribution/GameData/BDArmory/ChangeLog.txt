@@ -103,6 +103,11 @@ IMPROVEMENTS / FIXES
 		- Fix SARH missiles not respecting IFF and target envelope settings when relocking after having lost the primary target when "canRelock" is true.
 		- Fix laser AGM missiles never timing out during search mode. Now, when a laser missile searches for a TGP, it'll time out after "seekerTimeout" seconds. If a missile loses guidance from its guiding TGP, it'll first search for it for "seekerTimeout" seconds before initiating a search for other TGPs.
 		- Added "proximityFuzeInhibitionAlt" to MissileLauncher missiles. When they are below this radar altitude, missiles will not proximity fuze on targets. By default, this is set to -1, which disables the feature.
+		- Fixes + Improvement for Kappa Guidance:
+			- Slightly improve time-to-go clamping in kappa guidance.
+			- Add "gLimit" and "maxAoA" based biasing of the kappa shaping coefficient.
+			- Calculate proper shaping coefficient for "kappaAngle" = 0 case (no trajectory shaping).
+			- Fix numerical issues at long range and at very short range.
 		- Added "beamWidth" to all CLOS guidance types and "beamLeadMinAlt" to CLOSLead.
 			- "beamWidth" allows for the simulation of the increasing inaccuracy of beam-riding missiles with range, due to angular resolution. If the beam is taken as a cone, it is essentially the ratio of the radius of the cone to the height of the cone, I.E. for every meter of distance the missile travels, the potential error, relative to the beam centerline increases by "beamWidth" meters.
 			- "beamLeadMinAlt" is essentially an implementation of the "elevated by k" method of the Soviet half-correction missile guidance method. If the relative altitude of the target vs. the guidance sensor is less than "beamLeadMinAlt", then the missile will not add downwards lead when the target is diving, making the missile less likely to be driven into the ground.
