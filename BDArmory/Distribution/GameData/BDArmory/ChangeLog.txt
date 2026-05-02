@@ -106,6 +106,7 @@ IMPROVEMENTS / FIXES
 		- Added "beamWidth" to all CLOS guidance types and "beamLeadMinAlt" to CLOSLead.
 			- "beamWidth" allows for the simulation of the increasing inaccuracy of beam-riding missiles with range, due to angular resolution. If the beam is taken as a cone, it is essentially the ratio of the radius of the cone to the height of the cone, I.E. for every meter of distance the missile travels, the potential error, relative to the beam centerline increases by "beamWidth" meters.
 			- "beamLeadMinAlt" is essentially an implementation of the "elevated by k" method of the Soviet half-correction missile guidance method. If the relative altitude of the target vs. the guidance sensor is less than "beamLeadMinAlt", then the missile will not add downwards lead when the target is diving, making the missile less likely to be driven into the ground.
+		- Added "antiradTargetPrediction" to anti-radiation missiles. When set to true, the missile will use the average velocity of the target between pings to predict the target's future position.
 		- Multi-Missile Launchers:
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
