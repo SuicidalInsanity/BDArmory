@@ -11,11 +11,13 @@ namespace BDArmory.UI
         private Texture2D displayPicker;
         public int displayTextureWidth = 360;
         public int displayTextureHeight = 360;
-
+        private Texture2D prefabColorPreview;
+        
         public int HorizPos;
         public int VertPos;
 
         public Color selectedColor;
+        public Color presetColor;
         private Texture2D selectedColorPreview;
 
         private float hueSlider = 0f;
@@ -42,6 +44,7 @@ namespace BDArmory.UI
 
             selectedColorPreview = new Texture2D(1, 1);
             selectedColorPreview.SetPixel(0, 0, selectedColor);
+            prefabColorPreview = selectedColorPreview;
         }
 
         private void renderColorPicker()
@@ -91,7 +94,35 @@ namespace BDArmory.UI
                 BDTISetup.Instance.showColorSelect = false;
                 BDTISetup.Instance.UpdateTeamColor = true;
             }
-
+            //preset colors
+            GUIStyle style = new() { normal = new GUIStyleState { background = prefabColorPreview } };
+            
+            for (int pcOffset = 0; pcOffset < 8; pcOffset++)
+            {
+                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                prefabColorPreview.SetPixel(0, 0, presetColor);
+                prefabColorPreview.Apply();
+                style.normal.background = prefabColorPreview;
+                if (GUI.Button(new Rect(HorizPos + (pcOffset * 20) + 10, VertPos + displayTextureHeight + 5, 15, 15), new GUIContent(""), style))
+                {
+                    selectedColor = presetColor;
+                    selectedColorPreview.SetPixel(0, 0, presetColor);
+                    selectedColorPreview.Apply();
+                }
+            }
+            for (int pcOffset = 8; pcOffset < 16; pcOffset++)
+            {
+                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                prefabColorPreview.SetPixel(0, 0, presetColor);
+                prefabColorPreview.Apply();
+                style.normal.background = prefabColorPreview;
+                if (GUI.Button(new Rect(HorizPos + ((pcOffset * 20) - 160) + 10, VertPos + displayTextureHeight + 25, 15, 15), new GUIContent(""), style))
+                {
+                    selectedColor = presetColor;
+                    selectedColorPreview.SetPixel(0, 0, presetColor);
+                    selectedColorPreview.Apply();
+                }
+            }
             // box for chosen color
             selectedColorPreview.SetPixel(0, 0, selectedColor);
             selectedColorPreview.Apply();
