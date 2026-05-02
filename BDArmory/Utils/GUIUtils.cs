@@ -424,13 +424,6 @@ namespace BDArmory.Utils
                 }
                 if (wm.rwr && wm.rwr.rwrEnabled && wm.rwr.displayRWR && MouseIsInRect(BDArmorySetup.WindowRectRwr, inverseMousePos))
                     return true;
-                if (wm.wingCommander && wm.wingCommander.showGUI)
-                {
-                    if (MouseIsInRect(BDArmorySetup.WindowRectWingCommander, inverseMousePos)) return true;
-                    if (wm.wingCommander.showAGWindow && MouseIsInRect(wm.wingCommander.agWindowRect, inverseMousePos))
-                        return true;
-                }
-
             }
             if (extraGUIRects != null)
             {

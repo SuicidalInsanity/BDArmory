@@ -224,8 +224,9 @@ namespace BDArmory.Damage
 
         [KSPField(isPersistant = true)]
         public float ignitionTemp = -1;
-        private double skinskinConduction = 1;
+        private double skinSkinConduction = 1;
         private double skinInternalConduction = 1;
+        private double skinMassPerArea = 1;
 
         public override void OnLoad(ConfigNode node)
         {
@@ -371,8 +372,9 @@ namespace BDArmory.Damage
             guiHullTypeString = StringUtils.Localize(HullInfo.materials[HullInfo.materialNames[(int)HullTypeNum - 1]].localizedName);
             if (part.partInfo != null && part.partInfo.partPrefab != null) // PotatoRoid, I'm looking at you.
             {
-                skinskinConduction = part.partInfo.partPrefab.skinSkinConductionMult;
-                skinInternalConduction = part.partInfo.partPrefab.skinSkinConductionMult;
+                skinSkinConduction = part.partInfo.partPrefab.skinSkinConductionMult;
+                skinInternalConduction = part.partInfo.partPrefab.skinInternalConductionMult;
+                skinMassPerArea = part.partInfo.partPrefab.skinMassPerArea;
             }
             if (ArmorThickness < 0) ArmorThickness = part.IsMissile() ? 2 : 10;
             if (HighLogic.LoadedSceneIsFlight)
@@ -1348,9 +1350,9 @@ namespace BDArmory.Damage
                 }
             }
             var oldArmorMass = armorMass;
-            part.skinInternalConductionMult = skinskinConduction; //reset to .cfg value
-            part.skinSkinConductionMult = skinInternalConduction; //reset to .cfg value
-            part.skinMassPerArea = 1; //default value
+            part.skinInternalConductionMult = skinInternalConduction; //reset to .cfg value
+            part.skinSkinConductionMult = skinSkinConduction; //reset to .cfg value
+            part.skinMassPerArea = skinMassPerArea; //reset to .cfg value
             armorMass = 0;
             armorCost = 0;
             totalArmorQty = 0;
@@ -1361,7 +1363,7 @@ namespace BDArmory.Damage
                 armorCost = (Armor / 1000) * armorVolume * armorInfo.Cost; //armor cost, tons
 
                 part.skinInternalConductionMult = skinInternalConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor allow external heat to flow into the part internals?
-                part.skinSkinConductionMult = skinskinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
+                part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
             }
@@ -1372,7 +1374,7 @@ namespace BDArmory.Damage
                 SelectedArmorType = "None";
                 armorCost = (Armor / 1000) * armorVolume * armorInfo.Cost;
                 part.skinInternalConductionMult = skinInternalConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor allow external heat to flow into the part internals?
-                part.skinSkinConductionMult = skinskinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
+                part.skinSkinConductionMult = skinSkinConduction * BDAMath.Sqrt(Diffusivity / 237); //how well does the armor conduct heat to connected part skins?
                 part.skinMassPerArea = (Density / 1000) * ArmorThickness;
                 armorRadarReturnFactor = armorInfo.radarReflectivity;
             }

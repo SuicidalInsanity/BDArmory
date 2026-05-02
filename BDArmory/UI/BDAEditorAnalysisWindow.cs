@@ -175,14 +175,14 @@ namespace BDArmory.UI
         void WindowRcs(int windowID)
         {
             GUIUtils.PreventClickThrough(windowRect, "BDARCSLOCK");
-            if (GUI.Button(new Rect(windowRect.width - 18, 2, 16, 16), "X"))
+            if (GUI.Button(new Rect(windowRect.width - 18, 2, 16, 16), " X", BDArmorySetup.CloseButtonStyle))
             {
                 toolbarButton.SetFalse();
             }
 
-            GUI.Label(new Rect(10, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[0, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[0, 1].ToString("0")}", BDArmorySetup.BDGuiSkin.box);
-            GUI.Label(new Rect(220, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[1, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[1, 1].ToString("0")}", BDArmorySetup.BDGuiSkin.box);
-            GUI.Label(new Rect(430, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[2, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[2, 1].ToString("0")}", BDArmorySetup.BDGuiSkin.box);
+            GUI.Label(new Rect(10, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[0, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[0, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
+            GUI.Label(new Rect(220, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[1, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[1, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
+            GUI.Label(new Rect(430, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[2, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[2, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
 
             if (takeSnapshot)
                 takeRadarSnapshot();
@@ -217,8 +217,10 @@ namespace BDArmory.UI
             if (radars == null)
             {
                 FillRadarList();
-                GUIStyle listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-                listStyle.fixedHeight = 18; //make list contents slightly smaller
+                GUIStyle listStyle = new(BDArmorySetup.ButtonStyle)
+                {
+                    fixedHeight = 18 //make list contents slightly smaller
+                };
                 radarBox = new BDGUIComboBox(new Rect(10, 350, 450, 20), new Rect(10, 350, 450, 20), radarBoxText, radarsGUI, 124, listStyle);
             }
 
@@ -291,9 +293,9 @@ namespace BDArmory.UI
                 toolbarButton.SetFalse();
             }
 
-            GUI.Label(new Rect(10, 40, 200, 20), "Frontal", BDArmorySetup.BDGuiSkin.box);
-            GUI.Label(new Rect(220, 40, 200, 20), "Lateral", BDArmorySetup.BDGuiSkin.box);
-            GUI.Label(new Rect(430, 40, 200, 20), "Ventral", BDArmorySetup.BDGuiSkin.box);
+            GUI.Label(new Rect(10, 40, 200, 20), "Frontal", BDArmorySetup.SelectedButtonStyle);
+            GUI.Label(new Rect(220, 40, 200, 20), "Lateral", BDArmorySetup.SelectedButtonStyle);
+            GUI.Label(new Rect(430, 40, 200, 20), "Ventral", BDArmorySetup.SelectedButtonStyle);
 
             if (takeSnapshot)
                 takeRadarSnapshot();
@@ -334,8 +336,10 @@ namespace BDArmory.UI
             if (radars == null)
             {
                 FillRadarList();
-                GUIStyle listStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.button);
-                listStyle.fixedHeight = 18; //make list contents slightly smaller
+                GUIStyle listStyle = new(BDArmorySetup.ButtonStyle)
+                {
+                    fixedHeight = 18 //make list contents slightly smaller
+                };
                 radarBox = new BDGUIComboBox(new Rect(10, 350, 450, 20), new Rect(10, 350, 450, 20), radarBoxText, radarsGUI, 124, listStyle);
             }
 

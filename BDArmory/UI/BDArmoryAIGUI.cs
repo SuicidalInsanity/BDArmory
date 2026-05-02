@@ -3,7 +3,6 @@ using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.Utils;
 using KSP.UI.Screens;
-using LibNoise.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -495,7 +494,8 @@ namespace BDArmory.UI
                             nameof(AI.vesselCollisionAvoidanceLookAheadPeriod),
                             nameof(AI.vesselCollisionAvoidanceStrength),
                             nameof(AI.vesselStandoffDistance),
-                            nameof(AI.AvoidMass), 
+                            nameof(AI.AvoidMass),
+                            nameof(AI.retreatDistance),
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
@@ -732,31 +732,41 @@ namespace BDArmory.UI
 
         void ConfigureStyles()
         {
-            Label = new GUIStyle();
-            Label.alignment = TextAnchor.UpperLeft;
-            Label.normal.textColor = Color.white;
+            Label = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
-            contextLabelRight = new GUIStyle();
-            contextLabelRight.alignment = TextAnchor.UpperRight;
-            contextLabelRight.normal.textColor = Color.white;
+            contextLabelRight = new GUIStyle
+            {
+                alignment = TextAnchor.UpperRight,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
             contextLabel = new GUIStyle(Label);
 
-            BoldLabel = new GUIStyle();
-            BoldLabel.alignment = TextAnchor.UpperLeft;
-            BoldLabel.fontStyle = FontStyle.Bold;
-            BoldLabel.normal.textColor = Color.white;
+            BoldLabel = new GUIStyle
+            {
+                alignment = TextAnchor.UpperLeft,
+                fontStyle = FontStyle.Bold,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
-            Title = new GUIStyle();
-            Title.normal.textColor = BDArmorySetup.BDGuiSkin.window.normal.textColor;
-            Title.font = BDArmorySetup.BDGuiSkin.window.font;
-            Title.fontSize = BDArmorySetup.BDGuiSkin.window.fontSize;
-            Title.fontStyle = BDArmorySetup.BDGuiSkin.window.fontStyle;
-            Title.alignment = TextAnchor.UpperCenter;
+            Title = new GUIStyle
+            {
+                font = BDArmorySetup.BDGuiSkin.window.font,
+                fontSize = BDArmorySetup.BDGuiSkin.window.fontSize,
+                fontStyle = BDArmorySetup.BDGuiSkin.window.fontStyle,
+                alignment = TextAnchor.UpperCenter,
+                normal = new GUIStyleState { textColor = BDArmorySetup.BDGuiSkin.window.normal.textColor }
+            };
 
-            infoLinkStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label);
-            infoLinkStyle.alignment = TextAnchor.UpperLeft;
-            infoLinkStyle.normal.textColor = Color.white;
+            infoLinkStyle = new GUIStyle(BDArmorySetup.BDGuiSkin.label)
+            {
+                alignment = TextAnchor.UpperLeft,
+                normal = new GUIStyleState { textColor = Color.white }
+            };
 
             stylesConfigured = true;
         }
@@ -771,7 +781,7 @@ namespace BDArmory.UI
         const float labelWidth = 200;
         const float sliderIndent = contentInnerMargin + labelWidth;
 
-        Rect TitleButtonRect(float offset, float width = 1)
+        Rect TitleButtonRect(float offset, float width = 1) // offset is counted from the right edge of the window
         {
             return new Rect((ColumnWidth * 2) - _windowMargin - (offset * _buttonSize), _windowMargin, width * _buttonSize, _buttonSize);
         }
@@ -926,7 +936,7 @@ namespace BDArmory.UI
             GUIContent[] listContent = [.. ais.Select(ai => new GUIContent(ai == primaryAI ? $"* {ai.aiType} *" : $"{ai.aiType}"))];
             if (listContent.Length > 0)
             {
-                AISelectionComboBox = new BDGUIComboBox(rect, rect, new GUIContent(ActiveAI as IBDAIControl == primaryAI ? $"* {ActiveAI.aiType} *" : $"{ActiveAI.aiType}"), listContent, (listContent.Length + 1) * _buttonSize + 2 * _windowMargin, BDArmorySetup.BDGuiSkin.button, 1);
+                AISelectionComboBox = new BDGUIComboBox(rect, rect, new GUIContent(ActiveAI as IBDAIControl == primaryAI ? $"* {ActiveAI.aiType} *" : $"{ActiveAI.aiType}"), listContent, (listContent.Length + 1) * _buttonSize + 2 * _windowMargin, BDArmorySetup.ButtonStyle, 1);
                 AISelectionIndex = AISelectionComboBox.SetSelectedItemIndex(ais.FindIndex(ai => ai.pilotEnabled));
             }
             else
@@ -940,7 +950,6 @@ namespace BDArmory.UI
             float contentIndent = contentMargin + columnIndent;
             float contentWidth = 2 * ColumnWidth - 2 * contentMargin - columnIndent;
 
-            GUI.DragWindow(new Rect(contentIndent + _windowMargin, _windowMargin, contentWidth + _windowMargin - 4 * _buttonSize, _windowMargin + _buttonSize));
             GUI.Label(new Rect(contentIndent, contentTop, contentWidth - 4 * _buttonSize, entryHeight), StringUtils.Localize("#LOC_BDArmory_AIWindow_title"), Title);
             #region AI Selection
             if (ActiveAI != null)
@@ -958,16 +967,16 @@ namespace BDArmory.UI
             }
             #endregion
 
-            if (GUI.Button(TitleButtonRect(1), "X", windowBDAAIGUIEnabled ? BDArmorySetup.BDGuiSkin.button : BDArmorySetup.BDGuiSkin.box)) //Exit Button
+            if (GUI.Button(TitleButtonRect(1), " X", BDArmorySetup.CloseButtonStyle)) //Exit Button
             {
                 if (button) button.SetFalse();
                 else HideAIGUI(); // In case the button is disabled.
             }
-            if (GUI.Button(TitleButtonRect(2), "i", infoLinkEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Infolink button
+            if (GUI.Button(TitleButtonRect(3, 2), "Info", infoLinkEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) //Infolink button
             { infoLinkEnabled = !infoLinkEnabled; }
-            if (GUI.Button(TitleButtonRect(3), "?", contextTipsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Context labels button
+            if (GUI.Button(TitleButtonRect(5, 2), "Help", contextTipsEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) //Context labels button
             { contextTipsEnabled = !contextTipsEnabled; }
-            if (GUI.Button(TitleButtonRect(4), "#", NumFieldsEnabled ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)) //Numeric fields button
+            if (GUI.Button(TitleButtonRect(6), "#", NumFieldsEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)) //Numeric fields button
             {
                 NumFieldsEnabled = !NumFieldsEnabled;
                 SyncInputFieldsNow(!NumFieldsEnabled);
@@ -993,40 +1002,40 @@ namespace BDArmory.UI
                             if (AISelectionComboBox == null || !AISelectionComboBox.IsOpen)
                             { // Section buttons
                                 float line = 1.5f;
-                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"PiD"
+                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"PiD"
 
                                 line += 1.2f;
-                                showSection[Section.Altitude] = GUI.Toggle(SubsectionRect(line), showSection[Section.Altitude], StringUtils.Localize("#LOC_BDArmory_AIWindow_Altitudes"), showSection[Section.Altitude] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Altitude"
+                                showSection[Section.Altitude] = GUI.Toggle(SubsectionRect(line), showSection[Section.Altitude], StringUtils.Localize("#LOC_BDArmory_AIWindow_Altitudes"), showSection[Section.Altitude] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Altitude"
 
                                 line += 1.2f;
-                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Speed"
+                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Speed"
 
                                 line += 1.2f;
-                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Control"
+                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Control"
 
                                 line += 1.2f;
-                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Evasion"
+                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
 
                                 line += 1.2f;
-                                showSection[Section.Terrain] = GUI.Toggle(SubsectionRect(line), showSection[Section.Terrain], StringUtils.Localize("#LOC_BDArmory_AIWindow_Terrain"), showSection[Section.Terrain] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Terrain"
+                                showSection[Section.Terrain] = GUI.Toggle(SubsectionRect(line), showSection[Section.Terrain], StringUtils.Localize("#LOC_BDArmory_AIWindow_Terrain"), showSection[Section.Terrain] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Terrain"
 
                                 line += 1.2f;
-                                showSection[Section.Ramming] = GUI.Toggle(SubsectionRect(line), showSection[Section.Ramming], StringUtils.Localize("#LOC_BDArmory_AIWindow_Ramming"), showSection[Section.Ramming] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Ramming"
+                                showSection[Section.Ramming] = GUI.Toggle(SubsectionRect(line), showSection[Section.Ramming], StringUtils.Localize("#LOC_BDArmory_AIWindow_Ramming"), showSection[Section.Ramming] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Ramming"
 
                                 line += 1.2f;
-                                showSection[Section.Misc] = GUI.Toggle(SubsectionRect(line), showSection[Section.Misc], StringUtils.Localize("#LOC_BDArmory_AIWindow_Misc"), showSection[Section.Misc] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Misc"
+                                showSection[Section.Misc] = GUI.Toggle(SubsectionRect(line), showSection[Section.Misc], StringUtils.Localize("#LOC_BDArmory_AIWindow_Misc"), showSection[Section.Misc] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Misc"
 
                                 line += 1.5f;
                                 if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))//"Misc"
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
                                 {
                                     SetInputFields(activeAIType);
                                 }
 
                                 #region Store/Restore
                                 line += 1.5f;
-                                GUIStyle saveStyle = BDArmorySetup.BDGuiSkin.button;
+                                GUIStyle saveStyle = BDArmorySetup.ButtonStyle;
                                 if (GUI.Button(SubsectionRect(line), "Save", saveStyle))
                                 {
                                     AI.StoreSettings();
@@ -1035,7 +1044,7 @@ namespace BDArmory.UI
                                 if (AI.Events["RestoreSettings"].active == true)
                                 {
                                     line += 1f;
-                                    GUIStyle restoreStyle = BDArmorySetup.BDGuiSkin.button;
+                                    GUIStyle restoreStyle = BDArmorySetup.ButtonStyle;
                                     if (GUI.Button(SubsectionRect(line), "Restore", restoreStyle))
                                     {
                                         AI.RestoreSettings();
@@ -1050,7 +1059,7 @@ namespace BDArmory.UI
                             {
                                 scrollViewVectors[AIType.PilotAI] = GUI.BeginScrollView(new Rect(contentIndent, contentTop + entryHeight * 1.5f, ColumnWidth * 2 - contentIndent, WindowHeight - entryHeight * 1.5f - 2 * contentTop), scrollViewVectors.GetValueOrDefault(AIType.PilotAI), new Rect(0, 0, contentWidth - contentMargin * 2, height + contentTop));
 
-                                GUI.BeginGroup(new Rect(contentMargin, 0, contentWidth - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.BDGuiSkin.box); //darker box
+                                GUI.BeginGroup(new Rect(contentMargin, 0, contentWidth - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.SelectedButtonStyle); //darker box
 
                                 contentWidth -= 24 + contentBorder;
 
@@ -1058,13 +1067,13 @@ namespace BDArmory.UI
                                 {
                                     float pidLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.PID);
-                                    GUI.BeginGroup(new Rect(contentBorder, pidLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, pidLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     pidLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(pidLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), BoldLabel);
                                     if (AI.threeAxisPID)
                                     {
-                                        if (AI.threeAxisPID != (AI.threeAxisPID = GUI.Toggle(ToggleButtonRects(pidLines, 0, 1, contentWidth), AI.threeAxisPID, StringUtils.Localize("#LOC_BDArmory_AI_3AxisPID"), AI.threeAxisPID ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                        if (AI.threeAxisPID != (AI.threeAxisPID = GUI.Toggle(ToggleButtonRects(pidLines, 0, 1, contentWidth), AI.threeAxisPID, StringUtils.Localize("#LOC_BDArmory_AI_3AxisPID"), AI.threeAxisPID ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         { AI.OnPIDTogglesChanged(); }
                                         pidLines += 1.25f;
                                         pidLines = ContentEntry(ContentType.FloatSlider, pidLines, contentWidth, ref AI.threeAxisPIDPitchMult, nameof(AI.threeAxisPIDPitchMult), "3AxisPIDPitchMult", $"{AI.threeAxisPIDPitchMult:0.0}", splitContext: true);
@@ -1085,11 +1094,11 @@ namespace BDArmory.UI
                                         {
                                             pidLines = ContentEntry(ContentType.FloatSlider, pidLines, contentWidth, ref AI.steerDamping, nameof(AI.steerDamping), "SteerDamping", $"{AI.steerDamping:0.00}", splitContext: true);
                                         }
-                                        if (AI.threeAxisPID != (AI.threeAxisPID = GUI.Toggle(ToggleButtonRects(pidLines, 0, 3, contentWidth), AI.threeAxisPID, StringUtils.Localize("#LOC_BDArmory_AI_3AxisPID"), AI.threeAxisPID ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                        if (AI.threeAxisPID != (AI.threeAxisPID = GUI.Toggle(ToggleButtonRects(pidLines, 0, 3, contentWidth), AI.threeAxisPID, StringUtils.Localize("#LOC_BDArmory_AI_3AxisPID"), AI.threeAxisPID ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         { AI.OnPIDTogglesChanged(); }
-                                        if (AI.threeAxisSteerDamping != (AI.threeAxisSteerDamping = GUI.Toggle(ToggleButtonRects(pidLines, 1, 3, contentWidth), AI.threeAxisSteerDamping, StringUtils.Localize("#LOC_BDArmory_AI_3AxisSteerDamping"), AI.threeAxisSteerDamping ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                        if (AI.threeAxisSteerDamping != (AI.threeAxisSteerDamping = GUI.Toggle(ToggleButtonRects(pidLines, 1, 3, contentWidth), AI.threeAxisSteerDamping, StringUtils.Localize("#LOC_BDArmory_AI_3AxisSteerDamping"), AI.threeAxisSteerDamping ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         { AI.OnPIDTogglesChanged(); }
-                                        if (AI.dynamicSteerDamping != (AI.dynamicSteerDamping = GUI.Toggle(ToggleButtonRects(pidLines, 2, 3, contentWidth), AI.dynamicSteerDamping, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDamping"), AI.dynamicSteerDamping ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                        if (AI.dynamicSteerDamping != (AI.dynamicSteerDamping = GUI.Toggle(ToggleButtonRects(pidLines, 2, 3, contentWidth), AI.dynamicSteerDamping, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDamping"), AI.dynamicSteerDamping ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         { AI.OnPIDTogglesChanged(); }
                                         pidLines += 1.25f;
                                         if (!AI.threeAxisSteerDamping && AI.dynamicSteerDamping)
@@ -1104,7 +1113,7 @@ namespace BDArmory.UI
                                             // Pitch
                                             if (AI.dynamicSteerDamping)
                                             {
-                                                if (AI.dynamicDampingPitch != (AI.dynamicDampingPitch = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingPitch, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingPitch"), AI.dynamicDampingPitch ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                                if (AI.dynamicDampingPitch != (AI.dynamicDampingPitch = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingPitch, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingPitch"), AI.dynamicDampingPitch ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                                 { AI.OnPIDTogglesChanged(); }
                                                 pidLines += 1.25f;
                                             }
@@ -1122,7 +1131,7 @@ namespace BDArmory.UI
                                             // Yaw
                                             if (AI.dynamicSteerDamping)
                                             {
-                                                if (AI.dynamicDampingYaw != (AI.dynamicDampingYaw = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingYaw, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingYaw"), AI.dynamicDampingYaw ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                                if (AI.dynamicDampingYaw != (AI.dynamicDampingYaw = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingYaw, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingYaw"), AI.dynamicDampingYaw ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                                 { AI.OnPIDTogglesChanged(); }
                                                 pidLines += 1.25f;
                                             }
@@ -1140,7 +1149,7 @@ namespace BDArmory.UI
                                             // Roll
                                             if (AI.dynamicSteerDamping)
                                             {
-                                                if (AI.dynamicDampingRoll != (AI.dynamicDampingRoll = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingRoll, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingRoll"), AI.dynamicDampingRoll ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))
+                                                if (AI.dynamicDampingRoll != (AI.dynamicDampingRoll = GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.dynamicDampingRoll, StringUtils.Localize("#LOC_BDArmory_AI_DynamicDampingRoll"), AI.dynamicDampingRoll ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                                 { AI.OnPIDTogglesChanged(); }
                                                 pidLines += 1.25f;
                                             }
@@ -1159,7 +1168,7 @@ namespace BDArmory.UI
                                     }
 
                                     #region AutoTune
-                                    if (AI.AutoTune != GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.AutoTune, StringUtils.Localize("#LOC_BDArmory_AI_PID_AutoTune"), AI.AutoTune ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))
+                                    if (AI.AutoTune != GUI.Toggle(ToggleButtonRect(pidLines, contentWidth), AI.AutoTune, StringUtils.Localize("#LOC_BDArmory_AI_PID_AutoTune"), AI.AutoTune ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
                                     {
                                         AI.AutoTune = !AI.AutoTune; // Only actually toggle it when needed as the setter does extra stuff.
                                     }
@@ -1188,8 +1197,8 @@ namespace BDArmory.UI
                                         pidLines = ContentEntry(ContentType.FloatSlider, pidLines, contentWidth, ref AI.autoTuningSpeed, nameof(AI.autoTuningSpeed), "PIDAutoTuningSpeed", $"{AI.autoTuningSpeed:0}");
                                         pidLines = ContentEntry(ContentType.FloatSlider, pidLines, contentWidth, ref AI.autoTuningRecenteringDistance, nameof(AI.autoTuningRecenteringDistance), "PIDAutoTuningRecenteringDistance", $"{AI.autoTuningRecenteringDistance:0}km");
 
-                                        showSection[Section.FixedAutoTuneFields] = GUI.Toggle(ToggleButtonRects(pidLines, 0, 2, contentWidth), showSection[Section.FixedAutoTuneFields], StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixedFields"), showSection[Section.FixedAutoTuneFields] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
-                                        AI.autoTuningOptionClampMaximums = GUI.Toggle(ToggleButtonRects(pidLines, 1, 2, contentWidth), AI.autoTuningOptionClampMaximums, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningClampMaximums"), AI.autoTuningOptionClampMaximums ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        showSection[Section.FixedAutoTuneFields] = GUI.Toggle(ToggleButtonRects(pidLines, 0, 2, contentWidth), showSection[Section.FixedAutoTuneFields], StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixedFields"), showSection[Section.FixedAutoTuneFields] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
+                                        AI.autoTuningOptionClampMaximums = GUI.Toggle(ToggleButtonRects(pidLines, 1, 2, contentWidth), AI.autoTuningOptionClampMaximums, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningClampMaximums"), AI.autoTuningOptionClampMaximums ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                         pidLines += 1.25f;
 
                                         if (showSection[Section.FixedAutoTuneFields])
@@ -1197,78 +1206,78 @@ namespace BDArmory.UI
                                             bool resetAutoTuning = false;
                                             if (AI.threeAxisPID) // Full 3-Axis PID
                                             {
-                                                if (AI.autoTuningOptionFixedPp != (AI.autoTuningOptionFixedPp = GUI.Toggle(ToggleButtonRects(pidLines, 0, 9, contentWidth), AI.autoTuningOptionFixedPp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Pp"), AI.autoTuningOptionFixedPp ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedIp != (AI.autoTuningOptionFixedIp = GUI.Toggle(ToggleButtonRects(pidLines, 1, 9, contentWidth), AI.autoTuningOptionFixedIp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Ip"), AI.autoTuningOptionFixedIp ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedDp != (AI.autoTuningOptionFixedDp = GUI.Toggle(ToggleButtonRects(pidLines, 2, 9, contentWidth), AI.autoTuningOptionFixedDp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dp"), AI.autoTuningOptionFixedDp ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedPy != (AI.autoTuningOptionFixedPy = GUI.Toggle(ToggleButtonRects(pidLines, 3, 9, contentWidth), AI.autoTuningOptionFixedPy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Py"), AI.autoTuningOptionFixedPy ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedIy != (AI.autoTuningOptionFixedIy = GUI.Toggle(ToggleButtonRects(pidLines, 4, 9, contentWidth), AI.autoTuningOptionFixedIy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Iy"), AI.autoTuningOptionFixedIy ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedDy != (AI.autoTuningOptionFixedDy = GUI.Toggle(ToggleButtonRects(pidLines, 5, 9, contentWidth), AI.autoTuningOptionFixedDy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dy"), AI.autoTuningOptionFixedDy ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedPr != (AI.autoTuningOptionFixedPr = GUI.Toggle(ToggleButtonRects(pidLines, 6, 9, contentWidth), AI.autoTuningOptionFixedPr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Pr"), AI.autoTuningOptionFixedPr ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedIr != (AI.autoTuningOptionFixedIr = GUI.Toggle(ToggleButtonRects(pidLines, 7, 9, contentWidth), AI.autoTuningOptionFixedIr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Ir"), AI.autoTuningOptionFixedIr ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                if (AI.autoTuningOptionFixedDr != (AI.autoTuningOptionFixedDr = GUI.Toggle(ToggleButtonRects(pidLines, 8, 9, contentWidth), AI.autoTuningOptionFixedDr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dr"), AI.autoTuningOptionFixedDr ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedPp != (AI.autoTuningOptionFixedPp = GUI.Toggle(ToggleButtonRects(pidLines, 0, 9, contentWidth), AI.autoTuningOptionFixedPp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Pp"), AI.autoTuningOptionFixedPp ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedIp != (AI.autoTuningOptionFixedIp = GUI.Toggle(ToggleButtonRects(pidLines, 1, 9, contentWidth), AI.autoTuningOptionFixedIp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Ip"), AI.autoTuningOptionFixedIp ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedDp != (AI.autoTuningOptionFixedDp = GUI.Toggle(ToggleButtonRects(pidLines, 2, 9, contentWidth), AI.autoTuningOptionFixedDp, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dp"), AI.autoTuningOptionFixedDp ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedPy != (AI.autoTuningOptionFixedPy = GUI.Toggle(ToggleButtonRects(pidLines, 3, 9, contentWidth), AI.autoTuningOptionFixedPy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Py"), AI.autoTuningOptionFixedPy ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedIy != (AI.autoTuningOptionFixedIy = GUI.Toggle(ToggleButtonRects(pidLines, 4, 9, contentWidth), AI.autoTuningOptionFixedIy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Iy"), AI.autoTuningOptionFixedIy ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedDy != (AI.autoTuningOptionFixedDy = GUI.Toggle(ToggleButtonRects(pidLines, 5, 9, contentWidth), AI.autoTuningOptionFixedDy, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dy"), AI.autoTuningOptionFixedDy ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedPr != (AI.autoTuningOptionFixedPr = GUI.Toggle(ToggleButtonRects(pidLines, 6, 9, contentWidth), AI.autoTuningOptionFixedPr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Pr"), AI.autoTuningOptionFixedPr ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedIr != (AI.autoTuningOptionFixedIr = GUI.Toggle(ToggleButtonRects(pidLines, 7, 9, contentWidth), AI.autoTuningOptionFixedIr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Ir"), AI.autoTuningOptionFixedIr ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                if (AI.autoTuningOptionFixedDr != (AI.autoTuningOptionFixedDr = GUI.Toggle(ToggleButtonRects(pidLines, 8, 9, contentWidth), AI.autoTuningOptionFixedDr, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_Dr"), AI.autoTuningOptionFixedDr ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                             }
                                             else if (!AI.dynamicSteerDamping)
                                             {
                                                 if (!AI.threeAxisSteerDamping) // Normal PID
                                                 {
-                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 3, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 3, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedD != (AI.autoTuningOptionFixedD = GUI.Toggle(ToggleButtonRects(pidLines, 2, 3, contentWidth), AI.autoTuningOptionFixedD, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D"), AI.autoTuningOptionFixedD ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 3, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 3, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedD != (AI.autoTuningOptionFixedD = GUI.Toggle(ToggleButtonRects(pidLines, 2, 3, contentWidth), AI.autoTuningOptionFixedD, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D"), AI.autoTuningOptionFixedD ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                 }
                                                 else // PID with 3-axis static damping
                                                 {
-                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 5, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 5, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDP != (AI.autoTuningOptionFixedDP = GUI.Toggle(ToggleButtonRects(pidLines, 2, 5, contentWidth), AI.autoTuningOptionFixedDP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch"), AI.autoTuningOptionFixedDP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDY != (AI.autoTuningOptionFixedDY = GUI.Toggle(ToggleButtonRects(pidLines, 3, 5, contentWidth), AI.autoTuningOptionFixedDY, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw"), AI.autoTuningOptionFixedDY ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDR != (AI.autoTuningOptionFixedDR = GUI.Toggle(ToggleButtonRects(pidLines, 4, 5, contentWidth), AI.autoTuningOptionFixedDR, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll"), AI.autoTuningOptionFixedDR ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 5, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 5, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDP != (AI.autoTuningOptionFixedDP = GUI.Toggle(ToggleButtonRects(pidLines, 2, 5, contentWidth), AI.autoTuningOptionFixedDP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch"), AI.autoTuningOptionFixedDP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDY != (AI.autoTuningOptionFixedDY = GUI.Toggle(ToggleButtonRects(pidLines, 3, 5, contentWidth), AI.autoTuningOptionFixedDY, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw"), AI.autoTuningOptionFixedDY ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDR != (AI.autoTuningOptionFixedDR = GUI.Toggle(ToggleButtonRects(pidLines, 4, 5, contentWidth), AI.autoTuningOptionFixedDR, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll"), AI.autoTuningOptionFixedDR ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                 }
                                             }
                                             else
                                             {
                                                 if (!AI.threeAxisSteerDamping) // PID with dynamic damping
                                                 {
-                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 5, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 5, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDOff != (AI.autoTuningOptionFixedDOff = GUI.Toggle(ToggleButtonRects(pidLines, 2, 5, contentWidth), AI.autoTuningOptionFixedDOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_OffTarget"), AI.autoTuningOptionFixedDOff ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDOn != (AI.autoTuningOptionFixedDOn = GUI.Toggle(ToggleButtonRects(pidLines, 3, 5, contentWidth), AI.autoTuningOptionFixedDOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_OnTarget"), AI.autoTuningOptionFixedDOn ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedDF != (AI.autoTuningOptionFixedDF = GUI.Toggle(ToggleButtonRects(pidLines, 4, 5, contentWidth), AI.autoTuningOptionFixedDF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_Factor"), AI.autoTuningOptionFixedDF ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, 0, 5, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, 1, 5, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDOff != (AI.autoTuningOptionFixedDOff = GUI.Toggle(ToggleButtonRects(pidLines, 2, 5, contentWidth), AI.autoTuningOptionFixedDOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_OffTarget"), AI.autoTuningOptionFixedDOff ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDOn != (AI.autoTuningOptionFixedDOn = GUI.Toggle(ToggleButtonRects(pidLines, 3, 5, contentWidth), AI.autoTuningOptionFixedDOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_OnTarget"), AI.autoTuningOptionFixedDOn ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedDF != (AI.autoTuningOptionFixedDF = GUI.Toggle(ToggleButtonRects(pidLines, 4, 5, contentWidth), AI.autoTuningOptionFixedDF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_D_Factor"), AI.autoTuningOptionFixedDF ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                 }
                                                 else // PID with 3-axis dynamic damping (or mixed)
                                                 {
                                                     int buttonCount = 2 + (AI.dynamicDampingPitch ? 3 : 1) + (AI.dynamicDampingRoll ? 3 : 1) + (AI.dynamicDampingYaw ? 3 : 1);
                                                     int buttonIndex = -1;
-                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedP != (AI.autoTuningOptionFixedP = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_P"), AI.autoTuningOptionFixedP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                    if (AI.autoTuningOptionFixedI != (AI.autoTuningOptionFixedI = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedI, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_I"), AI.autoTuningOptionFixedI ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     if (AI.dynamicDampingPitch)
                                                     {
-                                                        if (AI.autoTuningOptionFixedDPOff != (AI.autoTuningOptionFixedDPOff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_OffTarget"), AI.autoTuningOptionFixedDPOff ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDPOn != (AI.autoTuningOptionFixedDPOn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_OnTarget"), AI.autoTuningOptionFixedDPOn ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDPF != (AI.autoTuningOptionFixedDPF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_Factor"), AI.autoTuningOptionFixedDPF ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDPOff != (AI.autoTuningOptionFixedDPOff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_OffTarget"), AI.autoTuningOptionFixedDPOff ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDPOn != (AI.autoTuningOptionFixedDPOn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_OnTarget"), AI.autoTuningOptionFixedDPOn ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDPF != (AI.autoTuningOptionFixedDPF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDPF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch_Factor"), AI.autoTuningOptionFixedDPF ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                     else
                                                     {
-                                                        if (AI.autoTuningOptionFixedDP != (AI.autoTuningOptionFixedDP = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch"), AI.autoTuningOptionFixedDP ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDP != (AI.autoTuningOptionFixedDP = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDP, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DPitch"), AI.autoTuningOptionFixedDP ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                     if (AI.dynamicDampingYaw)
                                                     {
-                                                        if (AI.autoTuningOptionFixedDYOff != (AI.autoTuningOptionFixedDYOff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_OffTarget"), AI.autoTuningOptionFixedDYOff ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDYOn != (AI.autoTuningOptionFixedDYOn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_OnTarget"), AI.autoTuningOptionFixedDYOn ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDYF != (AI.autoTuningOptionFixedDYF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_Factor"), AI.autoTuningOptionFixedDYF ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDYOff != (AI.autoTuningOptionFixedDYOff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYOff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_OffTarget"), AI.autoTuningOptionFixedDYOff ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDYOn != (AI.autoTuningOptionFixedDYOn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYOn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_OnTarget"), AI.autoTuningOptionFixedDYOn ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDYF != (AI.autoTuningOptionFixedDYF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDYF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw_Factor"), AI.autoTuningOptionFixedDYF ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                     else
                                                     {
-                                                        if (AI.autoTuningOptionFixedDY != (AI.autoTuningOptionFixedDY = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDY, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw"), AI.autoTuningOptionFixedDY ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDY != (AI.autoTuningOptionFixedDY = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDY, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DYaw"), AI.autoTuningOptionFixedDY ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                     if (AI.dynamicDampingRoll)
                                                     {
-                                                        if (AI.autoTuningOptionFixedDROff != (AI.autoTuningOptionFixedDROff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDROff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_OffTarget"), AI.autoTuningOptionFixedDROff ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDROn != (AI.autoTuningOptionFixedDROn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDROn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_OnTarget"), AI.autoTuningOptionFixedDROn ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
-                                                        if (AI.autoTuningOptionFixedDRF != (AI.autoTuningOptionFixedDRF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDRF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_Factor"), AI.autoTuningOptionFixedDRF ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDROff != (AI.autoTuningOptionFixedDROff = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDROff, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_OffTarget"), AI.autoTuningOptionFixedDROff ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDROn != (AI.autoTuningOptionFixedDROn = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDROn, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_OnTarget"), AI.autoTuningOptionFixedDROn ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDRF != (AI.autoTuningOptionFixedDRF = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDRF, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll_Factor"), AI.autoTuningOptionFixedDRF ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                     else
                                                     {
-                                                        if (AI.autoTuningOptionFixedDR != (AI.autoTuningOptionFixedDR = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDR, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll"), AI.autoTuningOptionFixedDR ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button))) resetAutoTuning = true;
+                                                        if (AI.autoTuningOptionFixedDR != (AI.autoTuningOptionFixedDR = GUI.Toggle(ToggleButtonRects(pidLines, ++buttonIndex, buttonCount, contentWidth), AI.autoTuningOptionFixedDR, StringUtils.Localize("#LOC_BDArmory_AIWindow_PIDAutoTuningFixed_DRoll"), AI.autoTuningOptionFixedDR ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))) resetAutoTuning = true;
                                                     }
                                                 }
                                             }
@@ -1293,7 +1302,7 @@ namespace BDArmory.UI
                                 {
                                     float altLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Altitude);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + altLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + altLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     altLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(altLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Altitudes"), BoldLabel);//"Altitudes"
@@ -1347,7 +1356,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float spdLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Speed);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + spdLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + spdLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     spdLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(spdLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), BoldLabel);//"Speed"
@@ -1369,7 +1378,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float ctrlLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Control);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + ctrlLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + ctrlLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     ctrlLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(ctrlLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), BoldLabel);//"Control"
@@ -1398,7 +1407,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float evadeLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Evasion);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + evadeLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + evadeLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     evadeLines += 0.25f;
 
                                     #region Evasion
@@ -1409,10 +1418,10 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionNonlinearity, nameof(AI.evasionNonlinearity), "EvasionNonlinearity", $"{AI.evasionNonlinearity:0.0}°");
 
-                                    AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                    AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     evadeLines += 1.25f;
 
-                                    AI.evasionMissileKinematic = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionMissileKinematic, StringUtils.Localize("#LOC_BDArmory_AI_EvasionMissileKinematic"), AI.evasionMissileKinematic ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                    AI.evasionMissileKinematic = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.evasionMissileKinematic, StringUtils.Localize("#LOC_BDArmory_AI_EvasionMissileKinematic"), AI.evasionMissileKinematic ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     evadeLines += 1.25f;
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.evasionMissileEmergencyNotchVel, nameof(AI.evasionMissileEmergencyNotchVel), "EvasionMissileEmergencyNotch", $"{AI.evasionMissileEmergencyNotchVel:0.0} m/s");
                                     #endregion
@@ -1425,6 +1434,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselCollisionAvoidanceStrength, nameof(AI.vesselCollisionAvoidanceStrength), "CollisionAvoidanceStrength", $"{AI.vesselCollisionAvoidanceStrength:0.0} ({AI.vesselCollisionAvoidanceStrength / Time.fixedDeltaTime:0}°/s)");
                                     evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.vesselStandoffDistance, nameof(AI.vesselStandoffDistance), "StandoffDistance", $"{AI.vesselStandoffDistance:0}m");
                                     evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.AvoidMass, nameof(AI.AvoidMass), "MinObstacleMass", AI.AvoidMass < 10 ? $"{AI.AvoidMass:0.0}t" : $"{AI.AvoidMass:0}t");
+                                    evadeLines = ContentEntry(ContentType.SemiLogSlider, evadeLines, contentWidth, ref AI.retreatDistance, nameof(AI.retreatDistance), "RetreatDistance", $"{0.001f * AI.retreatDistance:G3}km");
                                     #endregion
 
                                     #region Extending
@@ -1442,7 +1452,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendAbortTime, nameof(AI.extendAbortTime), "ExtendAbortTime", $"{AI.extendAbortTime:0}s");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendMinGainRate, nameof(AI.extendMinGainRate), "ExtendMinGainRate", $"{AI.extendMinGainRate:0}m/s");
                                     }
-                                    AI.canExtend = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.canExtend, StringUtils.Localize("#LOC_BDArmory_AI_ExtendToggle"), AI.canExtend ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Dynamic pid"
+                                    AI.canExtend = GUI.Toggle(ToggleButtonRect(evadeLines, contentWidth), AI.canExtend, StringUtils.Localize("#LOC_BDArmory_AI_ExtendToggle"), AI.canExtend ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Dynamic pid"
                                     evadeLines += 1.25f;
                                     #endregion
 
@@ -1455,7 +1465,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float gndLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Terrain);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + gndLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + gndLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     gndLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(gndLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Terrain"), BoldLabel);//"Speed"
@@ -1495,19 +1505,19 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float ramLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Ramming);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + ramLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + ramLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     ramLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(ramLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Ramming"), BoldLabel);//"Ramming"
 
                                     AI.allowRamming = GUI.Toggle(ToggleButtonRect(ramLines, contentWidth), AI.allowRamming,
-                                        StringUtils.Localize("#LOC_BDArmory_AI_AllowRamming"), AI.allowRamming ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Allow Ramming"
+                                        StringUtils.Localize("#LOC_BDArmory_AI_AllowRamming"), AI.allowRamming ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Allow Ramming"
                                     ramLines += 1.25f;
 
                                     if (AI.allowRamming)
                                     {
                                         AI.allowRammingGroundTargets = GUI.Toggle(ToggleButtonRect(ramLines, contentWidth), AI.allowRammingGroundTargets,
-                                            StringUtils.Localize("#LOC_BDArmory_AI_AllowRammingGroundTargets"), AI.allowRammingGroundTargets ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Include Ground Targets"
+                                            StringUtils.Localize("#LOC_BDArmory_AI_AllowRammingGroundTargets"), AI.allowRammingGroundTargets ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Include Ground Targets"
                                         ramLines += 1.25f;
                                         ramLines = ContentEntry(ContentType.FloatSlider, ramLines, contentWidth, ref AI.controlSurfaceLag, nameof(AI.controlSurfaceLag), "ControlSurfaceLag", $"{AI.controlSurfaceLag:0.00}s");
                                     }
@@ -1521,31 +1531,31 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float miscLines = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Misc);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + miscLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + miscLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     miscLines += 0.25f;
 
                                     GUI.Label(SettinglabelRect(miscLines++), StringUtils.Localize("#LOC_BDArmory_AI_Orbit"), BoldLabel);//"orbit"
                                     AI.ClockwiseOrbit = GUI.Toggle(ToggleButtonRect(miscLines, contentWidth), AI.ClockwiseOrbit,
                                         AI.ClockwiseOrbit ? StringUtils.Localize("#LOC_BDArmory_AI_Orbit_Starboard") : StringUtils.Localize("#LOC_BDArmory_AI_Orbit_Port"),
-                                        AI.ClockwiseOrbit ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.ClockwiseOrbit ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     miscLines += 1.25f;
                                     if (contextTipsEnabled) GUI.Label(ContextLabelRect(miscLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Orbit_Context"), Label);//"orbit direction"
 
                                     GUI.Label(SettinglabelRect(miscLines++), StringUtils.Localize("#LOC_BDArmory_AI_Standby"), BoldLabel);//"Standby"
                                     AI.standbyMode = GUI.Toggle(ToggleButtonRect(miscLines, contentWidth),
-                                    AI.standbyMode, AI.standbyMode ? StringUtils.Localize("#LOC_BDArmory_On") : StringUtils.Localize("#LOC_BDArmory_Off"), AI.standbyMode ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Dynamic pid"
+                                    AI.standbyMode, AI.standbyMode ? StringUtils.Localize("#LOC_BDArmory_On") : StringUtils.Localize("#LOC_BDArmory_Off"), AI.standbyMode ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Dynamic pid"
                                     miscLines += 1.25f;
                                     if (contextTipsEnabled) GUI.Label(ContextLabelRect(miscLines++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Standby_Context"), Label);//"Activate when target in guard range"
 
                                     GUI.Label(SettinglabelRect(miscLines++), StringUtils.Localize("#LOC_BDArmory_ControlSurfaceSettings"), BoldLabel);//"Control Surface Settings"
-                                    if (GUI.Button(ToggleButtonRect(miscLines, contentWidth), StringUtils.Localize("#LOC_BDArmory_StoreControlSurfaceSettings"), BDArmorySetup.BDGuiSkin.button))
+                                    if (GUI.Button(ToggleButtonRect(miscLines, contentWidth), StringUtils.Localize("#LOC_BDArmory_StoreControlSurfaceSettings"), BDArmorySetup.ButtonStyle))
                                     {
                                         AI.StoreControlSurfaceSettings(); //Hiding these in misc is probably not the best place to put them, but only so much space on the window header bar
                                     }
                                     miscLines += 1.25f;
                                     if (AI.Events["RestoreControlSurfaceSettings"].active == true)
                                     {
-                                        GUIStyle restoreStyle = BDArmorySetup.BDGuiSkin.button;
+                                        GUIStyle restoreStyle = BDArmorySetup.ButtonStyle;
                                         if (GUI.Button(ToggleButtonRect(miscLines, contentWidth), StringUtils.Localize("#LOC_BDArmory_RestoreControlSurfaceSettings"), restoreStyle))
                                         {
                                             AI.RestoreControlSurfaceSettings();
@@ -1622,6 +1632,8 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Nonlinearity"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //evade/extend nonlinearity
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Dodge"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //collision avoid
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_standoff"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //standoff distance
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_AvoidMass"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //obstacle avoidance mass
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_RetreatDistance"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //retreat distance
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_Extend"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend distances
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_ExtendVars"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend target dist/angle/vel
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_EvadeHelp_ExtendVel"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend target velocity
@@ -1660,21 +1672,21 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                             if (AISelectionComboBox == null || !AISelectionComboBox.IsOpen)
                             { // Section buttons
                                 float line = 1.5f;
-                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"PiD"
+                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"PiD"
 
                                 line += 1.2f;
-                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Speed"
+                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Speed"
 
                                 line += 1.2f;
-                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Control"
+                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Control"
 
                                 line += 1.2f;
-                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Combat"
+                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.5f;
                                 if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))//"Misc"
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
                                 {
                                     SetInputFields(activeAIType);
                                 }
@@ -1689,14 +1701,14 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     new Rect(0, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + contentTop)
                                 );
 
-                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.BDGuiSkin.box); //darker box
+                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.SelectedButtonStyle); //darker box
 
                                 contentWidth -= 24 + contentBorder;
 
                                 { // Vehicle Type
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.VehicleType);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     GUI.Label(SettinglabelRect(line), StringUtils.Localize("#LOC_BDArmory_AIWindow_VehicleType") + $": {AI.SurfaceTypeName}", Label);
@@ -1722,7 +1734,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     {
                                         float line = 0.2f;
                                         var sectionHeight = sectionHeights.GetValueOrDefault(Section.PID);
-                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                         line += 0.25f;
 
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMult, nameof(AI.steerMult), "SteerPower", $"{AI.steerMult:0.0}", true);
@@ -1737,7 +1749,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     {
                                         float line = 0.2f;
                                         var sectionHeight = sectionHeights.GetValueOrDefault(Section.Speed);
-                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                         line += 0.25f;
 
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.CruiseSpeed, nameof(AI.CruiseSpeed), "CruiseSpeed", $"{AI.CruiseSpeed:0}m/s");
@@ -1752,7 +1764,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     {
                                         float line = 0.2f;
                                         var sectionHeight = sectionHeights.GetValueOrDefault(Section.Control);
-                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                        GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                         line += 0.25f;
 
                                         line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxSlopeAngle, nameof(AI.MaxSlopeAngle), "MaxSlopeAngle", $"{AI.MaxSlopeAngle:0}°");
@@ -1774,7 +1786,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                         AI.ManeuverRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ManeuverRCS,
                                             StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS") + " : " + (AI.ManeuverRCS ? StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_disabledText")),
-                                            AI.ManeuverRCS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                            AI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                         line += 1.25f;
                                         if (contextTipsEnabled)
                                         {
@@ -1791,7 +1803,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Combat);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MinEngagementRange, nameof(AI.MinEngagementRange), "MinEngagementRange", $"{AI.MinEngagementRange:0}m");
@@ -1805,7 +1817,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         {
                                             AI.maintainMinRange = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.maintainMinRange,
                                                 StringUtils.Localize("#LOC_BDArmory_AIWindow_MaintainEngagementRange") + " : " + (AI.maintainMinRange ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false")),
-                                                AI.maintainMinRange ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Maintain Min range"
+                                                AI.maintainMinRange ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Maintain Min range"
                                             line += 1.25f;
                                             if (contextTipsEnabled)
                                             {
@@ -1815,7 +1827,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                         AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
                                             StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
-                                            AI.BroadsideAttack ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//Broadside Attack"
+                                            AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//Broadside Attack"
                                         line += 1.25f;
                                         if (contextTipsEnabled)
                                         {
@@ -1891,24 +1903,24 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                             if (AISelectionComboBox == null || !AISelectionComboBox.IsOpen)
                             { // Section buttons
                                 float line = 1.5f;
-                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"PiD"
+                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"PiD"
 
                                 line += 1.2f;
-                                showSection[Section.Altitude] = GUI.Toggle(SubsectionRect(line), showSection[Section.Altitude], StringUtils.Localize("#LOC_BDArmory_AIWindow_Altitudes"), showSection[Section.Altitude] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Altitude"
+                                showSection[Section.Altitude] = GUI.Toggle(SubsectionRect(line), showSection[Section.Altitude], StringUtils.Localize("#LOC_BDArmory_AIWindow_Altitudes"), showSection[Section.Altitude] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Altitude"
 
                                 line += 1.2f;
-                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Speed"
+                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Speed"
 
                                 line += 1.2f;
-                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Control"
+                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Control"
 
                                 line += 1.2f;
-                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Combat"
+                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.5f;
                                 if (showSection[Section.UpToEleven] != (AI.UpToEleven = GUI.Toggle(SubsectionRect(line), AI.UpToEleven,
                                     AI.UpToEleven ? StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText"),
-                                    AI.UpToEleven ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button)))//"Misc"
+                                    AI.UpToEleven ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))//"Misc"
                                 {
                                     SetInputFields(activeAIType);
                                 }
@@ -1924,7 +1936,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     new Rect(0, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + contentTop)
                                 );
 
-                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.BDGuiSkin.box); //darker box
+                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.SelectedButtonStyle); //darker box
 
                                 contentWidth -= 24 + contentBorder;
 
@@ -1932,7 +1944,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.PID);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.steerMult, nameof(AI.steerMult), "SteerPower", $"{AI.steerMult:0.0}", true);
@@ -1948,7 +1960,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Altitude);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.defaultAltitude, nameof(AI.defaultAltitude), "DefaultAltitude", $"{AI.defaultAltitude:0}m");
@@ -1965,7 +1977,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Speed);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxSpeed, nameof(AI.MaxSpeed), "MaxSpeed", $"{AI.MaxSpeed:0}m/s");
@@ -1980,7 +1992,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Control);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.MaxPitchAngle, nameof(AI.MaxPitchAngle), "MaxPitchAngle", $"{AI.MaxPitchAngle:0}°");
@@ -1999,7 +2011,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.ManeuverRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ManeuverRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS") + " : " + (AI.ManeuverRCS ? StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_disabledText")),
-                                        AI.ManeuverRCS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2016,7 +2028,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Combat);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     line = ContentEntry(ContentType.FloatSlider, line, contentWidth, ref AI.WeaveFactor, nameof(AI.WeaveFactor), "WeaveFactor", $"{AI.WeaveFactor:0.0}");
@@ -2025,7 +2037,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
-                                        AI.BroadsideAttack ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2071,19 +2083,19 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                             if (AISelectionComboBox == null || !AISelectionComboBox.IsOpen)
                             { // Section buttons
                                 float line = 1.5f;
-                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"PiD"
+                                showSection[Section.PID] = GUI.Toggle(SubsectionRect(line), showSection[Section.PID], StringUtils.Localize("#LOC_BDArmory_AIWindow_PID"), showSection[Section.PID] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"PiD"
 
                                 line += 1.2f;
-                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Combat"
+                                showSection[Section.Combat] = GUI.Toggle(SubsectionRect(line), showSection[Section.Combat], StringUtils.Localize("#LOC_BDArmory_AIWindow_Combat"), showSection[Section.Combat] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Combat"
 
                                 line += 1.2f;
-                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Speed"
+                                showSection[Section.Speed] = GUI.Toggle(SubsectionRect(line), showSection[Section.Speed], StringUtils.Localize("#LOC_BDArmory_AIWindow_Speeds"), showSection[Section.Speed] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Speed"
 
                                 line += 1.2f;
-                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Control"
+                                showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Control"
 
                                 line += 1.2f;
-                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Evasion"
+                                showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
 
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }
@@ -2096,7 +2108,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     new Rect(0, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + contentTop)
                                 );
 
-                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.BDGuiSkin.box); //darker box
+                                GUI.BeginGroup(new Rect(contentMargin, 0, ColumnWidth * 2 - 120 - contentMargin * 2, height + 2 * contentBorder), GUIContent.none, BDArmorySetup.SelectedButtonStyle); //darker box
 
                                 contentWidth -= 24 + contentBorder;
 
@@ -2104,7 +2116,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.PID);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     // PID Mode
@@ -2128,12 +2140,12 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Combat);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     AI.BroadsideAttack = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.BroadsideAttack,
                                     StringUtils.Localize("#LOC_BDArmory_AIWindow_BroadsideAttack") + " : " + (AI.BroadsideAttack ? StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_BroadsideAttack_disabledText")),
-                                    AI.BroadsideAttack ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//Broadside Attack"
+                                    AI.BroadsideAttack ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//Broadside Attack"
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2166,7 +2178,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     }
 
                                     AI.allowRamming = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.allowRamming,
-                                        StringUtils.Localize("#LOC_BDArmory_AI_AllowRamming"), AI.allowRamming ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);//"Allow Ramming"
+                                        StringUtils.Localize("#LOC_BDArmory_AI_AllowRamming"), AI.allowRamming ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Allow Ramming"
                                     line += 1.25f;
 
                                     GUI.EndGroup();
@@ -2178,7 +2190,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Speed);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     var oldManeuverSpeed = AI.ManeuverSpeed;
@@ -2222,12 +2234,12 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Control);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     AI.FiringRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.FiringRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_FiringRCS") + " : " + (AI.FiringRCS ? StringUtils.Localize("#LOC_BDArmory_AI_FiringRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_FiringRCS_disabledText")),
-                                        AI.FiringRCS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.FiringRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2236,7 +2248,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.ManeuverRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ManeuverRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS") + " : " + (AI.ManeuverRCS ? StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_disabledText")),
-                                        AI.ManeuverRCS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2245,7 +2257,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.ReverseThrust = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ReverseThrust,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_ReverseEngines") + " : " + (AI.ReverseThrust ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
-                                        AI.ReverseThrust ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.ReverseThrust ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2254,7 +2266,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.EngineRCSRotation = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.EngineRCSRotation,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_EngineRCSRotation") + " : " + (AI.EngineRCSRotation ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
-                                        AI.EngineRCSRotation ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.EngineRCSRotation ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2263,7 +2275,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.EngineRCSTranslation = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.EngineRCSTranslation,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_EngineRCSTranslation") + " : " + (AI.EngineRCSTranslation ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
-                                        AI.EngineRCSTranslation ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.EngineRCSTranslation ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2279,7 +2291,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                 {
                                     float line = 0.2f;
                                     var sectionHeight = sectionHeights.GetValueOrDefault(Section.Evasion);
-                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.BDGuiSkin.box);
+                                    GUI.BeginGroup(new Rect(contentBorder, contentHeight + line * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
                                     line += 0.25f;
 
                                     GUI.Label(SettinglabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_Evade"), BoldLabel);
@@ -2290,7 +2302,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     line = ContentEntry(ContentType.SemiLogSlider, line, contentWidth, ref AI.evasionMinRangeThreshold, nameof(AI.evasionMinRangeThreshold), "EvasionMinRangeThreshold", AI.evasionMinRangeThreshold < 1000 ? $"{AI.evasionMinRangeThreshold:0}m" : $"{AI.evasionMinRangeThreshold / 1000:0}km");
                                     AI.evasionRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_EvasionRCS") + " : " + (AI.evasionRCS ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
-                                        AI.evasionRCS ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.evasionRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
@@ -2299,14 +2311,14 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
 
                                     AI.evasionEngines = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionEngines,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_EvasionEngines") + " : " + (AI.evasionEngines ? StringUtils.Localize("#LOC_BDArmory_Enabled") : StringUtils.Localize("#LOC_BDArmory_Disabled")),
-                                        AI.evasionEngines ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                        AI.evasionEngines ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
                                     if (contextTipsEnabled)
                                     {
                                         GUI.Label(ContextLabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_EvasionEngines_Context"), contextLabel);
                                     }
 
-                                    AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.BDGuiSkin.box : BDArmorySetup.BDGuiSkin.button);
+                                    AI.evasionIgnoreMyTargetTargetingMe = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.evasionIgnoreMyTargetTargetingMe, StringUtils.Localize("#LOC_BDArmory_AI_EvasionIgnoreMyTargetTargetingMe"), AI.evasionIgnoreMyTargetTargetingMe ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
                                     line += 1.25f;
 
                                     #region Craft Avoidance
@@ -2368,6 +2380,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                     autoResizingWindow = false;
                 }
             }
+            else GUI.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

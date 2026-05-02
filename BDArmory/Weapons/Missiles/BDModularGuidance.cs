@@ -2202,23 +2202,33 @@ namespace BDArmory.Weapons.Missiles
         /// </summary>
         internal static void InitStyles()
         {
-            styleEditorTooltip = new GUIStyle();
-            styleEditorTooltip.name = "Tooltip";
-            styleEditorTooltip.fontSize = 12;
-            styleEditorTooltip.normal.textColor = new Color32(207, 207, 207, 255);
-            styleEditorTooltip.stretchHeight = true;
-            styleEditorTooltip.wordWrap = true;
-            styleEditorTooltip.normal.background = CreateColorPixel(new Color32(7, 54, 66, 200));
-            styleEditorTooltip.border = new RectOffset(3, 3, 3, 3);
-            styleEditorTooltip.padding = new RectOffset(4, 4, 6, 4);
-            styleEditorTooltip.alignment = TextAnchor.MiddleLeft;
+            styleEditorTooltip = new GUIStyle
+            {
+                name = "Tooltip",
+                fontSize = 12,
+                stretchHeight = true,
+                wordWrap = true,
+                border = new RectOffset(3, 3, 3, 3),
+                padding = new RectOffset(4, 4, 6, 4),
+                alignment = TextAnchor.MiddleLeft,
+                normal = new GUIStyleState
+                {
+                    textColor = new Color32(207, 207, 207, 255),
+                    background = CreateColorPixel(new Color32(7, 54, 66, 200))
+                }
+            };
 
-            styleEditorPanel = new GUIStyle();
-            styleEditorPanel.normal.background = CreateColorPixel(new Color32(7, 54, 66, 200));
-            styleEditorPanel.border = new RectOffset(27, 27, 27, 27);
-            styleEditorPanel.padding = new RectOffset(10, 10, 10, 10);
-            styleEditorPanel.normal.textColor = new Color32(147, 161, 161, 255);
-            styleEditorPanel.fontSize = 12;
+            styleEditorPanel = new GUIStyle
+            {
+                border = new RectOffset(27, 27, 27, 27),
+                padding = new RectOffset(10, 10, 10, 10),
+                fontSize = 12,
+                normal = new GUIStyleState
+                {
+                    textColor = new Color32(147, 161, 161, 255),
+                    background = CreateColorPixel(new Color32(7, 54, 66, 200))
+                }
+            };
         }
 
         /// <summary>

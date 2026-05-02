@@ -6,6 +6,7 @@ IMPROVEMENTS / FIXES
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
+	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
@@ -38,6 +39,7 @@ IMPROVEMENTS / FIXES
 		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
+	- Add a "Retreat Distance" slider to the AI to allow customising the distance to retreat by when an orbiting vessel comes under attack.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 - Sensors:
