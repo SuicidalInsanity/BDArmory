@@ -84,11 +84,21 @@ namespace BDArmory.Settings
                 presetRGB.Add("128,128,128,255"); //Grey
             }
             preset.ClearValues();
-            int partIndex = 0;
-            foreach (var rgb in presetRGB)
-                preset.SetValue($"{++partIndex}", rgb, true);
-			
-			fileNode.Save(BDTISettings.settingsConfigURL);
+            if (addDefaults)
+			{
+				int partIndex = 0;
+				foreach (var rgb in presetRGB)
+					preset.SetValue($"{++partIndex}", rgb, true);
+			}
+			else
+			{
+			foreach (var keyValuePair in BDTISetup.Instance.ColorPresets)
+			{
+				string color = $"{Mathf.RoundToInt(keyValuePair.Value.r * 255)},{Mathf.RoundToInt(keyValuePair.Value.g * 255)},{Mathf.RoundToInt(keyValuePair.Value.b * 255)},{Mathf.RoundToInt(keyValuePair.Value.a * 255)}";
+				preset.SetValue(keyValuePair.Key.ToString(), color, true);
+			}
+		}
+		fileNode.Save(BDTISettings.settingsConfigURL);
 		}
 		public static void Load()
 		{
