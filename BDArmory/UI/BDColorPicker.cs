@@ -142,7 +142,7 @@ namespace BDArmory.UI
             // box for chosen color
             selectedColorPreview.SetPixel(0, 0, selectedColor);
             selectedColorPreview.Apply();
-            GUIStyle style = new() { normal = new GUIStyleState { background = selectedColorPreview } };
+            style.normal.background = selectedColorPreview;
             GUI.Box(new Rect(HorizPos + displayTextureWidth + 10, VertPos + displayTextureHeight + 10, 30, 30), new GUIContent(""), style);
         }
         float updateTimer;
