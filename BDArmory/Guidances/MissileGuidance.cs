@@ -2390,24 +2390,27 @@ namespace BDArmory.Guidances
 
         public static float GetRadarAltitudeAtPos(Vector3 position)
         {
-            double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
-            double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
+            //double latitudeAtPos = FlightGlobals.currentMainBody.GetLatitude(position);
+            //double longitudeAtPos = FlightGlobals.currentMainBody.GetLongitude(position);
+            FlightGlobals.currentMainBody.GetLatLonAlt(position, out double latitudeAtPos, out double longitudeAtPos, out double altitudeAtPos);
 
             float radarAlt = Mathf.Clamp(
-                (float)(FlightGlobals.currentMainBody.GetAltitude(position) -
+                (float)(altitudeAtPos -
                          FlightGlobals.currentMainBody.TerrainAltitude(latitudeAtPos, longitudeAtPos)), 0,
-                (float)FlightGlobals.currentMainBody.GetAltitude(position));
+                (float)altitudeAtPos);
             return radarAlt;
         }
 
         public static float GetRaycastRadarAltitude(Vector3 position)
         {
-            Vector3 upDirection = VectorUtils.GetUpDirection(position);
+            //Vector3 upDirection = VectorUtils.GetUpDirection(position);
+            (double altAtPos, Vector3d upDirection) = (position - FlightGlobals.currentMainBody.position).MagNorm(); //VectorUtils.GetUpDirection(position);
 
-            float altAtPos = FlightGlobals.getAltitudeAtPos(position);
+            //float altAtPos = FlightGlobals.getAltitudeAtPos(position);
+            altAtPos -= FlightGlobals.currentMainBody.Radius;
             if (altAtPos < 0)
             {
-                position += 2 * Mathf.Abs(altAtPos) * upDirection;
+                position += (2d * Math.Abs(altAtPos)) * upDirection;
             }
 
             Ray ray = new Ray(position, -upDirection);
