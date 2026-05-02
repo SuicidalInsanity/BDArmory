@@ -1007,13 +1007,13 @@ namespace BDArmory.Utils
             // Update the AIs.
             // Find the primary of each type of AI: the first active one or the first one, sorted by proximity to the root.
             // Then disable all but the overall primary (the first active primary in the order: pilot, surface, VTOL, orbital), reactivating it if necessary (as deactivating the others may have side effects).
-            PilotAI = VesselModuleRegistry.GetBDModulePilotAIs(Vessel).Where(ai => ai.pilotEnabled).FirstOrDefault(); // Select the first active one.
+            PilotAI = VesselModuleRegistry.GetBDModulePilotAIs(Vessel).FirstOrDefault(ai => ai.pilotEnabled); // Select the first active one.
             if (PilotAI == null) PilotAI = VesselModuleRegistry.GetBDModulePilotAI(Vessel); // Or default to the first one.
-            SurfaceAI = VesselModuleRegistry.GetBDModuleSurfaceAIs(Vessel).Where(ai => ai.pilotEnabled).FirstOrDefault();
+            SurfaceAI = VesselModuleRegistry.GetBDModuleSurfaceAIs(Vessel).FirstOrDefault(ai => ai.pilotEnabled);
             if (SurfaceAI == null) SurfaceAI = VesselModuleRegistry.GetBDModuleSurfaceAI(Vessel);
-            VTOLAI = VesselModuleRegistry.GetModules<BDModuleVTOLAI>(Vessel).Where(ai => ai.pilotEnabled).FirstOrDefault();
+            VTOLAI = VesselModuleRegistry.GetModules<BDModuleVTOLAI>(Vessel).FirstOrDefault(ai => ai.pilotEnabled);
             if (VTOLAI == null) VTOLAI = VesselModuleRegistry.GetModule<BDModuleVTOLAI>(Vessel);
-            OrbitalAI = VesselModuleRegistry.GetModules<BDModuleOrbitalAI>(Vessel).Where(ai => ai.pilotEnabled).FirstOrDefault();
+            OrbitalAI = VesselModuleRegistry.GetModules<BDModuleOrbitalAI>(Vessel).FirstOrDefault(ai => ai.pilotEnabled);
             if (OrbitalAI == null) OrbitalAI = VesselModuleRegistry.GetModule<BDModuleOrbitalAI>(Vessel);
             UpdateAIModules(true);
 
@@ -1176,7 +1176,7 @@ namespace BDArmory.Utils
                             switch (WM.ParentWM.AI.currentCommand)
                             {
                                 case PilotCommands.Free:
-                                    AI.ReleaseCommand(true, false);
+                                    AI.ReleaseCommand();
                                     break;
                                 case PilotCommands.Attack:
                                     AI.CommandAttack(WM.ParentWM.AI.commandGPS);

@@ -18,6 +18,7 @@
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
 	- Add a debug toggle specifically for part HP.
+	- Team Icons Color Picker now includes 16 color swatch for quick color selection.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -39,6 +40,7 @@
 		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
+	- Add a "Retreat Distance" slider to the AI to allow customising the distance to retreat by when an orbiting vessel comes under attack.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate (or half the minimum for triangles) to prevent unphysical armor calculations.
 - Sensors:

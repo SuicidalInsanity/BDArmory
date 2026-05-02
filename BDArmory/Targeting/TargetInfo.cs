@@ -472,15 +472,13 @@ namespace BDArmory.Targeting
 
         public float TargetPriFriendliesEngaging(MissileFire myMf)
         {
-            if (myMf == null || myMf.wingCommander == null || myMf.wingCommander.friendlies == null) return 0;
-            float friendsEngaging = Mathf.Max(NumFriendliesEngaging(myMf.Team) - 1, 0);
+            if (myMf == null || myMf.wingCommander == null) return 0;
             float teammates = myMf.wingCommander.friendlies.Count;
+            if (teammates == 0) return 0; // No teammates
+            float friendsEngaging = Mathf.Max(NumFriendliesEngaging(myMf.Team) - 1, 0);
             friendsEngaging = 1 - Mathf.Clamp(friendsEngaging / teammates, 0f, 1f);
             friendsEngaging = friendsEngaging == 0f ? -1f : friendsEngaging;
-            if (teammates > 0)
-                return friendsEngaging; // Range is -1, 0 to 1. -1 if all teammates are engaging target, between 0-1 otherwise depending on number of teammates engaging
-            else
-                return 0; // No teammates
+            return friendsEngaging; // Range is -1, 0 to 1. -1 if all teammates are engaging target, between 0-1 otherwise depending on number of teammates engaging
         }
 
         public float TargetPriThreat(MissileFire mf, MissileFire myMf)
