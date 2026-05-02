@@ -44,7 +44,8 @@ namespace BDArmory.UI
         public SortedList<string, List<MissileFire>> weaponManagers = [];
 
         public static string textureDir = "BDArmory/Textures/";
-
+        
+        public Dictionary<int, Color> ColorPresets = new Dictionary<int, Color>();
         //legacy version check
         bool LegacyTILoaded = false;
         bool showPSA = false;
