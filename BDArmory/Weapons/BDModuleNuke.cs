@@ -76,6 +76,9 @@ namespace BDArmory.Weapons
         [KSPField(isPersistant = true)]
         public string reportingName = "Reactor Containment Failure";
 
+        [KSPField(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_Status")]//Status
+        public string guiStatusString = "DISARMED";
+
         MissileLauncher missile;
         public MissileLauncher Launcher
         {
@@ -98,6 +101,23 @@ namespace BDArmory.Weapons
             }
         }
         bool hasCheckedEngineCore = false; // Only check once, it's not going to change.
+
+        bool Armed = false;
+
+        [KSPAction("Arm")]
+        public void ArmAG(KSPActionParam param)
+        {
+            Armed = true;
+            guiStatusString = "ARMED"; // Future me, this needs localization at some point
+            Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+        }
+
+        [KSPAction("Detonate")]
+        public void DetonateAG(KSPActionParam param)
+        {
+            if (Armed) Detonate();
+        }
+
         public void Start()
         {
             if (HighLogic.LoadedSceneIsFlight)
@@ -112,6 +132,8 @@ namespace BDArmory.Weapons
                         }
                         part.force_activate();
                     }
+                    Fields["status"].guiActive = false;
+                    Fields["status"].guiActiveEditor = false;
                 }
                 else
                 {
@@ -185,6 +207,8 @@ namespace BDArmory.Weapons
                         }
                     }
                 }
+                if (guiStatusString != "ARMED" && Launcher != null &&
+    (Launcher.MissileState != MissileBase.MissileStates.Idle && Launcher.MissileState != MissileBase.MissileStates.Drop)) guiStatusString = "ARMED";
             }
         }
 

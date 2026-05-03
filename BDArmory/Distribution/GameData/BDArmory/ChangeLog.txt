@@ -18,6 +18,7 @@
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
 	- Add a debug toggle specifically for part HP.
+	- Team Icons Color Picker now includes 16 color swatch for quick color selection.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -76,6 +77,7 @@
 		- Fixed rockets sometimes not applying kinetic damage when they penetrate armor.
 	- Warheads:
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
+		- Nuclear warheads now have Arm/Detonate Action Groups.
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
 		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
