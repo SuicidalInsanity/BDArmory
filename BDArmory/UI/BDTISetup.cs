@@ -45,6 +45,8 @@ namespace BDArmory.UI
 
         public static string textureDir = "BDArmory/Textures/";
 
+        public Dictionary<int, Color> ColorPresets = new Dictionary<int, Color>();
+
         //legacy version check
         bool LegacyTILoaded = false;
         bool showPSA = false;
