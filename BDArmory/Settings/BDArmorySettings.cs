@@ -446,12 +446,16 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float TOURNAMENT_DELAY_BETWEEN_HEATS = 5;      // Delay between heats
         [BDAPersistentSettingsField] public static int TOURNAMENT_ROUNDS = 1;                      // Rounds
         [BDAPersistentSettingsField] public static int TOURNAMENT_ROUNDS_CUSTOM = 1000;            // Custom number of rounds at right end of slider.
-        [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_HEAT = -1;           // Vessels Per Heat (Auto)
+        [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_HEAT = -1;           // Vessels Per Heat (default: Auto)
+        [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_HEAT_MAX = 20;       // Maximum of the Vessels Per Heat slider
         [BDAPersistentSettingsField] public static Vector2Int TOURNAMENT_AUTO_VESSELS_PER_HEAT_RANGE = new Vector2Int(6, 10); // Automatic vessels per heat selection (inclusive range).
         [BDAPersistentSettingsField] public static int TOURNAMENT_NPCS_PER_HEAT = 0;               // NPCs Per Heat
+        [BDAPersistentSettingsField] public static int TOURNAMENT_NPCS_PER_HEAT_MAX = 10;          // Maximum of the NPCs Per Heat slider
         [BDAPersistentSettingsField] public static int TOURNAMENT_TEAMS_PER_HEAT = 2;              // Teams Per Heat
+        [BDAPersistentSettingsField] public static int TOURNAMENT_TEAMS_PER_HEAT_MAX = 8;          // Maximum of the Teams Per Heat slider
         [BDAPersistentSettingsField] public static int TOURNAMENT_OPPONENT_TEAMS_PER_HEAT = 1;     // Opponent Teams Per Heat (for gauntlets)
         [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_TEAM = 2;            // Vessels Per Team
+        [BDAPersistentSettingsField] public static int TOURNAMENT_VESSELS_PER_TEAM_MAX = 8;        // Maximum of the Vessels Per Team slider
         [BDAPersistentSettingsField] public static int TOURNAMENT_OPPONENT_VESSELS_PER_TEAM = 2;   // Opponent Vessels Per Team
         [BDAPersistentSettingsField] public static bool TOURNAMENT_FULL_TEAMS = true;              // Full Teams
         [BDAPersistentSettingsField] public static float TOURNAMENT_TIMEWARP_BETWEEN_ROUNDS = 0;   // Timewarp between rounds in minutes.
