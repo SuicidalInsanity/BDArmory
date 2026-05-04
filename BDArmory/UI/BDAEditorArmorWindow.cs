@@ -500,8 +500,8 @@ namespace BDArmory.UI
                 else
                 {
                     var field = thicknessField["Thickness"];
-                    field.tryParseValue(GUI.TextField(new Rect(20, line * lineHeight, 260, lineHeight), field.possibleValue, 4, field.style));
-                    Thickness = Mathf.Min((float)field.currentValue, maxThickness); // FIXME Mathf.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
+                    field.TryParseValue(GUI.TextField(new Rect(20, line * lineHeight, 260, lineHeight), field.possibleValue, 4, field.style));
+                    Thickness = Mathf.Min((float)field.CurrentValue, maxThickness); // FIXME Mathf.Min shouldn't be necessary if the maxValue of the thicknessField has been updated for maxThickness
                     line++;
                 }
                 GUI.Label(new Rect(10, line * lineHeight, 300, lineHeight), $"{StringUtils.Localize("#LOC_BDArmory_ArmorTotalMass")}: {totalArmorMass:0.00}", style);

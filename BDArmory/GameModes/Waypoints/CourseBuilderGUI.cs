@@ -408,8 +408,8 @@ namespace BDArmory.UI
                         StartCoroutine(RecordCourse());
                     }
                     GUI.Label(SQuarterRect(++line, 2), StringUtils.Localize("#LOC_BDArmory_WP_TimeStep"), leftLabel);
-                    spawnFields["interval"].tryParseValue(GUI.TextField(SQuarterRect(line, 3), spawnFields["interval"].possibleValue, 8, spawnFields["interval"].style));
-                    if (spawnFields["interval"].currentValue != recordingIncrement) recordingIncrement = (float)spawnFields["interval"].currentValue;
+                    spawnFields["interval"].TryParseValue(GUI.TextField(SQuarterRect(line, 3), spawnFields["interval"].possibleValue, 8, spawnFields["interval"].style));
+                    if (spawnFields["interval"].CurrentValue != recordingIncrement) recordingIncrement = (float)spawnFields["interval"].CurrentValue;
                 }
             }
             if (showCourseWPsComboBox)
@@ -423,8 +423,8 @@ namespace BDArmory.UI
                     GUI.Label(SLineRect(line++), StringUtils.Localize("#LOC_BDArmory_WP_Recording"), centreLabel);
                     line += 0.25f;
                     GUI.Label(SQuarterRect(++line, 1), StringUtils.Localize("#LOC_BDArmory_WP_TimeStep"), leftLabel);
-                    spawnFields["interval"].tryParseValue(GUI.TextField(SQuarterRect(line, 2), spawnFields["interval"].possibleValue, 8, spawnFields["interval"].style));
-                    if (spawnFields["interval"].currentValue != recordingIncrement) recordingIncrement = (float)spawnFields["interval"].currentValue;
+                    spawnFields["interval"].TryParseValue(GUI.TextField(SQuarterRect(line, 2), spawnFields["interval"].possibleValue, 8, spawnFields["interval"].style));
+                    if (spawnFields["interval"].CurrentValue != recordingIncrement) recordingIncrement = (float)spawnFields["interval"].CurrentValue;
 
                     line += 0.25f;
                     if (GUI.Button(SLineRect(++line), StringUtils.Localize("#LOC_BDArmory_WP_FinishRecording"), BDArmorySetup.ButtonStyle))
@@ -539,38 +539,38 @@ namespace BDArmory.UI
                 rects = SRight3Rects(++line);
                 if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue - (movementIncrement / 100)); //having lat/long increase by 1 per frame while the button is held is going to cause gates to go *flying* across the continent
-                    if (spawnFields["lat"].currentValue < -90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue + 180);
+                    spawnFields["lat"].SetCurrentValue(spawnFields["lat"].CurrentValue - (movementIncrement / 100)); //having lat/long increase by 1 per frame while the button is held is going to cause gates to go *flying* across the continent
+                    if (spawnFields["lat"].CurrentValue < -90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].CurrentValue + 180);
                 }
-                spawnFields["lat"].tryParseValue(GUI.TextField(rects[0], spawnFields["lat"].possibleValue, 8, spawnFields["lat"].style));
+                spawnFields["lat"].TryParseValue(GUI.TextField(rects[0], spawnFields["lat"].possibleValue, 8, spawnFields["lat"].style));
                 if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue + (movementIncrement / 100));
-                    if (spawnFields["lat"].currentValue > 90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].currentValue - 180);
+                    spawnFields["lat"].SetCurrentValue(spawnFields["lat"].CurrentValue + (movementIncrement / 100));
+                    if (spawnFields["lat"].CurrentValue > 90) spawnFields["lat"].SetCurrentValue(spawnFields["lat"].CurrentValue - 180);
                 }
 
                 if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue - (movementIncrement / 100));
-                    if (spawnFields["lon"].currentValue < -180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue + 360);
+                    spawnFields["lon"].SetCurrentValue(spawnFields["lon"].CurrentValue - (movementIncrement / 100));
+                    if (spawnFields["lon"].CurrentValue < -180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].CurrentValue + 360);
                 }
-                spawnFields["lon"].tryParseValue(GUI.TextField(rects[1], spawnFields["lon"].possibleValue, 8, spawnFields["lon"].style));
+                spawnFields["lon"].TryParseValue(GUI.TextField(rects[1], spawnFields["lon"].possibleValue, 8, spawnFields["lon"].style));
                 if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue + (movementIncrement / 100));
-                    if (spawnFields["lon"].currentValue > 180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].currentValue - 360);
+                    spawnFields["lon"].SetCurrentValue(spawnFields["lon"].CurrentValue + (movementIncrement / 100));
+                    if (spawnFields["lon"].CurrentValue > 180) spawnFields["lon"].SetCurrentValue(spawnFields["lon"].CurrentValue - 360);
                 }
 
                 if (GUI.RepeatButton(SFieldButtonRect(line, 16), "<", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["alt"].SetCurrentValue(spawnFields["alt"].currentValue - movementIncrement);
-                    if (spawnFields["alt"].currentValue < 0) spawnFields["alt"].SetCurrentValue(0);
+                    spawnFields["alt"].SetCurrentValue(spawnFields["alt"].CurrentValue - movementIncrement);
+                    if (spawnFields["alt"].CurrentValue < 0) spawnFields["alt"].SetCurrentValue(0);
                 }
-                spawnFields["alt"].tryParseValue(GUI.TextField(rects[2], spawnFields["alt"].possibleValue, 8, spawnFields["alt"].style));
+                spawnFields["alt"].TryParseValue(GUI.TextField(rects[2], spawnFields["alt"].possibleValue, 8, spawnFields["alt"].style));
                 if (GUI.RepeatButton(SFieldButtonRect(line, 22), ">", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["alt"].SetCurrentValue(spawnFields["alt"].currentValue + movementIncrement);
-                    if (spawnFields["alt"].currentValue > (FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000)) spawnFields["alt"].SetCurrentValue((FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000));
+                    spawnFields["alt"].SetCurrentValue(spawnFields["alt"].CurrentValue + movementIncrement);
+                    if (spawnFields["alt"].CurrentValue > (FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000)) spawnFields["alt"].SetCurrentValue((FlightGlobals.currentMainBody.atmosphere ? FlightGlobals.currentMainBody.atmosphereDepth : 40000));
                 }
 
                 rects = SRight3Rects(++line);
@@ -585,58 +585,58 @@ namespace BDArmory.UI
                 {
                     if (GUI.RepeatButton(SFieldButtonRect(line, 1), "<", BDArmorySetup.ButtonStyle))
                     {
-                        spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].currentValue - movementIncrement);
+                        spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].CurrentValue - movementIncrement);
                     }
-                    spawnFields["diameter"].tryParseValue(GUI.TextField(rects[0], spawnFields["diameter"].possibleValue, 8, spawnFields["diameter"].style));
+                    spawnFields["diameter"].TryParseValue(GUI.TextField(rects[0], spawnFields["diameter"].possibleValue, 8, spawnFields["diameter"].style));
                     if (GUI.RepeatButton(SFieldButtonRect(line, 7), ">", BDArmorySetup.ButtonStyle))
                     {
-                        spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].currentValue + movementIncrement);
-                        if (spawnFields["diameter"].currentValue > 1000) spawnFields["diameter"].SetCurrentValue(1000);
+                        spawnFields["diameter"].SetCurrentValue(spawnFields["diameter"].CurrentValue + movementIncrement);
+                        if (spawnFields["diameter"].CurrentValue > 1000) spawnFields["diameter"].SetCurrentValue(1000);
                     }
-                    if (spawnFields["diameter"].currentValue < 5) spawnFields["diameter"].SetCurrentValue(5);
+                    if (spawnFields["diameter"].CurrentValue < 5) spawnFields["diameter"].SetCurrentValue(5);
                     if (GUI.RepeatButton(SFieldButtonRect(line, 8.5f), "<", BDArmorySetup.ButtonStyle))
                     {
-                        spawnFields["speed"].SetCurrentValue(spawnFields["speed"].currentValue - (movementIncrement));
-                        if (spawnFields["speed"].currentValue < 0) spawnFields["speed"].SetCurrentValue(-1);
+                        spawnFields["speed"].SetCurrentValue(spawnFields["speed"].CurrentValue - (movementIncrement));
+                        if (spawnFields["speed"].CurrentValue < 0) spawnFields["speed"].SetCurrentValue(-1);
                     }
-                    spawnFields["speed"].tryParseValue(GUI.TextField(rects[1], spawnFields["speed"].possibleValue, 8, spawnFields["speed"].style));
+                    spawnFields["speed"].TryParseValue(GUI.TextField(rects[1], spawnFields["speed"].possibleValue, 8, spawnFields["speed"].style));
                     if (GUI.RepeatButton(SFieldButtonRect(line, 14.5f), ">", BDArmorySetup.ButtonStyle))
                     {
-                        spawnFields["speed"].SetCurrentValue(spawnFields["speed"].currentValue + movementIncrement);
-                        if (spawnFields["speed"].currentValue > 3000) spawnFields["speed"].SetCurrentValue(3000);
+                        spawnFields["speed"].SetCurrentValue(spawnFields["speed"].CurrentValue + movementIncrement);
+                        if (spawnFields["speed"].CurrentValue > 3000) spawnFields["speed"].SetCurrentValue(3000);
                     }
                 }
                 if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 1 : 16), "<", BDArmorySetup.ButtonStyle))
                 {
                     if (movementIncrement >= 2)
-                        spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue - 1);
+                        spawnFields["increment"].SetCurrentValue(spawnFields["increment"].CurrentValue - 1);
                     else
                     {
                         if (movementIncrement >= 0.2)
-                            spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue - 0.1); //there is almost certainly a more elegant way to do scaling, FIXME later
+                            spawnFields["increment"].SetCurrentValue(spawnFields["increment"].CurrentValue - 0.1); //there is almost certainly a more elegant way to do scaling, FIXME later
                         else
-                            spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue - 0.01);
+                            spawnFields["increment"].SetCurrentValue(spawnFields["increment"].CurrentValue - 0.01);
                     }
-                    if (spawnFields["increment"].currentValue < 0.001f) spawnFields["increment"].SetCurrentValue(0.001f);
+                    if (spawnFields["increment"].CurrentValue < 0.001f) spawnFields["increment"].SetCurrentValue(0.001f);
                 }
-                spawnFields["increment"].tryParseValue(GUI.TextField(rects[moddingSpawnPoint ? 0 : 2], spawnFields["increment"].possibleValue, 8, spawnFields["increment"].style));
+                spawnFields["increment"].TryParseValue(GUI.TextField(rects[moddingSpawnPoint ? 0 : 2], spawnFields["increment"].possibleValue, 8, spawnFields["increment"].style));
                 if (GUI.Button(SFieldButtonRect(line, moddingSpawnPoint ? 7 : 22), ">", BDArmorySetup.ButtonStyle))
                 {
-                    spawnFields["increment"].SetCurrentValue(spawnFields["increment"].currentValue + 1);
-                    if (spawnFields["increment"].currentValue > 1000) spawnFields["increment"].SetCurrentValue(1000);
+                    spawnFields["increment"].SetCurrentValue(spawnFields["increment"].CurrentValue + 1);
+                    if (spawnFields["increment"].CurrentValue > 1000) spawnFields["increment"].SetCurrentValue(1000);
                 }
-                movementIncrement = spawnFields["increment"].currentValue;
+                movementIncrement = spawnFields["increment"].CurrentValue;
                 if (!moddingSpawnPoint)
                 {
-                    if (spawnFields["lat"].currentValue != currGate.location.x ||
-                    spawnFields["lon"].currentValue != currGate.location.y ||
-                    spawnFields["alt"].currentValue != currGate.location.z ||
-                    spawnFields["speed"].currentValue != currGate.maxSpeed ||
-                    spawnFields["diameter"].currentValue != currGate.scale)
+                    if (spawnFields["lat"].CurrentValue != currGate.location.x ||
+                    spawnFields["lon"].CurrentValue != currGate.location.y ||
+                    spawnFields["alt"].CurrentValue != currGate.location.z ||
+                    spawnFields["speed"].CurrentValue != currGate.maxSpeed ||
+                    spawnFields["diameter"].CurrentValue != currGate.scale)
                     {
-                        currGate.location = new Vector3d(spawnFields["lat"].currentValue, spawnFields["lon"].currentValue, spawnFields["alt"].currentValue);
-                        currGate.scale = (float)spawnFields["diameter"].currentValue;
-                        currGate.maxSpeed = (float)spawnFields["speed"].currentValue;
+                        currGate.location = new Vector3d(spawnFields["lat"].CurrentValue, spawnFields["lon"].CurrentValue, spawnFields["alt"].CurrentValue);
+                        currGate.scale = (float)spawnFields["diameter"].CurrentValue;
+                        currGate.maxSpeed = (float)spawnFields["speed"].CurrentValue;
                         //WaypointField.Save(); //instead have a separate button and do saving manually?
                         currGate.model = SelectedModel;
                         loadedGates[selected_gate_index].UpdateWaypoint(currGate, selected_gate_index, WaypointCourses.CourseLocations[selected_index].waypoints);
@@ -646,12 +646,12 @@ namespace BDArmory.UI
                 }
                 else
                 {
-                    if (spawnFields["lat"].currentValue != WaypointCourses.CourseLocations[selected_index].spawnPoint.x ||
-spawnFields["lon"].currentValue != WaypointCourses.CourseLocations[selected_index].spawnPoint.y ||
-spawnFields["alt"].currentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
+                    if (spawnFields["lat"].CurrentValue != WaypointCourses.CourseLocations[selected_index].spawnPoint.x ||
+spawnFields["lon"].CurrentValue != WaypointCourses.CourseLocations[selected_index].spawnPoint.y ||
+spawnFields["alt"].CurrentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
                     {
-                        WaypointCourses.CourseLocations[selected_index].spawnPoint = new Vector2d(spawnFields["lat"].currentValue, spawnFields["lon"].currentValue);
-                        BDArmorySettings.VESSEL_SPAWN_ALTITUDE = (float)spawnFields["alt"].currentValue;
+                        WaypointCourses.CourseLocations[selected_index].spawnPoint = new Vector2d(spawnFields["lat"].CurrentValue, spawnFields["lon"].CurrentValue);
+                        BDArmorySettings.VESSEL_SPAWN_ALTITUDE = (float)spawnFields["alt"].CurrentValue;
 
                         //WaypointField.Save(); //instead have a separate button and do saving manually?
                         //SnapCameraToGate(false);

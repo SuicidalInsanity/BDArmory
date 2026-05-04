@@ -682,8 +682,10 @@ namespace BDArmory.Control
         const float formationIconScale = 32;
         Vector2 formationIconOffset = new(-formationIconScale / 2, 50);
         int formationDragIndex = -1;
+        bool numericFields = false;
 
-        readonly Dictionary<int, Vector2> formationPosition = []; // Formation index => formation position
+        readonly Dictionary<int, Vector2> formationIndexToPosition = []; // Formation index => formation position
+        readonly Dictionary<int, NumericInputFieldVector2> formationIndexToPositionNumericFields = [];
         /// <summary>
         /// Get the formation position in local coordinates.
         /// </summary>
@@ -691,7 +693,7 @@ namespace BDArmory.Control
         /// <returns></returns>
         public Vector2 GetFormationPosition(int index)
         {
-            if (formationPosition.TryGetValue(index, out Vector2 position))
+            if (formationIndexToPosition.TryGetValue(index, out Vector2 position))
             {
                 return position;
             }
@@ -712,11 +714,24 @@ namespace BDArmory.Control
         {
             if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), " X", BDArmorySetup.CloseButtonStyle))
             { showFormationWindow = false; }
-            if (GUI.Button(new Rect(formationWindowSize.x - 3 * buttonHeight, margin, 2 * buttonHeight - margin, buttonHeight - margin), "Reset", BDArmorySetup.CloseButtonStyle))
-            { formationPosition.Clear(); }
-            if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "-", BDArmorySetup.CloseButtonStyle))
+            if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin, buttonHeight - margin, buttonHeight - margin), "#", numericFields ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
+            {
+                numericFields = !numericFields;
+                if (!numericFields)
+                {
+                    foreach (var field in formationIndexToPositionNumericFields.Values) Destroy(field);
+                    formationIndexToPositionNumericFields.Clear();
+                }
+            }
+            if (GUI.Button(new Rect(formationWindowSize.x - 4 * buttonHeight, margin, 2 * buttonHeight - margin, buttonHeight - margin), "Reset", BDArmorySetup.ButtonStyle))
+            { // Start fresh with the default spread and lag.
+                formationIndexToPosition.Clear();
+                foreach (var field in formationIndexToPositionNumericFields.Values) Destroy(field);
+                formationIndexToPositionNumericFields.Clear();
+            }
+            if (GUI.Button(new Rect(formationWindowSize.x - buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "-", BDArmorySetup.ButtonStyle))
             { formationWindowScale *= 2f; }
-            if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.CloseButtonStyle))
+            if (GUI.Button(new Rect(formationWindowSize.x - 2 * buttonHeight, margin + buttonHeight, buttonHeight - margin, buttonHeight - margin), "+", BDArmorySetup.ButtonStyle))
             { formationWindowScale = Mathf.Max(0.25f, formationWindowScale / 2f); }
 
             var leaderAC = ActiveController.GetActiveController(vessel);
@@ -730,10 +745,23 @@ namespace BDArmory.Control
                 int wingmanIndex = wingman.commandFollowIndex;
                 var formationPosition = GetFormationPosition(wingmanIndex);
                 dragRect = new Rect(formationIconOffset.x + formationPosition.x / formationWindowScale + formationWindowSize.x / 2, formationIconOffset.y - formationPosition.y / formationWindowScale, formationIconScale, formationIconScale);
-                GUI.Label(
-                    new Rect(dragRect.position + new Vector2(-80, formationIconScale / 2), new(200, 50)),
-                    $"{wingmanIndex + 1}: {formationPosition.ToString("0")}\n{wingman.vessel.vesselName}",
-                    formationLabelStyle);
+                if (numericFields)
+                {
+                    if (!formationIndexToPositionNumericFields.TryGetValue(wingmanIndex, out var field))
+                    {
+                        field = formationIndexToPositionNumericFields[wingmanIndex] = gameObject.AddComponent<NumericInputFieldVector2>().Initialise(Time.time, formationPosition);
+                    }
+                    field.TryParseValue(GUI.TextField(new Rect(dragRect.position + new Vector2(formationIconScale / 2 - 50, formationIconScale / 2 + 18), new(100, 20)), field.PossibleValue, 16, field.Style));
+                    formationIndexToPosition[wingmanIndex] = field.CurrentValue;
+                    GUI.Label(new Rect(dragRect.position + new Vector2(formationIconScale / 2 - 100, formationIconScale / 2 + 36), new(200, 20)), $"{wingmanIndex + 1}: {wingman.vessel.vesselName}", formationLabelStyle);
+                }
+                else
+                {
+                    GUI.Label(
+                        new Rect(dragRect.position + new Vector2(formationIconScale / 2 - 100, formationIconScale / 2), new(200, 50)),
+                        $"{formationPosition.ToString("0")}\n{wingmanIndex + 1}: {wingman.vessel.vesselName}",
+                        formationLabelStyle);
+                }
                 FormationTextures.DrawFormationIcon(wingman, teamColor, dragRect); // Wingmen in team colors
                 if (Event.current.type == EventType.MouseDown && dragRect.Contains(Event.current.mousePosition)) formationDragIndex = wingmanIndex + 1;
             }
@@ -754,7 +782,8 @@ namespace BDArmory.Control
                     }
                     else
                     {
-                        formationPosition[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                        formationIndexToPosition[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                        if (numericFields) formationIndexToPositionNumericFields[formationDragIndex - 1].SetCurrentValue(formationIndexToPosition[formationDragIndex - 1]);
                     }
                 }
             }

@@ -656,11 +656,11 @@ namespace BDArmory.UI
                     {
                         var fieldInfo = AI.GetType().GetField(field);
                         if (fieldInfo != null)
-                        { fieldInfo.SetValue(AI, Convert.ChangeType(inputFields[field].currentValue, fieldInfo.FieldType)); }
+                        { fieldInfo.SetValue(AI, Convert.ChangeType(inputFields[field].CurrentValue, fieldInfo.FieldType)); }
                         else // Check if it's a property instead of a field.
                         {
                             var propInfo = AI.GetType().GetProperty(field);
-                            propInfo.SetValue(AI, Convert.ChangeType(inputFields[field].currentValue, propInfo.PropertyType));
+                            propInfo.SetValue(AI, Convert.ChangeType(inputFields[field].CurrentValue, propInfo.PropertyType));
                         }
                     }
                     catch (Exception e) { Debug.LogError($"[BDArmory.BDArmoryAIGUI]: Failed to set current value of {field}: " + e.Message); }
@@ -838,8 +838,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
@@ -867,8 +867,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
@@ -895,8 +895,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
