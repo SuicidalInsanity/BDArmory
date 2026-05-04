@@ -188,31 +188,31 @@ namespace BDArmory.Utils
 
         public NumericInputField Initialise(double lastUpdated, double currentValue, double minValue = double.MinValue, double maxValue = double.MaxValue, (float, float, bool, bool) meta = default)
         {
-            this.lastUpdated = lastUpdated; this.currentValue = currentValue; this.minValue = minValue; this.maxValue = maxValue;
+            this.lastUpdated = lastUpdated; this.CurrentValue = currentValue; this.minValue = minValue; this.maxValue = maxValue;
             (rounding, sigFig, withZero, reducedPrecisionAtMin) = meta;
             return this;
         }
         public double lastUpdated;
         public string possibleValue = string.Empty;
-        private double _value;
-        public double currentValue // Note: setting the current value doesn't necessarily update the displayed string. Use SetCurrentValue to force updating the displayed value.
+        public double CurrentValue // Note: setting the current value doesn't necessarily update the displayed string. Use SetCurrentValue to force updating the displayed value.
         {
-            get { return _value; }
+            get { return field; }
             private set
             {
-                _value = value;
+                field = value;
                 if (string.IsNullOrEmpty(possibleValue))
                 {
-                    possibleValue = _value.ToString("G6");
+                    possibleValue = field.ToString("G6");
                     valid = true;
                 }
             }
         }
         public double minValue;
         public double maxValue;
-        private bool coroutineRunning = false;
-        private Coroutine coroutine;
-        public bool valid = true;
+
+        bool coroutineRunning = false;
+        Coroutine coroutine;
+        bool valid = true;
 
         #region Metadata (not used internally, but provided for reference for automation)
         public float rounding;
@@ -225,11 +225,11 @@ namespace BDArmory.Utils
         public void SetCurrentValue(double value)
         {
             possibleValue = null; // Clear the possibleValue first so that it gets updated.
-            currentValue = value;
+            CurrentValue = value;
             lastUpdated = Time.time;
         }
 
-        public void tryParseValue(string v)
+        public void TryParseValue(string v)
         {
             if (v != possibleValue)
             {
@@ -249,19 +249,19 @@ namespace BDArmory.Utils
             valid = true; // Flag the value as valid until we've tried parsing it.
             while (Time.time - lastUpdated < BDArmorySettings.NUMERIC_INPUT_DELAY)
                 yield return wait;
-            tryParseCurrentValue(BDArmorySettings.NUMERIC_INPUT_SELF_UPDATE);
+            TryParseCurrentValue(BDArmorySettings.NUMERIC_INPUT_SELF_UPDATE);
             coroutineRunning = false;
             yield return wait;
         }
 
-        void tryParseCurrentValue(bool updatePossible = false)
+        void TryParseCurrentValue(bool updatePossible = false)
         {
             double newValue;
             if (double.TryParse(possibleValue, out newValue))
             {
-                currentValue = Math.Min(Math.Max(newValue, minValue), Math.Max(maxValue, currentValue)); // Clamp the new value between the min and max, but not if it's been set higher with the unclamped tuning option. This still allows reducing the value while still above the clamp limit.
-                if (newValue != currentValue) // The value got clamped.
-                    possibleValue = currentValue.ToString("G6");
+                CurrentValue = Math.Min(Math.Max(newValue, minValue), Math.Max(maxValue, CurrentValue)); // Clamp the new value between the min and max, but not if it's been set higher with the unclamped tuning option. This still allows reducing the value while still above the clamp limit.
+                if (newValue != CurrentValue) // The value got clamped.
+                    possibleValue = CurrentValue.ToString("G6");
                 lastUpdated = Time.time;
                 valid = true;
             }
@@ -271,7 +271,7 @@ namespace BDArmory.Utils
             }
             if (updatePossible)
             {
-                possibleValue = currentValue.ToString("G6");
+                possibleValue = CurrentValue.ToString("G6");
                 valid = true;
             }
         }
@@ -279,7 +279,7 @@ namespace BDArmory.Utils
         // Parse the current possible value immediately.
         public void tryParseValueNow()
         {
-            tryParseCurrentValue(true);
+            TryParseCurrentValue(true);
             if (coroutineRunning)
             {
                 StopCoroutine(coroutine);
@@ -295,5 +295,145 @@ namespace BDArmory.Utils
                 return valid ? InputFieldStyle : InputFieldBadStyle;
             }
         }
+    }
+
+    /// <summary>
+    /// A Vector2 version of NumericInputField.
+    /// This has reduced options compared to NumericInputField.
+    /// </summary>
+    public class NumericInputFieldVector2 : MonoBehaviour
+    {
+        /// <summary>
+        /// Initialise the important fields.
+        /// </summary>
+        /// <param name="lastUpdated"></param>
+        /// <param name="currentValue"></param>
+        /// <returns></returns>
+        public NumericInputFieldVector2 Initialise(double lastUpdated, Vector2 currentValue)
+        {
+            LastUpdated = lastUpdated; CurrentValue = currentValue;
+            return this;
+        }
+
+        public double LastUpdated { get; private set; }
+        public string PossibleValue { get; private set; } = string.Empty;
+        public Vector2 CurrentValue
+        {
+            get { return field; }
+            set
+            {
+                field = value;
+                if (string.IsNullOrEmpty(PossibleValue))
+                {
+                    PossibleValue = field.ToString("0");
+                    valid = true;
+                }
+            }
+        }
+
+        bool coroutineRunning = false;
+        Coroutine coroutine;
+        bool valid = true;
+
+        // Set the current value and force the display to update.
+        public void SetCurrentValue(Vector2 value)
+        {
+            PossibleValue = null; // Clear the possibleValue first so that it gets updated.
+            CurrentValue = value;
+            LastUpdated = Time.time;
+        }
+
+        public void TryParseValue(string v)
+        {
+            if (v != PossibleValue)
+            {
+                LastUpdated = !string.IsNullOrEmpty(v) ? Time.time : Time.time + BDArmorySettings.NUMERIC_INPUT_DELAY; // Give the empty string an extra delay.
+                PossibleValue = v;
+                if (!coroutineRunning)
+                {
+                    coroutine = StartCoroutine(UpdateValueCoroutine());
+                }
+            }
+        }
+
+        IEnumerator UpdateValueCoroutine()
+        {
+            var wait = new WaitForFixedUpdate();
+            coroutineRunning = true;
+            valid = true; // Flag the value as valid (for the style) until we've tried parsing it.
+            while (Time.time - LastUpdated < BDArmorySettings.NUMERIC_INPUT_DELAY)
+                yield return wait;
+            TryParseCurrentValue(BDArmorySettings.NUMERIC_INPUT_SELF_UPDATE);
+            coroutineRunning = false;
+            yield return wait;
+        }
+
+        // Parse the current possible value immediately.
+        public void TryParseValueNow()
+        {
+            TryParseCurrentValue(true);
+            if (coroutineRunning)
+            {
+                StopCoroutine(coroutine);
+                coroutineRunning = false;
+            }
+        }
+
+        void TryParseCurrentValue(bool updatePossible = false)
+        {
+            var (success, newValue) = TryParseVector2(PossibleValue);
+            if (success)
+            {
+                CurrentValue = newValue;
+                LastUpdated = Time.time;
+                valid = true;
+            }
+            else
+            {
+                valid = false;
+            }
+            if (updatePossible)
+            {
+                PossibleValue = CurrentValue.ToString("0");
+                valid = true;
+            }
+        }
+
+        /// <summary>
+        /// Parse a Vector2 in the same format that's used in BDAPersistentSettingsField.
+        /// </summary>
+        /// <param name="possibleValue"></param>
+        /// <returns>(success, value)</returns>
+        (bool, Vector2) TryParseVector2(string possibleValue)
+        {
+            char[] charsToTrim = ['(', ')', ' '];
+            string[] strings = possibleValue.Trim(charsToTrim).Split(',');
+            if (strings.Length != 2) return (false, default);
+            if (!float.TryParse(strings[0], out float x)) return (false, default);
+            if (!float.TryParse(strings[1], out float y)) return (false, default);
+            return (true, new Vector2(x, y));
+        }
+
+        #region Style
+        public static GUIStyle InputFieldStyle;
+        public static GUIStyle InputFieldBadStyle;
+        static void ConfigureStyles()
+        {
+            InputFieldStyle = new GUIStyle(GUI.skin.textField)
+            { alignment = TextAnchor.LowerCenter, wordWrap = false, clipping = TextClipping.Overflow };
+            InputFieldBadStyle = new GUIStyle(InputFieldStyle);
+            InputFieldBadStyle.normal.textColor = Color.red;
+            InputFieldBadStyle.focused.textColor = Color.red;
+        }
+
+        public GUIStyle Style
+        {
+            get
+            {
+                if (InputFieldStyle == null || InputFieldBadStyle == null) ConfigureStyles();
+                return valid ? InputFieldStyle : InputFieldBadStyle;
+            }
+        }
+        #endregion
     }
 }

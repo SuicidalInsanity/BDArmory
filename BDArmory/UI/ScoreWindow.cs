@@ -348,7 +348,7 @@ namespace BDArmory.UI
                 foreach (var weight in scoreWeightFields)
                 {
                     weight.Value.tryParseValueNow();
-                    weights[weight.Key] = (float)weight.Value.currentValue;
+                    weights[weight.Key] = (float)weight.Value.CurrentValue;
                 }
                 SaveWeights();
             }
@@ -363,10 +363,10 @@ namespace BDArmory.UI
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.Label(weight.Key);
-                weight.Value.tryParseValue(GUILayout.TextField(weight.Value.possibleValue, 10, weight.Value.style, GUILayout.Width(80)));
-                if (weights[weight.Key] != (float)weight.Value.currentValue)
+                weight.Value.TryParseValue(GUILayout.TextField(weight.Value.possibleValue, 10, weight.Value.style, GUILayout.Width(80)));
+                if (weights[weight.Key] != (float)weight.Value.CurrentValue)
                 {
-                    weights[weight.Key] = (float)weight.Value.currentValue;
+                    weights[weight.Key] = (float)weight.Value.CurrentValue;
                     RecomputeScores();
                 }
                 GUILayout.EndHorizontal();
