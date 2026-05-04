@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,33 +30,37 @@ namespace BDArmory.Utils
         {
             yield return new WaitWhile(() => Bullets.BulletInfo.bullets == null || Bullets.RocketInfo.rockets == null); // Wait for the field to be non-null to avoid crashes on startup in ModuleWeapon.GetInfo().
 
-            IEnumerator<AvailablePart> loadedParts = PartLoader.LoadedPartsList.GetEnumerator();
+            using IEnumerator<AvailablePart> loadedParts = PartLoader.LoadedPartsList.GetEnumerator();
             while (loadedParts.MoveNext())
             {
                 if (loadedParts.Current == null) continue;
-                foreach (string key in Modules.Keys)
+                try
                 {
-                    if (!loadedParts.Current.partPrefab.Modules.Contains(key)) continue;
-                    IEnumerator<PartModule> partModules = loadedParts.Current.partPrefab.Modules.GetEnumerator();
-                    while (partModules.MoveNext())
+                    foreach (string key in Modules.Keys)
                     {
-                        if (partModules.Current == null) continue;
-                        if (partModules.Current.moduleName != key) continue;
-                        string info = partModules.Current.GetInfo();
-                        for (int y = 0; y < loadedParts.Current.moduleInfos.Count; y++)
+                        if (!loadedParts.Current.partPrefab.Modules.Contains(key)) continue;
+                        using IEnumerator<PartModule> partModules = loadedParts.Current.partPrefab.Modules.GetEnumerator();
+                        while (partModules.MoveNext())
                         {
-                            Debug.Log($"[BDArmory.BDAModuleInfos]: moduleName:  {loadedParts.Current.moduleInfos[y].moduleName}");
-                            Debug.Log($"[BDArmory.BDAModuleInfos]: KeyValue:  {Modules[key]}");
-                            if (loadedParts.Current.moduleInfos[y].moduleName != Modules[key]) continue;
-                            loadedParts.Current.moduleInfos[y].info = info;
-                            break;
+                            if (partModules.Current == null) continue;
+                            if (partModules.Current.moduleName != key) continue;
+                            string info = partModules.Current.GetInfo();
+                            for (int y = 0; y < loadedParts.Current.moduleInfos.Count; y++)
+                            {
+                                Debug.Log($"[BDArmory.BDAModuleInfos]: moduleName:  {loadedParts.Current.moduleInfos[y].moduleName}");
+                                Debug.Log($"[BDArmory.BDAModuleInfos]: KeyValue:  {Modules[key]}");
+                                if (loadedParts.Current.moduleInfos[y].moduleName != Modules[key]) continue;
+                                loadedParts.Current.moduleInfos[y].info = info;
+                                break;
+                            }
                         }
                     }
-                    partModules.Dispose();
+                }
+                catch(Exception e)
+                {
+                    Debug.LogError($"[BDArmory.BDAModuleInfos]: Failed to browse part modules on {loadedParts.Current.name} while reloading module infos: {e.Message}");
                 }
             }
-
-            loadedParts.Dispose();
         }
     }
 }
