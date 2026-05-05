@@ -2247,7 +2247,7 @@ namespace BDArmory.Control
             else if (!extending && weaponManager && targetVessel != null && targetVessel.transform != null)
             {
                 // Check if we need to extend.
-                if (!targetVessel.LandedOrSplashed && !(weaponManager.currentGun==null && weaponManager.selectedWeapon!=null && weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb))
+                if (!targetVessel.LandedOrSplashed && !(weaponManager.currentGun == null && weaponManager.selectedWeapon != null && weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb))
                 {
                     Vector3 targetVesselRelPos = targetVessel.CoM - vesselTransformPosition;
                     if (canExtend && vessel.radarAltitude < defaultAltitude && VectorUtils.Angle(targetVesselRelPos, -upDirection) < 35) // Target is at a steep angle below us and we're below default altitude, extend to get a better angle instead of attacking now.
@@ -2928,8 +2928,12 @@ namespace BDArmory.Control
                 rollUp += (1 - finalMaxSteer) * 10f;
             }
             rollTarget = targetPosition + (rollUp * upDirection) - vesselPos;
-            if (DivebombStarted && DivebombProgress < 0.5f) // Try hard not to roll while dive-bombing initially, just pitch down (yaw should already be mostly aligned).
-                rollTarget = Vector3.RotateTowards(rollTarget, upDirection, Mathf.Clamp01(1f - 2f * DivebombProgress) * VectorUtils.Angle(rollTarget, upDirection) * Mathf.Deg2Rad, 0);
+            if (DivebombStarted) // Try hard not to roll while dive-bombing initially, just pitch down (yaw should already be mostly aligned).
+            {
+                var factor = Mathf.Clamp01(1f - 4f * DivebombProgress - Mathf.Clamp01(0.5f * Vector3.Dot(rollTarget, currentRoll)));
+                if (factor > 0)
+                    rollTarget = Vector3.RotateTowards(rollTarget, upDirection, factor * VectorUtils.Angle(rollTarget, upDirection) * Mathf.Deg2Rad, 0);
+            }
 
             //test
             if (steerMode == SteerModes.Aiming && !belowMinAltitude && !invertRollTarget)
