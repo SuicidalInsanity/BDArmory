@@ -2379,7 +2379,7 @@ namespace BDArmory.UI
                     autoResizingWindow = false;
                 }
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

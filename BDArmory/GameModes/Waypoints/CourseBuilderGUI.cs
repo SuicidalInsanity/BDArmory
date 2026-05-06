@@ -674,7 +674,7 @@ spawnFields["alt"].CurrentValue != BDArmorySettings.VESSEL_SPAWN_ALTITUDE)
 
             line += 1.25f; // Bottom internal margin
             _windowHeight = (line * _lineHeight);
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
         }
 
         public void SetVisible(bool visible)

@@ -430,7 +430,7 @@ namespace BDArmory.Control
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingWindow = true;
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint) windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
         }
 
@@ -535,7 +535,7 @@ namespace BDArmory.Control
                 CommandButton(CommandAG, actionGroup.ToString(), true, false, actionGroup);
             }
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
         }
 
         void SelectAll(IBDAIControl wingman, int index, object data)
@@ -769,7 +769,7 @@ namespace BDArmory.Control
             var resizeRect = new Rect(formationWindowSize.x - 16, formationWindowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingFormationWindow = true;
-            else if (formationDragIndex < 0) GUI.DragWindow();
+            else if (formationDragIndex < 0) GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

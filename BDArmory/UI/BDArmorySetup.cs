@@ -2257,7 +2257,7 @@ namespace BDArmory.UI
             WindowRectToolbar.height = toolWindowHeight;
             WindowRectToolbar.width = toolWindowWidth;
             numberOfButtons = buttonNumber + 1;
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref WindowRectToolbar, previousWindowHeight);
         }
 #if DEBUG
@@ -4366,7 +4366,7 @@ namespace BDArmory.UI
             line += 1.5f; // Bottom internal margin
             settingsHeight = (line * settingsLineHeight);
             WindowRectSettings.height = settingsHeight;
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             if (!scalingUI) GUIUtils.RepositionWindow(ref WindowRectSettings);
             GUIUtils.UseMouseEventInRect(WindowRectSettings);
         }

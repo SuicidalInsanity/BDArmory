@@ -7500,7 +7500,7 @@ namespace BDArmory.Weapons
 
             GUILayout.EndVertical();
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref guiWindowRect);
         }
 

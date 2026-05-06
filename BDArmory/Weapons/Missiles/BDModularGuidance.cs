@@ -2143,7 +2143,7 @@ namespace BDArmory.Weapons.Missiles
 
             GUILayout.EndVertical();
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref guiWindowRect);
         }
 

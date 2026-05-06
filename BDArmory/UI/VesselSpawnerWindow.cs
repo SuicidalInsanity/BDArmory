@@ -1130,7 +1130,7 @@ namespace BDArmory.UI
 
             line += 1.25f; // Bottom internal margin
             _windowHeight = (line * _lineHeight);
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
         }
 
         IEnumerator StartCompetitionOnceSpawned()
@@ -1223,7 +1223,7 @@ namespace BDArmory.UI
                     Observers = potentialObservers.Where(o => o != null).ToHashSet();
             }
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref observerWindowRect);
             GUIUtils.UpdateGUIRect(observerWindowRect, _observerGUICheckIndex);
             GUIUtils.UseMouseEventInRect(observerWindowRect);

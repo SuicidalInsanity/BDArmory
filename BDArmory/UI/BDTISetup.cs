@@ -456,7 +456,7 @@ namespace BDArmory.UI
             }
             toolWindowHeight = Mathf.Lerp(toolWindowHeight, 50 + (BDTISettings.TEAMICONS ? IconOptionsGroup.height + TeamColorsGroup.height : 0) + 15, 0.35f);
             WindowRectGUI.height = toolWindowHeight;
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
         }
     }
 }

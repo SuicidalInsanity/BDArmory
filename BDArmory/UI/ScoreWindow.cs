@@ -230,7 +230,7 @@ namespace BDArmory.UI
                     resizingWindow = true;
                 }
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint)
             { windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL; }
             #endregion
@@ -373,7 +373,7 @@ namespace BDArmory.UI
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref weightsWindowRect);
             GUIUtils.UpdateGUIRect(weightsWindowRect, _guiCheckIndexWeights);
             GUIUtils.UseMouseEventInRect(weightsWindowRect);
