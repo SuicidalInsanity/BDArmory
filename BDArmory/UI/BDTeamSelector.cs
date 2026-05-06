@@ -160,7 +160,7 @@ namespace BDArmory.UI
 
             height += margin;
             window.height = scrollable ? Screen.height / 2 + buttonHeight + buttonGap + 2 * margin : height;
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref window);
             GUIUtils.UseMouseEventInRect(window);
         }

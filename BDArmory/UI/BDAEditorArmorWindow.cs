@@ -700,7 +700,7 @@ namespace BDArmory.UI
                 }
                 line += 1.5f;
             }
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             height = Mathf.Lerp(height, (line + armorLines + StatLines + HullLines) * lineHeight, 0.15f);
             windowRect.height = height;
             GUIUtils.RepositionWindow(ref windowRect);

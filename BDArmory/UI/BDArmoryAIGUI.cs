@@ -2378,7 +2378,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                     autoResizingWindow = false;
                 }
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

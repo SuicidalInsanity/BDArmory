@@ -282,7 +282,7 @@ namespace BDArmory.UI
             }
             previous_index = selected_index;
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref windowRect);
         }
 
@@ -401,7 +401,7 @@ namespace BDArmory.UI
             }
             previous_index = selected_index;
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref windowRect);
         }
 

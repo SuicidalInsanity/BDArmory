@@ -607,7 +607,7 @@ namespace BDArmory.VesselSpawning
             }
             GUILayout.EndScrollView();
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref templateSelectionWindowRect);
             GUIUtils.UpdateGUIRect(templateSelectionWindowRect, _templateGUICheckIndex);
             GUIUtils.UseMouseEventInRect(templateSelectionWindowRect);
@@ -773,7 +773,7 @@ namespace BDArmory.VesselSpawning
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref vesselSelectionWindowRect);
             GUIUtils.UpdateGUIRect(vesselSelectionWindowRect, _vesselGUICheckIndex);
             GUIUtils.UseMouseEventInRect(vesselSelectionWindowRect);
@@ -898,7 +898,7 @@ namespace BDArmory.VesselSpawning
             { RefreshSelectedCrew(); }
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref crewSelectionWindowRect);
             GUIUtils.UpdateGUIRect(crewSelectionWindowRect, _crewGUICheckIndex);
             GUIUtils.UseMouseEventInRect(crewSelectionWindowRect);

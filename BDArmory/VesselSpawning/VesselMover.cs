@@ -1107,7 +1107,7 @@ namespace BDArmory.VesselSpawning
                     }
             }
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectVesselMover, previousVesselMoverWindowHeight);
             GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectVesselMover, guiCheckIndex);
             GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectVesselMover);
@@ -1274,7 +1274,7 @@ namespace BDArmory.VesselSpawning
             {
                 resizingSelectionWindow = true;
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
             if (resizingSelectionWindow && Event.current.type == EventType.Repaint)
             { BDArmorySetup.WindowRectVesselMoverVesselSelection.size += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL; }
             #endregion
@@ -1486,7 +1486,7 @@ namespace BDArmory.VesselSpawning
                 }
             }
             GUILayout.EndVertical();
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref crewSelectionWindowRect);
             GUIUtils.UpdateGUIRect(crewSelectionWindowRect, _crewGUICheckIndex);
             GUIUtils.UseMouseEventInRect(crewSelectionWindowRect);

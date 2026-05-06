@@ -442,6 +442,15 @@ namespace BDArmory.Utils
             GUIUtilsInstance.Reset();
         }
 
+        /// <summary>
+        /// Only do GUI.DragWindow on the left mouse button.
+        /// </summary>
+        public static void DragWindow()
+        {
+            if (Event.current.button != 0) return;
+            GUI.DragWindow();
+        }
+
         public class ExtraGUIRect
         {
             public ExtraGUIRect(Rect rect) { this.rect = rect; }
