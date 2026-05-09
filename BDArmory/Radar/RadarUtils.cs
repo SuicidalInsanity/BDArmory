@@ -2138,7 +2138,11 @@ namespace BDArmory.Radar
             {
                 // Check within FoV
                 if (!radar.CheckFOVDir(directionToTarget))
+                {
+                    //if (BDArmorySettings.DEBUG_RADAR)
+                    //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Failed FoV Check!");
                     return false;
+                }
 
                 // evaluate range
                 //TODO: Performance! better if we could switch to sqrMagnitude...
@@ -2156,13 +2160,21 @@ namespace BDArmory.Radar
                             radar.radarGlintCurve, radar.radarGlintMult,
                             radar.vessel, lockedVessel, lockedVessel.CoM, distance,
                             out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, out glintMod))
+                {
+                    //if (BDArmorySettings.DEBUG_RADAR)
+                    //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Failed terrain check!");
                     return false;
+                }
 
                 // get vessel's radar signature
                 TargetInfo ti = GetVesselRadarSignature(lockedVessel);
                 // See comment in RadarUpdateScanBoresight for more about this
                 if (ti.Vessel == null)
+                {
+                    //if (BDArmorySettings.DEBUG_RADAR)
+                    //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] TargetInfo.Vessel == null!");
                     return false;
+                }
                 float signature = (BDArmorySettings.ASPECTED_RCS) ? GetVesselRadarSignatureAtAspect(ti, ray.origin, distance) : ti.radarModifiedSignature;
                 signature *= GetRadarGroundClutterModifier(radar.radarGroundClutterFactor, ray.origin, directionToTarget, ti);
                 signature *= ti.radarLockbreakFactor;    //multiply lockbreak factor from active ecm
@@ -2193,13 +2205,21 @@ namespace BDArmory.Radar
                         // and the notchMultiplier < 1f, the rest of the conditions are a failsafe
                         if (BDArmorySettings.RADAR_NOTCHING && radar.radarCanNotch && (notchMultiplier < 1f) && radar.sonarMode == ModuleRadar.SonarModes.None && !(BDArmorySettings.RADAR_ALLOW_SURFACE_WARFARE && (lockedVessel.Landed || lockedVessel.Splashed) && (radar.vessel.Landed || radar.vessel.Splashed)) && radar.radarMinRangeGate != float.MaxValue && radar.radarMinVelocityGate != float.MaxValue)
                         {
-                            if (baseSignature < minTrackSig || !RadarCanDetect(radar, baseSignature, distance) || (GetRadarNotchingSCR(baseSignature, fov, distance, terrainR, terrainAngle) < radar.radarMinTrackSCR))
+                            if (baseSignature < minTrackSig || !((signature >= minTrackSig) || RadarCanDetect(radar, baseSignature, distance)) || (GetRadarNotchingSCR(baseSignature, fov, distance, terrainR, terrainAngle) < radar.radarMinTrackSCR))
+                            {
+                                //if (BDArmorySettings.DEBUG_RADAR)
+                                //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Failed to track! signature/baseSignature/minTrackSig: {signature}/{baseSignature}/{minTrackSig}, canDetect: {RadarCanDetect(radar, baseSignature, distance)}, SCR / minTrackSCR: {GetRadarNotchingSCR(baseSignature, fov, distance, terrainR, terrainAngle)}/{radar.radarMinTrackSCR}");
                                 return false;
+                            }
 
                             radar.ReceiveContactData(new TargetSignatureData(lockedVessel, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod), locked);
                         }
                         else
+                        {
+                            //if (BDArmorySettings.DEBUG_RADAR)
+                            //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Failed to track! signature/minTrackSig: {signature}/{baseSignature}/{minTrackSig}, canDetect: {RadarCanDetect(radar, baseSignature, distance)}");
                             return false;
+                        }
                     }
                 }
 
@@ -2755,7 +2775,8 @@ namespace BDArmory.Radar
                         //if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.RadarUtils.TerrainCheck]: Hit water at sqrDist {R * R * 0.000001f} km^2. Water blocking?: {(R * R) < offset.sqrMagnitude}");
 
                         // Used for notching
-                        return (!BDArmorySettings.CHECK_WATER_TERRAIN) || (R * R) < offset.sqrMagnitude;
+                        // If we're checking for water AND the water is closer than the target
+                        return (BDArmorySettings.CHECK_WATER_TERRAIN && (R * R) < offset.sqrMagnitude);
                     }
                     return false;
                 }
