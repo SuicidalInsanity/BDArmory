@@ -10977,6 +10977,7 @@ namespace BDArmory.Control
                 {
                     simTime += 7f * Time.fixedDeltaTime;
                     currPos = AIUtils.PredictPosition(startPos, simVelocity, simAcceleration, simTime); // Reloadable rails/spawners take an extra 7 frames to spawn the ordnance.
+                    bombAimerTrajectory.Add(AIUtils.PredictPosition(startPos, simVelocity, simAcceleration, 0.5f * simTime)); // Nicer visuals.
                 }
                 if (launcher.multiLauncher && launcher.multiLauncher.salvoSize > 1)
                 {
@@ -10998,6 +10999,7 @@ namespace BDArmory.Control
             Vector3 guardAccel = guardTarget && !guardTarget.LandedOrSplashed ? guardTarget.acceleration_immediate : Vector3.zero;
             Vector3 prevPos = currPos;
             Vector3 closestPos = currPos;
+            simVelocity += simTime * simAcceleration; // Update the simVelocity for the modified starting point.
 
             // FIXME values for MMG missiles (launcher == null) need calculating.
             // FIXME mk82 bombs on reloadable rails behave like mk83 bombs.
