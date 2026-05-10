@@ -10961,7 +10961,7 @@ namespace BDArmory.Control
             Vector3 startPos = ml.MissileReferenceTransform.position;
             Rigidbody bombrb = bombPart.rb != null ? bombPart.rb : bombPart.parent.rb;
             Vector3 simVelocity = (bombrb != null ? bombrb.velocity : (vessel.rb_velocity + Vector3.Cross(vessel.angularVelocity, startPos - vessel.CoM))) + BDKrakensbane.FrameVelocityV3f; // bombs on reloadable rails don't have a rigid body.
-            Vector3 simAcceleration = vessel.acceleration; //_immediate;
+            Vector3 simAcceleration = vessel.acceleration_immediate;
             float simTime = Time.fixedDeltaTime; // Start on the next frame (when decoupling happens)?
             float simDeltaTime = 5f * Time.fixedDeltaTime;
             Vector3 currPos = AIUtils.PredictPosition(startPos, simVelocity, simAcceleration, simTime);
@@ -10993,9 +10993,9 @@ namespace BDArmory.Control
             {   //TODO: BDModularGuidance review this value
                 simVelocity += 5 * -ml.MissileReferenceTransform.up;
             }
-            Vector3 guardPos = guardTarget ? guardTarget.PredictPosition(simTime, guardTarget.LandedOrSplashed ? AIUtils.UseAccel.None : AIUtils.UseAccel.Immediate) : default;
-            Vector3 guardVel = guardTarget ? guardTarget.Velocity() : default;
-            Vector3 guardAccel = guardTarget ? guardTarget.acceleration_immediate : default;
+            Vector3 guardPos = guardTarget ? guardTarget.PredictPosition(simTime, guardTarget.LandedOrSplashed ? AIUtils.UseAccel.None : AIUtils.UseAccel.Immediate) : Vector3.zero;
+            Vector3 guardVel = guardTarget ? guardTarget.Velocity() : Vector3.zero;
+            Vector3 guardAccel = guardTarget && !guardTarget.LandedOrSplashed ? guardTarget.acceleration_immediate : Vector3.zero;
             Vector3 prevPos = currPos;
             Vector3 closestPos = currPos;
 
@@ -11040,7 +11040,7 @@ namespace BDArmory.Control
                 {
                     bombAimerPosition = hitInfo.point;
                     simTime += (distance - hitInfo.distance) / distance * simDeltaTime;
-                    bombAimerCPA = guardTarget ? AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, AIUtils.TimeToCPA(prevPos - guardPos, simVelocity - guardVel, simAcceleration)) : bombAimerPosition;
+                    bombAimerCPA = guardTarget ? AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, AIUtils.TimeToCPA(prevPos - guardPos, simVelocity - guardVel, simAcceleration - guardAccel)) : bombAimerPosition;
                     if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_WEAPONS) bombAimerDebugString = $"Scenery / part hit at {simTime:0.00}s";
                     break;
                 }
@@ -11052,7 +11052,7 @@ namespace BDArmory.Control
                         bombAimerPosition = currPos - currentAlt * upDirection;
                         var prevAlt = FlightGlobals.getAltitudeAtPos(prevPos);
                         simTime += prevAlt / (prevAlt - currentAlt) * simDeltaTime;
-                        bombAimerCPA = guardTarget ? AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, AIUtils.TimeToCPA(prevPos - guardPos, simVelocity - guardVel, simAcceleration - (guardTarget.LandedOrSplashed ? Vector3.zero : guardAccel))) : bombAimerPosition;
+                        bombAimerCPA = guardTarget ? AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, AIUtils.TimeToCPA(prevPos - guardPos, simVelocity - guardVel, simAcceleration - guardAccel)) : bombAimerPosition;
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_WEAPONS) bombAimerDebugString = $"Water hit at {simTime:0.00}s";
                         break;
                     }
@@ -11067,7 +11067,7 @@ namespace BDArmory.Control
                     {
                         var relPos = prevPos - guardPos;
                         var relVel = simVelocity - guardVel;
-                        var relAcc = simAcceleration;
+                        var relAcc = simAcceleration - guardAccel;
                         var timeToCPA = AIUtils.TimeToCPA(relPos, relVel, relAcc);
                         if (timeToCPA == 0) // We're past the CPA, so look backwards.
                         {
@@ -11087,7 +11087,7 @@ namespace BDArmory.Control
                     {
                         var relPos = prevPos - guardPos;
                         var relVel = simVelocity - guardVel;
-                        var relAcc = simAcceleration;
+                        var relAcc = simAcceleration - guardAccel;
                         var timeToCPA = AIUtils.TimeToCPA(relPos, relVel, relAcc);
                         if (timeToCPA == 0) // We're past the CPA, so look backwards.
                         {
