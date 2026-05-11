@@ -959,7 +959,7 @@ namespace BDArmory.Weapons.Missiles
             uncagedLock = (allAspect) ? allAspect : uncagedLock;
             SetNotchChaffFac();
             guidanceFailureRatePerFrame = (guidanceFailureRate >= 1) ? 1f : 1f - Mathf.Exp(Mathf.Log(1f - guidanceFailureRate) * Time.fixedDeltaTime); // Convert from per-second failure rate to per-frame failure rate
-            invManeuvergLimit = 1f / maneuvergLimit;
+            //invManeuvergLimit = 1f / maneuvergLimit;
             // MMLs **shouldn't** be checking the base config, hence checkBaseConfig being a thing
             MissileLauncher baseConfig = checkBaseConfig ? part.partInfo.partPrefab.FindModuleImplementing<MissileLauncher>() : null;
 
