@@ -238,13 +238,27 @@ namespace BDArmory.Modules
                 UI_FloatRange FBEditor = (UI_FloatRange)Fields["FireBottles"].uiControlEditor;
                 FBEditor.onFieldChanged = FBSetup;
             }
+            fuel = part.Resources.Where(pr => pr.resourceName == "LiquidFuel").FirstOrDefault();
             cockpit = part.FindModuleImplementing<ModuleCommand>();
             if (cockpit != null)
             {
                 if (cockpit.minimumCrew >= 1)
                 {
                     Events["TogglecockpitArmor"].guiActiveEditor = true;
-                    Events["ToggleTankOption"].guiActiveEditor = false;
+                    //Events["ToggleTankOption"].guiActiveEditor = false;
+                    if (fuel != null)
+                    {
+                        if (!SSTank)
+                        {
+                            Events["ToggleTankOption"].guiName = StringUtils.Localize("#LOC_BDArmory_SSTank_On");//"Enable self-sealing tank"
+                        }
+                        else
+                        {
+                            Events["ToggleTankOption"].guiName = StringUtils.Localize("#LOC_BDArmory_SSTank_Off");//"Disable self-sealing tank"
+                        }
+                    }
+                    else 
+                        Events["ToggleTankOption"].guiActiveEditor = false;
                     Events["ToggleInertOption"].guiActiveEditor = false;
                     Fields["FireBottles"].guiActiveEditor = false;
                     Fields["FBRemaining"].guiActive = false;
@@ -262,8 +276,7 @@ namespace BDArmory.Modules
                 else part.RemoveModule(this); //don't assign to drone cores
             }
             else
-            {
-                fuel = part.Resources.Where(pr => pr.resourceName == "LiquidFuel").FirstOrDefault();
+            {               
                 monoprop = part.Resources.Where(pr => pr.resourceName == "MonoPropellant").FirstOrDefault();
                 solid = part.Resources.Where(pr => pr.resourceName == "SolidFuel").FirstOrDefault();
 
