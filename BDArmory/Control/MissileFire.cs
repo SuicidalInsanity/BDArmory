@@ -10705,7 +10705,7 @@ namespace BDArmory.Control
             float angleYaw = 0;
             float yawRange = 0;
             bool withinPitchRange = false;
-            using (List<ModuleCustomTurret>.Enumerator servo = weapon.customTurret.GetEnumerator())
+            using (List<ModuleCustomTurret>.Enumerator servo = weapon != null ? weapon.customTurret.GetEnumerator() : msl.customTurret.GetEnumerator())
                 while (servo.MoveNext())
                 {
                     if (servo.Current == null || servo.Current.vessel != vessel) continue;

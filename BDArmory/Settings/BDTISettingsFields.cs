@@ -55,51 +55,19 @@ namespace BDArmory.Settings
 					fileNode.RemoveNode("TeamColors");
 				}
 			}
-            ////
-            bool addDefaults = false;
-            if (!fileNode.HasNode("PresetColors"))
-            {
-                fileNode.AddNode("PresetColors");
-                addDefaults = true;
-            }
-            ConfigNode preset = fileNode.GetNode("PresetColors");
-            var presetRGB = preset.GetValues().ToHashSet(); // Get the existing part names, then add our ones.
-            if (addDefaults)
-            {
-                presetRGB.Add("255,0,0,255"); //Red
-                presetRGB.Add("255,255,0,255"); //Yellow
-                presetRGB.Add("0,255,0,255"); //Green
-                presetRGB.Add("0,255,255,255"); //Blue
-                presetRGB.Add("0,0,255,255"); //Indigo
-                presetRGB.Add("128,0,192,255"); //Purple
-                presetRGB.Add("255,255,255,255"); //White
-                presetRGB.Add("0,0,0,255"); //Black
-                presetRGB.Add("255,128,0,255"); //Orange
-                presetRGB.Add("62,50,0,255"); //Brown
-                presetRGB.Add("16,96,16,255"); //Dark Green
-                presetRGB.Add("192,255,192,255"); //Light Green
-                presetRGB.Add("192,192,255,255"); //Light Blue
-                presetRGB.Add("192,0,192,255"); //Marroon
-                presetRGB.Add("255,192,255,255"); //Pink
-                presetRGB.Add("128,128,128,255"); //Grey
-            }
-            preset.ClearValues();
-			if (addDefaults)
+			if (!fileNode.HasNode("PresetColors"))
 			{
-				int partIndex = 0;
-				foreach (var rgb in presetRGB)
-					preset.SetValue($"{++partIndex}", rgb, true);
+				fileNode.AddNode("PresetColors");
 			}
-			else
+			ConfigNode preset = fileNode.GetNode("PresetColors");
+
+			foreach (var keyValuePair in BDTISetup.Instance.ColorPresets)
 			{
-				foreach (var keyValuePair in BDTISetup.Instance.ColorPresets)
-				{
-					string color = $"{Mathf.RoundToInt(keyValuePair.Value.r * 255)},{Mathf.RoundToInt(keyValuePair.Value.g * 255)},{Mathf.RoundToInt(keyValuePair.Value.b * 255)},{Mathf.RoundToInt(keyValuePair.Value.a * 255)}";
-					preset.SetValue(keyValuePair.Key.ToString(), color, true);
-				}
+				string color = $"{Mathf.RoundToInt(keyValuePair.Value.r * 255)},{Mathf.RoundToInt(keyValuePair.Value.g * 255)},{Mathf.RoundToInt(keyValuePair.Value.b * 255)},{Mathf.RoundToInt(keyValuePair.Value.a * 255)}";
+				preset.SetValue(keyValuePair.Key.ToString(), color, true);
 			}
-            /////
-            fileNode.Save(BDTISettings.settingsConfigURL);
+
+			fileNode.Save(BDTISettings.settingsConfigURL);
 		}
 		public static void Load()
 		{
@@ -149,6 +117,45 @@ namespace BDArmory.Settings
 				}
 			}
 		}
+
+		public static void presetSetup()
+		{
+			ConfigNode fileNode = ConfigNode.Load(BDTISettings.settingsConfigURL);
+
+			if (!fileNode.HasNode("PresetColors"))
+			{
+				fileNode.AddNode("PresetColors");
+			}
+			ConfigNode preset = fileNode.GetNode("PresetColors");
+			var presetRGB = preset.GetValues().ToHashSet();
+			presetRGB.Add("255,0,0,255"); //Red
+			presetRGB.Add("255,255,0,255"); //Yellow
+			presetRGB.Add("0,255,0,255"); //Green
+			presetRGB.Add("0,255,255,255"); //Blue
+			presetRGB.Add("0,0,255,255"); //Indigo
+			presetRGB.Add("128,0,192,255"); //Purple
+			presetRGB.Add("255,255,255,255"); //White
+			presetRGB.Add("0,0,0,255"); //Black
+			presetRGB.Add("255,128,0,255"); //Orange
+			presetRGB.Add("62,50,0,255"); //Brown
+			presetRGB.Add("16,96,16,255"); //Dark Green
+			presetRGB.Add("192,255,192,255"); //Light Green
+			presetRGB.Add("192,192,255,255"); //Light Blue
+			presetRGB.Add("192,0,192,255"); //Marroon
+			presetRGB.Add("255,192,255,255"); //Pink
+			presetRGB.Add("128,128,128,255"); //Grey
+			preset.ClearValues();
+
+			int partIndex = 0;
+			foreach (var rgb in presetRGB)
+			{
+				if (partIndex < 16)
+					preset.SetValue($"{++partIndex}", rgb, true); //this needs to be the first 16, not all
+				else break;
+			}
+			fileNode.Save(BDTISettings.settingsConfigURL);
+		}
+
 		public static object ParseValue(Type type, string value)
 		{
 			if (type == typeof(bool))

@@ -192,6 +192,7 @@ namespace BDArmory.UI
             }
 
             AddToolbarButton();
+            SetUpColorSwatch();
             LoadConfig();
             UpdateList();
 
@@ -322,6 +323,20 @@ namespace BDArmory.UI
         {
             showTeamIconGUI = false;
             SaveConfig();
+        }
+
+        public static void SetUpColorSwatch()
+        {
+            try
+            {
+                Debug.Log("[BDTeamIcons]=== Loading settings.cfg ===");
+
+                SettingsDataField.presetSetup();
+            }
+            catch (NullReferenceException)
+            {
+                Debug.Log("[BDTeamIcons]=== Failed to load settings config ===");
+            }
         }
 
         public static void LoadConfig()

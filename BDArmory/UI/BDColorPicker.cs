@@ -100,7 +100,14 @@ namespace BDArmory.UI
             
             for (int pcOffset = 0; pcOffset < 8; pcOffset++)
             {
-                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                try
+                {
+                    presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                }
+                catch
+                {
+                    presetColor = Color.white;
+                }
                 prefabColorPreview.SetPixel(0, 0, presetColor);
                 prefabColorPreview.Apply();
                 style.normal.background = prefabColorPreview;
@@ -121,7 +128,14 @@ namespace BDArmory.UI
             }
             for (int pcOffset = 8; pcOffset < 16; pcOffset++)
             {
-                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                try
+                {
+                    presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
+                }
+                catch
+                {
+                    presetColor = Color.white;
+                }
                 prefabColorPreview.SetPixel(0, 0, presetColor);
                 prefabColorPreview.Apply();
                 style.normal.background = prefabColorPreview;
