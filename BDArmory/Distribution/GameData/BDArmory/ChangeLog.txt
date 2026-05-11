@@ -108,6 +108,8 @@ IMPROVEMENTS / FIXES
 			- Add "gLimit" and "maxAoA" based biasing of the kappa shaping coefficient.
 			- Calculate proper shaping coefficient for "kappaAngle" = 0 case (no trajectory shaping).
 			- Fix numerical issues at long range and at very short range.
+			- Improve the efficiency of the level-off maneuver at the top of climb, increasing the missile's range and terminal velocity.
+			- Added more granularity to "maneuvergLimit", now 3 values can be specified, the second value is used to estimate the g-load of the dive maneuver while the third value is used to shape the trajectory for the level-off maneuver at the top of climb (note that a quarter of this value is used, as it is intended to work with the default value of 20 g).
 		- Added "beamWidth" to all CLOS guidance types and "beamLeadMinAlt" to CLOSLead.
 			- "beamWidth" allows for the simulation of the increasing inaccuracy of beam-riding missiles with range, due to angular resolution. If the beam is taken as a cone, it is essentially the ratio of the radius of the cone to the height of the cone, I.E. for every meter of distance the missile travels, the potential error, relative to the beam centerline increases by "beamWidth" meters.
 			- "beamLeadMinAlt" is essentially an implementation of the "elevated by k" method of the Soviet half-correction missile guidance method. If the relative altitude of the target vs. the guidance sensor is less than "beamLeadMinAlt", then the missile will not add downwards lead when the target is diving, making the missile less likely to be driven into the ground.

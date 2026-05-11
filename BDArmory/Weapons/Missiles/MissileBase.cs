@@ -467,9 +467,9 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
 
         public float TimeToImpact { get; set; }
 
-        public enum LoftStates { Boost, Midcourse, Terminal }
+        public enum LoftStates { PreLaunch, Boost, Midcourse, Terminal }
 
-        public LoftStates loftState = LoftStates.Boost;
+        public LoftStates loftState = LoftStates.PreLaunch;
 
         public bool TargetAcquired { get; set; }
 

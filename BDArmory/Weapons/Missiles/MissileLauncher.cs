@@ -401,9 +401,22 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float LoftTermRange = -1;
 
+        // For now there won't be a "terminalManeuvergLimit" as there's little need for it
+        // currently, but in the future, if required, this can be implemented
         [KSPField]
-        public float maneuvergLimit = 20;
-        float invManeuvergLimit;
+        public string maneuvergLimit = "20";
+        float[] maneuvergLimParsed = { 20f };
+        float[] invManeuvergLimit = { 1f / 20f };
+
+        public float GetManeuvergLimit(int index)
+        {
+            return (maneuvergLimParsed.Length > index) ? maneuvergLimParsed[index] : maneuvergLimParsed[0];
+        }
+
+        public float GetInvManeuvergLimit(int index)
+        {
+            return (invManeuvergLimit.Length > index) ? invManeuvergLimit[index] : invManeuvergLimit[0];
+        }
 
         public GPSTargetInfo designatedGPSInfo;
 
@@ -562,10 +575,11 @@ namespace BDArmory.Weapons.Missiles
             Fields["minStaticLaunchRange"].guiActiveEditor = false;
 
             ParseLiftDragSteerTorque();
+            ParseManeuvergLim();
 
             MissileGuidance.setupTorqueAoALimit(this, currLiftArea, currDragArea);
 
-            loftState = LoftStates.Boost;
+            loftState = LoftStates.PreLaunch;
             TimeToImpact = float.PositiveInfinity;
             WeaveOffset = -1f;
             terminalHomingActive = false;
@@ -1791,7 +1805,7 @@ namespace BDArmory.Weapons.Missiles
                     ml.LoftVelComp = LoftVelComp;
                     ml.LoftVertVelComp = LoftVertVelComp;
                     //ml.LoftAltComp = LoftAltComp;
-                    ml.loftState = LoftStates.Boost;
+                    ml.loftState = LoftStates.PreLaunch;
                     ml.TimeToImpact = float.PositiveInfinity;
                 }
                 /*if (GuidanceMode == GuidanceModes.AAMHybrid)
@@ -1806,7 +1820,7 @@ namespace BDArmory.Weapons.Missiles
                     ml.LoftRangeFac = LoftRangeFac;
                     ml.LoftVertVelComp = LoftVertVelComp;
                     ml.LoftRangeOverride = LoftRangeOverride;
-                    ml.loftState = LoftStates.Boost;
+                    ml.loftState = LoftStates.PreLaunch;
                 }
             }
 
@@ -1838,7 +1852,7 @@ namespace BDArmory.Weapons.Missiles
                         ml.LoftVelComp = LoftVelComp;
                         ml.LoftVertVelComp = LoftVertVelComp;
                         //ml.LoftAltComp = LoftAltComp;
-                        ml.loftState = LoftStates.Boost;
+                        ml.loftState = LoftStates.PreLaunch;
                         ml.TimeToImpact = float.PositiveInfinity;
                     }
 
@@ -1851,7 +1865,7 @@ namespace BDArmory.Weapons.Missiles
                         ml.LoftRangeFac = LoftRangeFac;
                         ml.LoftVertVelComp = LoftVertVelComp;
                         ml.LoftRangeOverride = LoftRangeOverride;
-                        ml.loftState = LoftStates.Boost;
+                        ml.loftState = LoftStates.PreLaunch;
                     }
                 }
             }
@@ -3606,7 +3620,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (this._guidance == null)
             {
-                this._guidance = new CruiseGuidance(this, invManeuvergLimit);
+                this._guidance = new CruiseGuidance(this, GetInvManeuvergLimit(0));
             }
 
             Vector3 cruiseTarget = TargetPosition;
@@ -3644,6 +3658,9 @@ namespace BDArmory.Weapons.Missiles
             DoAero(cruiseTarget);
             CheckMiss();
         }
+
+        float loftSin = -2f;
+        float kappaTermSin = -2f;
 
         void AAMGuidance()
         {
@@ -3684,8 +3701,9 @@ namespace BDArmory.Weapons.Missiles
                         {
                             float targetAlt = FlightGlobals.getAltitudeAtPos(TargetPosition);
 
-                            if (TimeToImpact == float.PositiveInfinity)
+                            if (loftState < LoftStates.Boost)
                             {
+                                loftSin = Mathf.Sin(LoftAngle * Mathf.Deg2Rad);
                                 // If the missile is not in a vaccuum, is above LoftMinAltitude and has an angle to target below the climb angle (or 90 - climb angle if climb angle > 45) (in this case, since it's angle from the vertical the check is if it's > 90f - LoftAngle) and is either is at a lower altitude than targetAlt + LoftAltitudeAdvMax or further than LoftRangeOverride, then loft.
                                 if (!vessel.InVacuum() && (SourceVessel.Landed || vessel.altitude >= LoftMinAltitude) && VectorUtils.Angle(TargetPosition - vessel.CoM, vessel.upAxis) > Mathf.Min(LoftAngle, 90f - LoftAngle) && ((vessel.altitude - targetAlt <= LoftAltitudeAdvMax) || (TargetPosition - vessel.CoM).sqrMagnitude > (LoftRangeOverride * LoftRangeOverride))) loftState = LoftStates.Boost;
                                 else loftState = LoftStates.Terminal;
@@ -3694,14 +3712,14 @@ namespace BDArmory.Weapons.Missiles
                             float tempPronavGain = pronavGain > 0 ? pronavGain : pronavGainCurve.Evaluate(Vector3.Distance(TargetPosition, vessel.CoM));
 
                             //aamTarget = MissileGuidance.GetAirToAirLoftTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, targetAlt, LoftMaxAltitude, LoftRangeFac, LoftAltComp, LoftVelComp, LoftAngle, LoftTermAngle, terminalHomingRange, ref loftState, out float currTimeToImpact, out float rangeToTarget, optimumAirspeed);
-                            aamTarget = MissileGuidance.GetAirToAirLoftTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, targetAlt, LoftMaxAltitude, LoftRangeFac, LoftVertVelComp, LoftVelComp, LoftAngle, LoftTermAngle, terminalHomingRange, maneuvergLimit, invManeuvergLimit, ref loftState, out float currTimeToImpact, out currgLimit, out float rangeToTarget, homingModeTerminal, tempPronavGain, optimumAirspeed);
+                            aamTarget = MissileGuidance.GetAirToAirLoftTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, targetAlt, LoftMaxAltitude, LoftRangeFac, LoftVertVelComp, LoftVelComp, LoftAngle, LoftTermAngle, terminalHomingRange, GetManeuvergLimit(0), GetInvManeuvergLimit(0), ref loftState, out float currTimeToImpact, out currgLimit, out float rangeToTarget, homingModeTerminal, tempPronavGain, optimumAirspeed);
 
                             //float fac = (1 - (rangeToTarget - terminalHomingRange - 100f) / Mathf.Clamp(terminalHomingRange * 4f, 5000f, 25000f));
 
                             //if (loftState > LoftStates.Boost)
                             //    maxAoA = Mathf.Clamp(initMaxAoA * fac, 4f, initMaxAoA);
                             if (loftState == LoftStates.Midcourse)
-                                currAoALimit = 30f;
+                                currAoALimit = MissileGuidance.AoALDMax;
 
                             TimeToImpact = currTimeToImpact;
 
@@ -3730,14 +3748,19 @@ namespace BDArmory.Weapons.Missiles
 
                     case GuidanceModes.Kappa:
                         {
-                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, LoftTermAngle, LoftRangeOverride, LoftMaxAltitude, out timeToImpact, out currgLimit, ref loftState);
+                            if (loftState < LoftStates.Boost)
+                            {
+                                loftSin = Mathf.Sin(LoftAngle * Mathf.Deg2Rad);
+                                kappaTermSin = Mathf.Sin(LoftTermAngle * Mathf.Deg2Rad);
+                            }
+                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
                             TimeToImpact = timeToImpact;
                             break;
                         }
 
                     case GuidanceModes.Weave:
                         {
-                            aamTarget = MissileGuidance.GetWeaveTarget(TargetPosition, TargetVelocity, vessel, ref WeaveVerticalG, ref WeaveHorizontalG, WeaveRandomRange, ref WeaveFrequency, WeaveTerminalAngle, WeaveFactor, WeaveUseAGMDescentRatio, agmDescentRatio, maneuvergLimit, ref WeaveOffset, ref WeaveStart, ref WeaveAlt, out timeToImpact, out currgLimit);
+                            aamTarget = MissileGuidance.GetWeaveTarget(TargetPosition, TargetVelocity, vessel, ref WeaveVerticalG, ref WeaveHorizontalG, WeaveRandomRange, ref WeaveFrequency, WeaveTerminalAngle, WeaveFactor, WeaveUseAGMDescentRatio, agmDescentRatio, GetManeuvergLimit(0), ref WeaveOffset, ref WeaveStart, ref WeaveAlt, out timeToImpact, out currgLimit);
                             TimeToImpact = timeToImpact;
                             break;
                         }
@@ -3878,7 +3901,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (currgLimit > 0f)
             {
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F5}");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F5}, commanded AoALim: {currAoALimit}");
                 currAoALimit = MissileGuidance.getGLimit(this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, currgLimit, gMargin, currAoALimit);
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: maxAoA: {maxAoA}, currAoALimit: {currAoALimit}, currgLimit: {currgLimit}");
             }
@@ -4459,6 +4482,25 @@ namespace BDArmory.Weapons.Missiles
                 Debug.LogWarning($"[BDArmory.MissileLauncher] Unknown altitudeFuzeMode: {altitudeFuzeMode}! Defaulted to none.");
 
             if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: parsing guidance and homing complete on {part.name}");
+        }
+
+        public void ParseManeuvergLim()
+        {
+            maneuvergLimParsed = OtherUtils.ParseToFloatArray(maneuvergLimit);
+            invManeuvergLimit = new float[maneuvergLimParsed.Length];
+            for (int i = 0; i < maneuvergLimit.Length; i++)
+            {
+                float temp = maneuvergLimParsed[i];
+                if (temp < 0)
+                {
+                    maneuvergLimParsed[i] = 20f;
+                    invManeuvergLimit[i] = 0.05f;
+                }
+                else
+                {
+                    invManeuvergLimit[i] = 1f / temp;
+                }
+            }
         }
 
         public void ParseLiftDragSteerTorque()
