@@ -2722,9 +2722,12 @@ namespace BDArmory.Weapons.Missiles
                         //TargetSignatureData.ResetTSDArray(ref scannedTargets);
                         Ray ray = new Ray(vessel.CoM, GetForwardTransform());
 
+                        if (!ActiveRadar)
+                        {
+                            updateRadarCS = true;
+                        }
                         // Missile's radar has gone active
                         ActiveRadar = true;
-                        updateRadarCS = true;
 
                         bool pingRWR = Time.time >= nextRWRPing;
                         if (pingRWR) nextRWRPing = Time.time + RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME;

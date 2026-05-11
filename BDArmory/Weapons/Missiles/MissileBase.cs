@@ -1204,8 +1204,6 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         //RadarUtils.UpdateRadarLock(ray, lockedSensorFOV, activeRadarMinThresh, ref scannedTargets, 0.4f, pingRWR, RadarWarningReceiver.RWRThreatTypes.MissileLock, radarSnapshot);
                         int numLocked = RadarUtils.RadarUpdateMissileLock(ray, lockedSensorFOV, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
 
-                        float sqrThresh = radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
-
                         if (radarLOAL && radarLOALSearching && !radarSnapshot)
                         {
                             //only scan on snapshot interval
@@ -1213,6 +1211,10 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         }
                         else
                         {
+                            float sqrThresh = 250000f;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
+                            float closestDist = float.MaxValue;
+                            TargetSignatureData currTarget = TargetSignatureData.noTarget;
+
                             for (int i = 0; i < scannedTargets.Length; i++)
                             {
                                 // Once we've reached the last target we've locked, break
@@ -1221,14 +1223,26 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 // Shouldn't happen, but if for some reason target doesn't exist -> continue
                                 if (!scannedTargets[i].exists) continue;
 
-                                if ((scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude > sqrThresh) continue;
+                                float sqrDist = (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
+                                if (sqrDist > sqrThresh || sqrDist > closestDist) continue;
 
                                 //re-check engagement envelope, only lock appropriate targets
                                 if (!CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo)) continue;
 
                                 if (hasIFF && Team.IsFriendly(scannedTargets[i].Team)) continue;
 
-                                radarTarget = scannedTargets[i];
+                                closestDist = sqrDist;
+                                currTarget = scannedTargets[i];
+
+                                //if (!scannedTargets[i].exists)
+                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
+                                //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
+                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
+                            }
+
+                            if (currTarget.exists)
+                            {
+                                radarTarget = currTarget;
                                 TargetAcquired = true;
                                 radarLOALSearching = false;
                                 //if (weaponClass == WeaponClasses.SLW)
@@ -1239,39 +1253,36 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 TargetVelocity = radarTarget.velocity;
                                 TargetAcceleration = radarTarget.acceleration;
                                 _lockFailTimer = 0;
-                                if (!ActiveRadar && Time.time - TimeFired > 1)
-                                {
-                                    if (locksCount == 0)
-                                    {
-                                        if (weaponClass == WeaponClasses.SLW)
-                                        {
-                                            RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                                        }
-                                        else
-                                        {
-                                            RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                                        }
-                                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
-                                    }
-                                    else if (locksCount > 2)
-                                    {
-                                        guidanceActive = false;
-                                        checkMiss = true;
-                                        if (BDArmorySettings.DEBUG_MISSILES)
-                                        {
-                                            Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Active Radar guidance failed. Radar missileBase reached max re-lock attempts.");
-                                        }
-                                    }
-                                    locksCount++;
-                                }
+                                if (!ActiveRadar)
+                                    updateRadarCS = true;
                                 ActiveRadar = true;
-                                updateRadarCS = true;
                                 return;
+                            }
 
-                                //if (!scannedTargets[i].exists)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
-                                //if (scannedTargets[i].exists && (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude >= sqrThresh)
-                                //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
+                            if (!ActiveRadar && Time.time - TimeFired > 1)
+                            {
+                                if (locksCount < 2)
+                                {
+                                    if (weaponClass == WeaponClasses.SLW)
+                                    {
+                                        RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
+                                    }
+                                    else
+                                    {
+                                        RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
+                                    }
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
+                                }
+                                else
+                                {
+                                    guidanceActive = false;
+                                    checkMiss = true;
+                                    if (BDArmorySettings.DEBUG_MISSILES)
+                                    {
+                                        Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Active Radar guidance failed. Radar missileBase reached max re-lock attempts.");
+                                    }
+                                }
+                                locksCount++;
                             }
                         }
                     }
