@@ -18,7 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-using UniLinq;
+using System.Linq;
 using UnityEngine;
 using static BDArmory.Bullets.PooledBullet;
 
@@ -7500,7 +7500,7 @@ namespace BDArmory.Weapons
 
             GUILayout.EndVertical();
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref guiWindowRect);
         }
 

@@ -1,6 +1,4 @@
-﻿using BDArmory.Settings;
-using BDArmory.Utils;
-using KSP.Localization;
+﻿using BDArmory.Utils;
 using UnityEngine;
 
 // credit to Brian Jones (https://github.com/boj)& KSP ForumMember TaxiService
@@ -12,14 +10,14 @@ namespace BDArmory.UI
         private Texture2D displayPicker;
         public int displayTextureWidth = 360;
         public int displayTextureHeight = 360;
-
+        private Texture2D prefabColorPreview;
+        
         public int HorizPos;
         public int VertPos;
 
         public Color selectedColor;
         public Color presetColor;
         private Texture2D selectedColorPreview;
-        private Texture2D prefabColorPreview;
 
         private float hueSlider = 0f;
         private float prevHueSlider = 0f;
@@ -96,18 +94,11 @@ namespace BDArmory.UI
                 BDTISetup.Instance.UpdateTeamColor = true;
             }
             //preset colors
-            GUIStyle style = new GUIStyle();
+            GUIStyle style = new() { normal = new GUIStyleState { background = prefabColorPreview } };
             
             for (int pcOffset = 0; pcOffset < 8; pcOffset++)
             {
-                try
-                {
-                    presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
-                }
-                catch
-                {
-                    presetColor = Color.white;
-                }
+                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
                 prefabColorPreview.SetPixel(0, 0, presetColor);
                 prefabColorPreview.Apply();
                 style.normal.background = prefabColorPreview;
@@ -128,14 +119,7 @@ namespace BDArmory.UI
             }
             for (int pcOffset = 8; pcOffset < 16; pcOffset++)
             {
-                try
-                {
-                    presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
-                }
-                catch
-                {
-                    presetColor = Color.white;
-                }
+                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
                 prefabColorPreview.SetPixel(0, 0, presetColor);
                 prefabColorPreview.Apply();
                 style.normal.background = prefabColorPreview;
@@ -154,9 +138,8 @@ namespace BDArmory.UI
                     }
                 }
             }
-
             // box for chosen color
-            //GUIStyle style = new GUIStyle();
+
             selectedColorPreview.SetPixel(0, 0, selectedColor);
             selectedColorPreview.Apply();
             style.normal.background = selectedColorPreview;

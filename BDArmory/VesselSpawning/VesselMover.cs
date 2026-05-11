@@ -982,9 +982,11 @@ namespace BDArmory.VesselSpawning
         GUIStyle messageShadowStyle;
         void ConfigureStyles()
         {
-            messageStyle = new GUIStyle(HighLogic.Skin.label);
-            messageStyle.fontSize = 22;
-            messageStyle.alignment = TextAnchor.UpperCenter;
+            messageStyle = new GUIStyle(HighLogic.Skin.label)
+            {
+                fontSize = 22,
+                alignment = TextAnchor.UpperCenter
+            };
 
             messageShadowStyle = new GUIStyle(messageStyle);
             messageShadowStyle.normal.textColor = new Color(0, 0, 0, 0.75f);
@@ -1016,7 +1018,6 @@ namespace BDArmory.VesselSpawning
 
         void WindowVesselMover(int id)
         {
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectVesselMover.width - 24, 24));
             if (GUI.Button(new Rect(BDArmorySetup.WindowRectVesselMover.width - 24, 0, 24, 24), " X", BDArmorySetup.CloseButtonStyle)) SetVisible(false);
             GUILayout.BeginVertical(GUILayout.ExpandHeight(true));
             switch (state)
@@ -1106,6 +1107,7 @@ namespace BDArmory.VesselSpawning
                     }
             }
             GUILayout.EndVertical();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectVesselMover, previousVesselMoverWindowHeight);
             GUIUtils.UpdateGUIRect(BDArmorySetup.WindowRectVesselMover, guiCheckIndex);
             GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectVesselMover);
@@ -1193,7 +1195,6 @@ namespace BDArmory.VesselSpawning
 
         public void VesselSelectionWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, BDArmorySetup.WindowRectVesselMoverVesselSelection.width, 20));
             GUILayout.BeginVertical();
             selectionFilter = GUIUtils.TextField(selectionFilter, " Filter", "VMFilterField");
             if (focusFilterField)
@@ -1273,6 +1274,7 @@ namespace BDArmory.VesselSpawning
             {
                 resizingSelectionWindow = true;
             }
+            else GUIUtils.DragWindow();
             if (resizingSelectionWindow && Event.current.type == EventType.Repaint)
             { BDArmorySetup.WindowRectVesselMoverVesselSelection.size += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL; }
             #endregion
@@ -1373,7 +1375,6 @@ namespace BDArmory.VesselSpawning
         public void CrewSelectionWindow(int windowID)
         {
             KerbalRoster kerbalRoster = HighLogic.CurrentGame.CrewRoster;
-            GUI.DragWindow(new Rect(0, 0, crewSelectionWindowRect.width, 20));
             GUILayout.BeginVertical();
             if (BDArmorySettings.VESSEL_SPAWN_FILL_SEATS == 0) GUILayout.Label($"Select up to {crewCapacity} kerbals to populate {vesselNameToSpawn}.");
             crewSelectionScrollPos = GUILayout.BeginScrollView(crewSelectionScrollPos, GUI.skin.box, GUILayout.Width(crewSelectionWindowRect.width - 15), GUILayout.MaxHeight(crewSelectionWindowRect.height - 60));
@@ -1409,7 +1410,7 @@ namespace BDArmory.VesselSpawning
                 focusKerbalNameField = newCustomKerbal;
                 notThisFrame = true;
             }
-            if (GUILayout.Button("X", removeKerbals ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.CloseButtonStyle, GUILayout.Width(27)))
+            if (GUILayout.Button(" X", removeKerbals ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.CloseButtonStyle, GUILayout.Width(27)))
             {
                 // Remove selected Kerbals!
                 removeKerbals = !removeKerbals;
@@ -1485,6 +1486,7 @@ namespace BDArmory.VesselSpawning
                 }
             }
             GUILayout.EndVertical();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref crewSelectionWindowRect);
             GUIUtils.UpdateGUIRect(crewSelectionWindowRect, _crewGUICheckIndex);
             GUIUtils.UseMouseEventInRect(crewSelectionWindowRect);

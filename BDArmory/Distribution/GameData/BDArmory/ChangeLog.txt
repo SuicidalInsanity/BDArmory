@@ -40,6 +40,7 @@
 		- AI will no longer target interceptor missiles with interceptor missiles, preventing interceptor conga lines from forming.
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
+	- Add a "Retreat Distance" slider to the AI to allow customising the distance to retreat by when an orbiting vessel comes under attack.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate (or half the minimum for triangles) to prevent unphysical armor calculations.
 - Sensors:
@@ -120,6 +121,7 @@
 - Competition:
 	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
 	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+	- Add hidden settings for the max slider values of various tournament options.
 - Mod Support:
 	- Hack support for JonnyOThan's TweakScale Rescaled fork, for now we assume all parts have cubic mass scaling, which is incorrect, but will temporarily patch support for the mod, pending official support.
 

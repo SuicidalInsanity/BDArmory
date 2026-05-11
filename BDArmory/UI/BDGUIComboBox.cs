@@ -58,7 +58,7 @@ namespace BDArmory.UI
         /// <returns>The selected item's index.</returns>
         public int Show()
         {
-            if (GUI.Button(buttonRect, buttonContent, BDArmorySetup.BDGuiSkin.button)) // Button
+            if (GUI.Button(buttonRect, buttonContent, BDArmorySetup.ButtonStyle)) // Button
             {
                 isClickedComboButton = !isClickedComboButton;
             }
@@ -67,7 +67,7 @@ namespace BDArmory.UI
             if (isClickedComboButton) // Selection grid
             {
                 scrollViewVector = GUI.BeginScrollView(scrollViewRect, scrollViewVector, scrollViewInnerRect, BDArmorySetup.BDGuiSkin.horizontalScrollbar, BDArmorySetup.BDGuiSkin.verticalScrollbar);
-                GUI.Box(scrollViewInnerRect, "", BDArmorySetup.BDGuiSkin.box); // Background box in the scroll view.
+                GUI.Box(scrollViewInnerRect, "", BDArmorySetup.SelectedButtonStyle); // Background box in the scroll view.
                 if (selectedItemIndex != (selectedItemIndex = GUI.SelectionGrid(selectionGridRect, selectedItemIndex, listContent, columns, listStyle))) // If the selection is changed, then update the UI and close the combo-box.
                 {
                     if (selectedItemIndex > -1) buttonContent.text = listContent[selectedItemIndex].text;

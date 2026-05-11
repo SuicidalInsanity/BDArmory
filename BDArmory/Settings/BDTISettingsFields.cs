@@ -66,7 +66,6 @@ namespace BDArmory.Settings
 				string color = $"{Mathf.RoundToInt(keyValuePair.Value.r * 255)},{Mathf.RoundToInt(keyValuePair.Value.g * 255)},{Mathf.RoundToInt(keyValuePair.Value.b * 255)},{Mathf.RoundToInt(keyValuePair.Value.a * 255)}";
 				preset.SetValue(keyValuePair.Key.ToString(), color, true);
 			}
-
 			fileNode.Save(BDTISettings.settingsConfigURL);
 		}
 		public static void Load()
@@ -89,7 +88,8 @@ namespace BDArmory.Settings
 						field.Current.SetValue(null, parsedValue);
 					}
 				}
-            ConfigNode presets = fileNode.GetNode("PresetColors");
+			ConfigNode presets = fileNode.GetNode("PresetColors");
+
             for (int i = 0; i < presets.CountValues; i++)
             {
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.BDTISettingsField]: loading preset " + presets.values[i].name + "; color: " + GUIUtils.ParseColor255(presets.values[i].value));
@@ -101,8 +101,8 @@ namespace BDArmory.Settings
                 {
                     BDTISetup.Instance.ColorPresets.Add(i, GUIUtils.ParseColor255(presets.values[i].value));
                 }
-            }
-            if (!BDTISettings.STORE_TEAM_COLORS || !fileNode.HasNode("TeamColors")) return;
+            }				
+			if (!BDTISettings.STORE_TEAM_COLORS || !fileNode.HasNode("TeamColors")) return;
 			ConfigNode colors = fileNode.GetNode("TeamColors");
 			for (int i = 0; i < colors.CountValues; i++)
 			{

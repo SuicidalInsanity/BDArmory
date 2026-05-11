@@ -2088,7 +2088,7 @@ namespace BDArmory.Control
 
         Vector3 GetFormationPosition()
         {
-            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * this.GetLocalFormationPosition(commandFollowIndex);
+            return commandLeader.vessel.CoM + Quaternion.LookRotation(commandLeader.vessel.up, upDir) * commandLeader.GetFormationPosition(commandFollowIndex);
         }
 
         #endregion WingCommander

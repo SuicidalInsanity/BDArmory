@@ -1121,15 +1121,15 @@ namespace BDArmory.Control
 
         public void SetTeam(BDTeam team)
         {
+            if (Team == team) return; // We're already on this team!
             if (HighLogic.LoadedSceneIsFlight)
             {
                 SetTarget(null); // Without this, friendliesEngaging never gets updated
-                using (var wpnMgr = VesselModuleRegistry.GetMissileFires(vessel).GetEnumerator())
-                    while (wpnMgr.MoveNext())
-                    {
-                        if (wpnMgr.Current == null) continue;
-                        wpnMgr.Current.Team = team;
-                    }
+                foreach (var wpnMgr in VesselModuleRegistry.GetMissileFires(vessel))
+                {
+                    if (wpnMgr == null) continue;
+                    wpnMgr.Team = team;
+                }
 
                 if (vessel.gameObject.GetComponent<TargetInfo>())
                 {
@@ -1141,14 +1141,14 @@ namespace BDArmory.Control
             }
             else if (HighLogic.LoadedSceneIsEditor)
             {
-                using (var editorPart = EditorLogic.fetch.ship.Parts.GetEnumerator())
-                    while (editorPart.MoveNext())
-                        using (var wpnMgr = editorPart.Current.FindModulesImplementing<MissileFire>().GetEnumerator())
-                            while (wpnMgr.MoveNext())
-                            {
-                                if (wpnMgr.Current == null) continue;
-                                wpnMgr.Current.Team = team;
-                            }
+                foreach (var editorPart in EditorLogic.fetch.ship.Parts)
+                {
+                    foreach (var wpnMgr in editorPart.FindModulesImplementing<MissileFire>())
+                    {
+                        if (wpnMgr == null) continue;
+                        wpnMgr.Team = team;
+                    }
+                }
             }
         }
 
@@ -8253,7 +8253,7 @@ namespace BDArmory.Control
                     var pilotAI = PilotAI;
                     if (pilotAI && pilotAI.IsExtending && target.Vessel != pilotAI.extendTarget && pilotAI.extendingReason != "bombs away!")
                     {
-                        pilotAI.StopExtending($"changed target from {(pilotAI.extendTarget ? pilotAI.extendTarget.GetName() : "null")} to {target.Vessel.GetName()}"); // Only stop extending if the target is different from the extending target
+                        pilotAI.StopExtending($"changed target from {(pilotAI.extendTarget != null ? pilotAI.extendTarget.GetName() : "null")} to {target.Vessel.GetName()}"); // Only stop extending if the target is different from the extending target
                     }
                 }
                 currentTarget = target;
