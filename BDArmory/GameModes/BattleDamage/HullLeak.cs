@@ -61,6 +61,7 @@ namespace BDArmory.FX
             parentVessel = v;
             transform.SetParent(parentVessel.vesselTransform);
             transform.position = transform.parent.TransformPoint(LocalPoint);
+            if (capsizeLeak) transform.rotation = Quaternion.FromToRotation(Vector3.up, transform.position - v.mainBody.transform.position).normalized;
             if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11
                 OnVesselUnloaded_1_11(true); // Catch unloading events too.
             gameObject.SetActive(true);
@@ -148,7 +149,7 @@ namespace BDArmory.FX
 
             var dist2Waterline = FlightGlobals.getAltitudeAtPos(transform.position);
             float HoleOrientation = Mathf.Clamp(1 - Mathf.Abs(Vector3.Dot(HBController.upDir.normalized, transform.up)), 0.05f, 1); //height modification of hole; holes that are perpendicualr to water are full height, holes in the upper deck parallel to sea would have 0 'depth', etc
-            if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] Hole Dot: {Vector3.Dot(HBController.upDir.normalized, transform.up):F2}, holeOri: {HoleOrientation:F2}");
+            if (!parentPart) HoleOrientation = 1; //holes from partloss only applies to waterline parts, so don't apply directionality to them
             if (dist2Waterline > (holeRadius * HoleOrientation) + 1) //1 meter margin for waves/etc
             {
                 debugFlooding = false;
@@ -169,7 +170,8 @@ namespace BDArmory.FX
                         if (capsizeLeak) holeFracKeel = 0;
                         double holeFrac = 1 - (holeFracWL + holeFracKeel);
                       
-                        if (BDArmorySettings.HULLBREACH) Debug.Log($"[BDArmory.HullLeak] WLoverlap: {holeFracWL:F2}; KeelOverlap: {holeFracKeel:F2}; holeFrac: {holeFrac:F2}");
+                        if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] WLoverlap: {holeFracWL:F2}; KeelOverlap: {holeFracKeel:F2}; holeFrac: {holeFrac:F2}");
+                        if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullLeak] Hole Dot: {Vector3.Dot(HBController.upDir.normalized, transform.up):F2}, holeOri: {HoleOrientation:F2}");
                         if (holeFrac <= 0) return; //hole completely above waterline
                         float pressureMod = 1;
                         if (dist2Waterline < 0) pressureMod = 1 + (Mathf.Abs(dist2Waterline) / 10); //in 1g, waterpressure increases by basically 1 bar (100MPa) per 10m. TODO - local grav in case of ship battles on Eve/Laythe

@@ -4,13 +4,10 @@ using BDArmory.Guidances;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using Expansions.Serenity;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using static BDArmory.Weapons.Missiles.MissileBase;
 
 namespace BDArmory.WeaponMounts
 {

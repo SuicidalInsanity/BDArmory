@@ -77,22 +77,23 @@ namespace BDArmory.GameModes.BattleDamage
             float aftLength = 0;
             float portBeam = 0;
             float starBeam = 0;
-            //debugVRTforward = vessel.ReferenceTransform.forward;
+            
+            float waterLineHeight = FlightGlobals.getAltitudeAtPos(vessel.rootPart.transform.position); //height offset of root part from waterlevel?
             Quaternion priorRotation = part.transform.rotation;    //should be rootpart
             Quaternion vesselRotation = vessel.transform.rotation;
-            Quaternion CFHRotation = vessel.ReferenceTransform.rotation;
-            if (vesselRotation == CFHRotation) vessel.SetRotation(Quaternion.identity);
+            Quaternion CFHRotation = vessel.ReferenceTransform.rotation; //correct for ControlFromHere for rootpart orientations that are not default
+            if (vesselRotation == CFHRotation) vessel.SetRotation(new Quaternion(-0.7f, 0f, 0f, -0.7f));
             else vessel.SetRotation(Quaternion.Inverse(CFHRotation) * vesselRotation);
             //this is rotating the vessel, which means it's no longer in-line with the water, potentially...
             //grab vessel height above surface for where water level should be, then do the grab bottom bounds, and compare that distance to 'water line hight'
-            float waterLineHeight = FlightGlobals.getAltitudeAtPos(vessel.rootPart.transform.position); //height offset of root part from waterlevel? 
-                                                                                                        //debugVRTup = vessel.ReferenceTransform.up;
-                                                                                                        //debugVRTright = vessel.ReferenceTransform.right;
+            //debugVRTforward = vessel.ReferenceTransform.forward;
+            //debugVRTup = vessel.ReferenceTransform.up;
+            //debugVRTright = vessel.ReferenceTransform.right;
             foreach (Part p in vessel.parts)
             {
                 //do some filtering. Control surface parts - hydrofoils/rudders/etc likely to not be part ofthe Hull proper, so their loss shouldn't cause holes
                 //engines usually inside the hull, their loss shouldn't cause leaks (admittedly, if you've taken engine loss, you almost certainly already *have* leaks...)
-                if (p.isEngine()) continue; //will cause issues if any large boat hull parts packs that have sterns with integrated propellers
+                //if (p.isEngine()) continue; //will cause issues if any large boat hull parts packs that have sterns with integrated propellers
                 if (p.isControlSurface()) continue;
                 if (p.Modules.GetModule<LaunchClamp>() != null) continue;
                 if (ProjectileUtils.IsIgnoredPart(p)) continue; //AI/WM/flags/decals
@@ -123,7 +124,7 @@ namespace BDArmory.GameModes.BattleDamage
                 if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] Part {p.partInfo.title} fore: {(fore - vessel.rootPart.transform.position).z:F2}, aft: {-(aft - vessel.rootPart.transform.position).z:F2}, port: {-(port - vessel.rootPart.transform.position).x:F2}, star: {(star - vessel.rootPart.transform.position).x:F2}");
                 if (partOffset.x > starBeam) starBeam = Mathf.Abs(partOffset.x);
 
-                //if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] current vessel length: ({foreLength:F2} + {aftLength:F2}) {foreLength + aftLength:F2}; beam: ({portBeam:F2} + {starBeam:F2}) {portBeam + starBeam:F2}");
+                if (BDArmorySettings.DEBUG_HULLBREACH) Debug.Log($"[BDArmory.HullBreach] current vessel length: ({foreLength:F2} + {aftLength:F2}) {foreLength + aftLength:F2}; beam: ({portBeam:F2} + {starBeam:F2}) {portBeam + starBeam:F2}");
                 waterLineParts.Add(p);
                 p.rigidAttachment = true;
             }
