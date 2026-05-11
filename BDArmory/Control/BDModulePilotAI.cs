@@ -346,23 +346,6 @@ namespace BDArmory.Control
             groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
             UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
         public bool maxAltitudeToggle = false;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BombingAltitude",
-            groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 100f, maxValue = 3000, stepIncrement = 50f, scene = UI_Scene.All)]
-        public float bombingAltitude = 500;
-
-        public float finalBombingAltitude;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DiveBombing", advancedTweakable = true,
-            groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
-            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
-        public bool divebombing = false;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DiveBombingAngle",
-            groupName = "pilotAI_Altitudes", groupDisplayName = "#LOC_BDArmory_AI_Altitudes", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 30f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
-        public float divebombingAngle = 60f;
         #endregion
 
         #region Speeds
@@ -486,6 +469,29 @@ namespace BDArmory.Control
         public float ImmelmannPitchUpBias = 10f; // °/s
         #endregion
 
+        #region Bombing
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DiveBombing", advancedTweakable = true,
+            groupName = "pilotAI_Bombing", groupDisplayName = "#LOC_BDArmory_AI_Bombing", groupStartCollapsed = true),
+            UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
+        public bool divebombing = false;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BombingAltitude",
+            groupName = "pilotAI_Bombing", groupDisplayName = "#LOC_BDArmory_AI_Bombing", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 100f, maxValue = 3000, stepIncrement = 50f, scene = UI_Scene.All)]
+        public float bombingAltitude = 500;
+        public float finalBombingAltitude;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_DiveBombingAngle",
+            groupName = "pilotAI_Bombing", groupDisplayName = "#LOC_BDArmory_AI_Bombing", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 30f, maxValue = 90f, stepIncrement = 1f, scene = UI_Scene.All)]
+        public float divebombingAngle = 60f;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_BombingExtendDistance", advancedTweakable = true, //Bombing Extend Distance Bombing
+            groupName = "pilotAI_Bombing", groupDisplayName = "#LOC_BDArmory_AI_Bombing", groupStartCollapsed = true),
+            UI_FloatRange(minValue = 0f, maxValue = 5000f, stepIncrement = 50f, scene = UI_Scene.All)]
+        public float extendDistanceBombing = 1000f; // Doesn't include expected (unguided) bomb drop distance.
+        #endregion
+
         #region EvadeExtend
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_MinEvasionTime", advancedTweakable = true, // Min Evasion Time
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
@@ -568,11 +574,6 @@ namespace BDArmory.Control
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
             UI_FloatRange(minValue = 0f, maxValue = 5000f, stepIncrement = 50f, scene = UI_Scene.All)]
         public float extendDistanceAirToGroundGuns = 1500f;
-
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ExtendDistanceAirToGround", advancedTweakable = true, //Extend Distance Air-To-Ground
-            groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
-            UI_FloatRange(minValue = 0f, maxValue = 5000f, stepIncrement = 50f, scene = UI_Scene.All)]
-        public float extendDistanceAirToGround = 2000f; // Doesn't include expected (unguided) bomb drop distance.
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_ExtendTargetVel", advancedTweakable = true, //Extend Target Velocity Factor
             groupName = "pilotAI_EvadeExtend", groupDisplayName = "#LOC_BDArmory_AI_EvadeExtend", groupStartCollapsed = true),
@@ -698,7 +699,7 @@ namespace BDArmory.Control
             { nameof(extendDistanceAirToAir), 20000f },
             { nameof(extendAngleAirToAir), 90f },
             { nameof(extendDistanceAirToGroundGuns), 20000f },
-            { nameof(extendDistanceAirToGround), 20000f },
+            { nameof(extendDistanceBombing), 20000f },
             { nameof(minEvasionTime), 10f },
             { nameof(evasionNonlinearity), 90f },
             { nameof(evasionThreshold), 300f },
@@ -2286,7 +2287,7 @@ namespace BDArmory.Control
             else if (!extending && weaponManager && targetVessel != null && targetVessel.transform != null)
             {
                 // Check if we need to extend.
-                if (!targetVessel.LandedOrSplashed && !(weaponManager.currentGun == null && weaponManager.selectedWeapon != null && weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb))
+                if (!targetVessel.LandedOrSplashed && !(weaponManager.currentGun == null && weaponManager.selectedWeapon != null && weaponManager.selectedWeapon.GetWeaponClass() == WeaponClasses.Bomb)) // Extend for guns or bombs against airborne targets.
                 {
                     Vector3 targetVesselRelPos = targetVessel.CoM - vesselTransformPosition;
                     if (canExtend && vessel.radarAltitude < defaultAltitude && VectorUtils.Angle(targetVesselRelPos, -upDirection) < 35) // Target is at a steep angle below us and we're below default altitude, extend to get a better angle instead of attacking now.
@@ -2524,7 +2525,7 @@ namespace BDArmory.Control
                                 finalBombingAltitude = 200f; //drop to the deck for torpedo run // sources suggest torp drop height varies (based on torp) from ~15m to ~260m. 200 seems a decent mid ground.
                                 // target = GetSurfacePosition(target); //set submerged targets to surface for future bombingAlt vectoring
                                 if (v.altitude < 0) target -= (float)v.altitude * upDirection; // Submerged targets are targeted at the surface. Note: GetSurfacePosition ignores buildings and other structures.
-                                if (distanceToTarget > Mathf.Max(4500f, extendDistanceAirToGround + ((float)vessel.horizontalSrfSpeed * BDAMath.Sqrt(2 * finalBombingAltitude / bodyGravity)))) //lead based on estimate of fall time at desired alt, regardless if we're there yet
+                                if (distanceToTarget > Mathf.Max(4500f, extendDistanceBombing + ((float)vessel.horizontalSrfSpeed * BDAMath.Sqrt(2 * finalBombingAltitude / bodyGravity)))) //lead based on estimate of fall time at desired alt, regardless if we're there yet
                                 {
                                     finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                                     target += finalBombingAltitude * upDirection; //leisurely aim for target alt while still out of range, AI might be above coastline so don't go low early
@@ -2553,7 +2554,7 @@ namespace BDArmory.Control
                         case WeaponClasses.Bomb:
                             {
                                 float bombingAltOverTarget = v.LandedOrSplashed || divebombing ? bombingAltitude : 2f * missile.GetBlastRadius(); // get close for level bombing airships to try and ensure hits
-                                if (distanceToTarget > Mathf.Max(4500f, extendDistanceAirToGround + ((float)vessel.horizontalSrfSpeed * BDAMath.Sqrt(2 * bombingAltOverTarget / bodyGravity)))) //lead based on estimate of fall time at desired alt, regardless if we're there yet
+                                if (distanceToTarget > Mathf.Max(4500f, extendDistanceBombing + ((float)vessel.horizontalSrfSpeed * BDAMath.Sqrt(2 * bombingAltOverTarget / bodyGravity)))) //lead based on estimate of fall time at desired alt, regardless if we're there yet
                                 {
                                     finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                                     if (v.altitude < 0) target -= (float)v.altitude * upDirection; // Submerged targets are targeted at the surface.
@@ -3288,7 +3289,7 @@ namespace BDArmory.Control
                     var missile = weaponManager.CurrentMissile;
                     if (missile == null) // No bomb/missile selected!
                     {
-                        extendDistance = extendDistanceAirToGround;
+                        extendDistance = extendDistanceBombing;
                         shouldExtend = hDistSqr < extendDistance * extendDistance;
                     }
                     else
@@ -3297,7 +3298,7 @@ namespace BDArmory.Control
                         if (!divebombing && bombingAirTarget) bombingAltOverTarget = 2f * missile.GetBlastRadius();
                         if (divebombing)
                         {
-                            extendDistance = extendDistanceAirToGround;
+                            extendDistance = extendDistanceBombing + bombingAltOverTarget / Mathf.Tan(Mathf.Deg2Rad * Mathf.Min(divebombingAngle, 89f)); // Avoid 1/Inf.
                             if (hDistSqr < extendDistance * extendDistance && !DivebombStarted)
                             {
                                 if (Vector3.Dot(vesselTransform.up.ProjectOnPlanePreNormalized(vessel.up), hVecToTarget) < 0) // Pointing away from the target in the horizontal plane.
@@ -3318,7 +3319,7 @@ namespace BDArmory.Control
                         {
                             if (targetVessel.LandedOrSplashed) // Level bombing ground target.
                             {
-                                extendDistance = extendDistanceAirToGround + strafingSpeed * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
+                                extendDistance = extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, idleSpeed) * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
                                 shouldExtend = hDistSqr < extendDistance * extendDistance && Vector3.Dot(vesselTransform.up, targetVessel.CoM - vessel.CoM) < 0; // Pointing away from the target. Overshooting extend request is handled in MissileFire.GuardBombRoutine.
                                 groundTargetExtendReason = $"too low to level-bomb surface target";
                             }
@@ -3326,7 +3327,7 @@ namespace BDArmory.Control
                             {
                                 // Use the A2A distance plus a bit to stabilise (but not more than the A2G distance).
                                 // Assume the current speed is around the actual max speed of the craft and use a drop time corresponding to 2x blast radius.
-                                extendDistance = Mathf.Min(1.5f * extendDistanceAirToAir, extendDistanceAirToGround) + (float)vessel.srfSpeed * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
+                                extendDistance = extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, idleSpeed) * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
                                 shouldExtend = hDistSqr < extendDistance * extendDistance && (
                                     Vector3.Dot(vesselTransform.up, targetVessel.CoM - vessel.CoM) < 0 // Pointing away from the target. Overshooting extend request is handled in MissileFire.GuardBombRoutine.
                                     || vessel.altitude < targetVessel.altitude // Target is above us.

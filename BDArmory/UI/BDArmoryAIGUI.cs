@@ -499,7 +499,7 @@ namespace BDArmory.UI
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
-                            nameof(AI.extendDistanceAirToGround),
+                            nameof(AI.extendDistanceBombing),
                             nameof(AI.extendTargetVel),
                             nameof(AI.extendTargetAngle),
                             nameof(AI.extendTargetDist),
@@ -1444,6 +1444,8 @@ namespace BDArmory.UI
                                     AI.bombingLateralCorrection.D = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 7, 9, 2), AI.bombingLateralCorrection.D, 0, 1), 0.1f);
                                     ++bombingLines;
 
+                                    bombingLines = ContentEntry(ContentType.FloatSlider, bombingLines, contentWidth, ref AI.extendDistanceBombing, nameof(AI.extendDistanceBombing), "BombingExtendDistance", $"{AI.extendDistanceBombing:0}m");
+
                                     GUI.EndGroup();
                                     sectionHeights[Section.Combat] = Mathf.Lerp(sectionHeight, bombingLines, 0.15f);
                                     bombingLines += 0.1f;
@@ -1490,7 +1492,6 @@ namespace BDArmory.UI
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToAir, nameof(AI.extendDistanceAirToAir), "ExtendDistanceAirToAir", $"{AI.extendDistanceAirToAir:0}m");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendAngleAirToAir, nameof(AI.extendAngleAirToAir), "ExtendAngleAirToAir", $"{AI.extendAngleAirToAir:0}°");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToGroundGuns, nameof(AI.extendDistanceAirToGroundGuns), "ExtendDistanceAirToGroundGuns", $"{AI.extendDistanceAirToGroundGuns:0}m");
-                                        evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToGround, nameof(AI.extendDistanceAirToGround), "ExtendDistanceAirToGround", $"{AI.extendDistanceAirToGround:0}m");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetVel, nameof(AI.extendTargetVel), "ExtendTargetVel", $"{AI.extendTargetVel:0.0}");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetAngle, nameof(AI.extendTargetAngle), "ExtendTargetAngle", $"{AI.extendTargetAngle:0}°");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetDist, nameof(AI.extendTargetDist), "ExtendTargetDist", $"{AI.extendTargetDist:0}m");
@@ -1682,6 +1683,7 @@ namespace BDArmory.UI
                                             GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_alt"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
                                         }
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_PID"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_Extend"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend distances
                                     }
                                     if (showSection[Section.Evasion])
                                     {

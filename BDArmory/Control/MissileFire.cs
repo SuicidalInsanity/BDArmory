@@ -3841,7 +3841,7 @@ namespace BDArmory.Control
                     }
                     else if (CPADistSqr > radiusSqr || Vector3.Dot(vessel.up, vessel.transform.forward) > 0) // roll check for level-bombing
                     {
-                        float bombingRunDistance = pilotAI && pilotAI.pilotEnabled ? pilotAI.extendDistanceAirToGround * pilotAI.extendDistanceAirToGround : 4000000; // 2km if non-pilotAI
+                        float bombingRunDistance = pilotAI && pilotAI.pilotEnabled ? pilotAI.extendDistanceBombing * pilotAI.extendDistanceBombing : 4000000; // 2km if non-pilotAI
                         if ((leadTarget - vessel.CoM).sqrMagnitude < bombingRunDistance // Check the target is within bombing run dist and ...
                             && ((CPADistSqr < 4 * radiusSqr && Vector3.Dot(vessel.up, vessel.transform.forward) > 0) // we're not upside down while level-bombing on final approach
                             || (CPADistSqr > Mathf.Max(4f * radiusSqr, 40000f) && bombAimerOvershoot > 0))) // or overshooting the target by more than twice the blast radius or 200m
@@ -3851,7 +3851,7 @@ namespace BDArmory.Control
                                 {
                                     case AIType.PilotAI:
                                         if (pilotAI.extendingReason != "too close to bomb") //don't spam this every frame
-                                            pilotAI.RequestExtend("too close to bomb", guardTarget, minDistance: pilotAI.extendDistanceAirToGround, ignoreCooldown: true); // Extend from target vessel by A2G extendDist + distance bomb would cover while falling
+                                            pilotAI.RequestExtend("too close to bomb", guardTarget, minDistance: pilotAI.extendDistanceBombing, ignoreCooldown: true); // Extend from target vessel by A2G extendDist + distance bomb would cover while falling
                                         abort = true;
                                         break;
                                     case AIType.VTOLAI:
