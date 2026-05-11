@@ -258,9 +258,7 @@ namespace BDArmory.FX
                 if (BDArmorySettings.DEBUG_LINES)
                 {
                     GUIUtils.DrawTextureOnWorldPos(transform.position, debugFlooding ? BDArmorySetup.Instance.redDotTexture : BDArmorySetup.Instance.greenDotTexture, new Vector2(20, 20), 0);
-                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.forward * 10 , 1, Color.blue);
-                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.right * 10, 1, Color.red);
-                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 10, 1, Color.green);
+                    GUIUtils.DrawLineBetweenWorldPositions(transform.position, transform.position + transform.up * 1, 1, Color.green);
                 }
             }
         }
