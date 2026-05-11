@@ -3904,7 +3904,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (currgLimit > 0f)
             {
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F5}, commanded AoALim: {currAoALimit}");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) debugString.AppendLine($"commanded g: {currgLimit:F2}, commanded AoALim: {currAoALimit:F2}");
                 currAoALimit = MissileGuidance.getGLimit(this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, currgLimit, gMargin, currAoALimit);
                 //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: maxAoA: {maxAoA}, currAoALimit: {currAoALimit}, currgLimit: {currgLimit}");
             }
@@ -4491,7 +4491,7 @@ namespace BDArmory.Weapons.Missiles
         {
             maneuvergLimParsed = OtherUtils.ParseToFloatArray(maneuvergLimit);
             invManeuvergLimit = new float[maneuvergLimParsed.Length];
-            for (int i = 0; i < maneuvergLimit.Length; i++)
+            for (int i = 0; i < maneuvergLimParsed.Length; i++)
             {
                 float temp = maneuvergLimParsed[i];
                 if (temp < 0)

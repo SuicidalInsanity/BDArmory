@@ -599,7 +599,7 @@ namespace BDArmory.Guidances
 
             float ttgoInv = 1f / ttgo;
 
-            float leadTime = Mathf.Clamp(ttgo, 0f, boostGuidance ? 8f : 16f);
+            float leadTime = Mathf.Clamp(ttgo, 0f, 8f);
 
             // Set up PIP vector
             Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
@@ -641,9 +641,14 @@ namespace BDArmory.Guidances
                 float g = (float)PhysicsGlobals.GravitationalAcceleration;
                 float tempgLim = ml.GetManeuvergLimit(2);
 
+                if (thrust > 0)
+                {
+                    currSpeed = Mathf.Min(ml.optimumAirspeed, currSpeed);
+                }
+
                 // Stolen from my AAMloft guidance
                 // Limit climb angle by turnFactor, turnFactor goes negative when above target alt
-                float turnFactorMult = (Mathf.Rad2Deg * g * ml.GetManeuvergLimit(2) * 0.25f) / (currSpeed * currSpeed * loftSin * loftAngle);
+                float turnFactorMult = (Mathf.Rad2Deg * g * ml.GetManeuvergLimit(2) * 0.25f) / (Mathf.Min(600f, currSpeed) * currSpeed * loftSin * loftAngle);
                 float turnFactor = Mathf.Clamp((float)(maxAltitude - ml.vessel.altitude) * turnFactorMult, -1f, 1f);
 
                 float turnSin = Mathf.Sin(loftAngle * turnFactor * Mathf.Deg2Rad);
@@ -826,7 +831,7 @@ namespace BDArmory.Guidances
                 // To compensate for planet curvature, we'll "unroll" the target position, and pretend the world is flat
                 (double predictedImpactAlt, Vector3d targetPredUp) = (predictedImpactPoint - FlightGlobals.currentMainBody.position).MagNorm();
                 // Don't go below ocean, or below current alt, if currently on an ocean-less planet
-                predictedImpactAlt = Math.Max(predictedImpactAlt, FlightGlobals.currentMainBody.ocean ? FlightGlobals.currentMainBody.Radius : (FlightGlobals.currentMainBody.Radius + Math.Min((ml.vessel.altitude - ml.vessel.radarAltitude), 0d)));
+                double clampedPredictedImpactAlt = Math.Max(predictedImpactAlt, FlightGlobals.currentMainBody.ocean ? FlightGlobals.currentMainBody.Radius : (FlightGlobals.currentMainBody.Radius + Math.Min((ml.vessel.altitude - ml.vessel.radarAltitude), 0d)));
 
                 float unrolledAngle = Mathf.Deg2Rad * VectorUtils.AnglePreNormalized(upDirection, targetPredUp);
                 Vector3 adjustedPredictedRelImpactPoint;
@@ -834,13 +839,13 @@ namespace BDArmory.Guidances
                 if (unrolledAngle > 0.01f)
                 {
                     double missileRad = ml.vessel.altitude + FlightGlobals.currentMainBody.Radius; // Radius of the missile relative to the center of the planet
-                    adjustedPredictedRelImpactPoint = (unrolledAngle * (float)(0.5 * (missileRad + predictedImpactAlt))) * planarDirectionToTarget + // Arc length at a radius equal to the average of the missile and the target
-                                                      (float)(predictedImpactAlt - missileRad) * upDirection; // Vertical coord
+                    adjustedPredictedRelImpactPoint = (unrolledAngle * (float)(0.5 * (missileRad + clampedPredictedImpactAlt))) * planarDirectionToTarget + // Arc length at a radius equal to the average of the missile and the target
+                                                      (float)(clampedPredictedImpactAlt - missileRad) * upDirection; // Vertical coord
                 }
                 else
                 {
                     // When below that angle, we'll just use the predictedImpactPoint as is, since quite frankly, it's not gonna make much of a difference
-                    adjustedPredictedRelImpactPoint = predictedImpactPoint - ml.vessel.CoM;
+                    adjustedPredictedRelImpactPoint = predictedImpactPoint + (clampedPredictedImpactAlt - predictedImpactAlt) * targetPredUp - ml.vessel.CoM;
                 }
 
                 // Acceleration per Kappa guidance

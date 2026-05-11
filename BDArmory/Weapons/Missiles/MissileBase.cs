@@ -1213,26 +1213,44 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         {
                             float sqrThresh = 250000f;// radarLOALSearching ? 250000f : 1600; // 500 * 500 : 40 * 40;
                             float closestDist = float.MaxValue;
-                            TargetSignatureData currTarget = TargetSignatureData.noTarget;
+                            TargetSignatureData selectedTarget = TargetSignatureData.noTarget;
 
                             for (int i = 0; i < scannedTargets.Length; i++)
                             {
                                 // Once we've reached the last target we've locked, break
                                 if (i == numLocked) break;
 
-                                // Shouldn't happen, but if for some reason target doesn't exist -> continue
-                                if (!scannedTargets[i].exists) continue;
+                                TargetSignatureData currTarget = scannedTargets[i];
 
-                                float sqrDist = (scannedTargets[i].predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
-                                if (sqrDist > sqrThresh || sqrDist > closestDist) continue;
+                                // Shouldn't happen, but if for some reason target doesn't exist -> continue
+                                if (!currTarget.exists)
+                                {
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Active Radar]: {shortName} with UUID: {vessel.id}: Target: null at index {i} doesn't exist!");
+                                    continue;
+                                }
+
+                                float sqrDist = (currTarget.predictedPosition - radarTarget.predictedPosition).sqrMagnitude;
+                                if (sqrDist > sqrThresh || sqrDist > closestDist)
+                                {
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.missileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} too far from target lock! SqrDist/MinSqrDist: {sqrDist}/{closestDist}");
+                                    continue;
+                                }
 
                                 //re-check engagement envelope, only lock appropriate targets
-                                if (!CheckTargetEngagementEnvelope(scannedTargets[i].targetInfo)) continue;
+                                if (!CheckTargetEngagementEnvelope(currTarget.targetInfo))
+                                {
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to target envelope!");
+                                    continue;
+                                }
 
-                                if (hasIFF && Team.IsFriendly(scannedTargets[i].Team)) continue;
+                                if (hasIFF && Team.IsFriendly(currTarget.Team))
+                                {
+                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar LOAL]: {shortName} with UUID: {vessel.id}: Target: {currTarget.Name()} with UUID: {currTarget.ID()} at index {i} rejected due to IFF! Team: {Team}, Target Team: {(currTarget.targetInfo.Team != null ? currTarget.targetInfo.Team.Name : "null")}");
+                                    continue;
+                                }
 
                                 closestDist = sqrDist;
-                                currTarget = scannedTargets[i];
+                                selectedTarget = currTarget;
 
                                 //if (!scannedTargets[i].exists)
                                 //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} doesn't exist!.");
@@ -1240,9 +1258,9 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                                 //    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase][Radar Active]: Target: {i} too far from target loc!.");
                             }
 
-                            if (currTarget.exists)
+                            if (selectedTarget.exists)
                             {
-                                radarTarget = currTarget;
+                                radarTarget = selectedTarget;
                                 TargetAcquired = true;
                                 radarLOALSearching = false;
                                 //if (weaponClass == WeaponClasses.SLW)
