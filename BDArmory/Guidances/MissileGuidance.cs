@@ -573,20 +573,28 @@ namespace BDArmory.Guidances
             Vector3 upDirection = ml.vessel.upAxis; //VectorUtils.GetUpDirection(ml.vessel.CoM);
 
             // Get ttgo on the horizontal plane
-            Vector3 RPlanar = Rdir.ProjectOnPlanePreNormalized(upDirection);
-            float ttgoPlanar = -RPlanar.sqrMagnitude / Vector3.Dot(velDiff.ProjectOnPlanePreNormalized(upDirection), RPlanar);
+            (float vertR, Vector3 RPlanar) = Rdir.DotProjectOnPlanePreNormalized(upDirection);
+            (float vertVel, Vector3 VPlanar) = velDiff.DotProjectOnPlanePreNormalized(upDirection);
+            float ttgoPlanar = -RPlanar.sqrMagnitude / Vector3.Dot(VPlanar, RPlanar);
+            float ttgoVert = vertR / vertVel;
 
             // If going up and target is below, or target is below and going up
-            if (Vector3.Dot(velDiff, upDirection) * Vector3.Dot(Rdir, upDirection) < 0f)
+            if (vertVel * vertR < 0f)
             {
                 // Limit our ttgo to twice ttgoPlanar
                 ttgo = Mathf.Min(ttgo, 2f * ttgoPlanar);
             }
-            else if (ttgoPlanar > 0f)
+            else
             {
                 // Average the two values if ttgoPlanar is > 0
                 // that way we don't overshoot the target
-                ttgo = 0.5f * (ttgo + ttgoPlanar);
+                if (ttgoPlanar > 0f)
+                    ttgo = 0.5f * (ttgo + ttgoPlanar);
+                ttgo = Mathf.Min(ttgo, 2 * ttgoVert);
+                if (ttgoVert < ttgo && vertVel > 0)
+                {
+                    shapingAngle = 0f;
+                }
             }
 
             // Lead limiting
@@ -605,6 +613,8 @@ namespace BDArmory.Guidances
             Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
 
             Vector3 planarDirectionToTarget = ((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(upDirection)).normalized;
+
+            float sinTarget = 0f;
 
             if (boostGuidance)
             {
@@ -626,9 +636,9 @@ namespace BDArmory.Guidances
                                    (turnRadius * (1f - pullDownSin)) * upDirection; //(currSpeed * currSpeed * 0.0169952698051929473876953125f) * (pullDownSin * planarDirectionToTarget + (1f - pullDownCos) * upDirection);
                 //float turnTimeOffset = (loftTermAngle * Mathf.Deg2Rad + 0.5f * Mathf.PI - Mathf.Acos(pullDownCos)) * currSpeed * invG;
 
-                float sinTarget = Vector3.Dot((predictedImpactPoint - ml.vessel.CoM - turnLead).normalized, -upDirection); //Vector3.Dot((targetPosition - ml.vessel.CoM), -upDirection) / R;
+                sinTarget = Vector3.Dot((predictedImpactPoint - ml.vessel.CoM - turnLead).normalized, -upDirection); //Vector3.Dot((targetPosition - ml.vessel.CoM), -upDirection) / R;
 
-                boostGuidance = (midcourseRange > 0f) && (R > midcourseRange) && (sinTarget < termSin) && (-sinTarget < Mathf.Sin(loftAngle * Mathf.Deg2Rad));
+                boostGuidance = (midcourseRange > 0f) && (R > midcourseRange) && (sinTarget < termSin) && (-sinTarget < loftSin);
             }
 
             // If still in boost phase
@@ -670,6 +680,11 @@ namespace BDArmory.Guidances
                 // Limit gs during climb
                 gLimit = Mathf.Min(gCompAccel.magnitude / g, ml.GetManeuvergLimit(0));
                 AoALimit = turnFactor < 1f ? AoALDMax : 28f;
+
+                if (sinTarget > (0.6f * turnSin + 0.4f * loftSin) && targetAlt > maxAltitude)
+                {
+                    loftState = MissileBase.LoftStates.Midcourse;
+                }
 
                 return ml.vessel.CoM + currVel * 3f + accel * 9f;
             }
@@ -715,7 +730,9 @@ namespace BDArmory.Guidances
                 float eta = 0.025f * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * ml.currDragArea / (BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * ml.currLiftArea); // D = D0 + eta*Lalpha*AoA^2, quadratic approximation of drag.
 
                 // If we're above terminal homing range
-                if ((loftState < MissileBase.LoftStates.Terminal) && (R > terminalHomingRange) && shapingAngle != 0f)
+                if ((loftState < MissileBase.LoftStates.Terminal) && (R > terminalHomingRange) && 
+                    shapingAngle != 0f && // Shaping angle isn't 0
+                    (targetAlt < 1.2f * maxAltitude)) // And the target's altitude isn't exceeding the max alt by too much
                 {
                     loftState = MissileBase.LoftStates.Midcourse;
 
@@ -788,7 +805,10 @@ namespace BDArmory.Guidances
                 }
                 else
                 {
-                    loftState = MissileBase.LoftStates.Terminal;
+                    if (shapingAngle != 0)
+                    {
+                        loftState = MissileBase.LoftStates.Terminal;
+                    }
                     K1 = 0f;
                     shapingAngle = 0f;
                     float Fsqr;
@@ -812,7 +832,7 @@ namespace BDArmory.Guidances
                     {
                         K2 = Fsqr * Rsqr / (FR - 1f);
                     }
-                    else if(FR < 0.25f)
+                    else if (FR < 0.25f)
                     {
                         // If FR is small, then we just avoid numerical weirdness and extra processing by setting
                         // K2 directly to 3, which is what the value converges to (which is the ideal gain for
@@ -857,6 +877,11 @@ namespace BDArmory.Guidances
                 }
                 else
                 {
+                    if (targetAlt > maxAltitude)
+                    {
+                        // Uh oh, really high altitude target... clamp that shapingAngle down a bit
+                        shapingAngle *= Mathf.Clamp01(1.2f - targetAlt / maxAltitude);
+                    }
                     vF = velDirection.ProjectOnPlanePreNormalized(targetPredUp).normalized;
                     vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetPredUp);
                     accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
@@ -1695,17 +1720,18 @@ namespace BDArmory.Guidances
 
         public static float getGLimit(MissileLauncher ml, float thrust, float gLim, float margin, float maxAoA)//, out bool gLimited)
         {
+            // Force required to reach g-limit
+            gLim *= (float)(ml.vessel.totalMass * PhysicsGlobals.GravitationalAcceleration);
+
             if (ml.vessel.InVacuum())
             {
-                return 180f; // if in vacuum g-limiting should be done via throttle modulation
+                return thrust > 0 ? Mathf.Acos(gLim / thrust) * Mathf.Rad2Deg : 180f;
+                //return 180f; // if in vacuum g-limiting should be done via throttle modulation
             }
             
             //bool gLimited = false;
 
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance] gLim: {gLim}");
-
-            // Force required to reach g-limit
-            gLim *= (float)(ml.vessel.totalMass * PhysicsGlobals.GravitationalAcceleration);
 
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance] force: {gLim}");
 
