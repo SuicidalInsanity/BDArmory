@@ -1,5 +1,6 @@
-﻿using BDArmory.Utils;
+﻿using KSP.Localization;
 using UnityEngine;
+using BDArmory.Utils;
 
 // credit to Brian Jones (https://github.com/boj)& KSP ForumMember TaxiService
 namespace BDArmory.UI
@@ -139,7 +140,6 @@ namespace BDArmory.UI
                 }
             }
             // box for chosen color
-
             selectedColorPreview.SetPixel(0, 0, selectedColor);
             selectedColorPreview.Apply();
             style.normal.background = selectedColorPreview;

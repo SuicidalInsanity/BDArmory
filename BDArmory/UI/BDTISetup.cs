@@ -44,9 +44,8 @@ namespace BDArmory.UI
         public SortedList<string, List<MissileFire>> weaponManagers = [];
 
         public static string textureDir = "BDArmory/Textures/";
-
+        
         public Dictionary<int, Color> ColorPresets = new Dictionary<int, Color>();
-
         //legacy version check
         bool LegacyTILoaded = false;
         bool showPSA = false;
@@ -192,7 +191,6 @@ namespace BDArmory.UI
             }
 
             AddToolbarButton();
-            SetUpColorSwatch();
             LoadConfig();
             UpdateList();
 
@@ -323,20 +321,6 @@ namespace BDArmory.UI
         {
             showTeamIconGUI = false;
             SaveConfig();
-        }
-
-        public static void SetUpColorSwatch()
-        {
-            try
-            {
-                Debug.Log("[BDTeamIcons]=== Loading settings.cfg ===");
-
-                SettingsDataField.presetSetup();
-            }
-            catch (NullReferenceException)
-            {
-                Debug.Log("[BDTeamIcons]=== Failed to load settings config ===");
-            }
         }
 
         public static void LoadConfig()
