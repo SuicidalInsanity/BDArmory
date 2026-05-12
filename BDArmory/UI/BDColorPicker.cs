@@ -1,6 +1,5 @@
-﻿using KSP.Localization;
+﻿using BDArmory.Utils;
 using UnityEngine;
-using BDArmory.Utils;
 
 // credit to Brian Jones (https://github.com/boj)& KSP ForumMember TaxiService
 namespace BDArmory.UI
@@ -12,7 +11,7 @@ namespace BDArmory.UI
         public int displayTextureWidth = 360;
         public int displayTextureHeight = 360;
         private Texture2D prefabColorPreview;
-        
+
         public int HorizPos;
         public int VertPos;
 
@@ -96,7 +95,7 @@ namespace BDArmory.UI
             }
             //preset colors
             GUIStyle style = new() { normal = new GUIStyleState { background = prefabColorPreview } };
-            
+
             for (int pcOffset = 0; pcOffset < 8; pcOffset++)
             {
                 presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
@@ -140,6 +139,7 @@ namespace BDArmory.UI
                 }
             }
             // box for chosen color
+
             selectedColorPreview.SetPixel(0, 0, selectedColor);
             selectedColorPreview.Apply();
             style.normal.background = selectedColorPreview;

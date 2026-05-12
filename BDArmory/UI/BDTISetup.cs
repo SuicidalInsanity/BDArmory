@@ -44,8 +44,9 @@ namespace BDArmory.UI
         public SortedList<string, List<MissileFire>> weaponManagers = [];
 
         public static string textureDir = "BDArmory/Textures/";
-        
+
         public Dictionary<int, Color> ColorPresets = new Dictionary<int, Color>();
+
         //legacy version check
         bool LegacyTILoaded = false;
         bool showPSA = false;
@@ -191,6 +192,7 @@ namespace BDArmory.UI
             }
 
             AddToolbarButton();
+            SetUpColorSwatch();
             LoadConfig();
             UpdateList();
 
@@ -323,6 +325,20 @@ namespace BDArmory.UI
             SaveConfig();
         }
 
+        public static void SetUpColorSwatch()
+        {
+            try
+            {
+                Debug.Log("[BDTeamIcons]=== Loading settings.cfg ===");
+
+                SettingsDataField.presetSetup();
+            }
+            catch (NullReferenceException)
+            {
+                Debug.Log("[BDTeamIcons]=== Failed to load settings config ===");
+            }
+        }
+
         public static void LoadConfig()
         {
             try
@@ -421,7 +437,7 @@ namespace BDArmory.UI
                 BDTISettings.OPACITY = BDAMath.RoundToUnit(GUI.HorizontalSlider(SRect(line++, 40), BDTISettings.OPACITY, 0f, 1f), 0.01f);
                 GUI.Label(SRect(line++), $"{StringUtils.Localize("#LOC_BDArmory_Icon_max_distance_threshold")} {(BDTISettings.MAX_DISTANCE_THRESHOLD > 0 ? $"{BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f:0}km" : "Unlimited")}");
                 BDTISettings.MAX_DISTANCE_THRESHOLD = GUIUtils.HorizontalSemiLogSlider(SRect(line++, 40), BDTISettings.MAX_DISTANCE_THRESHOLD / 1000f, 1f, BDArmorySettings.MAX_GUARD_VISUAL_RANGE / 1000f, 1, true, false, ref cacheMaxDistanceThreshold) * 1000f;
-                
+
                 GUI.EndGroup();
                 IconOptionsGroup.height = 25f * line;
 
