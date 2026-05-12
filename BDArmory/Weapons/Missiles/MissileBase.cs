@@ -788,7 +788,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
         void PickGPSTarget()
         {
             gpsSet = true;
-            Fields["gpsTargetName"].guiActive = true;
+            Fields[nameof(gpsTargetName)].guiActive = true;
             var weaponManager = vessel.ActiveController().WM;
             if (weaponManager)
             {
@@ -2233,7 +2233,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             {
                 Events["CruiseAltitudeRange"].guiName = "Change to High Altitude Range";
 
-                UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields["CruiseAltitude"].uiControlEditor;
+                UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudeField.maxValue = 500f;
                 cruiseAltitudeField.minValue = 5f;
                 cruiseAltitudeField.stepIncrement = 5f;
@@ -2241,7 +2241,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             else
             {
                 Events["CruiseAltitudeRange"].guiName = "Change to Low Altitude Range";
-                UI_FloatRange cruiseAltitudField = (UI_FloatRange)Fields["CruiseAltitude"].uiControlEditor;
+                UI_FloatRange cruiseAltitudField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudField.maxValue = 25000f;
                 cruiseAltitudField.minValue = 500;
                 cruiseAltitudField.stepIncrement = 500f;

@@ -81,18 +81,18 @@ namespace BDArmory.Weapons
         {
             Events["ToggleEngageOptions"].guiActive = false;
             Events["ToggleEngageOptions"].guiActiveEditor = false;
-            Fields["engageRangeMin"].guiActive = true;
-            Fields["engageRangeMin"].guiActiveEditor = true;
-            Fields["engageRangeMax"].guiActive = true;
-            Fields["engageRangeMax"].guiActiveEditor = true;
-            Fields["engageAir"].guiActive = false;
-            Fields["engageAir"].guiActiveEditor = false;
-            Fields["engageMissile"].guiActive = false;
-            Fields["engageMissile"].guiActiveEditor = false;
-            Fields["engageGround"].guiActive = false;
-            Fields["engageGround"].guiActiveEditor = false;
-            Fields["engageSLW"].guiActive = false;
-            Fields["engageSLW"].guiActiveEditor = false;
+            Fields[nameof(engageRangeMin)].guiActive = true;
+            Fields[nameof(engageRangeMin)].guiActiveEditor = true;
+            Fields[nameof(engageRangeMax)].guiActive = true;
+            Fields[nameof(engageRangeMax)].guiActiveEditor = true;
+            Fields[nameof(engageAir)].guiActive = false;
+            Fields[nameof(engageAir)].guiActiveEditor = false;
+            Fields[nameof(engageMissile)].guiActive = false;
+            Fields[nameof(engageMissile)].guiActiveEditor = false;
+            Fields[nameof(engageGround)].guiActive = false;
+            Fields[nameof(engageGround)].guiActiveEditor = false;
+            Fields[nameof(engageSLW)].guiActive = false;
+            Fields[nameof(engageSLW)].guiActiveEditor = false;
 
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -140,11 +140,11 @@ namespace BDArmory.Weapons
             min = Mathf.Max(min, 1f); // Avoid 0 min range for now. FIXME Remove these if the special value of 0 gets added to UI_FloatSemiLogRange.
             max = Mathf.Max(max, 1f); // Avoid 0 max range for now.
 
-            var rangeMin = (UI_FloatPowerRange)Fields["engageRangeMin"].uiControlEditor;
+            var rangeMin = (UI_FloatPowerRange)Fields[nameof(engageRangeMin)].uiControlEditor;
             rangeMin.UpdateLimits(min, max);
             rangeMin.onFieldChanged = OnRangeUpdated;
 
-            var rangeMax = (UI_FloatPowerRange)Fields["engageRangeMax"].uiControlEditor;
+            var rangeMax = (UI_FloatPowerRange)Fields[nameof(engageRangeMax)].uiControlEditor;
             rangeMax.UpdateLimits(min, max);
             rangeMax.onFieldChanged = OnRangeUpdated;
 

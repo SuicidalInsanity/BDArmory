@@ -1,4 +1,4 @@
-﻿using KSP.Localization;
+using KSP.Localization;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -102,8 +102,8 @@ namespace BDArmory.Modules
             {
                 Events["ToggleInertOption"].guiName = StringUtils.Localize("#LOC_BDArmory_FIS_On");//"Enable self-sealing tank"
                 FISmass = 0;
-                Fields["FireBottles"].guiActiveEditor = true;
-                Fields["FBRemaining"].guiActive = true;
+                Fields[nameof(FireBottles)].guiActiveEditor = true;
+                Fields[nameof(FBRemaining)].guiActive = true;
             }
             else
             {
@@ -111,8 +111,8 @@ namespace BDArmory.Modules
                 FISmass = 0.15f;
                 FireBottles = 0;
                 FBSetup(null, null);
-                Fields["FireBottles"].guiActiveEditor = false;
-                Fields["FBRemaining"].guiActive = false;
+                Fields[nameof(FireBottles)].guiActiveEditor = false;
+                Fields[nameof(FBRemaining)].guiActive = false;
             }
             partmass = (FISmass + ArmorMass + FBmass);
             GUIUtils.RefreshAssociatedWindows(part);
@@ -130,15 +130,15 @@ namespace BDArmory.Modules
                     {
                         tank.Events["ToggleInertOption"].guiName = StringUtils.Localize("#LOC_BDArmory_FIS_On");//"Add Fuel Inerting System"
                         tank.FISmass = 0;
-                        tank.Fields["FireBottles"].guiActiveEditor = true;
-                        tank.Fields["FBRemaining"].guiActive = true;
+                        tank.Fields[nameof(FireBottles)].guiActiveEditor = true;
+                        tank.Fields[nameof(FBRemaining)].guiActive = true;
                     }
                     else
                     {
                         tank.Events["ToggleInertOption"].guiName = StringUtils.Localize("#LOC_BDArmory_FIS_Off");//"Remove Fuel Inerting System"
                         tank.FISmass = 0.15f;
-                        tank.Fields["FireBottles"].guiActiveEditor = false;
-                        tank.Fields["FBRemaining"].guiActive = false;
+                        tank.Fields[nameof(FireBottles)].guiActiveEditor = false;
+                        tank.Fields[nameof(FBRemaining)].guiActive = false;
                     }
                     tank.partmass = (tank.FISmass + tank.ArmorMass + tank.FBmass);
                     GUIUtils.RefreshAssociatedWindows(pSym.Current);
@@ -235,7 +235,7 @@ namespace BDArmory.Modules
             }
             if (HighLogic.LoadedSceneIsEditor)
             {
-                UI_FloatRange FBEditor = (UI_FloatRange)Fields["FireBottles"].uiControlEditor;
+                UI_FloatRange FBEditor = (UI_FloatRange)Fields[nameof(FireBottles)].uiControlEditor;
                 FBEditor.onFieldChanged = FBSetup;
             }
             cockpit = part.FindModuleImplementing<ModuleCommand>();
@@ -246,8 +246,8 @@ namespace BDArmory.Modules
                     Events["TogglecockpitArmor"].guiActiveEditor = true;
                     Events["ToggleTankOption"].guiActiveEditor = false;
                     Events["ToggleInertOption"].guiActiveEditor = false;
-                    Fields["FireBottles"].guiActiveEditor = false;
-                    Fields["FBRemaining"].guiActive = false;
+                    Fields[nameof(FireBottles)].guiActiveEditor = false;
+                    Fields[nameof(FBRemaining)].guiActive = false;
                     FireBottles = 0;
                     if (!armoredCockpit)
                     {
@@ -294,9 +294,9 @@ namespace BDArmory.Modules
                 {
                     Events["ToggleTankOption"].guiActiveEditor = false;
                     Events["ToggleInertOption"].guiActiveEditor = false;
-                    Fields["FireBottles"].guiActiveEditor = false;
-                    Fields["FBRemaining"].guiActive = false;
-                    Fields["partmass"].guiActiveEditor = false;
+                    Fields[nameof(FireBottles)].guiActiveEditor = false;
+                    Fields[nameof(FBRemaining)].guiActive = false;
+                    Fields[nameof(partmass)].guiActiveEditor = false;
                     FireBottles = 0;
                 }
             }
@@ -317,8 +317,8 @@ namespace BDArmory.Modules
             {
                 Events["ToggleInertOption"].guiName = StringUtils.Localize("#LOC_BDArmory_FIS_Off");//"Disable self-sealing tank"
                 FISmass = 0.15f;
-                Fields["FireBottles"].guiActiveEditor = false;
-                Fields["FBRemaining"].guiActive = false;
+                Fields[nameof(FireBottles)].guiActiveEditor = false;
+                Fields[nameof(FBRemaining)].guiActive = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
             partmass = (FISmass + ArmorMass + FBmass);
@@ -542,23 +542,23 @@ namespace BDArmory.Modules
                             if (InertTank && !Events["ToggleInertOption"].guiActiveEditor) ToggleInertOption(); // If inerting was somehow enabled previously, but is now not valid, disable it.
                             if (!InertTank)
                             {
-                                Fields["FireBottles"].guiActiveEditor = true;
-                                Fields["FBRemaining"].guiActive = true;
+                                Fields[nameof(FireBottles)].guiActiveEditor = true;
+                                Fields[nameof(FBRemaining)].guiActive = true;
                             }
                             else
                             {
-                                Fields["FireBottles"].guiActiveEditor = false;
-                                Fields["FBRemaining"].guiActive = false;
+                                Fields[nameof(FireBottles)].guiActiveEditor = false;
+                                Fields[nameof(FBRemaining)].guiActive = false;
                             }
-                            Fields["partmass"].guiActiveEditor = true;
+                            Fields[nameof(partmass)].guiActiveEditor = true;
                         }
                         else
                         {
                             Events["ToggleTankOption"].guiActiveEditor = false;
                             Events["ToggleInertOption"].guiActiveEditor = false;
-                            Fields["FireBottles"].guiActiveEditor = false;
-                            Fields["FBRemaining"].guiActive = false;
-                            Fields["partmass"].guiActiveEditor = false;
+                            Fields[nameof(FireBottles)].guiActiveEditor = false;
+                            Fields[nameof(FBRemaining)].guiActive = false;
+                            Fields[nameof(partmass)].guiActiveEditor = false;
                             InertTank = false;
                             FireBottles = 0;
                             FBmass = 0;

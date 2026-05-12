@@ -290,17 +290,17 @@ namespace BDArmory.Damage
                 //Add Hitpoints
                 if (!ArmorPanel)
                 {
-                    UI_ProgressBar damageFieldFlight = (UI_ProgressBar)Fields["Hitpoints"].uiControlFlight;
+                    UI_ProgressBar damageFieldFlight = (UI_ProgressBar)Fields[nameof(Hitpoints)].uiControlFlight;
                     damageFieldFlight.maxValue = maxHitPoints_;
                     damageFieldFlight.minValue = 0f;
-                    UI_ProgressBar damageFieldEditor = (UI_ProgressBar)Fields["Hitpoints"].uiControlEditor;
+                    UI_ProgressBar damageFieldEditor = (UI_ProgressBar)Fields[nameof(Hitpoints)].uiControlEditor;
                     damageFieldEditor.maxValue = maxHitPoints_;
                     damageFieldEditor.minValue = 0f;
                 }
                 else
                 {
-                    Fields["Hitpoints"].guiActive = false;
-                    Fields["Hitpoints"].guiActiveEditor = false;
+                    Fields[nameof(Hitpoints)].guiActive = false;
+                    Fields[nameof(Hitpoints)].guiActiveEditor = false;
                 }
                 Hitpoints = maxHitPoints_;
                 if (!ArmorSet) overrideArmorSetFromConfig();
@@ -398,7 +398,7 @@ namespace BDArmory.Damage
                 {
                     armorCount++;
                 }
-                UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields["ArmorTypeNum"].uiControlEditor;
+                UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields[nameof(ArmorTypeNum)].uiControlEditor;
                 ATrangeEditor.onFieldChanged = ArmorModified;
                 ATrangeEditor.maxValue = (float)armorCount;
                 int hullCount = 0;
@@ -406,48 +406,48 @@ namespace BDArmory.Damage
                 {
                     hullCount++;
                 }
-                UI_FloatRange HTrangeEditor = (UI_FloatRange)Fields["HullTypeNum"].uiControlEditor;
+                UI_FloatRange HTrangeEditor = (UI_FloatRange)Fields[nameof(HullTypeNum)].uiControlEditor;
                 HTrangeEditor.onFieldChanged = HullModified;
                 HTrangeEditor.maxValue = (float)hullCount;
                 if (ProjectileUtils.IsIgnoredPart(this.part))
                 {
                     isAI = true;
-                    Fields["ArmorTypeNum"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActive = false;
-                    Fields["guiHullTypeString"].guiActiveEditor = false;
-                    Fields["guiHullTypeString"].guiActive = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
-                    //UI_ProgressBar Armorleft = (UI_ProgressBar)Fields["ArmorRemaining"].uiControlFlight;
+                    Fields[nameof(ArmorTypeNum)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActive = false;
+                    Fields[nameof(guiHullTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiHullTypeString)].guiActive = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
+                    //UI_ProgressBar Armorleft = (UI_ProgressBar)Fields[nameof(ArmorRemaining)].uiControlFlight;
                     //Armorleft.scene = UI_Scene.None;
                 }
                 if (part.Modules.Contains("ModuleReactiveArmor"))
                 {
-                    Fields["Armor"].guiActiveEditor = false;
-                    Fields["ArmorTypeNum"].guiActiveEditor = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
+                    Fields[nameof(Armor)].guiActiveEditor = false;
+                    Fields[nameof(ArmorTypeNum)].guiActiveEditor = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
                 }
                 if (part.IsMissile())
                 {
-                    Fields["ArmorTypeNum"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActiveEditor = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
+                    Fields[nameof(ArmorTypeNum)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
                 }
                 if (isAI || part.IsMissile())
                 {
-                    Fields["ArmorTypeNum"].guiActiveEditor = false;
+                    Fields[nameof(ArmorTypeNum)].guiActiveEditor = false;
                     ATrangeEditor.maxValue = 1;
                 }
                 if (BDArmorySettings.LEGACY_ARMOR || BDArmorySettings.RESET_ARMOUR)
                 {
-                    Fields["ArmorTypeNum"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActive = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
+                    Fields[nameof(ArmorTypeNum)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActive = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
                     ATrangeEditor.maxValue = 1;
                 }
 
@@ -457,10 +457,10 @@ namespace BDArmory.Damage
                     HullTypeNum = HullInfo.materials.FindIndex(t => t.name == "Aluminium") + 1;
                     HTrangeEditor.minValue = HullTypeNum;
                     HTrangeEditor.maxValue = HullTypeNum;
-                    Fields["HullTypeNum"].guiActiveEditor = false;
-                    Fields["HullTypeNum"].guiActive = false;
-                    Fields["guiHullTypeString"].guiActiveEditor = false;
-                    Fields["guiHullTypeString"].guiActive = false;
+                    Fields[nameof(HullTypeNum)].guiActiveEditor = false;
+                    Fields[nameof(HullTypeNum)].guiActive = false;
+                    Fields[nameof(guiHullTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiHullTypeString)].guiActive = false;
                     IgnoreForArmorSetup = true;
                     SetHullMass();
                 }
@@ -475,11 +475,11 @@ namespace BDArmory.Damage
                 else
                 {
                     if (Armor < 0) Armor = ArmorThickness; //10 for parts, 2 for missiles, from ln 347
-                    Fields["Armor"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActive = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
+                    Fields[nameof(Armor)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActive = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
                 }
             }
             GameEvents.onPartDie.Add(OnPartDie);
@@ -1051,13 +1051,13 @@ namespace BDArmory.Damage
 
         public float GetMaxArmor()
         {
-            UI_FloatRange armorField = (UI_FloatRange)Fields["Armor"].uiControlEditor;
+            UI_FloatRange armorField = (UI_FloatRange)Fields[nameof(Armor)].uiControlEditor;
             return armorField.maxValue;
         }
 
         public float GetMaxHitpoints()
         {
-            UI_ProgressBar hitpointField = (UI_ProgressBar)Fields["Hitpoints"].uiControlEditor;
+            UI_ProgressBar hitpointField = (UI_ProgressBar)Fields[nameof(Hitpoints)].uiControlEditor;
             return hitpointField.maxValue;
         }
 
@@ -1215,10 +1215,10 @@ namespace BDArmory.Damage
                 Debug.Log("[ARMOR] max supported armor for " + part.name + " is " + maxSupportedArmor);
             }
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
-            /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields["Armor"].uiControlFlight;
+            /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
             armorFieldFlight.minValue = 0f;
             armorFieldFlight.maxValue = maxSupportedArmor;*/
-            UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
+            UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields[nameof(Armor)].uiControlEditor;
             armorFieldEditor.maxValue = maxSupportedArmor;
             armorFieldEditor.minValue = 1f;
             armorFieldEditor.onFieldChanged = ArmorModified;
@@ -1338,11 +1338,11 @@ namespace BDArmory.Damage
                 }
                 else
                 {
-                    Fields["Armor"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActiveEditor = false;
-                    Fields["guiArmorTypeString"].guiActive = false;
-                    Fields["armorCost"].guiActiveEditor = false;
-                    Fields["armorMass"].guiActiveEditor = false;
+                    Fields[nameof(Armor)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                    Fields[nameof(guiArmorTypeString)].guiActive = false;
+                    Fields[nameof(armorCost)].guiActiveEditor = false;
+                    Fields[nameof(armorMass)].guiActiveEditor = false;
                 }
                 if (BDArmorySettings.DEBUG_ARMOR)
                 {
@@ -1400,7 +1400,7 @@ namespace BDArmory.Damage
             if (ArmorTypeNum != (ArmorInfo.armors.FindIndex(t => t.name == "None") + 1) || ArmorPanel)
             {
                 /*
-                UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields["Armor"].uiControlFlight;
+                UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
                 if (armorFieldFlight.maxValue != maxSupportedArmor)
                 {
                     armorReset = false;
@@ -1408,12 +1408,12 @@ namespace BDArmory.Damage
                     armorFieldFlight.maxValue = maxSupportedArmor;
                 }
                 */
-                Fields["Armor"].guiActiveEditor = true;
-                Fields["guiArmorTypeString"].guiActiveEditor = true;
-                Fields["guiArmorTypeString"].guiActive = true;
-                Fields["armorCost"].guiActiveEditor = true;
-                Fields["armorMass"].guiActiveEditor = true;
-                UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
+                Fields[nameof(Armor)].guiActiveEditor = true;
+                Fields[nameof(guiArmorTypeString)].guiActiveEditor = true;
+                Fields[nameof(guiArmorTypeString)].guiActive = true;
+                Fields[nameof(armorCost)].guiActiveEditor = true;
+                Fields[nameof(armorMass)].guiActiveEditor = true;
+                UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields[nameof(Armor)].uiControlEditor;
                 if (isProcWing)
                     maxSupportedArmor = ProceduralWing.getPwingThickness(part);
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
@@ -1436,12 +1436,12 @@ namespace BDArmory.Damage
             else
             {
                 Armor = 10;
-                Fields["Armor"].guiActiveEditor = false;
-                Fields["guiArmorTypeString"].guiActiveEditor = false;
-                Fields["guiArmorTypeString"].guiActive = false;
-                Fields["armorCost"].guiActiveEditor = false;
-                Fields["armorMass"].guiActiveEditor = false;
-                //UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields["Armor"].uiControlEditor;
+                Fields[nameof(Armor)].guiActiveEditor = false;
+                Fields[nameof(guiArmorTypeString)].guiActiveEditor = false;
+                Fields[nameof(guiArmorTypeString)].guiActive = false;
+                Fields[nameof(armorCost)].guiActiveEditor = false;
+                Fields[nameof(armorMass)].guiActiveEditor = false;
+                //UI_FloatRange armorFieldEditor = (UI_FloatRange)Fields[nameof(Armor)].uiControlEditor;
                 //armorFieldEditor.maxValue = 10; //max none armor to 10 (simulate part skin of alimunium)
                 //armorFieldEditor.minValue = 10;
 

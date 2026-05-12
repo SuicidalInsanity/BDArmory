@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -132,10 +132,10 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                 StartCoroutine(GetMissileValues(MML));
             //GameEvents.onEditorShipModified.Add(ShipModified);
             if (maxAmmo < 0) maxAmmo = railAmmo;
-            if (maxAmmo == 1) Fields["railAmmo"].guiActiveEditor = false;
+            if (maxAmmo == 1) Fields[nameof(railAmmo)].guiActiveEditor = false;
             else
             {
-                UI_FloatRange Ammo = (UI_FloatRange)Fields["railAmmo"].uiControlEditor;
+                UI_FloatRange Ammo = (UI_FloatRange)Fields[nameof(railAmmo)].uiControlEditor;
                 Ammo.maxValue = maxAmmo;
             }
             if (HighLogic.LoadedSceneIsFlight)
@@ -148,7 +148,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         linkedMagazines.Add(mmm.Current);
                         magazineAmmo += (int)mmm.Current.ammoCount;
                     }
-                UI_ProgressBar ordnance = (UI_ProgressBar)Fields["ammoRemaining"].uiControlFlight;
+                UI_ProgressBar ordnance = (UI_ProgressBar)Fields[nameof(ammoRemaining)].uiControlFlight;
                 ordnance.maxValue = railAmmo;
                 ammoRemaining = railAmmo;
             }

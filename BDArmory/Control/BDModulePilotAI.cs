@@ -1350,21 +1350,21 @@ namespace BDArmory.Control
 
         void SetFieldClamps()
         {
-            var minAltField = (UI_FloatRange)Fields["minAltitude"].uiControlEditor;
+            var minAltField = (UI_FloatRange)Fields[nameof(minAltitude)].uiControlEditor;
             minAltField.onFieldChanged = ClampFields;
-            minAltField = (UI_FloatRange)Fields["minAltitude"].uiControlFlight;
+            minAltField = (UI_FloatRange)Fields[nameof(minAltitude)].uiControlFlight;
             minAltField.onFieldChanged = ClampFields;
-            var defaultAltField = (UI_FloatRange)Fields["defaultAltitude"].uiControlEditor;
+            var defaultAltField = (UI_FloatRange)Fields[nameof(defaultAltitude)].uiControlEditor;
             defaultAltField.onFieldChanged = ClampFields;
-            defaultAltField = (UI_FloatRange)Fields["defaultAltitude"].uiControlFlight;
+            defaultAltField = (UI_FloatRange)Fields[nameof(defaultAltitude)].uiControlFlight;
             defaultAltField.onFieldChanged = ClampFields;
-            var maxAltField = (UI_FloatRange)Fields["maxAltitude"].uiControlEditor;
+            var maxAltField = (UI_FloatRange)Fields[nameof(maxAltitude)].uiControlEditor;
             maxAltField.onFieldChanged = ClampFields;
-            maxAltField = (UI_FloatRange)Fields["maxAltitude"].uiControlFlight;
+            maxAltField = (UI_FloatRange)Fields[nameof(maxAltitude)].uiControlFlight;
             maxAltField.onFieldChanged = ClampFields;
-            var autoTuningAltField = (UI_FloatRange)Fields["autoTuningAltitude"].uiControlFlight;
+            var autoTuningAltField = (UI_FloatRange)Fields[nameof(autoTuningAltitude)].uiControlFlight;
             autoTuningAltField.onFieldChanged = ClampFields;
-            var autoTuningSpeedField = (UI_FloatRange)Fields["autoTuningSpeed"].uiControlFlight;
+            var autoTuningSpeedField = (UI_FloatRange)Fields[nameof(autoTuningSpeed)].uiControlFlight;
             autoTuningSpeedField.onFieldChanged = ClampFields;
         }
 
@@ -1422,14 +1422,14 @@ namespace BDArmory.Control
 
         void SetOnMaxAltitudeChanged()
         {
-            UI_Toggle field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields["maxAltitudeToggle"].uiControlFlight : Fields["maxAltitudeToggle"].uiControlEditor);
+            UI_Toggle field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(maxAltitudeToggle)].uiControlFlight : Fields[nameof(maxAltitudeToggle)].uiControlEditor);
             field.onFieldChanged = ToggleMaxAltitude;
             ToggleMaxAltitude();
         }
         void ToggleMaxAltitude(BaseField field = null, object obj = null)
         {
             maxAltitudeEnabled = maxAltitudeToggle;
-            var maxAltitudeField = Fields["maxAltitude"];
+            var maxAltitudeField = Fields[nameof(maxAltitude)];
             maxAltitudeField.guiActive = maxAltitudeToggle;
             maxAltitudeField.guiActiveEditor = maxAltitudeToggle;
             if (!maxAltitudeToggle)
@@ -1437,17 +1437,17 @@ namespace BDArmory.Control
         }
         void SetMinCollisionAvoidanceLookAheadPeriod()
         {
-            var minCollisionAvoidanceLookAheadPeriod = (UI_FloatRange)Fields["vesselCollisionAvoidanceLookAheadPeriod"].uiControlEditor;
+            var minCollisionAvoidanceLookAheadPeriod = (UI_FloatRange)Fields[nameof(vesselCollisionAvoidanceLookAheadPeriod)].uiControlEditor;
             minCollisionAvoidanceLookAheadPeriod.minValue = vesselCollisionAvoidanceTickerFreq * Time.fixedDeltaTime;
-            minCollisionAvoidanceLookAheadPeriod = (UI_FloatRange)Fields["vesselCollisionAvoidanceLookAheadPeriod"].uiControlFlight;
+            minCollisionAvoidanceLookAheadPeriod = (UI_FloatRange)Fields[nameof(vesselCollisionAvoidanceLookAheadPeriod)].uiControlFlight;
             minCollisionAvoidanceLookAheadPeriod.minValue = vesselCollisionAvoidanceTickerFreq * Time.fixedDeltaTime;
         }
 
         void SetOnExtendAngleA2AChanged()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields["extendAngleAirToAir"].uiControlEditor;
+            UI_FloatRange field = (UI_FloatRange)Fields[nameof(extendAngleAirToAir)].uiControlEditor;
             field.onFieldChanged = OnExtendAngleA2AChanged;
-            field = (UI_FloatRange)Fields["extendAngleAirToAir"].uiControlFlight;
+            field = (UI_FloatRange)Fields[nameof(extendAngleAirToAir)].uiControlFlight;
             field.onFieldChanged = OnExtendAngleA2AChanged;
             OnExtendAngleA2AChanged();
         }
@@ -1458,9 +1458,9 @@ namespace BDArmory.Control
 
         void SetOnTerrainAvoidanceCriticalAngleChanged()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields["terrainAvoidanceCriticalAngle"].uiControlEditor;
+            UI_FloatRange field = (UI_FloatRange)Fields[nameof(terrainAvoidanceCriticalAngle)].uiControlEditor;
             field.onFieldChanged = OnTerrainAvoidanceCriticalAngleChanged;
-            field = (UI_FloatRange)Fields["terrainAvoidanceCriticalAngle"].uiControlFlight;
+            field = (UI_FloatRange)Fields[nameof(terrainAvoidanceCriticalAngle)].uiControlFlight;
             field.onFieldChanged = OnTerrainAvoidanceCriticalAngleChanged;
             OnTerrainAvoidanceCriticalAngleChanged();
         }
@@ -1471,7 +1471,7 @@ namespace BDArmory.Control
 
         void SetOnImmelmannTurnAngleChanged()
         {
-            var field = (UI_FloatRange)Fields["ImmelmannTurnAngle"].uiControlFlight;
+            var field = (UI_FloatRange)Fields[nameof(ImmelmannTurnAngle)].uiControlFlight;
             field.onFieldChanged = OnImmelmannTurnAngleChanged;
             OnImmelmannTurnAngleChanged();
         }
@@ -1482,7 +1482,7 @@ namespace BDArmory.Control
 
         void SetOnBrakingPriorityChanged()
         {
-            var field = (UI_FloatRange)Fields["brakingPriority"].uiControlFlight;
+            var field = (UI_FloatRange)Fields[nameof(brakingPriority)].uiControlFlight;
             field.onFieldChanged = OnBrakingPriorityChanged;
             OnBrakingPriorityChanged();
         }
@@ -1493,7 +1493,7 @@ namespace BDArmory.Control
 
         void SetOnMaxSpeedChanged()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields["maxSpeed"].uiControlFlight;
+            UI_FloatRange field = (UI_FloatRange)Fields[nameof(maxSpeed)].uiControlFlight;
             field.onFieldChanged = OnMaxSpeedChanged;
             OnMaxSpeedChanged();
         }
@@ -1537,7 +1537,7 @@ namespace BDArmory.Control
 
             // Static damping
             {
-                var field = Fields["steerDamping"];
+                var field = Fields[nameof(steerDamping)];
                 field.guiActive = field.guiActiveEditor = !dynamicSteerDamping && !threeAxisSteerDamping && !threeAxisPID;
             }
 
@@ -1596,7 +1596,7 @@ namespace BDArmory.Control
 
         void SetOnAutoTuningRecenteringDistanceChanged()
         {
-            UI_FloatRange field = (UI_FloatRange)(HighLogic.LoadedSceneIsFlight ? Fields["autoTuningRecenteringDistance"].uiControlFlight : Fields["autoTuningRecenteringDistance"].uiControlEditor);
+            UI_FloatRange field = (UI_FloatRange)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(autoTuningRecenteringDistance)].uiControlFlight : Fields[nameof(autoTuningRecenteringDistance)].uiControlEditor);
             field.onFieldChanged = OnAutoTuningRecenteringDistanceChanged;
             OnAutoTuningRecenteringDistanceChanged();
         }
@@ -1607,7 +1607,7 @@ namespace BDArmory.Control
 
         IEnumerator FixAltitudesSectionLayout() // Fix the layout of the Altitudes section by briefly disabling the fields underneath the one that was removed.
         {
-            var maxAltitudeToggleField = Fields["maxAltitudeToggle"];
+            var maxAltitudeToggleField = Fields[nameof(maxAltitudeToggle)];
             maxAltitudeToggleField.guiActive = false;
             maxAltitudeToggleField.guiActiveEditor = false;
             yield return null;
@@ -1617,7 +1617,7 @@ namespace BDArmory.Control
 
         void SetupSliderResolution()
         {
-            var sliderResolutionField = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields["sliderResolution"].uiControlFlight : Fields["sliderResolution"].uiControlEditor);
+            var sliderResolutionField = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(sliderResolution)].uiControlFlight : Fields[nameof(sliderResolution)].uiControlEditor);
             sliderResolutionField.onFieldChanged = OnSliderResolutionUpdated;
             OnSliderResolutionUpdated();
         }
@@ -1695,13 +1695,13 @@ namespace BDArmory.Control
         {
             if (HighLogic.LoadedSceneIsEditor)
             {
-                UI_Toggle autoTuneToggle = (UI_Toggle)Fields["autoTune"].uiControlEditor;
+                UI_Toggle autoTuneToggle = (UI_Toggle)Fields[nameof(autoTune)].uiControlEditor;
                 autoTuneToggle.onFieldChanged = OnAutoTuneChanged;
             }
             else if (HighLogic.LoadedSceneIsFlight)
             {
                 pidAutoTuning = new PIDAutoTuning(this);
-                UI_Toggle autoTuneToggle = (UI_Toggle)Fields["autoTune"].uiControlFlight;
+                UI_Toggle autoTuneToggle = (UI_Toggle)Fields[nameof(autoTune)].uiControlFlight;
                 autoTuneToggle.onFieldChanged = OnAutoTuneChanged;
                 foreach (var field in Fields)
                 {
@@ -1775,7 +1775,7 @@ namespace BDArmory.Control
 
         void SetOnUpToElevenChanged()
         {
-            var field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields["upToEleven"].uiControlFlight : Fields["upToEleven"].uiControlEditor);
+            var field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(upToEleven)].uiControlFlight : Fields[nameof(upToEleven)].uiControlEditor);
             field.onFieldChanged = TurnItUpToEleven; // Only triggered on UI interaction.
             if (upToEleven) TurnItUpToEleven(); // The initially loaded values are not the alternate ones.
         }
@@ -1854,38 +1854,38 @@ namespace BDArmory.Control
                 maxSpeed = Mathf.Min(maxSpeed, 600);
                 if (HighLogic.LoadedSceneIsFlight)
                 {
-                    UI_FloatRange bank = (UI_FloatRange)Fields["maxBank"].uiControlFlight;
+                    UI_FloatRange bank = (UI_FloatRange)Fields[nameof(maxBank)].uiControlFlight;
                     bank.maxValue = 40;
-                    UI_FloatRange spd = (UI_FloatRange)Fields["maxSpeed"].uiControlFlight;
+                    UI_FloatRange spd = (UI_FloatRange)Fields[nameof(maxSpeed)].uiControlFlight;
                     spd.maxValue = 600;
                 }
                 else
                 {
-                    UI_FloatRange bank = (UI_FloatRange)Fields["maxBank"].uiControlEditor;
+                    UI_FloatRange bank = (UI_FloatRange)Fields[nameof(maxBank)].uiControlEditor;
                     bank.maxValue = 40;
-                    UI_FloatRange spd = (UI_FloatRange)Fields["maxSpeed"].uiControlEditor;
+                    UI_FloatRange spd = (UI_FloatRange)Fields[nameof(maxSpeed)].uiControlEditor;
                     spd.maxValue = 600;
                 }
-                Fields["postStallAoA"].guiActiveEditor = false;
-                Fields["postStallAoA"].guiActive = false;
+                Fields[nameof(postStallAoA)].guiActiveEditor = false;
+                Fields[nameof(postStallAoA)].guiActive = false;
             }
             if (BDArmorySettings.RUNWAY_PROJECT && BDArmorySettings.RUNWAY_PROJECT_ROUND == 60)
             {
                 minAltitude = Mathf.Max(minAltitude, 750);
-                UI_FloatRange minAlt = (UI_FloatRange)Fields["minAltitude"].uiControlFlight;
+                UI_FloatRange minAlt = (UI_FloatRange)Fields[nameof(minAltitude)].uiControlFlight;
                 minAlt.minValue = 750;
                 defaultAltitude = BDArmorySettings.VESSEL_SPAWN_ALTITUDE;
-                Fields["defaultAltitude"].guiActiveEditor = false;
-                Fields["defaultAltitude"].guiActive = false;
+                Fields[nameof(defaultAltitude)].guiActiveEditor = false;
+                Fields[nameof(defaultAltitude)].guiActive = false;
                 maxAllowedAoA = 2.5f;
                 postStallAoA = 5;
                 maxSpeed = Mathf.Min(250, maxSpeed);
-                UI_FloatRange spd = (UI_FloatRange)Fields["maxSpeed"].uiControlFlight;
+                UI_FloatRange spd = (UI_FloatRange)Fields[nameof(maxSpeed)].uiControlFlight;
                 spd.maxValue = 250;
-                Fields["postStallAoA"].guiActiveEditor = false;
-                Fields["postStallAoA"].guiActive = false;
-                Fields["maxAllowedAoA"].guiActiveEditor = false;
-                Fields["maxAllowedAoA"].guiActive = false;
+                Fields[nameof(postStallAoA)].guiActiveEditor = false;
+                Fields[nameof(postStallAoA)].guiActive = false;
+                Fields[nameof(maxAllowedAoA)].guiActiveEditor = false;
+                Fields[nameof(maxAllowedAoA)].guiActive = false;
             }
             SetupSliderResolution();
             SetSliderPairClamps("turnRadiusTwiddleFactorMin", "turnRadiusTwiddleFactorMax");
@@ -3424,9 +3424,9 @@ namespace BDArmory.Control
 
         void SetWaypointTerrainAvoidance()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields["waypointTerrainAvoidance"].uiControlEditor;
+            UI_FloatRange field = (UI_FloatRange)Fields[nameof(waypointTerrainAvoidance)].uiControlEditor;
             field.onFieldChanged = OnWaypointTerrainAvoidanceUpdated;
-            field = (UI_FloatRange)Fields["waypointTerrainAvoidance"].uiControlFlight;
+            field = (UI_FloatRange)Fields[nameof(waypointTerrainAvoidance)].uiControlFlight;
             field.onFieldChanged = OnWaypointTerrainAvoidanceUpdated;
             OnWaypointTerrainAvoidanceUpdated(null, null);
         }

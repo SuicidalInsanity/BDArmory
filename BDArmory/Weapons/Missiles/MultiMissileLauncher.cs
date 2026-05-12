@@ -180,7 +180,7 @@ namespace BDArmory.Weapons.Missiles
                 //missileSpawner.maxAmmo = isClusterMissile ? 1 : salvoSize * 5;
                 missileSpawner.railAmmo = isClusterMissile ? 1 : launchTubes;
                 missileSpawner.maxAmmo = isClusterMissile ? 1 : launchTubes;
-                missileSpawner.Fields["railAmmo"].guiActiveEditor = false;
+                missileSpawner.Fields[nameof(missileSpawner.railAmmo)].guiActiveEditor = false;
                 missileSpawner.MissileName = subMunitionName;
                 if (!isClusterMissile) //Clustermissiles replace/generate MMR on launch, other missiles should have it in the .cfg
                     Debug.LogError($"[BDArmory.MultiMissileLauncher]: no ModuleMissileRearm on {part.name}. Please fix your .cfg");
@@ -208,44 +208,44 @@ namespace BDArmory.Weapons.Missiles
                         missileLauncher.DetonationDistance = 0;
                         missileLauncher.blastRadius = 0;
                     }
-                    missileLauncher.Fields["DetonationDistance"].guiActive = false;
-                    missileLauncher.Fields["DetonationDistance"].guiActiveEditor = false;
+                    missileLauncher.Fields[nameof(missileLauncher.DetonationDistance)].guiActive = false;
+                    missileLauncher.Fields[nameof(missileLauncher.DetonationDistance)].guiActiveEditor = false;
                     missileLauncher.DetonateAtMinimumDistance = false;
-                    missileLauncher.Fields["DetonateAtMinimumDistance"].guiActive = true;
-                    missileLauncher.Fields["DetonateAtMinimumDistance"].guiActiveEditor = true;
+                    missileLauncher.Fields[nameof(missileLauncher.DetonateAtMinimumDistance)].guiActive = true;
+                    missileLauncher.Fields[nameof(missileLauncher.DetonateAtMinimumDistance)].guiActiveEditor = true;
                     if (missileSpawner.maxAmmo == 1)
                     {
-                        missileSpawner.Fields["railAmmo"].guiActive = false;
-                        missileSpawner.Fields["railAmmo"].guiActiveEditor = false;
+                        missileSpawner.Fields[nameof(missileSpawner.railAmmo)].guiActive = false;
+                        missileSpawner.Fields[nameof(missileSpawner.railAmmo)].guiActiveEditor = false;
                     }
                 }
                 else
                 {
-                    Fields["clusterMissileTriggerDist"].guiActive = false;
-                    Fields["clusterMissileTriggerDist"].guiActiveEditor = false;
+                    Fields[nameof(clusterMissileTriggerDist)].guiActive = false;
+                    Fields[nameof(clusterMissileTriggerDist)].guiActiveEditor = false;
                     missileLauncher.MissileReferenceTransform = launchTransforms[0];
                 }
-                Fields["salvoSize"].guiActive = setSalvoSize;
-                Fields["salvoSize"].guiActiveEditor = setSalvoSize;
+                Fields[nameof(salvoSize)].guiActive = setSalvoSize;
+                Fields[nameof(salvoSize)].guiActiveEditor = setSalvoSize;
                 if (isMultiLauncher)
                 {
                     if (!string.IsNullOrEmpty(subMunitionName))
                     {
-                        Fields["loadedMissileName"].guiActive = true;
-                        Fields["loadedMissileName"].guiActiveEditor = true;
+                        Fields[nameof(loadedMissileName)].guiActive = true;
+                        Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                         missileLauncher.missileName = subMunitionName;
                     }
                     if (!permitJettison) missileLauncher.Events["Jettison"].guiActive = false;
                     if (OverrideDropSettings)
                     {
-                        missileLauncher.Fields["dropTime"].guiActive = false;
-                        missileLauncher.Fields["dropTime"].guiActiveEditor = false;
+                        missileLauncher.Fields[nameof(missileLauncher.dropTime)].guiActive = false;
+                        missileLauncher.Fields[nameof(missileLauncher.dropTime)].guiActiveEditor = false;
                         missileLauncher.dropTime = 0;
-                        missileLauncher.Fields["decoupleSpeed"].guiActive = false;
-                        missileLauncher.Fields["decoupleSpeed"].guiActiveEditor = false;
+                        missileLauncher.Fields[nameof(missileLauncher.decoupleSpeed)].guiActive = false;
+                        missileLauncher.Fields[nameof(missileLauncher.decoupleSpeed)].guiActiveEditor = false;
                         missileLauncher.decoupleSpeed = 10;
-                        missileLauncher.Fields["decoupleForward"].guiActive = false;
-                        missileLauncher.Fields["decoupleForward"].guiActiveEditor = false;
+                        missileLauncher.Fields[nameof(missileLauncher.decoupleForward)].guiActive = false;
+                        missileLauncher.Fields[nameof(missileLauncher.decoupleForward)].guiActiveEditor = false;
                         missileLauncher.decoupleForward = true;
                     }
                     float bRadius = 0;
@@ -267,8 +267,8 @@ namespace BDArmory.Weapons.Missiles
                                     if (CLM != null)
                                         if (CLM.isClusterMissile)
                                         {
-                                            Fields["clusterMissileTriggerDist"].guiActive = true;
-                                            Fields["clusterMissileTriggerDist"].guiActiveEditor = true;
+                                            Fields[nameof(clusterMissileTriggerDist)].guiActive = true;
+                                            Fields[nameof(clusterMissileTriggerDist)].guiActiveEditor = true;
                                         }
                                 }
                                 else Debug.LogError("[BDArmory.MultiMissileLauncher]: submunition MissileLauncher module null! Check subMunitionName is correct");
@@ -305,13 +305,13 @@ namespace BDArmory.Weapons.Missiles
                 }
             if (missileSpawner.maxAmmo > 1)
             {
-                UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields["railAmmo"].uiControlEditor;
+                UI_FloatRange Ammo = (UI_FloatRange)missileSpawner.Fields[nameof(missileSpawner.railAmmo)].uiControlEditor;
                 Ammo.onFieldChanged = updateOffset;                
             }
 
             if (string.IsNullOrEmpty(scaleTransformName))
             {
-                Fields["Scale"].guiActiveEditor = false;
+                Fields[nameof(Scale)].guiActiveEditor = false;
             }
             else
             {
@@ -319,7 +319,7 @@ namespace BDArmory.Weapons.Missiles
                 if (ScaleTransform != null)
                 {
                     ScaleTransformOrigScale = part.partInfo.partPrefab.FindModelTransform(scaleTransformName).localScale; //baseConfig ? ScaleTransform.localScale * (baseConfig.Scale / Scale) : ScaleTransform.localScale;
-                    UI_FloatRange AWidth = (UI_FloatRange)Fields["Scale"].uiControlEditor;
+                    UI_FloatRange AWidth = (UI_FloatRange)Fields[nameof(Scale)].uiControlEditor;
                     AWidth.maxValue = scaleMax;
                     if (Scale > scaleMax) Scale = scaleMax;
                     AWidth.onFieldChanged = updateScale;
@@ -327,7 +327,7 @@ namespace BDArmory.Weapons.Missiles
             }
             if (string.IsNullOrEmpty(lengthTransformName))
             {
-                Fields["Length"].guiActiveEditor = false;
+                Fields[nameof(Length)].guiActiveEditor = false;
             }
             else
             {
@@ -335,7 +335,7 @@ namespace BDArmory.Weapons.Missiles
                 if (LengthTransform != null)
                 {
                     LengthTransformOrigScale = part.partInfo.partPrefab.FindModelTransform(scaleTransformName).localScale;
-                    UI_FloatRange ALength = (UI_FloatRange)Fields["Length"].uiControlEditor;
+                    UI_FloatRange ALength = (UI_FloatRange)Fields[nameof(Length)].uiControlEditor;
                     ALength.maxValue = scaleMax;
                     if (Length > scaleMax) Length = scaleMax;
                     ALength.onFieldChanged = updateLength;
@@ -343,12 +343,12 @@ namespace BDArmory.Weapons.Missiles
             }
             if (adjustMissileVOffset || !string.IsNullOrEmpty(lengthTransformName))
             {
-                UI_FloatRange AOffset = (UI_FloatRange)Fields["attachOffset"].uiControlEditor;
+                UI_FloatRange AOffset = (UI_FloatRange)Fields[nameof(attachOffset)].uiControlEditor;
                 AOffset.maxValue = offsetMax;
                 AOffset.minValue = -offsetMax;
                 AOffset.onFieldChanged = updateOffset;
             }
-            else Fields["attachOffset"].guiActiveEditor = false;
+            else Fields[nameof(attachOffset)].guiActiveEditor = false;
 
             UpdateLengthAndScale(Scale, Length, attachOffset);
         }
@@ -489,8 +489,8 @@ namespace BDArmory.Weapons.Missiles
                                     PopulateMissileDummies(true);
                                     MissileLauncher MLConfig = missile.FindModuleImplementing<MissileLauncher>();
                                     LoadoutModified = true;
-                                    Fields["loadedMissileName"].guiActive = true;
-                                    Fields["loadedMissileName"].guiActiveEditor = true;
+                                    Fields[nameof(loadedMissileName)].guiActive = true;
+                                    Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                                     loadedMissileName = MLConfig.GetShortName();
                                     GUIUtils.RefreshAssociatedWindows(part);
                                     if (missileSpawner)
@@ -715,7 +715,7 @@ namespace BDArmory.Weapons.Missiles
             {
                 PopulateMissileDummies(true);
             }
-            UI_FloatRange salvo = (UI_FloatRange)Fields["salvoSize"].uiControlEditor;
+            UI_FloatRange salvo = (UI_FloatRange)Fields[nameof(salvoSize)].uiControlEditor;
             salvo.maxValue = launchTransforms.Length;
         }
         public void PopulateMissileDummies(bool refresh = false)

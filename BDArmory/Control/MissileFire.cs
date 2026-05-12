@@ -1353,9 +1353,9 @@ namespace BDArmory.Control
 
         public void SetAFCAA()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields["AutoFireCosAngleAdjustment"].uiControlEditor;
+            UI_FloatRange field = (UI_FloatRange)Fields[nameof(AutoFireCosAngleAdjustment)].uiControlEditor;
             field.onFieldChanged = OnAFCAAUpdated;
-            // field = (UI_FloatRange)Fields["AutoFireCosAngleAdjustment"].uiControlFlight; // Not visible in flight mode, use the guard menu instead.
+            // field = (UI_FloatRange)Fields[nameof(AutoFireCosAngleAdjustment)].uiControlFlight; // Not visible in flight mode, use the guard menu instead.
             // field.onFieldChanged = OnAFCAAUpdated;
             OnAFCAAUpdated(null, null);
         }
@@ -1497,8 +1497,8 @@ namespace BDArmory.Control
 
                 // Update the max visual gun range (sqr) whenever the gun range or guard range changes.
                 {
-                    ((UI_FloatSemiLogRange)Fields["guardRange"].uiControlFlight).onFieldChanged = UpdateVisualGunRangeSqr;
-                    ((UI_FloatPowerRange)Fields["gunRange"].uiControlFlight).onFieldChanged = UpdateVisualGunRangeSqr;
+                    ((UI_FloatSemiLogRange)Fields[nameof(guardRange)].uiControlFlight).onFieldChanged = UpdateVisualGunRangeSqr;
+                    ((UI_FloatPowerRange)Fields[nameof(gunRange)].uiControlFlight).onFieldChanged = UpdateVisualGunRangeSqr;
                     UpdateVisualGunRangeSqr(null, null);
                 }
 
@@ -6054,22 +6054,22 @@ namespace BDArmory.Control
             }
 
             // Get UI fields
-            var TargetBiasFields = Fields["targetBias"];
-            var TargetRangeFields = Fields["targetWeightRange"];
-            var TargetPreferenceFields = Fields["targetWeightAirPreference"];
-            var TargetATAFields = Fields["targetWeightATA"];
-            var TargetAoDFields = Fields["targetWeightAoD"];
-            var TargetAccelFields = Fields["targetWeightAccel"];
-            var TargetClosureTimeFields = Fields["targetWeightClosureTime"];
-            var TargetWeaponNumberFields = Fields["targetWeightWeaponNumber"];
-            var TargetMassFields = Fields["targetWeightMass"];
-            var TargetDamageFields = Fields["targetWeightDamage"];
-            var TargetFriendliesEngagingFields = Fields["targetWeightFriendliesEngaging"];
-            var TargetThreatFields = Fields["targetWeightThreat"];
-            var TargetProtectTeammateFields = Fields["targetWeightProtectTeammate"];
-            var TargetProtectVIPFields = Fields["targetWeightProtectVIP"];
-            var TargetAttackVIPFields = Fields["targetWeightAttackVIP"];
-            var TargetUncontrolledFields = Fields["targetWeightUncontrolled"];
+            var TargetBiasFields = Fields[nameof(targetBias)];
+            var TargetRangeFields = Fields[nameof(targetWeightRange)];
+            var TargetPreferenceFields = Fields[nameof(targetWeightAirPreference)];
+            var TargetATAFields = Fields[nameof(targetWeightATA)];
+            var TargetAoDFields = Fields[nameof(targetWeightAoD)];
+            var TargetAccelFields = Fields[nameof(targetWeightAccel)];
+            var TargetClosureTimeFields = Fields[nameof(targetWeightClosureTime)];
+            var TargetWeaponNumberFields = Fields[nameof(targetWeightWeaponNumber)];
+            var TargetMassFields = Fields[nameof(targetWeightMass)];
+            var TargetDamageFields = Fields[nameof(targetWeightDamage)];
+            var TargetFriendliesEngagingFields = Fields[nameof(targetWeightFriendliesEngaging)];
+            var TargetThreatFields = Fields[nameof(targetWeightThreat)];
+            var TargetProtectTeammateFields = Fields[nameof(targetWeightProtectTeammate)];
+            var TargetProtectVIPFields = Fields[nameof(targetWeightProtectVIP)];
+            var TargetAttackVIPFields = Fields[nameof(targetWeightAttackVIP)];
+            var TargetUncontrolledFields = Fields[nameof(targetWeightUncontrolled)];
 
             // Calculate score values
             var targetWM = target.WeaponManager;
@@ -10243,7 +10243,7 @@ namespace BDArmory.Control
 
         public void UpdateMaxGuardRange()
         {
-            var rangeEditor = (UI_FloatSemiLogRange)Fields["guardRange"].uiControlEditor;
+            var rangeEditor = (UI_FloatSemiLogRange)Fields[nameof(guardRange)].uiControlEditor;
             rangeEditor.UpdateLimits(rangeEditor.minValue, BDArmorySettings.MAX_GUARD_VISUAL_RANGE);
         }
 
@@ -10265,7 +10265,7 @@ namespace BDArmory.Control
                     maxGunRange = Mathf.Max(maxGunRange, weapon.maxEffectiveDistance);
                 }
             }
-            if (BDArmorySetup.Instance.textNumFields != null && BDArmorySetup.Instance.textNumFields.ContainsKey("gunRange")) { BDArmorySetup.Instance.textNumFields["gunRange"].maxValue = maxGunRange; }
+            if (BDArmorySetup.Instance.textNumFields != null && BDArmorySetup.Instance.textNumFields.ContainsKey("gunRange")) { BDArmorySetup.Instance.textNumFields[nameof(gunRange)].maxValue = maxGunRange; }
             var oldGunRange = gunRange;
             gunRange = Mathf.Min(gunRange, maxGunRange);
             if (BDArmorySettings.DEBUG_AI && gunRange != oldGunRange) Debug.Log($"[BDArmory.MissileFire]: Updating gun range of {v.vesselName} to {gunRange} of {maxGunRange} from {oldGunRange}");
@@ -10278,7 +10278,7 @@ namespace BDArmory.Control
         {
             if (EditorLogic.fetch.ship == null) return;
             List<WeaponClasses> gunLikeClasses = [WeaponClasses.Gun, WeaponClasses.DefenseLaser, WeaponClasses.Rocket];
-            var rangeEditor = (UI_FloatPowerRange)Fields["gunRange"].uiControlEditor;
+            var rangeEditor = (UI_FloatPowerRange)Fields[nameof(gunRange)].uiControlEditor;
             maxGunRange = rangeEditor.minValue;
             foreach (var p in EditorLogic.fetch.ship.Parts)
             {

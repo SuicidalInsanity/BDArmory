@@ -36,7 +36,7 @@ namespace BDArmory.Weapons
 
             if (part.partInfo.partPrefab.FindModuleImplementing<MissileLauncher>() != null && (!mml || mml.isClusterMissile))
             {
-                Fields["tntMass"].isPersistant = false;
+                Fields[nameof(tntMass)].isPersistant = false;
                 startuptntMass = tntMass;
             }
         }

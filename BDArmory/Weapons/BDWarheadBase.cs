@@ -82,13 +82,13 @@ namespace BDArmory.Weapons
             manualOverride = !manualOverride;
             if (manualOverride)
             {
-                Fields["detonationRange"].guiActiveEditor = true;
-                Fields["detonationRange"].guiActive = true;
+                Fields[nameof(detonationRange)].guiActiveEditor = true;
+                Fields[nameof(detonationRange)].guiActive = true;
             }
             else
             {
-                Fields["detonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -155,11 +155,11 @@ namespace BDArmory.Weapons
             /*
             if (BDArmorySettings.ADVANCED_EDIT)
             {
-                //Fields["tntMass"].guiActiveEditor = true;
+                //Fields[nameof(tntMass)].guiActiveEditor = true;
 
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).minValue = 0f;
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).maxValue = 3000f;
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).stepIncrement = 5f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).minValue = 0f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).maxValue = 3000f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).stepIncrement = 5f;
             }
             */
             WarheadSpecificSetup();
@@ -183,10 +183,10 @@ namespace BDArmory.Weapons
                 Events["ToggleIFF"].guiActive = true;
                 Events["ToggleProx"].guiActiveEditor = true;
                 Events["ToggleProx"].guiActive = true;
-                Fields["guiStatusString"].guiActiveEditor = true;
-                Fields["guiStatusString"].guiActive = true;
-                Fields["guiIFFString"].guiActiveEditor = true;
-                Fields["guiIFFString"].guiActive = true;
+                Fields[nameof(guiStatusString)].guiActiveEditor = true;
+                Fields[nameof(guiStatusString)].guiActive = true;
+                Fields[nameof(guiIFFString)].guiActiveEditor = true;
+                Fields[nameof(guiIFFString)].guiActive = true;
                 if (Armed)
                 {
                     guiStatusString = "ARMED";
@@ -209,13 +209,13 @@ namespace BDArmory.Weapons
                 }
                 if (manualOverride)
                 {
-                    Fields["detonationRange"].guiActiveEditor = true;
-                    Fields["detonationRange"].guiActive = true;
+                    Fields[nameof(detonationRange)].guiActiveEditor = true;
+                    Fields[nameof(detonationRange)].guiActive = true;
                 }
                 else
                 {
-                    Fields["detonationRange"].guiActiveEditor = false;
-                    Fields["detonationRange"].guiActive = false;
+                    Fields[nameof(detonationRange)].guiActiveEditor = false;
+                    Fields[nameof(detonationRange)].guiActive = false;
                 }
                 WarheadSpecificUISetup();
             }
@@ -227,14 +227,14 @@ namespace BDArmory.Weapons
                 Events["ToggleIFF"].guiActive = false;
                 Events["ToggleProx"].guiActiveEditor = false;
                 Events["ToggleProx"].guiActive = false;
-                Fields["guiStatusString"].guiActiveEditor = false;
-                Fields["guiStatusString"].guiActive = false;
-                Fields["guiIFFString"].guiActiveEditor = false;
-                Fields["guiIFFString"].guiActive = false;
-                Fields["detonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
-                Fields["detonateAtMinimumDistance"].guiActiveEditor = false;
-                Fields["detonateAtMinimumDistance"].guiActive = false;
+                Fields[nameof(guiStatusString)].guiActiveEditor = false;
+                Fields[nameof(guiStatusString)].guiActive = false;
+                Fields[nameof(guiIFFString)].guiActiveEditor = false;
+                Fields[nameof(guiIFFString)].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActiveEditor = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActive = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
         }

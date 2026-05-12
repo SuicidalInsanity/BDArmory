@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -124,7 +124,7 @@ namespace BDArmory.Ammo
 
                 if (HighLogic.CurrentGame == null || HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
                 {
-                    Fields["addedCost"].guiActiveEditor = displayCurrentTankCost;
+                    Fields[nameof(addedCost)].guiActiveEditor = displayCurrentTankCost;
                 }
 
                 initialized = true;

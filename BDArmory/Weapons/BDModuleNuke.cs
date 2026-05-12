@@ -115,10 +115,10 @@ namespace BDArmory.Weapons
                 }
                 else
                 {
-                    //Fields["status"].guiActive = false;
-                    // Fields["fuelleft"].guiActive = false;
-                    //Fields["status"].guiActiveEditor = false;
-                    // Fields["fuelleft"].guiActiveEditor = false;
+                    //Fields[nameof(status)].guiActive = false;
+                    // Fields[nameof(fuelleft)].guiActive = false;
+                    //Fields[nameof(status)].guiActiveEditor = false;
+                    // Fields[nameof(fuelleft)].guiActiveEditor = false;
                 }
                 Sourcevessel = part.vessel.GetName();
 

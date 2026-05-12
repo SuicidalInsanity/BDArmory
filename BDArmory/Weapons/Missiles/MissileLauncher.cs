@@ -566,13 +566,13 @@ namespace BDArmory.Weapons.Missiles
             boostGaplessEmitters = new List<BDAGaplessParticleEmitter>();
             if (hasRCS) forwardRCS = new List<KSPParticleEmitter>();
 
-            Fields["maxOffBoresight"].guiActive = false;
-            Fields["maxOffBoresight"].guiActiveEditor = false;
+            Fields[nameof(maxOffBoresight)].guiActive = false;
+            Fields[nameof(maxOffBoresight)].guiActiveEditor = false;
 
-            Fields["maxStaticLaunchRange"].guiActive = false;
-            Fields["maxStaticLaunchRange"].guiActiveEditor = false;
-            Fields["minStaticLaunchRange"].guiActive = false;
-            Fields["minStaticLaunchRange"].guiActiveEditor = false;
+            Fields[nameof(maxStaticLaunchRange)].guiActive = false;
+            Fields[nameof(maxStaticLaunchRange)].guiActiveEditor = false;
+            Fields[nameof(minStaticLaunchRange)].guiActive = false;
+            Fields[nameof(minStaticLaunchRange)].guiActiveEditor = false;
 
             ParseLiftDragSteerTorque();
             ParseManeuvergLim();
@@ -794,14 +794,14 @@ namespace BDArmory.Weapons.Missiles
                         }
                     if (customTurret.Count == 0)
                     {
-                        Fields["customTurretLoft"].guiActive = false;
-                        Fields["customTurretLoftFac"].guiActive = false;
+                        Fields[nameof(customTurretLoft)].guiActive = false;
+                        Fields[nameof(customTurretLoftFac)].guiActive = false;
                         customTurretID = 0;
                     }
                     else
                     {
-                        Fields["customTurretLoft"].guiActive = true;
-                        Fields["customTurretLoftFac"].guiActive = true;
+                        Fields[nameof(customTurretLoft)].guiActive = true;
+                        Fields[nameof(customTurretLoftFac)].guiActive = true;
                     }
                 }
             }
@@ -985,26 +985,26 @@ namespace BDArmory.Weapons.Missiles
             }
             if (isTimed)
             {
-                Fields["detonationTime"].guiActive = true;
-                Fields["detonationTime"].guiActiveEditor = true;
+                Fields[nameof(detonationTime)].guiActive = true;
+                Fields[nameof(detonationTime)].guiActiveEditor = true;
             }
             else
             {
-                Fields["detonationTime"].guiActive = false;
-                Fields["detonationTime"].guiActiveEditor = false;
+                Fields[nameof(detonationTime)].guiActive = false;
+                Fields[nameof(detonationTime)].guiActiveEditor = false;
             }
             if (GuidanceMode != GuidanceModes.Cruise && (!terminalHoming || homingModeTerminal != GuidanceModes.Cruise))
             {
                 CruiseAltitudeRange();
-                Fields["CruiseAltitude"].guiActive = false;
-                Fields["CruiseAltitude"].guiActiveEditor = false;
-                Fields["CruiseSpeed"].guiActive = false;
-                Fields["CruiseSpeed"].guiActiveEditor = false;
+                Fields[nameof(CruiseAltitude)].guiActive = false;
+                Fields[nameof(CruiseAltitude)].guiActiveEditor = false;
+                Fields[nameof(CruiseSpeed)].guiActive = false;
+                Fields[nameof(CruiseSpeed)].guiActiveEditor = false;
                 Events["CruiseAltitudeRange"].guiActive = false;
                 Events["CruiseAltitudeRange"].guiActiveEditor = false;
-                Fields["CruisePredictionTime"].guiActiveEditor = false;
-                Fields["CruisePopup"].guiActive = false;
-                Fields["CruisePopup"].guiActiveEditor = false;
+                Fields[nameof(CruisePredictionTime)].guiActiveEditor = false;
+                Fields[nameof(CruisePopup)].guiActive = false;
+                Fields[nameof(CruisePopup)].guiActiveEditor = false;
             }
             else
             {
@@ -1031,70 +1031,70 @@ namespace BDArmory.Weapons.Missiles
                         Debug.Log($"[BDArmory.MissileLauncher]: setting canCruisePopup of {part} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)} to {canCruisePopup}");
                     }
                 }
-                UI_FloatRange CruiseSpeedRange = (UI_FloatRange)Fields["CruiseSpeed"].uiControlEditor;
+                UI_FloatRange CruiseSpeedRange = (UI_FloatRange)Fields[nameof(CruiseSpeed)].uiControlEditor;
                 CruiseSpeedRange.maxValue = maxCruiseSpeed;
                 CruiseSpeedRange.stepIncrement = Mathf.Clamp((maxCruiseSpeed - 100f) * 0.1f, 5f, 50f);
                 CruiseAltitudeRange();
-                Fields["CruiseAltitude"].guiActive = true;
-                Fields["CruiseAltitude"].guiActiveEditor = true;
-                Fields["CruiseSpeed"].guiActive = true;
-                Fields["CruiseSpeed"].guiActiveEditor = true;
+                Fields[nameof(CruiseAltitude)].guiActive = true;
+                Fields[nameof(CruiseAltitude)].guiActiveEditor = true;
+                Fields[nameof(CruiseSpeed)].guiActive = true;
+                Fields[nameof(CruiseSpeed)].guiActiveEditor = true;
                 Events["CruiseAltitudeRange"].guiActive = true;
                 Events["CruiseAltitudeRange"].guiActiveEditor = true;
-                Fields["CruisePredictionTime"].guiActiveEditor = true;
+                Fields[nameof(CruisePredictionTime)].guiActiveEditor = true;
                 if (canCruisePopup)
                 {
-                    Fields["CruisePopup"].guiActive = true;
-                    Fields["CruisePopup"].guiActiveEditor = true;
+                    Fields[nameof(CruisePopup)].guiActive = true;
+                    Fields[nameof(CruisePopup)].guiActiveEditor = true;
                 }
                 else
                 {
-                    Fields["CruisePopup"].guiActive = false;
-                    Fields["CruisePopup"].guiActiveEditor = false;
+                    Fields[nameof(CruisePopup)].guiActive = false;
+                    Fields[nameof(CruisePopup)].guiActiveEditor = false;
                 }
             }
 
             if (GuidanceMode != GuidanceModes.AGM)
             {
-                Fields["maxAltitude"].guiActive = false;
-                Fields["maxAltitude"].guiActiveEditor = false;
+                Fields[nameof(maxAltitude)].guiActive = false;
+                Fields[nameof(maxAltitude)].guiActiveEditor = false;
             }
             else
             {
-                Fields["maxAltitude"].guiActive = true;
-                Fields["maxAltitude"].guiActiveEditor = true;
+                Fields[nameof(maxAltitude)].guiActive = true;
+                Fields[nameof(maxAltitude)].guiActiveEditor = true;
             }
             if (GuidanceMode != GuidanceModes.AGMBallistic)
             {
-                Fields["BallisticOverShootFactor"].guiActive = false;
-                Fields["BallisticOverShootFactor"].guiActiveEditor = false;
-                Fields["BallisticAngle"].guiActive = false;
-                Fields["BallisticAngle"].guiActiveEditor = false;
+                Fields[nameof(BallisticOverShootFactor)].guiActive = false;
+                Fields[nameof(BallisticOverShootFactor)].guiActiveEditor = false;
+                Fields[nameof(BallisticAngle)].guiActive = false;
+                Fields[nameof(BallisticAngle)].guiActiveEditor = false;
             }
             else
             {
-                Fields["BallisticOverShootFactor"].guiActive = true;
-                Fields["BallisticOverShootFactor"].guiActiveEditor = true;
-                Fields["BallisticAngle"].guiActive = true;
-                Fields["BallisticAngle"].guiActiveEditor = true;
+                Fields[nameof(BallisticOverShootFactor)].guiActive = true;
+                Fields[nameof(BallisticOverShootFactor)].guiActiveEditor = true;
+                Fields[nameof(BallisticAngle)].guiActive = true;
+                Fields[nameof(BallisticAngle)].guiActiveEditor = true;
             }
 
             if (part.partInfo.title.Contains("Bomb") || weaponClass == WeaponClasses.SLW)
             {
-                Fields["dropTime"].guiActive = false;
-                Fields["dropTime"].guiActiveEditor = false;
+                Fields[nameof(dropTime)].guiActive = false;
+                Fields[nameof(dropTime)].guiActiveEditor = false;
                 if (torpedo) dropTime = 0;
             }
             else
             {
-                Fields["dropTime"].guiActive = true;
-                Fields["dropTime"].guiActiveEditor = true;
+                Fields[nameof(dropTime)].guiActive = true;
+                Fields[nameof(dropTime)].guiActiveEditor = true;
             }
 
             // Moved mFA setting here instead of OnStart() to account for the need for this to be set for MMLs as well
             if (maxOffBoresight < 180 && _missileType == MissileType.Missile || _missileType == MissileType.Torpedo)
             {
-                UI_FloatRange mFA = (UI_FloatRange)Fields["missileFireAngle"].uiControlEditor;
+                UI_FloatRange mFA = (UI_FloatRange)Fields[nameof(missileFireAngle)].uiControlEditor;
                 mFA.maxValue = maxOffBoresight * 0.75f;
                 //mFA.stepIncrement = mFA.maxValue / 100;
                 if (missileFireAngle < 0)
@@ -1105,129 +1105,129 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetingModeTerminal != TargetingModes.None)
             {
-                Fields["terminalGuidanceShouldActivate"].guiName += terminalGuidanceType;
+                Fields[nameof(terminalGuidanceShouldActivate)].guiName += terminalGuidanceType;
             }
             else
             {
-                Fields["terminalGuidanceShouldActivate"].guiActive = false;
-                Fields["terminalGuidanceShouldActivate"].guiActiveEditor = false;
+                Fields[nameof(terminalGuidanceShouldActivate)].guiActive = false;
+                Fields[nameof(terminalGuidanceShouldActivate)].guiActiveEditor = false;
                 terminalGuidanceShouldActivate = false;
             }
 
             if (GuidanceMode != GuidanceModes.AAMLoft && GuidanceMode != GuidanceModes.Kappa)
             {
-                Fields["LoftMaxAltitude"].guiActive = false;
-                Fields["LoftMaxAltitude"].guiActiveEditor = false;
-                Fields["LoftRangeOverride"].guiActive = false;
-                Fields["LoftRangeOverride"].guiActiveEditor = false;
-                Fields["LoftAngle"].guiActive = false;
-                Fields["LoftAngle"].guiActiveEditor = false;
-                Fields["LoftTermAngle"].guiActive = false;
-                Fields["LoftTermAngle"].guiActiveEditor = false;
+                Fields[nameof(LoftMaxAltitude)].guiActive = false;
+                Fields[nameof(LoftMaxAltitude)].guiActiveEditor = false;
+                Fields[nameof(LoftRangeOverride)].guiActive = false;
+                Fields[nameof(LoftRangeOverride)].guiActiveEditor = false;
+                Fields[nameof(LoftAngle)].guiActive = false;
+                Fields[nameof(LoftAngle)].guiActiveEditor = false;
+                Fields[nameof(LoftTermAngle)].guiActive = false;
+                Fields[nameof(LoftTermAngle)].guiActiveEditor = false;
             }
             else
             {
 
-                Fields["LoftMaxAltitude"].guiActiveEditor = true;
-                Fields["LoftRangeOverride"].guiActiveEditor = true;
+                Fields[nameof(LoftMaxAltitude)].guiActiveEditor = true;
+                Fields[nameof(LoftRangeOverride)].guiActiveEditor = true;
 
                 if (!GameSettings.ADVANCED_TWEAKABLES)
                 {
-                    Fields["LoftAngle"].guiActiveEditor = false;
-                    Fields["LoftTermAngle"].guiActiveEditor = false;
+                    Fields[nameof(LoftAngle)].guiActiveEditor = false;
+                    Fields[nameof(LoftTermAngle)].guiActiveEditor = false;
                 }
                 else
                 {
-                    Fields["LoftAngle"].guiActiveEditor = true;
-                    Fields["LoftTermAngle"].guiActiveEditor = true;
+                    Fields[nameof(LoftAngle)].guiActiveEditor = true;
+                    Fields[nameof(LoftTermAngle)].guiActiveEditor = true;
                 }
 
                 if (!BDArmorySettings.DEBUG_MISSILES)
                 {
-                    Fields["LoftMaxAltitude"].guiActive = false;
-                    Fields["LoftRangeOverride"].guiActive = false;
-                    Fields["LoftAngle"].guiActive = false;
-                    Fields["LoftTermAngle"].guiActive = false;
+                    Fields[nameof(LoftMaxAltitude)].guiActive = false;
+                    Fields[nameof(LoftRangeOverride)].guiActive = false;
+                    Fields[nameof(LoftAngle)].guiActive = false;
+                    Fields[nameof(LoftTermAngle)].guiActive = false;
                     
                 }
                 else
                 {
-                    Fields["LoftMaxAltitude"].guiActive = true;
-                    Fields["LoftRangeOverride"].guiActive = true;
-                    Fields["LoftAngle"].guiActive = true;
-                    Fields["LoftTermAngle"].guiActive = true;
+                    Fields[nameof(LoftMaxAltitude)].guiActive = true;
+                    Fields[nameof(LoftRangeOverride)].guiActive = true;
+                    Fields[nameof(LoftAngle)].guiActive = true;
+                    Fields[nameof(LoftTermAngle)].guiActive = true;
                 }
             }
 
             if (GuidanceMode != GuidanceModes.AAMLoft)
             {
-                Fields["LoftMinAltitude"].guiActive = false;
-                Fields["LoftMinAltitude"].guiActiveEditor = false;
-                Fields["LoftVelComp"].guiActive = false;
-                Fields["LoftVelComp"].guiActiveEditor = false;
-                Fields["LoftVertVelComp"].guiActive = false;
-                Fields["LoftVertVelComp"].guiActiveEditor = false;
-                Fields["LoftAltitudeAdvMax"].guiActive = false;
-                Fields["LoftAltitudeAdvMax"].guiActiveEditor = false;
-                Fields["LoftRangeFac"].guiActive = false;
-                Fields["LoftRangeFac"].guiActiveEditor = false;
-                Fields["LoftVertVelComp"].guiActive = false;
-                Fields["LoftVertVelComp"].guiActiveEditor = false;
-                //Fields["LoftAltComp"].guiActive = false;
-                //Fields["LoftAltComp"].guiActiveEditor = false;
-                //Fields["terminalHomingRange"].guiActive = false;
-                //Fields["terminalHomingRange"].guiActiveEditor = false;
+                Fields[nameof(LoftMinAltitude)].guiActive = false;
+                Fields[nameof(LoftMinAltitude)].guiActiveEditor = false;
+                Fields[nameof(LoftVelComp)].guiActive = false;
+                Fields[nameof(LoftVelComp)].guiActiveEditor = false;
+                Fields[nameof(LoftVertVelComp)].guiActive = false;
+                Fields[nameof(LoftVertVelComp)].guiActiveEditor = false;
+                Fields[nameof(LoftAltitudeAdvMax)].guiActive = false;
+                Fields[nameof(LoftAltitudeAdvMax)].guiActiveEditor = false;
+                Fields[nameof(LoftRangeFac)].guiActive = false;
+                Fields[nameof(LoftRangeFac)].guiActiveEditor = false;
+                Fields[nameof(LoftVertVelComp)].guiActive = false;
+                Fields[nameof(LoftVertVelComp)].guiActiveEditor = false;
+                //Fields[nameof(LoftAltComp)].guiActive = false;
+                //Fields[nameof(LoftAltComp)].guiActiveEditor = false;
+                //Fields[nameof(terminalHomingRange)].guiActive = false;
+                //Fields[nameof(terminalHomingRange)].guiActiveEditor = false;
             }
             else
             {
-                Fields["LoftMinAltitude"].guiActiveEditor = true;
-                Fields["LoftAltitudeAdvMax"].guiActiveEditor = true;
-                //Fields["terminalHomingRange"].guiActive = true;
-                //Fields["terminalHomingRange"].guiActiveEditor = true;
+                Fields[nameof(LoftMinAltitude)].guiActiveEditor = true;
+                Fields[nameof(LoftAltitudeAdvMax)].guiActiveEditor = true;
+                //Fields[nameof(terminalHomingRange)].guiActive = true;
+                //Fields[nameof(terminalHomingRange)].guiActiveEditor = true;
 
                 if (!GameSettings.ADVANCED_TWEAKABLES)
                 {
-                    Fields["LoftVelComp"].guiActiveEditor = false;
-                    Fields["LoftVertVelComp"].guiActiveEditor = false;
-                    Fields["LoftRangeFac"].guiActiveEditor = false;
-                    //Fields["LoftAltComp"].guiActive = false;
-                    //Fields["LoftAltComp"].guiActiveEditor = false;
+                    Fields[nameof(LoftVelComp)].guiActiveEditor = false;
+                    Fields[nameof(LoftVertVelComp)].guiActiveEditor = false;
+                    Fields[nameof(LoftRangeFac)].guiActiveEditor = false;
+                    //Fields[nameof(LoftAltComp)].guiActive = false;
+                    //Fields[nameof(LoftAltComp)].guiActiveEditor = false;
                 }
                 else
                 {
-                    Fields["LoftVelComp"].guiActiveEditor = true;
-                    Fields["LoftVertVelComp"].guiActiveEditor = true;
-                    Fields["LoftRangeFac"].guiActiveEditor = true;
-                    //Fields["LoftAltComp"].guiActive = true;
-                    //Fields["LoftAltComp"].guiActiveEditor = true;
+                    Fields[nameof(LoftVelComp)].guiActiveEditor = true;
+                    Fields[nameof(LoftVertVelComp)].guiActiveEditor = true;
+                    Fields[nameof(LoftRangeFac)].guiActiveEditor = true;
+                    //Fields[nameof(LoftAltComp)].guiActive = true;
+                    //Fields[nameof(LoftAltComp)].guiActiveEditor = true;
                 }
 
                 if (!BDArmorySettings.DEBUG_MISSILES)
                 {
-                    Fields["LoftMinAltitude"].guiActive = false;
-                    Fields["LoftAltitudeAdvMax"].guiActive = false;
-                    Fields["LoftVelComp"].guiActive = false;
-                    Fields["LoftVertVelComp"].guiActive = false;
-                    Fields["LoftRangeFac"].guiActive = false;
+                    Fields[nameof(LoftMinAltitude)].guiActive = false;
+                    Fields[nameof(LoftAltitudeAdvMax)].guiActive = false;
+                    Fields[nameof(LoftVelComp)].guiActive = false;
+                    Fields[nameof(LoftVertVelComp)].guiActive = false;
+                    Fields[nameof(LoftRangeFac)].guiActive = false;
                 }
                 else
                 {
-                    Fields["LoftMinAltitude"].guiActive = true;
-                    Fields["LoftAltitudeAdvMax"].guiActive = true;
-                    Fields["LoftVelComp"].guiActive = true;
-                    Fields["LoftVertVelComp"].guiActive = true;
-                    Fields["LoftRangeFac"].guiActive = true;
+                    Fields[nameof(LoftMinAltitude)].guiActive = true;
+                    Fields[nameof(LoftAltitudeAdvMax)].guiActive = true;
+                    Fields[nameof(LoftVelComp)].guiActive = true;
+                    Fields[nameof(LoftVertVelComp)].guiActive = true;
+                    Fields[nameof(LoftRangeFac)].guiActive = true;
                 }
             }
             if (!terminalHoming && GuidanceMode != GuidanceModes.AAMLoft) //(GuidanceMode != GuidanceModes.AAMHybrid && GuidanceMode != GuidanceModes.AAMLoft)
             {
-                Fields["terminalHomingRange"].guiActive = false;
-                Fields["terminalHomingRange"].guiActiveEditor = false;
+                Fields[nameof(terminalHomingRange)].guiActive = false;
+                Fields[nameof(terminalHomingRange)].guiActiveEditor = false;
             }
             else
             {
-                Fields["terminalHomingRange"].guiActive = true;
-                Fields["terminalHomingRange"].guiActiveEditor = true;
+                Fields[nameof(terminalHomingRange)].guiActive = true;
+                Fields[nameof(terminalHomingRange)].guiActiveEditor = true;
             }
 
             // fill lockedSensorFOVBias with default values if not set by part config:
@@ -1316,42 +1316,42 @@ namespace BDArmory.Weapons.Missiles
             // Don't show detonation distance settings for kinetic warheads
             if (warheadType == WarheadTypes.Kinetic || !proxyDetonate)
             {
-                Fields["DetonationDistance"].guiActive = false;
-                Fields["DetonationDistance"].guiActiveEditor = false;
-                Fields["DetonateAtMinimumDistance"].guiActive = false;
-                Fields["DetonateAtMinimumDistance"].guiActiveEditor = false;
+                Fields[nameof(DetonationDistance)].guiActive = false;
+                Fields[nameof(DetonationDistance)].guiActiveEditor = false;
+                Fields[nameof(DetonateAtMinimumDistance)].guiActive = false;
+                Fields[nameof(DetonateAtMinimumDistance)].guiActiveEditor = false;
             }
             else 
             {
                 if (!adjustableProxyFuze)
                 {
-                    Fields["DetonationDistance"].guiActive = false;
-                    Fields["DetonationDistance"].guiActiveEditor = false;
+                    Fields[nameof(DetonationDistance)].guiActive = false;
+                    Fields[nameof(DetonationDistance)].guiActiveEditor = false;
                 }
                 else
                 {
-                    Fields["DetonationDistance"].guiActive = true;
-                    Fields["DetonationDistance"].guiActiveEditor = true;
+                    Fields[nameof(DetonationDistance)].guiActive = true;
+                    Fields[nameof(DetonationDistance)].guiActiveEditor = true;
                 }
                 if (!canDetMinDist)
                 {
-                    Fields["DetonateAtMinimumDistance"].guiActive = false;
-                    Fields["DetonateAtMinimumDistance"].guiActiveEditor = false;
+                    Fields[nameof(DetonateAtMinimumDistance)].guiActive = false;
+                    Fields[nameof(DetonateAtMinimumDistance)].guiActiveEditor = false;
                 }
                 else
                 {
-                    Fields["DetonateAtMinimumDistance"].guiActive = true;
-                    Fields["DetonateAtMinimumDistance"].guiActiveEditor = true;
+                    Fields[nameof(DetonateAtMinimumDistance)].guiActive = true;
+                    Fields[nameof(DetonateAtMinimumDistance)].guiActiveEditor = true;
                 }
             }
 
             if (weaponClass == WeaponClasses.Bomb)
             {
-                Fields["useSymCounterpart"].guiActiveEditor = true;
+                Fields[nameof(useSymCounterpart)].guiActiveEditor = true;
             }
             else
             {
-                Fields["useSymCounterpart"].guiActiveEditor = false;
+                Fields[nameof(useSymCounterpart)].guiActiveEditor = false;
             }
 
             ParseAntiRadTargetTypes();
@@ -1467,17 +1467,17 @@ namespace BDArmory.Weapons.Missiles
         {
             if (p == null)
             {
-                Fields["customTurretID"].guiActiveEditor = false;
-                Fields["customTurretLoft"].guiActiveEditor = false;
-                Fields["customTurretLoftFac"].guiActiveEditor = false;
+                Fields[nameof(customTurretID)].guiActiveEditor = false;
+                Fields[nameof(customTurretLoft)].guiActiveEditor = false;
+                Fields[nameof(customTurretLoftFac)].guiActiveEditor = false;
                 return;
             }
             var turret = p.FindModuleImplementing<ModuleCustomTurret>();
             if (turret != null)
             {
-                Fields["customTurretID"].guiActiveEditor = true;
-                Fields["customTurretLoft"].guiActiveEditor = true;
-                Fields["customTurretLoftFac"].guiActiveEditor = true;
+                Fields[nameof(customTurretID)].guiActiveEditor = true;
+                Fields[nameof(customTurretLoft)].guiActiveEditor = true;
+                Fields[nameof(customTurretLoftFac)].guiActiveEditor = true;
                 return;
             }
             FindTurretInParents(p.parent);
@@ -4302,7 +4302,7 @@ namespace BDArmory.Weapons.Missiles
                 if (rcsTransforms != null)
                 {
                     for (int i = 0; i < 4; ++i)
-                        try { Debug.LogWarning("[BDArmory.MissileLauncher]: DEBUG null rcsTransforms[" + i + "]?: " + (rcsTransforms[i] == null)); } catch (Exception e2) { Debug.LogWarning("[BDArmory.MissileLauncher]: DEBUG rcsTransforms[" + i + "]: " + e2.Message); }
+                        try { Debug.LogWarning($"[BDArmory.MissileLauncher]: DEBUG null rcsTransforms[{i}]?: " + (rcsTransforms[i] == null)); } catch (Exception e2) { Debug.LogWarning($"[BDArmory.MissileLauncher]: DEBUG rcsTransforms[{i}]: {e2.Message}"); }
                 }
                 try { Debug.LogWarning("[BDArmory.MissileLauncher]: DEBUG null rcsFiredTimes?: " + (rcsFiredTimes == null)); } catch (Exception e2) { Debug.LogWarning("[BDArmory.MissileLauncher]: DEBUG rcsFiredTimes: " + e2.Message); }
                 throw; // Re-throw the exception so behaviour is unchanged so we see it.

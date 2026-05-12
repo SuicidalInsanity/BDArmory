@@ -49,18 +49,18 @@ namespace BDArmory.Armor
                     break;
             }
 
-            Fields["scaleneWidth"].guiActiveEditor = scaleneTri;
-            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields["Width"].uiControlEditor;
+            Fields[nameof(scaleneWidth)].guiActiveEditor = scaleneTri;
+            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields[nameof(Width)].uiControlEditor;
             AWidth.UpdateLimits(clamped ? 0.1f : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x, scaleneTri ? clamped ? maxScale / 2 : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y / 2 : clamped ? maxScale : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y);
 
             if (scaleneTri)
             {
-                Fields["Width"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidthL");
+                Fields[nameof(Width)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidthL");
                 Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriSca");
             }
             else
             {
-                Fields["Width"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidth");
+                Fields[nameof(Width)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidth");
                 Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriIso");
             }
             GUIUtils.RefreshAssociatedWindows(part);
@@ -94,11 +94,11 @@ namespace BDArmory.Armor
                     break;
             }
 
-            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields["Width"].uiControlEditor;
+            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields[nameof(Width)].uiControlEditor;
             AWidth.UpdateLimits(clamped ? 0.1f : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x, scaleneTri ? clamped ? maxScale / 2 : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y / 2 : clamped ? maxScale : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y);
-            UI_FloatSemiLogRange ALength = (UI_FloatSemiLogRange)Fields["Length"].uiControlEditor;
+            UI_FloatSemiLogRange ALength = (UI_FloatSemiLogRange)Fields[nameof(Length)].uiControlEditor;
             ALength.UpdateLimits(clamped ? 0.1f : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x, clamped ? maxScale : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y);
-            UI_FloatSemiLogRange SWidth = (UI_FloatSemiLogRange)Fields["scaleneWidth"].uiControlEditor;
+            UI_FloatSemiLogRange SWidth = (UI_FloatSemiLogRange)Fields[nameof(scaleneWidth)].uiControlEditor;
             SWidth.UpdateLimits(clamped ? 0.1f : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.x, clamped ? maxScale / 2 : BDArmorySettings.PROC_ARMOR_ALT_LIMITS.y / 2);
 
             if (!clamped)
@@ -168,7 +168,7 @@ namespace BDArmory.Armor
             {
                 Events["ToggleTriTypeOption"].guiActiveEditor = true;
                 scaleneTransforms = part.FindModelTransforms(ScaleneTransformName);
-                UI_FloatSemiLogRange SWidth = (UI_FloatSemiLogRange)Fields["scaleneWidth"].uiControlEditor;
+                UI_FloatSemiLogRange SWidth = (UI_FloatSemiLogRange)Fields[nameof(scaleneWidth)].uiControlEditor;
                 SWidth.onFieldChanged = AdjustSWidth;
                 // SWidth.UpdateLimits(0.1f, maxScale / 2);
             }
@@ -181,10 +181,10 @@ namespace BDArmory.Armor
                 ToggleScaleClampHandler(state: Toggle.NoChange); // Initialise the UI for the Clamped toggle
             }
             UpdateThickness(true);
-            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields["Width"].uiControlEditor;
+            UI_FloatSemiLogRange AWidth = (UI_FloatSemiLogRange)Fields[nameof(Width)].uiControlEditor;
             AWidth.onFieldChanged = AdjustWidth;
             // AWidth.UpdateLimits(0.1f, maxScale);
-            UI_FloatSemiLogRange ALength = (UI_FloatSemiLogRange)Fields["Length"].uiControlEditor;
+            UI_FloatSemiLogRange ALength = (UI_FloatSemiLogRange)Fields[nameof(Length)].uiControlEditor;
             ALength.onFieldChanged = AdjustLength;
             // ALength.UpdateLimits(0.1f, maxScale);
 

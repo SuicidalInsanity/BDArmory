@@ -103,10 +103,10 @@ namespace BDArmory.CounterMeasure
             {
                 isMissileCM = true;
                 Events["EventDropCM"].guiActive = false;
-                Fields["ejectVelocity"].guiActive = false;
-                Fields["priority"].guiActive = false;
-                Fields["ejectVelocity"].guiActiveEditor = false;
-                Fields["priority"].guiActiveEditor = false;
+                Fields[nameof(ejectVelocity)].guiActive = false;
+                Fields[nameof(priority)].guiActive = false;
+                Fields[nameof(ejectVelocity)].guiActiveEditor = false;
+                Fields[nameof(priority)].guiActiveEditor = false;
             }
             else if (SpawnUtils.IsModularMissilePart(part))
             {
@@ -151,7 +151,7 @@ namespace BDArmory.CounterMeasure
             else
             {
                 SetupCMType();
-                Fields["ejectVelocity"].guiActiveEditor = cmType != CountermeasureTypes.Smoke;
+                Fields[nameof(ejectVelocity)].guiActiveEditor = cmType != CountermeasureTypes.Smoke;
             }
         }
 
