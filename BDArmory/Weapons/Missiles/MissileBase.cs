@@ -812,7 +812,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                 {
                     TargetSignatureData t = TargetSignatureData.noTarget;
                     TargetPosition = Vector3.zero;
-                    UpdateLaserTarget(); //available cam for new GPS coords?
+                    UpdateLaserTarget(true); //available cam for new GPS coords?
                     //Debug.Log($"[MissileBase] GPS vrd: {vrd != null}; vrd lock: {vrd && vrd.locked}");
                     if (vrd && vrd.locked)//no cam; available radar lock? 
                     {
@@ -988,7 +988,7 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
             }
         }
 
-        protected void UpdateLaserTarget()
+        protected void UpdateLaserTarget(bool gpsRequest = false)
         {
             if (TargetAcquired)
             {
@@ -999,7 +999,8 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     TargetVelocity = isCLOS ? Vector3.zero : (TargetPosition - lastLaserPoint) / Time.fixedDeltaTime;
                     TargetAcceleration = Vector3.zero;
                     lastLaserPoint = TargetPosition;
-                    _lockFailTimer = 0f;
+                    if (!gpsRequest)
+                        _lockFailTimer = 0f;
 
                     if (GuidanceMode == GuidanceModes.BeamRiding && TimeIndex > 0.25f && Vector3.Dot(GetForwardTransform(), vessel.CoM - lockedCamera.transform.position) < 0)
                     {
@@ -1007,22 +1008,27 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                         lockedCamera.guidingOrdnance = false;
                         lockedCamera = null;
                     }
+
+                    return;
                 }
-                else //lost active laser target, home on last known position
+                
+                //lost active laser target, home on last known position
+                Ray smokeRay = new Ray(vessel.CoM, (isCLOS && lockedCamera) ? lockedCamera.transform.position : (lastLaserPoint - vessel.CoM));
+                if ((!isCLOS || lockedCamera) && CMSmoke.RaycastSmoke(smokeRay))
                 {
-                    Ray smokeRay = new Ray(vessel.CoM, (isCLOS && lockedCamera) ? lockedCamera.transform.position : (lastLaserPoint - vessel.CoM));
-                    if ((!isCLOS || lockedCamera) && CMSmoke.RaycastSmoke(smokeRay))
-                    {
-                        float angle = VectorUtils.FullRangePerlinNoise(0.75f * Time.time, 10) * BDArmorySettings.SMOKE_DEFLECTION_FACTOR;
-                        TargetPosition = isCLOS ?
-                            VectorUtils.RotatePointAround(lockedCamera.targetPointPosition, smokeRay.origin, vessel.up, angle) :
-                            VectorUtils.RotatePointAround(lastLaserPoint, vessel.CoM, vessel.up, angle);
-                        lastLaserPoint = TargetPosition;
+                    float angle = VectorUtils.FullRangePerlinNoise(0.75f * Time.time, 10) * BDArmorySettings.SMOKE_DEFLECTION_FACTOR;
+                    TargetPosition = isCLOS ?
+                        VectorUtils.RotatePointAround(lockedCamera.targetPointPosition, smokeRay.origin, vessel.up, angle) :
+                        VectorUtils.RotatePointAround(lastLaserPoint, vessel.CoM, vessel.up, angle);
+                    lastLaserPoint = TargetPosition;
+                    if (!gpsRequest)
                         _lockFailTimer = 0f;
-                    }
-                    else
+                }
+                else
+                {
+                    TargetPosition = lastLaserPoint;
+                    if (!gpsRequest)
                     {
-                        TargetPosition = lastLaserPoint;
                         _lockFailTimer += Time.fixedDeltaTime;
                         if (_lockFailTimer > seekerTimeout)
                         {
@@ -1031,10 +1037,10 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                             _lockFailTimer = 0f;
                         }
                     }
-
-                    TargetVelocity = Vector3.zero;
-                    TargetAcceleration = Vector3.zero;
                 }
+
+                TargetVelocity = Vector3.zero;
+                TargetAcceleration = Vector3.zero;
             }
             else
             {
@@ -1047,10 +1053,13 @@ UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene
                     if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Laser guided missileBase actively found laser point. Enabling guidance.");
                     lockedCamera = foundCam;
                     TargetAcquired = true;
-                    _lockFailTimer = 0;
+                    if (!gpsRequest)
+                        _lockFailTimer = 0;
                     SetLaserTargeting();
+                    return;
                 }
-                else
+                
+                if (!gpsRequest)
                 {
                     _lockFailTimer += Time.fixedDeltaTime;
                     if (_lockFailTimer > seekerTimeout)
