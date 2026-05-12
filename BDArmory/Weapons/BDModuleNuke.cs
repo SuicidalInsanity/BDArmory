@@ -76,7 +76,7 @@ namespace BDArmory.Weapons
         [KSPField(isPersistant = true)]
         public string reportingName = "Reactor Containment Failure";
 
-        [KSPField(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_Status")]//Status
+        [KSPField(guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_Status")]//Status
         public string guiStatusString = "DISARMED";
 
         MissileLauncher missile;

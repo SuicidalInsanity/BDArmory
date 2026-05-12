@@ -6,7 +6,6 @@
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
-	- Fix setting world velocity not accounting for Krakensbane properly in some cases.
 	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
 	- Can now apply self-sealing tanks to cockpits with liquid fuel tankage.
 - UI:
@@ -83,7 +82,6 @@
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
 		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
-		- Overhaul the bombing aiming and extending logic for level- and dive-bombing both landed and airborne targets. Adds a divebombing angle slider to the pilot AI.
 	- Lasers:
 		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance.
 		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
