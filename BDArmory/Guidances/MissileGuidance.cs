@@ -541,7 +541,7 @@ namespace BDArmory.Guidances
         }
 
         // Kappa/Trajectory Curvature Optimal Guidance 
-        public static Vector3 GetKappaTarget(Vector3 targetPosition, Vector3 targetVelocity,
+        public static Vector3 GetKappaTarget(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAccel,
             MissileLauncher ml, float thrust, float shapingAngle, float rangeFac, float vertVelComp,
             float targetAlt, float terminalHomingRange, float loftAngle, float loftSin, float termSin,
             float midcourseRange, float maxAltitude, out float ttgo, out float gLimit, out float AoALimit,
@@ -590,7 +590,7 @@ namespace BDArmory.Guidances
                 // that way we don't overshoot the target
                 if (ttgoPlanar > 0f)
                     ttgo = 0.5f * (ttgo + ttgoPlanar);
-                ttgo = Mathf.Min(ttgo, 2 * ttgoVert);
+                ttgo = Mathf.Min(ttgo, 2f * ttgoVert);
                 if (ttgoVert < ttgo && vertVel > 0)
                 {
                     shapingAngle = 0f;
@@ -607,17 +607,24 @@ namespace BDArmory.Guidances
 
             float ttgoInv = 1f / ttgo;
 
-            float leadTime = Mathf.Clamp(ttgo, 0f, 8f);
-
             // Set up PIP vector
-            Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
+            Vector3 predictedImpactPoint;
 
-            Vector3 planarDirectionToTarget = ((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(upDirection)).normalized;
+            // Need to set this because otherwise the compiler yells at me...
+            Vector3 planarDirectionToTarget = Vector3.zero;
+
+            Vector3 accel;
+            Vector3 gCompAccel;
+            float leadTime;
 
             float sinTarget = 0f;
 
             if (boostGuidance)
             {
+                leadTime = Mathf.Clamp(ttgo, 0f, 8f);
+                predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
+                planarDirectionToTarget = ((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(upDirection)).normalized;
+
                 // Get angle relative to vertical
                 float pullDownCos = Vector3.Dot(velDirection, upDirection);
                 float pullDownSin = BDAMath.Sqrt(1f - pullDownCos * pullDownCos);
@@ -664,7 +671,6 @@ namespace BDArmory.Guidances
                 float turnSin = Mathf.Sin(loftAngle * turnFactor * Mathf.Deg2Rad);
                 Vector3 turnDir = ((Mathf.Cos(loftAngle * turnFactor * Mathf.Deg2Rad) * planarDirectionToTarget) + (turnSin * upDirection));
 
-                Vector3 accel;
                 if (turnFactor < 1f && turnFactor > -1f)
                 {
                     accel = (currSpeed * currSpeed * turnFactorMult * loftAngle * Mathf.Deg2Rad * turnSin) * Vector3.Cross(turnDir, Vector3.Cross(planarDirectionToTarget, upDirection)).normalized + // Acceleration required to follow the curve
@@ -675,239 +681,259 @@ namespace BDArmory.Guidances
                     accel = (3f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
                 }
 
-                Vector3 gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
+                gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
 
                 // Limit gs during climb
                 gLimit = Mathf.Min(gCompAccel.magnitude / g, ml.GetManeuvergLimit(0));
                 AoALimit = turnFactor < 1f ? AoALDMax : 28f;
 
-                if (sinTarget > (0.6f * turnSin + 0.4f * loftSin) && targetAlt > maxAltitude)
+                if (sinTarget > 0.8f * (0.6f * turnSin + 0.4f * loftSin) && targetAlt > maxAltitude)
                 {
                     loftState = MissileBase.LoftStates.Midcourse;
                 }
 
                 return ml.vessel.CoM + currVel * 3f + accel * 9f;
             }
+
+            // Accurately predict impact point
+            //predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, ttgo + TimeWarp.fixedDeltaTime);
+
+            Vector3 vF;
+
+            AoALimit = -1f;
+
+            // Gains for velocity error and positional error
+            float K1;
+            float K2;
+
+            // ------------------- Calculate Aerodynamic Parameters -------------------
+            // Dynamic pressure
+            double sqrSpeed = ml.vessel.srfSpeed * ml.vessel.srfSpeed;
+            float q = (float)(0.5 * ml.vessel.atmDensity * sqrSpeed);
+
+            double vesselMass = ml.vessel.totalMass;
+
+            float maneuverCapability = (ml.maxAoA > 30f ? 1.5f : ml.maxAoA * 0.05f);
+            const float AoAtoRad = 1.9098593171027f; // 30 deg * Mathf.Deg2Rad
+
+            // Needs to be changed if the lift and drag curves are changed
+            // CLmax/AoA(CLmax) * q * S * Lift Multiplier, I.E. linearized Lift/AoA (not CL/AoA)
+            // The above wasn't working too well so this has been replaced with C_L,max as is used in Bonalli, Hérissé and Trélat's paper
+            float Lalpha = (maneuverCapability * AoAtoRad) * q * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER; //2.864788975654117f * q * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER;
+            // Thrust normalized by Lalpha
+            float TL;
+            float gLimLalpha;
+            if (ml.gLimit > 0 && Lalpha > (gLimLalpha = (float)(vesselMass * PhysicsGlobals.GravitationalAcceleration) * ml.gLimit * AoAtoRad))
+            {
+                Lalpha = gLimLalpha;
+                TL = 0f;
+                maneuverCapability *= (gLimLalpha / Lalpha);
+            }
             else
             {
-                // Accurately predict impact point
-                //predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, ttgo + TimeWarp.fixedDeltaTime);
-
-                Vector3 vF;
-
-                AoALimit = -1f;
-
-                // Gains for velocity error and positional error
-                float K1;
-                float K2;
-
-                // Dynamic pressure
-                double sqrSpeed = ml.vessel.srfSpeed * ml.vessel.srfSpeed;
-                float q = (float)(0.5 * ml.vessel.atmDensity * sqrSpeed);
-
-                double vesselMass = ml.vessel.totalMass;
-
-                // Needs to be changed if the lift and drag curves are changed
-                // CLmax/AoA(CLmax) * q * S * Lift Multiplier, I.E. linearized Lift/AoA (not CL/AoA)
-                // The above wasn't working too well so this has been replaced with C_L,max as is used in Bonalli, Hérissé and Trélat's paper
-                float Lalpha = (ml.maxAoA > 30f ? 2.864788975654117f : ml.maxAoA * 0.0954929658551372f) * q * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER; //2.864788975654117f * q * ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER;
-                // Thrust normalized by Lalpha
-                float TL;
-                float gLimLalpha;
-                if (ml.gLimit > 0 && Lalpha > (gLimLalpha = (float)(vesselMass * PhysicsGlobals.GravitationalAcceleration) * ml.gLimit * 1.9098593171027f))
-                {
-                    Lalpha = gLimLalpha;
-                    TL = 0f;
-                }
-                else
-                {
-                    TL = thrust / Lalpha;
-                }
-                // Drag at 0 AoA
-                float D0 = 0.00215f * q * ml.currDragArea * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
-                // eta needs to change if the lift/drag curves are changed. Note this is for small angles (in radians)
-                // Though we're now using C_L,max instead of C_L/alpha, the eta numbers resulting from this are approx. comparable to those used in Bonalli, Hérissé and Trélat's work
-                float eta = 0.025f * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * ml.currDragArea / (BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * ml.currLiftArea); // D = D0 + eta*Lalpha*AoA^2, quadratic approximation of drag.
-
-                // If we're above terminal homing range
-                if ((loftState < MissileBase.LoftStates.Terminal) && (R > terminalHomingRange) && 
-                    shapingAngle != 0f && // Shaping angle isn't 0
-                    (targetAlt < 1.2f * maxAltitude)) // And the target's altitude isn't exceeding the max alt by too much
-                {
-                    loftState = MissileBase.LoftStates.Midcourse;
-
-                    float Fsqr;
-                    float FR;
-
-                    // The below derivation doesn't really work, I tried replacing the sin and cos with sinh and cosh, but
-                    // looking at the derivation and the diff. eq. it is trying to satisfy, it is clear that the desired
-                    // functions are actually sin and cos and not sinh and cosh, since the (F_2)^2 term is positive instead
-                    // of negative, leading to the use of e^(ix) and e^(-ix) instead of e^(x) and e^(-x) to satisfy the diff.
-                    // eq. The resulting functions for the gains do match expected behavior at R = 0 (they go to -2, and 6)
-                    // but due to their periodic nature, away from R = 0 they begin oscillating wildly. I cannot tell if the
-                    // intended behavior of these is to shoot off to infinity or if the oscillation is part of the solution,
-                    // but either way, in practice they do not perform as expected.
-                    /*if (thrust > D0)
-                    {
-                        // Ching-Fang Lin's derivation of a missile under thrust. Requires thrust > D0
-                        float F2sqr = Lalpha * (thrust - D0) * (TL + 1f) * (TL + 1f) / ((float)(vesselMass * vesselMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
-                        float F2R = BDAMath.Sqrt(F2sqr) * R;
-
-                        if (F2R > 16f)
-                        {
-                            K1 = -F2sqr * Rsqr / (2f + F2R);
-                            K2 = F2sqr * Rsqr / (2f + F2R);
-                        }
-                        else
-                        {
-                            float eFR = Mathf.Exp(F2R);
-                            float enFR = Mathf.Exp(-F2R);
-
-                            float sinhF2R = 0.5f * (eFR - enFR);
-                            float coshF2R = 0.5f * (eFR + enFR);
-                            float denom = (2f - 2f * coshF2R - F2R * sinhF2R);
-
-                            K1 = F2R * (sinhF2R - F2R) / denom;
-                            K2 = F2sqr * Rsqr * (1f - coshF2R) / denom;
-                        }
-                    }
-                    else
-                    {*/
-                        // General derivation of aerodynamic constant for Kappa guidance
-                        Fsqr = D0 * Lalpha * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
-                        FR = BDAMath.Sqrt(Fsqr) * R;
-                    //}
-
-                    if (FR > 16f)
-                    {
-                        // The asymptotic behavior of the functions allows us to both skip
-                        // performing the calculations and avoid numerical issues with large
-                        // FR values in Mathf.exp()
-                        K1 = FR / (2f - FR);
-                        K2 = Fsqr * Rsqr / (FR - 2f);
-                    }
-                    else if (FR < 0.25f)
-                    {
-                        // When the value starts getting really small there can also be numerical
-                        // issues, so we just set the values to the limit as FR -> 0
-                        K1 = -2;
-                        K2 = 6;
-                    }
-                    else
-                    {
-                        float eFR = Mathf.Exp(FR);
-                        float enFR = Mathf.Exp(-FR);
-                        float denom = (eFR * (FR - 2f) - enFR * (FR + 2f) + 4f);
-
-                        K1 = (2f * Fsqr * Rsqr - FR * (eFR - enFR)) / denom;
-                        K2 = (Fsqr * Rsqr * (eFR + enFR - 2f)) / denom;
-                    }
-                }
-                else
-                {
-                    if (shapingAngle != 0)
-                    {
-                        loftState = MissileBase.LoftStates.Terminal;
-                    }
-                    K1 = 0f;
-                    shapingAngle = 0f;
-                    float Fsqr;
-                    float FR;
-                    /*if (thrust > D0)
-                    {
-                        // Ching-Fang Lin's derivation of a missile under thrust. Requires thrust > D0
-                        F2sqr = Lalpha * (thrust - D0) * (TL + 1f) * (TL + 1f) / ((float)(vesselMass * vesselMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
-                        F2R = BDAMath.Sqrt(Fsqr) * R;
-
-                        K2 = F2sqr * Rsqr * Mathf.Sin(F2R) / (Mathf.Sin(F2R) - F2R * Mathf.Cos(F2R));
-                    }
-                    else
-                    {*/
-                        // General derivation of aerodynamic constant for Kappa guidance
-                        Fsqr = D0 * Lalpha * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
-                        FR = BDAMath.Sqrt(Fsqr) * R;
-                    //}
-
-                    if (FR > 16f)
-                    {
-                        K2 = Fsqr * Rsqr / (FR - 1f);
-                    }
-                    else if (FR < 0.25f)
-                    {
-                        // If FR is small, then we just avoid numerical weirdness and extra processing by setting
-                        // K2 directly to 3, which is what the value converges to (which is the ideal gain for
-                        // proportional navigation)
-                        K2 = 3f;
-                    }
-                    else
-                    {
-                        float eFR = Mathf.Exp(FR);
-                        float enFR = Mathf.Exp(-FR);
-
-                        K2 = (Fsqr * Rsqr * (eFR - enFR)) / (eFR * (FR - 1f) + enFR * (FR + 1f));
-                    }
-                }
-
-                // To compensate for planet curvature, we'll "unroll" the target position, and pretend the world is flat
-                (double predictedImpactAlt, Vector3d targetPredUp) = (predictedImpactPoint - FlightGlobals.currentMainBody.position).MagNorm();
-                // Don't go below ocean, or below current alt, if currently on an ocean-less planet
-                double clampedPredictedImpactAlt = Math.Max(predictedImpactAlt, FlightGlobals.currentMainBody.ocean ? FlightGlobals.currentMainBody.Radius : (FlightGlobals.currentMainBody.Radius + Math.Min((ml.vessel.altitude - ml.vessel.radarAltitude), 0d)));
-
-                float unrolledAngle = Mathf.Deg2Rad * VectorUtils.AnglePreNormalized(upDirection, targetPredUp);
-                Vector3 adjustedPredictedRelImpactPoint;
-                // We only unroll if the angle is > 0.01
-                if (unrolledAngle > 0.01f)
-                {
-                    double missileRad = ml.vessel.altitude + FlightGlobals.currentMainBody.Radius; // Radius of the missile relative to the center of the planet
-                    adjustedPredictedRelImpactPoint = (unrolledAngle * (float)(0.5 * (missileRad + clampedPredictedImpactAlt))) * planarDirectionToTarget + // Arc length at a radius equal to the average of the missile and the target
-                                                      (float)(clampedPredictedImpactAlt - missileRad) * upDirection; // Vertical coord
-                }
-                else
-                {
-                    // When below that angle, we'll just use the predictedImpactPoint as is, since quite frankly, it's not gonna make much of a difference
-                    adjustedPredictedRelImpactPoint = predictedImpactPoint + (clampedPredictedImpactAlt - predictedImpactAlt) * targetPredUp - ml.vessel.CoM;
-                }
-
-                // Acceleration per Kappa guidance
-                Vector3 accel;
-                // Final velocity is shaped by shapingAngle, we want the missile to dive onto the target but we don't want to affect the horizontal components of velocity
-                if (shapingAngle == 0f)
-                {
-                    accel = (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
-                }
-                else
-                {
-                    if (targetAlt > maxAltitude)
-                    {
-                        // Uh oh, really high altitude target... clamp that shapingAngle down a bit
-                        shapingAngle *= Mathf.Clamp01(1.2f - targetAlt / maxAltitude);
-                    }
-                    vF = velDirection.ProjectOnPlanePreNormalized(targetPredUp).normalized;
-                    vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetPredUp);
-                    accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
-                }
-
-                // Angle Based Method -> Guarantees Normal Accel, but requires more processing
-                /*float temp = Vector3.Dot(currVel, Rdir) / (currSpeed * currSpeed * Rsqr); // Magnitude of 1 / V * R cos(sigma), where sigma is the angle between currVel and Rdir
-                Vector3 accel1 = K1 * temp * VelTripleProduct(currVel, vF); // Magnitude of K1 * V^2 / R * sin(del) * cos(sigma)
-                Vector3 accel2 = K2 / (Rsqr) * VelTripleProduct(currVel, Rdir); // Magnitude of K2 * V^2 / R * sin(sigma)*/
-
-                // Technically pos error should be: (predictedImpactPoint - ml.vessel.CoM - currVel * ttgo); but because we're projecting onto the vel plane, the latter is irrelevant.
-                // It is important to remember that the ZEM, assuming no acceleration, is the positional error projected onto the vel plane.
-                // Because adjustedPredictedRelImpactPoint is directly relative to the missile's CoM, we can directly use it instead of subtracting of the CoM
-                //Vector3 accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
-                //accel = accel.ProjectOnPlanePreNormalized(velDirection);
-                Vector3 gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
-                // gLimit is based solely on acceleration normal to the velocity vector, technically this guidance law gives
-                // both normal acceleration and tangential acceleration but we can only really manage normal acceleration
-                gLimit = (gCompAccel).magnitude / (float)PhysicsGlobals.GravitationalAcceleration;
-
-                // Debug output, useful for tuning
-                // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
-                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance K1: {K1}, K2: {K2}, accel: {accel}, vF-currVel: {vF-currVel}, posError: {predictedImpactPoint- ml.vessel.CoM - currVel*ttgo}, g: {gLimit}, ttgo: {ttgo}");
-
-                return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel * Mathf.Min(leadTime * leadTime, 9f);
+                TL = thrust / Lalpha;
             }
+            // Drag at 0 AoA
+            float D0 = 0.00215f * q * ml.currDragArea * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER;
+            // eta needs to change if the lift/drag curves are changed. Note this is for small angles (in radians)
+            // Though we're now using C_L,max instead of C_L/alpha, the eta numbers resulting from this are approx. comparable to those used in Bonalli, Hérissé and Trélat's work
+            float eta = 0.025f * BDArmorySettings.GLOBAL_DRAG_MULTIPLIER * ml.currDragArea / (BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * ml.currLiftArea); // D = D0 + eta*Lalpha*AoA^2, quadratic approximation of drag.
+
+            // ---------------------------- Lead Limiting -----------------------------
+            (float relSpeed, Vector3 relVelNorm) = velDiff.MagNorm();
+            CelestialBody currentBody = FlightGlobals.currentMainBody;
+            double currDensity = ml.vessel.atmDensity;
+            // Excess accel available to the missile
+            maneuverCapability *= ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * (float)(((Math.Abs(targetAlt - ml.vessel.altitude) < 1000d) ? q : (0.5 * (currDensity = 0.5 * (currentBody.GetDensity(currentBody.GetPressure(targetAlt), currentBody.GetTemperature(targetAlt)) + ml.vessel.atmDensity)) * sqrSpeed)) / vesselMass) * (1f + TL);
+            float accelSqr = Mathf.Max(maneuverCapability - 0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv, 0f);
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
+            // Target accel
+            accelSqr *= (targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude;
+            float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * (relSpeed) / BDAMath.Sqrt(accelSqr), 8f, 16f) : 16f;
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetAccel: {(targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * (relSpeed) / BDAMath.Sqrt(accelSqr) : 16f)}");
+
+            leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
+
+            predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, targetAccel, leadTime + TimeWarp.fixedDeltaTime);
+            planarDirectionToTarget = ((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(upDirection)).normalized;
+
+            // If we're above terminal homing range
+            if ((loftState < MissileBase.LoftStates.Terminal) && (R > terminalHomingRange) && 
+                shapingAngle != 0f && // Shaping angle isn't 0
+                (targetAlt < 1.2f * maxAltitude)) // And the target's altitude isn't exceeding the max alt by too much
+            {
+                loftState = MissileBase.LoftStates.Midcourse;
+
+                float Fsqr;
+                float FR;
+
+                // The below derivation doesn't really work, I tried replacing the sin and cos with sinh and cosh, but
+                // looking at the derivation and the diff. eq. it is trying to satisfy, it is clear that the desired
+                // functions are actually sin and cos and not sinh and cosh, since the (F_2)^2 term is positive instead
+                // of negative, leading to the use of e^(ix) and e^(-ix) instead of e^(x) and e^(-x) to satisfy the diff.
+                // eq. The resulting functions for the gains do match expected behavior at R = 0 (they go to -2, and 6)
+                // but due to their periodic nature, away from R = 0 they begin oscillating wildly. I cannot tell if the
+                // intended behavior of these is to shoot off to infinity or if the oscillation is part of the solution,
+                // but either way, in practice they do not perform as expected.
+                /*if (thrust > D0)
+                {
+                    // Ching-Fang Lin's derivation of a missile under thrust. Requires thrust > D0
+                    float F2sqr = Lalpha * (thrust - D0) * (TL + 1f) * (TL + 1f) / ((float)(vesselMass * vesselMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
+                    float F2R = BDAMath.Sqrt(F2sqr) * R;
+
+                    if (F2R > 16f)
+                    {
+                        K1 = -F2sqr * Rsqr / (2f + F2R);
+                        K2 = F2sqr * Rsqr / (2f + F2R);
+                    }
+                    else
+                    {
+                        float eFR = Mathf.Exp(F2R);
+                        float enFR = Mathf.Exp(-F2R);
+
+                        float sinhF2R = 0.5f * (eFR - enFR);
+                        float coshF2R = 0.5f * (eFR + enFR);
+                        float denom = (2f - 2f * coshF2R - F2R * sinhF2R);
+
+                        K1 = F2R * (sinhF2R - F2R) / denom;
+                        K2 = F2sqr * Rsqr * (1f - coshF2R) / denom;
+                    }
+                }
+                else
+                {*/
+                    // General derivation of aerodynamic constant for Kappa guidance
+                    Fsqr = D0 * Lalpha * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
+                    FR = BDAMath.Sqrt(Fsqr) * R;
+                //}
+
+                if (FR > 16f)
+                {
+                    // The asymptotic behavior of the functions allows us to both skip
+                    // performing the calculations and avoid numerical issues with large
+                    // FR values in Mathf.exp()
+                    K1 = FR / (2f - FR);
+                    K2 = Fsqr * Rsqr / (FR - 2f);
+                }
+                else if (FR < 0.25f)
+                {
+                    // When the value starts getting really small there can also be numerical
+                    // issues, so we just set the values to the limit as FR -> 0
+                    K1 = -2;
+                    K2 = 6;
+                }
+                else
+                {
+                    float eFR = Mathf.Exp(FR);
+                    float enFR = Mathf.Exp(-FR);
+                    float denom = (eFR * (FR - 2f) - enFR * (FR + 2f) + 4f);
+
+                    K1 = (2f * Fsqr * Rsqr - FR * (eFR - enFR)) / denom;
+                    K2 = (Fsqr * Rsqr * (eFR + enFR - 2f)) / denom;
+                }
+            }
+            else
+            {
+                if (shapingAngle != 0)
+                {
+                    loftState = MissileBase.LoftStates.Terminal;
+                }
+                K1 = 0f;
+                shapingAngle = 0f;
+                float Fsqr;
+                float FR;
+                /*if (thrust > D0)
+                {
+                    // Ching-Fang Lin's derivation of a missile under thrust. Requires thrust > D0
+                    F2sqr = Lalpha * (thrust - D0) * (TL + 1f) * (TL + 1f) / ((float)(vesselMass * vesselMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
+                    F2R = BDAMath.Sqrt(Fsqr) * R;
+
+                    K2 = F2sqr * Rsqr * Mathf.Sin(F2R) / (Mathf.Sin(F2R) - F2R * Mathf.Cos(F2R));
+                }
+                else
+                {*/
+                    // General derivation of aerodynamic constant for Kappa guidance
+                    Fsqr = D0 * Lalpha * (TL + 1f) * (TL + 1f) / ((float)(ml.vessel.totalMass * ml.vessel.totalMass * sqrSpeed * sqrSpeed) * (2f * eta + TL));
+                    FR = BDAMath.Sqrt(Fsqr) * R;
+                //}
+
+                if (FR > 16f)
+                {
+                    K2 = Fsqr * Rsqr / (FR - 1f);
+                }
+                else if (FR < 0.25f)
+                {
+                    // If FR is small, then we just avoid numerical weirdness and extra processing by setting
+                    // K2 directly to 3, which is what the value converges to (which is the ideal gain for
+                    // proportional navigation)
+                    K2 = 3f;
+                }
+                else
+                {
+                    float eFR = Mathf.Exp(FR);
+                    float enFR = Mathf.Exp(-FR);
+
+                    K2 = (Fsqr * Rsqr * (eFR - enFR)) / (eFR * (FR - 1f) + enFR * (FR + 1f));
+                }
+            }
+
+            // To compensate for planet curvature, we'll "unroll" the target position, and pretend the world is flat
+            (double predictedImpactAlt, Vector3d targetPredUp) = (predictedImpactPoint - currentBody.position).MagNorm();
+            // Don't go below ocean, or below current alt, if currently on an ocean-less planet
+            double clampedPredictedImpactAlt = Math.Max(predictedImpactAlt, currentBody.ocean ? currentBody.Radius : (currentBody.Radius + Math.Min((ml.vessel.altitude - ml.vessel.radarAltitude), 0d)));
+
+            float unrolledAngle = Mathf.Deg2Rad * VectorUtils.AnglePreNormalized(upDirection, targetPredUp);
+            Vector3 adjustedPredictedRelImpactPoint;
+            // We only unroll if the angle is > 0.01
+            if (unrolledAngle > 0.01f)
+            {
+                double missileRad = ml.vessel.altitude + currentBody.Radius; // Radius of the missile relative to the center of the planet
+                adjustedPredictedRelImpactPoint = (unrolledAngle * (float)(0.5 * (missileRad + clampedPredictedImpactAlt))) * planarDirectionToTarget + // Arc length at a radius equal to the average of the missile and the target
+                                                    (float)(clampedPredictedImpactAlt - missileRad) * upDirection; // Vertical coord
+            }
+            else
+            {
+                // When below that angle, we'll just use the predictedImpactPoint as is, since quite frankly, it's not gonna make much of a difference
+                adjustedPredictedRelImpactPoint = predictedImpactPoint + (clampedPredictedImpactAlt - predictedImpactAlt) * targetPredUp - ml.vessel.CoM;
+            }
+
+            // Acceleration per Kappa guidance
+            // Final velocity is shaped by shapingAngle, we want the missile to dive onto the target but we don't want to affect the horizontal components of velocity
+            if (shapingAngle == 0f)
+            {
+                accel = (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
+            }
+            else
+            {
+                if (targetAlt > maxAltitude)
+                {
+                    // Uh oh, really high altitude target... clamp that shapingAngle down a bit
+                    shapingAngle *= Mathf.Clamp01(1.2f - targetAlt / maxAltitude);
+                }
+                vF = velDirection.ProjectOnPlanePreNormalized(targetPredUp).normalized;
+                vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetPredUp);
+                accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
+            }
+
+            // Angle Based Method -> Guarantees Normal Accel, but requires more processing
+            /*float temp = Vector3.Dot(currVel, Rdir) / (currSpeed * currSpeed * Rsqr); // Magnitude of 1 / V * R cos(sigma), where sigma is the angle between currVel and Rdir
+            Vector3 accel1 = K1 * temp * VelTripleProduct(currVel, vF); // Magnitude of K1 * V^2 / R * sin(del) * cos(sigma)
+            Vector3 accel2 = K2 / (Rsqr) * VelTripleProduct(currVel, Rdir); // Magnitude of K2 * V^2 / R * sin(sigma)*/
+
+            // Technically pos error should be: (predictedImpactPoint - ml.vessel.CoM - currVel * ttgo); but because we're projecting onto the vel plane, the latter is irrelevant.
+            // It is important to remember that the ZEM, assuming no acceleration, is the positional error projected onto the vel plane.
+            // Because adjustedPredictedRelImpactPoint is directly relative to the missile's CoM, we can directly use it instead of subtracting of the CoM
+            //Vector3 accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
+            //accel = accel.ProjectOnPlanePreNormalized(velDirection);
+            gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
+            // gLimit is based solely on acceleration normal to the velocity vector, technically this guidance law gives
+            // both normal acceleration and tangential acceleration but we can only really manage normal acceleration
+            gLimit = (gCompAccel).magnitude / (float)PhysicsGlobals.GravitationalAcceleration;
+
+            // Debug output, useful for tuning
+            // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance K1: {K1}, K2: {K2}, accel: {accel}, vF-currVel: {vF-currVel}, posError: {predictedImpactPoint- ml.vessel.CoM - currVel*ttgo}, g: {gLimit}, ttgo: {ttgo}");
+
+            return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel * Mathf.Min(leadTime * leadTime, 9f);
         }
 
         public static Vector3 VelTripleProduct(Vector3 currVel, Vector3 desiredDir)

@@ -3664,6 +3664,7 @@ namespace BDArmory.Weapons.Missiles
 
         float loftSin = -2f;
         float kappaTermSin = -2f;
+        public readonly SmoothingV3 TargetAccelMovingAverage = new();
 
         void AAMGuidance()
         {
@@ -3756,7 +3757,9 @@ namespace BDArmory.Weapons.Missiles
                                 loftSin = Mathf.Sin(LoftAngle * Mathf.Deg2Rad);
                                 kappaTermSin = Mathf.Sin(LoftTermAngle * Mathf.Deg2Rad);
                             }
-                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
+                            float alpha = Mathf.Max(1f - BDAMath.Sqrt(Vector3.Distance(TargetPosition, vessel.CoM)) / 256f, 0.1f);
+                            TargetAccelMovingAverage.Update(TargetAcceleration, alpha * alpha);
+                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, TargetAccelMovingAverage.Value, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
                             TimeToImpact = timeToImpact;
                             break;
                         }
