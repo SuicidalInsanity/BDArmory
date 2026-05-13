@@ -927,7 +927,7 @@ namespace BDArmory.Guidances
             // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance K1: {K1}, K2: {K2}, accel: {accel}, vF-currVel: {vF-currVel}, posError: {predictedImpactPoint- ml.vessel.CoM - currVel*ttgo}, g: {gLimit}, ttgo: {ttgo}");
 
-            return ml.vessel.CoM + currVel * Mathf.Min(1.5f * leadTime, 3f) + accel.ProjectOnPlanePreNormalized(velDirection) * Mathf.Min(2.25f * leadTime * leadTime, 9f);
+            return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel.ProjectOnPlanePreNormalized(velDirection) * Mathf.Min(leadTime * leadTime, 9f);
         }
 
         public static Vector3 VelTripleProduct(Vector3 currVel, Vector3 desiredDir)
@@ -2220,7 +2220,8 @@ namespace BDArmory.Guidances
         }
 
         public static Vector3 DoAeroForces(MissileLauncher ml, Vector3 targetPosition, float liftArea, float dragArea, float steerMult,
-            Vector3 previousTorque, float maxTorque, float maxTorqueAero, float maxAoA, FloatCurve liftCurve, FloatCurve dragCurve, bool torqueLimiter, float torqueMargin, bool activeGuidance = true)
+            Vector3 previousTorque, float maxTorque, float maxTorqueAero, float maxAoA, FloatCurve liftCurve, FloatCurve dragCurve,
+            bool torqueLimiter, float torqueMargin, bool activeGuidance = true, bool _gCommand = false)
         {
             Rigidbody rb = ml.part.rb;
             if (rb == null || rb.mass == 0) return Vector3.zero;
@@ -2308,7 +2309,15 @@ namespace BDArmory.Guidances
                     targetDirection = (targetPosition - ml.vessel.CoM).normalized;
                     targetAngle = VectorUtils.AnglePreNormalized(velNorm, targetDirection);
                     if (targetAngle > AoALim)
+                    {
                         targetDirection = Vector3.Slerp(velNorm, targetDirection, AoALim / targetAngle);
+                    }
+                    else if (_gCommand && targetAngle < AoALim)
+                    {
+                        //targetDirection = QuaternionD.AngleAxis(AoALim, Vector3d.Cross(velNorm, targetDirection)) * velNorm;
+                        targetDirection = Vector3.Slerp(velNorm, targetDirection.ProjectOnPlanePreNormalized(velNorm).normalized, AoALim / 90f);
+                    }
+
                 }
                 else
                 {
