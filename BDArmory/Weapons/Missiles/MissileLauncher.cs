@@ -1226,8 +1226,17 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                Fields[nameof(terminalHomingRange)].guiActive = true;
+                //Fields[nameof(terminalHomingRange)].guiActive = true;
                 Fields[nameof(terminalHomingRange)].guiActiveEditor = true;
+
+                if (!BDArmorySettings.DEBUG_MISSILES)
+                {
+                    Fields[nameof(terminalHomingRange)].guiActive = false;
+                }
+                else
+                {
+                    Fields[nameof(terminalHomingRange)].guiActive = true;
+                }
             }
 
             // fill lockedSensorFOVBias with default values if not set by part config:

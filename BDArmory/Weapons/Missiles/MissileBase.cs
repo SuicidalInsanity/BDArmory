@@ -399,11 +399,12 @@ namespace BDArmory.Weapons.Missiles
         //[KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_LoftAltComp"), UI_FloatRange(minValue = -2000f, maxValue = 2000f, stepIncrement = 10f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Loft Altitude Compensation
         //public float LoftAltComp = 0;
 
-        [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_terminalHomingRange")]//Terminal Homing Range
+        [KSPField(isPersistant = false, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_terminalHomingRange"),
+            UI_FloatRange(minValue = 0f, maxValue = 40000f, stepIncrement = 500f, scene = UI_Scene.Flight, affectSymCounterparts = UI_Scene.All)]//Terminal Homing Range
         public float terminalHomingRange = 3000;
 
         [KSPField(advancedTweakable = false, isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_TurretID"),//Custom Turret ID
-UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
         public float customTurretID = 0;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_TurretLoft"),
