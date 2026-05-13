@@ -18,7 +18,11 @@
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
 	- Add a debug toggle specifically for part HP.
-	- Team Icons Color Picker now includes 16 color swatch for quick color selection.
+	- Team Icons Color Picker now includes 16+ color swatch for quick color selection.
+		- Right clicking a swatch changes the swatch color to the currently selected color (if it's unique).
+		- Clicking the '+' adds the currently selected color as a new swatch (if it's unique).
+		- Ctrl-right clicking a swatch removes the swatch.
+		- If fewer than 16 preset swatches are in the settings.cfg, then they are padded up to 16 with default values.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!

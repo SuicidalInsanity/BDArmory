@@ -55,16 +55,18 @@ namespace BDArmory.Settings
                     fileNode.RemoveNode("TeamColors");
                 }
             }
+
             if (!fileNode.HasNode("PresetColors"))
             {
                 fileNode.AddNode("PresetColors");
             }
             ConfigNode preset = fileNode.GetNode("PresetColors");
-
-            foreach (var keyValuePair in BDTISetup.Instance.ColorPresets)
+            preset.ClearValues(); // Clear old values
+            int i = 0; // Reset the indexing
+            foreach (Color presetColor in BDTISetup.Instance.ColorPresets.Values)
             {
-                string color = $"{Mathf.RoundToInt(keyValuePair.Value.r * 255)},{Mathf.RoundToInt(keyValuePair.Value.g * 255)},{Mathf.RoundToInt(keyValuePair.Value.b * 255)},{Mathf.RoundToInt(keyValuePair.Value.a * 255)}";
-                preset.SetValue(keyValuePair.Key.ToString(), color, true);
+                string color = $"{Mathf.RoundToInt(presetColor.r * 255)},{Mathf.RoundToInt(presetColor.g * 255)},{Mathf.RoundToInt(presetColor.b * 255)},{Mathf.RoundToInt(presetColor.a * 255)}";
+                preset.SetValue((++i).ToString(), color, true);
             }
             fileNode.Save(BDTISettings.settingsConfigURL);
         }
@@ -74,7 +76,6 @@ namespace BDArmory.Settings
             if (!fileNode.HasNode("IconSettings")) return;
 
             ConfigNode settings = fileNode.GetNode("IconSettings");
-
             using (IEnumerator<FieldInfo> field = typeof(BDTISettings).GetFields().AsEnumerable().GetEnumerator())
                 while (field.MoveNext())
                 {
@@ -88,20 +89,46 @@ namespace BDArmory.Settings
                         field.Current.SetValue(null, parsedValue);
                     }
                 }
-            ConfigNode presets = fileNode.GetNode("PresetColors");
 
-            for (int i = 0; i < presets.CountValues; i++)
+            ConfigNode presets = fileNode.GetNode("PresetColors");
+            BDTISetup.Instance.ColorPresets.Clear();
+            foreach (var colorPreset in presets.GetValues())
             {
-                if (BDArmorySettings.DEBUG_OTHER) Debug.Log("[BDArmory.BDTISettingsField]: loading preset " + presets.values[i].name + "; color: " + GUIUtils.ParseColor255(presets.values[i].value));
-                if (BDTISetup.Instance.ColorPresets.ContainsKey(i + 1)) // The dictionary indexing is 1-based.
+                // Note: the keys aren't really important, they're just for interacting with the currently loaded values
+                var color = GUIUtils.ParseColor255(colorPreset);
+                if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.BDTISettingsField]: Loading preset color: {color}");
+                BDTISetup.Instance.ColorPresets.Add(BDTISetup.Instance.ColorPresets.Count + 1, color);
+            }
+            if (BDTISetup.Instance.ColorPresets.Count < 16)
+            {
+                // If fewer than 16 presets, pad with defaults.
+                List<Color> defaultPresets = [
+                    GUIUtils.ParseColor255("255,0,0,255"), //Red
+                    GUIUtils.ParseColor255("255,255,0,255"), //Yellow
+                    GUIUtils.ParseColor255("0,255,0,255"), //Green
+                    GUIUtils.ParseColor255("0,255,255,255"), //Blue
+                    GUIUtils.ParseColor255("0,0,255,255"), //Indigo
+                    GUIUtils.ParseColor255("128,0,192,255"), //Purple
+                    GUIUtils.ParseColor255("255,255,255,255"), //White
+                    GUIUtils.ParseColor255("0,0,0,255"), //Black
+                    GUIUtils.ParseColor255("255,128,0,255"), //Orange
+                    GUIUtils.ParseColor255("62,50,0,255"), //Brown
+                    GUIUtils.ParseColor255("16,96,16,255"), //Dark Green
+                    GUIUtils.ParseColor255("192,255,192,255"), //Light Green
+                    GUIUtils.ParseColor255("192,192,255,255"), //Light Blue
+                    GUIUtils.ParseColor255("192,0,192,255"), //Marroon
+                    GUIUtils.ParseColor255("255,192,255,255"), //Pink
+                    GUIUtils.ParseColor255("128,128,128,255"), //Grey
+                ];
+                foreach (var rgba in defaultPresets)
                 {
-                    BDTISetup.Instance.ColorPresets[i + 1] = GUIUtils.ParseColor255(presets.values[i].value);
-                }
-                else
-                {
-                    BDTISetup.Instance.ColorPresets.Add(i + 1, GUIUtils.ParseColor255(presets.values[i].value));
+                    if (BDTISetup.Instance.ColorPresets.Count >= 16) break;
+                    if (BDTISetup.Instance.ColorPresets.ContainsValue(rgba)) continue;
+                    BDTISetup.Instance.ColorPresets.Add(BDTISetup.Instance.ColorPresets.Count + 1, rgba);
+                    if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.BDTISettingsField]: Adding preset {rgba}.");
                 }
             }
+
             if (!BDTISettings.STORE_TEAM_COLORS || !fileNode.HasNode("TeamColors")) return;
             ConfigNode colors = fileNode.GetNode("TeamColors");
             for (int i = 0; i < colors.CountValues; i++)
@@ -116,46 +143,6 @@ namespace BDArmory.Settings
                     BDTISetup.Instance.ColorAssignments.Add(colors.values[i].name, GUIUtils.ParseColor255(colors.values[i].value));
                 }
             }
-        }
-
-        public static void presetSetup()
-        {
-            ConfigNode fileNode = ConfigNode.Load(BDTISettings.settingsConfigURL);
-
-            if (!fileNode.HasNode("PresetColors"))
-            {
-                fileNode.AddNode("PresetColors");
-            }
-            ConfigNode preset = fileNode.GetNode("PresetColors");
-            List<string> presetRGB = [.. preset.GetValues().ToHashSet()]; // We may lose the user's colour order, but they'll still be the first entries.
-            List<string> defaultPresets = [
-                 "255,0,0,255", //Red
-                "255,255,0,255", //Yellow
-                "0,255,0,255", //Green
-                "0,255,255,255", //Blue
-                "0,0,255,255", //Indigo
-                "128,0,192,255", //Purple
-                "255,255,255,255", //White
-                "0,0,0,255", //Black
-                "255,128,0,255", //Orange
-                "62,50,0,255", //Brown
-                "16,96,16,255", //Dark Green
-                "192,255,192,255", //Light Green
-                "192,192,255,255", //Light Blue
-                "192,0,192,255", //Marroon
-                "255,192,255,255", //Pink
-                "128,128,128,255" //Grey
-            ];
-            foreach (var rgba in defaultPresets)
-            {
-                if (presetRGB.Count >= 16) break;
-                if (presetRGB.Contains(rgba)) continue;
-                presetRGB.Add(rgba);
-            }
-            preset.ClearValues();
-            for (int i = 0; i < presetRGB.Count; ++i)
-            { preset.SetValue($"{i + 1}", presetRGB[i], true); }
-            fileNode.Save(BDTISettings.settingsConfigURL);
         }
 
         public static object ParseValue(Type type, string value)
