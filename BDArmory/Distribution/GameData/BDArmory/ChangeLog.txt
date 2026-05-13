@@ -8,6 +8,7 @@
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
 	- Fix setting world velocity not accounting for Krakensbane properly in some cases.
 	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
+	- Can now apply self-sealing tanks to cockpits with liquid fuel tankage.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
@@ -18,7 +19,11 @@
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
 	- Add a debug toggle specifically for part HP.
-	- Team Icons Color Picker now includes 16 color swatch for quick color selection.
+	- Team Icons Color Picker now includes 16+ color swatch for quick color selection.
+		- Right clicking a swatch changes the swatch color to the currently selected color (if it's unique).
+		- Clicking the '+' adds the currently selected color as a new swatch (if it's unique).
+		- Ctrl-right clicking a swatch removes the swatch.
+		- If fewer than 16 preset swatches are in the settings.cfg, then they are padded up to 16 with default values.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -78,6 +83,7 @@
 		- Fixed rockets sometimes not applying kinetic damage when they penetrate armor.
 	- Warheads:
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
+		- Nuclear warheads now have Arm/Detonate Action Groups.
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
 		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
@@ -112,8 +118,8 @@
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
-      			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
-			- Custom turrets now compatible with turret multi-targeting		
+			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+			- Custom turrets now compatible with turret multi-targeting.
 			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
 		- Switch detonation distance override sliders to use a semi-log range to allow larger distances.
