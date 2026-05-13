@@ -1,4 +1,6 @@
-﻿using BDArmory.Utils;
+﻿using System.Collections.Generic;
+using System.Linq;
+using BDArmory.Utils;
 using UnityEngine;
 
 // credit to Brian Jones (https://github.com/boj)& KSP ForumMember TaxiService
@@ -96,47 +98,39 @@ namespace BDArmory.UI
             //preset colors
             GUIStyle style = new() { normal = new GUIStyleState { background = prefabColorPreview } };
 
-            for (int pcOffset = 0; pcOffset < 8; pcOffset++)
+            int row = 0, column = 0;
+            KeyValuePair<int, Color> setColor = default;
+            foreach (var presetColor in BDTISetup.Instance.ColorPresets)
             {
-                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
-                prefabColorPreview.SetPixel(0, 0, presetColor);
+                prefabColorPreview.SetPixel(0, 0, presetColor.Value);
                 prefabColorPreview.Apply();
                 style.normal.background = prefabColorPreview;
-                if (GUI.Button(new Rect(HorizPos + (pcOffset * 20) + 10, VertPos + displayTextureHeight + 5, 15, 15), new GUIContent(""), style))
+                if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), new GUIContent(""), style))
                 {
                     switch (Event.current.button)
                     {
                         case 1: // right click
-                            BDTISetup.Instance.ColorPresets[pcOffset] = selectedColor;
+                            setColor = new(presetColor.Key, selectedColor);
                             break;
                         default:
-                            selectedColor = presetColor;
-                            selectedColorPreview.SetPixel(0, 0, presetColor);
+                            selectedColor = presetColor.Value;
+                            selectedColorPreview.SetPixel(0, 0, presetColor.Value);
                             selectedColorPreview.Apply();
                             break;
                     }
+                }
+                ++column;
+                if (2 * column >= BDTISetup.Instance.ColorPresets.Count)
+                {
+                    column = 0;
+                    ++row;
                 }
             }
-            for (int pcOffset = 8; pcOffset < 16; pcOffset++)
+            if (setColor.Key > 0)
             {
-                presetColor = BDTISetup.Instance.ColorPresets[pcOffset];
-                prefabColorPreview.SetPixel(0, 0, presetColor);
-                prefabColorPreview.Apply();
-                style.normal.background = prefabColorPreview;
-                if (GUI.Button(new Rect(HorizPos + ((pcOffset * 20) - 160) + 10, VertPos + displayTextureHeight + 25, 15, 15), new GUIContent(""), style))
-                {
-                    switch (Event.current.button)
-                    {
-                        case 1: // right click
-                            BDTISetup.Instance.ColorPresets[pcOffset] = selectedColor;
-                            break;
-                        default:
-                            selectedColor = presetColor;
-                            selectedColorPreview.SetPixel(0, 0, presetColor);
-                            selectedColorPreview.Apply();
-                            break;
-                    }
-                }
+                // If the color isn't already in the other presets, update it.
+                if (!BDTISetup.Instance.ColorPresets.Where(kvp => kvp.Key != setColor.Key).Select(kvp => kvp.Value).Contains(setColor.Value))
+                    BDTISetup.Instance.ColorPresets[setColor.Key] = setColor.Value;
             }
             // box for chosen color
 

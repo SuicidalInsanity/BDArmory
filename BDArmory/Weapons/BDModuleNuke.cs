@@ -207,8 +207,7 @@ namespace BDArmory.Weapons
                         }
                     }
                 }
-                if (guiStatusString != "ARMED" && Launcher != null &&
-    (Launcher.MissileState != MissileBase.MissileStates.Idle && Launcher.MissileState != MissileBase.MissileStates.Drop)) guiStatusString = "ARMED";
+                if (guiStatusString != "ARMED" && Launcher != null && Launcher.MissileState > MissileBase.MissileStates.Drop) guiStatusString = "ARMED";
             }
         }
 
