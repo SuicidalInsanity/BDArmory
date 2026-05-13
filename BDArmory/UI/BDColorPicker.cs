@@ -114,21 +114,21 @@ namespace BDArmory.UI
             }
 
             //preset colors
-            int row = 0, column = 0;
-            KeyValuePair<int, Color> setColor = default;
+            int row = 0, column = 0, index = 0;
+            KeyValuePair<int, Color> setColor = new(-1, default);
             foreach (var presetColor in BDTISetup.Instance.ColorPresets)
             {
-                if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), new GUIContent(""), GetStyle(presetColor.Value)))
+                if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), new GUIContent(""), GetStyle(presetColor)))
                 {
                     switch (Event.current.button)
                     {
                         case 1: // right click
-                            if ((Event.current.modifiers & EventModifiers.Control) != 0) setColor = new(presetColor.Key, new(0, 0, 0, 0)); // Ctrl-right click to remove
-                            else setColor = new(presetColor.Key, selectedColor); // Update color
+                            if ((Event.current.modifiers & EventModifiers.Control) != 0) setColor = new(index, new(0, 0, 0, 0)); // Ctrl-right click to remove
+                            else if (selectedColor.a != 0) setColor = new(index, selectedColor); // Update color
                             break;
                         default:
-                            selectedColor = presetColor.Value;
-                            selectedColorPreview.SetPixel(0, 0, presetColor.Value);
+                            selectedColor = presetColor;
+                            selectedColorPreview.SetPixel(0, 0, presetColor);
                             selectedColorPreview.Apply();
                             break;
                     }
@@ -139,17 +139,18 @@ namespace BDArmory.UI
                     column = 0;
                     ++row;
                 }
+                ++index;
             }
-            if (setColor.Key > 0)
+            if (setColor.Key >= 0)
             {
                 if (setColor.Value.a == 0)
                 {
-                    BDTISetup.Instance.ColorPresets.Remove(setColor.Key);
+                    BDTISetup.Instance.ColorPresets.RemoveAt(setColor.Key);
                 }
                 else
                 {
-                    // If the color isn't already in the other presets, update it.
-                    if (!BDTISetup.Instance.ColorPresets.Where(kvp => kvp.Key != setColor.Key).Select(kvp => kvp.Value).Contains(setColor.Value))
+                    // If the color isn't already in the presets, update it.
+                    if (!BDTISetup.Instance.ColorPresets.Contains(setColor.Value))
                         BDTISetup.Instance.ColorPresets[setColor.Key] = setColor.Value;
                 }
             }
@@ -160,10 +161,9 @@ namespace BDArmory.UI
             if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), (Event.current.modifiers & EventModifiers.Control) != 0 ? " -" : " +", GetStyle(new(0, 0, 0, 0))))
             {
                 // Left click: Add the current colour as a new entry.
-                if (Event.current.button == 0 && selectedColor.a != 0 && !BDTISetup.Instance.ColorPresets.Values.Contains(selectedColor))
+                if (Event.current.button == 0 && selectedColor.a != 0 && !BDTISetup.Instance.ColorPresets.Contains(selectedColor))
                 {
-                    int key = BDTISetup.Instance.ColorPresets.Count > 0 ? BDTISetup.Instance.ColorPresets.Keys.Max() + 1 : 1;
-                    BDTISetup.Instance.ColorPresets.Add(key, selectedColor);
+                    BDTISetup.Instance.ColorPresets.Add(selectedColor);
                 }
             }
 

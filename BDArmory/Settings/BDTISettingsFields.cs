@@ -63,7 +63,7 @@ namespace BDArmory.Settings
             ConfigNode preset = fileNode.GetNode("PresetColors");
             preset.ClearValues(); // Clear old values
             int i = 0; // Reset the indexing
-            foreach (Color presetColor in BDTISetup.Instance.ColorPresets.Values)
+            foreach (Color presetColor in BDTISetup.Instance.ColorPresets)
             {
                 string color = $"{Mathf.RoundToInt(presetColor.r * 255)},{Mathf.RoundToInt(presetColor.g * 255)},{Mathf.RoundToInt(presetColor.b * 255)},{Mathf.RoundToInt(presetColor.a * 255)}";
                 preset.SetValue((++i).ToString(), color, true);
@@ -97,7 +97,7 @@ namespace BDArmory.Settings
                 // Note: the keys aren't really important, they're just for interacting with the currently loaded values
                 var color = GUIUtils.ParseColor255(colorPreset);
                 if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.BDTISettingsField]: Loading preset color: {color}");
-                BDTISetup.Instance.ColorPresets.Add(BDTISetup.Instance.ColorPresets.Count + 1, color);
+                BDTISetup.Instance.ColorPresets.Add(color);
             }
             if (BDTISetup.Instance.ColorPresets.Count < 16)
             {
@@ -123,8 +123,8 @@ namespace BDArmory.Settings
                 foreach (var rgba in defaultPresets)
                 {
                     if (BDTISetup.Instance.ColorPresets.Count >= 16) break;
-                    if (BDTISetup.Instance.ColorPresets.ContainsValue(rgba)) continue;
-                    BDTISetup.Instance.ColorPresets.Add(BDTISetup.Instance.ColorPresets.Count + 1, rgba);
+                    if (BDTISetup.Instance.ColorPresets.Contains(rgba)) continue;
+                    BDTISetup.Instance.ColorPresets.Add(rgba);
                     if (BDArmorySettings.DEBUG_OTHER) Debug.Log($"[BDArmory.BDTISettingsField]: Adding preset {rgba}.");
                 }
             }
