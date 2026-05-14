@@ -334,7 +334,7 @@ namespace BDArmory.Guidances
             return targetPosition + (targetVelocity * leadTime);
         }
 
-        public static readonly float AoALDMax = BDAMath.Sqrt(0.00215f / (0.0125f * 2.864788975654117f)) * Mathf.Rad2Deg * (1f / 1.1f);
+        public static readonly float AoALDMax = BDAMath.Sqrt(0.00215f / (0.0125f * 2.864788975654117f)) * Mathf.Rad2Deg;
         
         public static Vector3 GetWeaveTarget(Vector3 targetPosition, Vector3 targetVelocity, Vessel missileVessel, ref float gVert, ref float gHorz, Vector3 gRand, ref float omega, float terminalAngle, float weaveFactor, bool useAGMDescentRatio, float agmDescentRatio, float maneuvergLimit, ref float weaveOffset, ref Vector3 weaveStart, ref float WeaveAlt, out float ttgo, out float gLimit)
         {
@@ -644,7 +644,7 @@ namespace BDArmory.Guidances
             }
 
             // ---------------------------- Lead Limiting -----------------------------
-            (float relSpeed, Vector3 relVelNorm) = velDiff.MagNorm();
+            Vector3 relVelNorm = velDiff.normalized;
             CelestialBody currentBody = FlightGlobals.currentMainBody;
             double currDensity = ml.vessel.atmDensity;
             // Excess accel available to the missile
@@ -653,7 +653,7 @@ namespace BDArmory.Guidances
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
             // Target accel
             accelSqr *= (targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude;
-            float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * (relSpeed) / BDAMath.Sqrt(accelSqr), 8f, boostGuidance ? 12f : 16f) : boostGuidance ? 12f : 16f;
+            float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr), 8f, boostGuidance ? 12f : 16f) : boostGuidance ? 12f : 16f;
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetAccel: {(targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * (relSpeed) / BDAMath.Sqrt(accelSqr) : boostGuidance ? 12f : 16f)}");
 
             leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
@@ -713,19 +713,36 @@ namespace BDArmory.Guidances
                 {
                     accel = (currSpeed * currSpeed * turnFactorMult * loftAngle * Mathf.Deg2Rad * turnSin) * Vector3.Cross(turnDir, Vector3.Cross(planarDirectionToTarget, upDirection)).normalized + // Acceleration required to follow the curve
                     (2f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
+                    /*Vector3 propAccel = (3f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
+                    float propAccelSqr = propAccel.sqrMagnitude;
+                    float lim = currSpeed * currSpeed * 9f * Mathf.Deg2Rad;
+                    if (propAccelSqr < lim)
+                    {
+                        accel += (propAccelSqr / lim) * propAccel;
+                    }
+                    else
+                    {
+                        accel += propAccel;
+                    }*/
                 }
                 else
                 {
                     accel = (2f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
+                    /*float propAccelSqr = accel.sqrMagnitude;
+                    float lim = currSpeed * currSpeed * 9f * Mathf.Deg2Rad;
+                    if (propAccelSqr < lim)
+                    {
+                        accel *= propAccelSqr / lim;
+                    }*/
                 }
 
                 gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
 
                 // Limit gs during climb
                 gLimit = Mathf.Min(gCompAccel.magnitude / g, ml.GetManeuvergLimit(0));
-                AoALimit = turnFactor < 1f ? AoALDMax : 28f;
+                AoALimit = turnFactor < 1f ? AoALDMax : 30f;
 
-                if (-sinTarget > turnSin && targetAlt > maxAltitude)
+                if (Vector3.Dot((predictedImpactPoint - ml.vessel.CoM).normalized, upDirection) > turnSin && targetAlt > maxAltitude)
                 {
                     loftState = MissileBase.LoftStates.Midcourse;
                 }
@@ -2297,8 +2314,8 @@ namespace BDArmory.Guidances
                 Vector3 finalTorque = Vector3.Lerp(previousTorque, torqueDirection * torque, 1).ProjectOnPlanePreNormalized(Vector3.forward);
                 */
 
-                float currMaxAoA = maxAoA + Mathf.Min(0.1f * maxAoA, 2f);
-                float AoALim = torqueLimiter ? Mathf.Min(currMaxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : currMaxAoA;
+                //float currMaxAoA = maxAoA + Mathf.Min(0.1f * maxAoA, 2f);
+                float AoALim = torqueLimiter ? Mathf.Min(maxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : maxAoA;
                 //if (ml.torqueAoALimit.x > 0)
                 //    AoALim = Mathf.Min(maxAoA + Mathf.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
 
@@ -2315,7 +2332,7 @@ namespace BDArmory.Guidances
                     else if (_gCommand && targetAngle < AoALim)
                     {
                         //targetDirection = QuaternionD.AngleAxis(AoALim, Vector3d.Cross(velNorm, targetDirection)) * velNorm;
-                        targetDirection = Vector3.Slerp(velNorm, targetDirection.ProjectOnPlanePreNormalized(velNorm).normalized, AoALim / 90f);
+                        targetDirection = Vector3.Slerp(velNorm, (10f * targetDirection).ProjectOnPlanePreNormalized(velNorm).normalized, AoALim / 90f);
                     }
 
                 }
