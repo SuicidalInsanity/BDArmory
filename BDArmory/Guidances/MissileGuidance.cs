@@ -742,7 +742,7 @@ namespace BDArmory.Guidances
                 gLimit = Mathf.Min(gCompAccel.magnitude / g, ml.GetManeuvergLimit(0));
                 AoALimit = turnFactor < 1f ? AoALDMax : 30f;
 
-                if (Vector3.Dot((predictedImpactPoint - ml.vessel.CoM).normalized, upDirection) > turnSin && targetAlt > maxAltitude)
+                if (-sinTarget > turnSin && targetAlt > maxAltitude)
                 {
                     loftState = MissileBase.LoftStates.Midcourse;
                 }
