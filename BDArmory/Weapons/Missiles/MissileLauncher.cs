@@ -2308,6 +2308,11 @@ namespace BDArmory.Weapons.Missiles
             }
         }
 
+        private void SummarizeEngagement()
+        {
+            Debug.Log($"[BDArmory.MissileLauncher]: Missile: {shortName} with UUID: {vessel.id} has concluded engagement with target: {debugGuidanceTarget}{(targetVessel ? $" ({targetVessel.Name()} with UUID {targetVessel.ID()})" : "")} at TimeIndex: {TimeIndex} s with a final distance of: {(vessel.CoM - (targetVessel ? targetVessel.position : TargetPosition)).magnitude} m and closing velocity of: {(vessel.Velocity() - (targetVessel && targetVessel.Vessel ? targetVessel.Vessel.Velocity() : (Vector3d)TargetVelocity)).magnitude} m/s at an altitude of: {vessel.altitude} m with air density: {vessel.atmDensity} kg/m³.");
+        }
+
         private void CheckMiss()
         {
             if (weaponClass == WeaponClasses.Bomb) return;
@@ -2331,7 +2336,11 @@ namespace BDArmory.Weapons.Missiles
                 bool pastGracePeriod = TimeIndex > ((MissileState == MissileStates.PostThrust ? 1 : optimumAirspeed / vessel.speed) * ((vessel.LandedOrSplashed ? 0f : dropTime) + guidanceDelay + Mathf.Clamp(maxTurnRateDPS / 15f, 1, 8))); //180f / maxTurnRateDPS);
                 if ((pastGracePeriod && targetBehindMissile) || noProgress) // Check that we're not moving away from the target after a grace period
                 {
-                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: Missile has missed({(noProgress ? "no progress" : !TargetAcquired ? "no target" : "past target")})!");
+                    if (BDArmorySettings.DEBUG_MISSILES)
+                    {
+                        Debug.Log($"[BDArmory.MissileLauncher]: Missile has missed({(noProgress ? "no progress" : !TargetAcquired ? "no target" : "past target")})!");
+                        SummarizeEngagement();
+                    }
 
                     if (vessel.altitude >= maxAltitude && maxAltitude != 0f)
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher]: CheckMiss trigged by MaxAltitude");
@@ -2911,7 +2920,7 @@ namespace BDArmory.Weapons.Missiles
         {
             float sqrRange = (TargetPosition - part.rb.position).sqrMagnitude;
 
-            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: Check cruise range trigger range: {BDAMath.Sqrt(sqrRange)}");
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: Check cruise range trigger range: {BDAMath.Sqrt(sqrRange)}");
 
             if (sqrRange < cruiseRangeTrigger * cruiseRangeTrigger || (!vessel.InVacuum() && vessel.Velocity().sqrMagnitude < optimumAirspeed * optimumAirspeed * 0.5625f))
             {
@@ -4012,7 +4021,11 @@ namespace BDArmory.Weapons.Missiles
         {
             if (HasExploded || FuseFailed || !HasFired) return;
 
-            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher]: Detonate Triggered");
+            if (BDArmorySettings.DEBUG_MISSILES)
+            {
+                Debug.Log("[BDArmory.MissileLauncher]: Detonate Triggered");
+                if (!HasMissed) SummarizeEngagement();
+            }
 
             BDArmorySetup.numberOfParticleEmitters--;
             HasExploded = true;

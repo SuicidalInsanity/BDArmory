@@ -907,7 +907,8 @@ namespace BDArmory.Weapons.Missiles
                 {
                     ml.shortName = missileLauncher.GetShortName() + " Missile";
                 }
-                if (BDArmorySettings.DEBUG_MISSILES) ml.shortName = $"{ml.SourceVessel.GetName()}'s {missileLauncher.GetShortName()} Missile";
+                // Already applied in MissileLauncher making this redundant
+                //if (BDArmorySettings.DEBUG_MISSILES) ml.shortName = $"{ml.SourceVessel.GetName()}'s {missileLauncher.GetShortName()} Missile";
                 ml.vessel.vesselName = ml.GetShortName();
                 ml.TimeFired = Time.time;
                 if (turret) ml.missileTurret = turret;
@@ -973,6 +974,11 @@ namespace BDArmory.Weapons.Missiles
                         ml.LoftRangeOverride = missileLauncher.LoftRangeOverride;
                         ml.LoftTermAngle = missileLauncher.LoftTermAngle;
                         ml.loftState = LoftStates.PreLaunch;
+                    }
+
+                    if (missileLauncher.terminalHoming)
+                    {
+                        ml.terminalHomingRange = missileLauncher.terminalHomingRange;
                     }
                 }
 

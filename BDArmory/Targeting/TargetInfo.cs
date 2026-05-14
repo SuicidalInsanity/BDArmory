@@ -12,6 +12,7 @@ using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.WeaponMounts;
+using System;
 
 namespace BDArmory.Targeting
 {
@@ -142,6 +143,16 @@ namespace BDArmory.Targeting
             {
                 vessel = value;
             }
+        }
+
+        public string Name()
+        {
+            return (vessel ? vessel.vesselName : "Null");
+        }
+
+        public Guid ID()
+        {
+            return (vessel ? vessel.id : Guid.Empty);
         }
 
         public bool isThreat
@@ -794,7 +805,7 @@ namespace BDArmory.Targeting
 
             //float dispersionMax = 100f;
 
-            float dispersion = Random.Range(0, dispersionMax);
+            float dispersion = UnityEngine.Random.Range(0, dispersionMax);
 
             TargetCOM_ = v.CoM + new Vector3(0, dispersion);
 
