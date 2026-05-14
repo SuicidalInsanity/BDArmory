@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System;
 using UnityEngine;
@@ -34,7 +34,12 @@ namespace BDArmory.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 PredictPosition(Vector3 position, Vector3 velocity, Vector3 acceleration, float time)
         {
-            return position + time * velocity + 0.5f * time * time * acceleration;
+            float time2 = 0.5f * time * time;
+            return new Vector3(
+                position.x + time * velocity.x + time2 * acceleration.x,
+                position.y + time * velocity.y + time2 * acceleration.y,
+                position.z + time * velocity.z + time2 * acceleration.z);
+            //return position + time * velocity + 0.5f * time * time * acceleration;
         }
 
         public enum CPAType

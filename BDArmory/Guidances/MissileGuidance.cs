@@ -583,16 +583,16 @@ namespace BDArmory.Guidances
             if (vertVel * vertR < 0f)
             {
                 // Limit our ttgo to twice ttgoPlanar
-                ttgo = Mathf.Min(ttgo, 2f * ttgoPlanar);
+                ttgo = Mathf.Min(0.5f * (ttgo + ttgoPlanar), 1.5f * ttgoPlanar);
             }
             else
             {
                 // Average the two values if ttgoPlanar is > 0
                 // that way we don't overshoot the target
                 if (ttgoPlanar > 0f)
-                    ttgo = 0.5f * (ttgo + ttgoPlanar);
+                    ttgo = Mathf.Min(0.5f * (ttgo + ttgoPlanar), 1.5f * ttgoPlanar);
                 if (ttgoVert > 0f)
-                    ttgo = Mathf.Min(ttgo, (vertVel > 0 ? 1.1f : 2f) * ttgoVert);
+                    ttgo = Mathf.Min(ttgo, (vertVel > 0 ? 1.1f : 1.5f) * ttgoVert);
                 if (ttgoVert < ttgo && vertVel > 0)
                 {
                     shapingAngle = 0f;
@@ -644,21 +644,25 @@ namespace BDArmory.Guidances
             }
 
             // ---------------------------- Lead Limiting -----------------------------
-            Vector3 relVelNorm = velDiff.normalized;
+            //Vector3 relVelNorm = velDiff.normalized;
             CelestialBody currentBody = FlightGlobals.currentMainBody;
             double currDensity = ml.vessel.atmDensity;
             // Excess accel available to the missile
             maneuverCapability *= ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * (float)(((Math.Abs(targetAlt - ml.vessel.altitude) < 1000d) ? q : (0.5 * (currDensity = 0.5 * (currentBody.GetDensity(currentBody.GetPressure(targetAlt), currentBody.GetTemperature(targetAlt)) + ml.vessel.atmDensity)) * sqrSpeed)) / vesselMass) * (1f + TL);
-            float accelSqr = Mathf.Max(maneuverCapability - 0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv, 0f);
+            float accelSqr = Mathf.Max(maneuverCapability - 0.5f * Rdir.ProjectOnPlanePreNormalized(velDirection).magnitude * ttgoInv * ttgoInv, 0f);
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
             // Target accel
-            accelSqr *= (targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude;
+            accelSqr *= targetAccel.magnitude;
             float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr), 8f, boostGuidance ? 12f : 16f) : boostGuidance ? 12f : 16f;
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetAccel: {(targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * (relSpeed) / BDAMath.Sqrt(accelSqr) : boostGuidance ? 12f : 16f)}");
 
             leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
 
-            Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, targetAccel, leadTime + TimeWarp.fixedDeltaTime);
+            Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, leadTimeMax > 8f ? (((leadTimeMax - 8f) / (boostGuidance ? 12f : 16f - 8f)) * targetAccel) : Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
+            /*new Vector3(
+                        targetPosition.x + leadTime * targetVelocity.x,
+                        targetPosition.y + leadTime * targetVelocity.y,
+                        targetPosition.z + leadTime * targetVelocity.z);*/ //AIUtils.PredictPosition(targetPosition, targetVelocity, leadTimeMax > 8f ? ((leadTimeMax - 8f / (boostGuidance ? 12f : 16f - 8f)) * targetAccel) : Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
             Vector3 planarDirectionToTarget = ((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(upDirection)).normalized;
 
             if (boostGuidance)
@@ -707,7 +711,8 @@ namespace BDArmory.Guidances
                 float turnFactor = Mathf.Clamp((float)(maxAltitude - ml.vessel.altitude) * turnFactorMult, -1f, 1f);
 
                 float turnSin = Mathf.Sin(loftAngle * turnFactor * Mathf.Deg2Rad);
-                Vector3 turnDir = ((Mathf.Cos(loftAngle * turnFactor * Mathf.Deg2Rad) * planarDirectionToTarget) + (turnSin * upDirection));
+                float turnCos = BDAMath.Sqrt(1f - turnSin * turnSin);
+                Vector3 turnDir = ((turnCos * planarDirectionToTarget) + (turnSin * upDirection));
 
                 if (turnFactor < 1f && turnFactor > -1f)
                 {
@@ -715,7 +720,7 @@ namespace BDArmory.Guidances
                     (2f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
                     /*Vector3 propAccel = (3f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
                     float propAccelSqr = propAccel.sqrMagnitude;
-                    float lim = currSpeed * currSpeed * 9f * Mathf.Deg2Rad;
+                    float lim = currSpeed * currSpeed * 4f * Mathf.Deg2Rad;
                     if (propAccelSqr < lim)
                     {
                         accel += (propAccelSqr / lim) * propAccel;
@@ -729,7 +734,7 @@ namespace BDArmory.Guidances
                 {
                     accel = (2f / currSpeed) * VelTripleProduct(currVel, turnDir); // Proportional command, turn towards the target direction
                     /*float propAccelSqr = accel.sqrMagnitude;
-                    float lim = currSpeed * currSpeed * 9f * Mathf.Deg2Rad;
+                    float lim = currSpeed * currSpeed * 4f * Mathf.Deg2Rad;
                     if (propAccelSqr < lim)
                     {
                         accel *= propAccelSqr / lim;
@@ -750,11 +755,10 @@ namespace BDArmory.Guidances
                 return ml.vessel.CoM + currVel * 3f + accel * 9f;
             }
 
-            // Accurately predict impact point
-            //predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, Vector3.zero, ttgo + TimeWarp.fixedDeltaTime);
-
+            // Set up final velocity vector
             Vector3 vF;
 
+            // Set up AoALimit
             AoALimit = -1f;
 
             // Gains for velocity error and positional error
@@ -921,8 +925,20 @@ namespace BDArmory.Guidances
                     shapingAngle *= Mathf.Clamp01(1.2f - targetAlt / maxAltitude);
                 }
                 vF = velDirection.ProjectOnPlanePreNormalized(targetPredUp).normalized;
-                vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetPredUp);
-                accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
+                float cos = Mathf.Cos(shapingAngle * Mathf.Deg2Rad);
+                float sin = BDAMath.Sqrt(1 - cos * cos);
+                //vF = currSpeed * (Mathf.Cos(shapingAngle * Mathf.Deg2Rad) * vF - Mathf.Sin(shapingAngle * Mathf.Deg2Rad) * targetPredUp);
+                vF = new Vector3(
+                    currSpeed * (cos * vF.x - sin * (float)targetPredUp.x),
+                    currSpeed * (cos * vF.y - sin * (float)targetPredUp.y),
+                    currSpeed * (cos * vF.z - sin * (float)targetPredUp.z));
+                K1 *= ttgoInv;
+                K2 *= ttgoInv * ttgoInv;
+                accel = new Vector3(
+                    K1 * (vF.x - currVel.x) + K2 * adjustedPredictedRelImpactPoint.x,
+                    K1 * (vF.y - currVel.y) + K2 * adjustedPredictedRelImpactPoint.y,
+                    K1 * (vF.z - currVel.z) + K2 * adjustedPredictedRelImpactPoint.z);
+                //accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
             }
 
             // Angle Based Method -> Guarantees Normal Accel, but requires more processing
@@ -944,7 +960,15 @@ namespace BDArmory.Guidances
             // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance K1: {K1}, K2: {K2}, accel: {accel}, vF-currVel: {vF-currVel}, posError: {predictedImpactPoint- ml.vessel.CoM - currVel*ttgo}, g: {gLimit}, ttgo: {ttgo}");
 
-            return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel.ProjectOnPlanePreNormalized(velDirection) * Mathf.Min(leadTime * leadTime, 9f);
+            //accel = accel.ProjectOnPlanePreNormalized(velDirection);
+            leadTime = Mathf.Min(leadTime, 3f);
+            float leadTime2 = leadTime * leadTime;
+            Vector3 currPos = ml.vessel.CoM;
+            return new Vector3(
+                currPos.x + currVel.x * leadTime + gCompAccel.x * leadTime2,
+                currPos.y + currVel.y * leadTime + gCompAccel.y * leadTime2,
+                currPos.z + currVel.z * leadTime + gCompAccel.z * leadTime2);
+            //return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel.ProjectOnPlanePreNormalized(velDirection) * Mathf.Min(leadTime * leadTime, 9f);
         }
 
         public static Vector3 VelTripleProduct(Vector3 currVel, Vector3 desiredDir)
