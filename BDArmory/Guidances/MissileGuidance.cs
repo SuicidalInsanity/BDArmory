@@ -658,7 +658,17 @@ namespace BDArmory.Guidances
 
             leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
 
-            Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, leadTimeMax > 8f ? (((leadTimeMax - 8f) / (boostGuidance ? 12f : 16f - 8f)) * targetAccel) : Vector3.zero, leadTime + TimeWarp.fixedDeltaTime);
+            if (leadTime > 8f)
+            {
+                float factor = (leadTimeMax - 8f) / (boostGuidance ? 12f : 16f - 8f);
+                targetAccel *= factor * factor;
+            }
+            else
+            {
+                targetAccel = Vector3.zero;
+            }
+
+            Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, targetAccel, leadTime + TimeWarp.fixedDeltaTime);
             /*new Vector3(
                         targetPosition.x + leadTime * targetVelocity.x,
                         targetPosition.y + leadTime * targetVelocity.y,
