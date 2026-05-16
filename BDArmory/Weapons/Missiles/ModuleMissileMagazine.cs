@@ -175,6 +175,13 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                 else
                     ScaleTransform.localScale = new Vector3(((scale.x + 0.05f) * Mathf.CeilToInt(ammoCount / 20)), scale.y * 1.5f * cylinderScale.Evaluate(ammoCount), scale.y * 1.5f * cylinderScale.Evaluate(ammoCount));
             }
+			DragCube DragCube = DragCubeSystem.Instance.RenderProceduralDragCube(part);
+            part.DragCubes.Procedural = true;
+            part.DragCubes.ClearCubes();
+            part.DragCubes.Cubes.Add(DragCube);
+            part.DragCubes.ResetCubeWeights();
+            part.DragCubes.ForceUpdate(true, true, false);
+            part.DragCubes.SetDragWeights();
         }
         private void OnDestroy()
         {
