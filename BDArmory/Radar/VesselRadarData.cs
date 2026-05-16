@@ -1466,9 +1466,16 @@ namespace BDArmory.Radar
                 else
                     north = Vector3.zero;
 
+                //if (BDArmorySettings.DEBUG_RADAR)
+                //    Debug.Log($"[BDArmory.UpdateRadarGUI]: Vessel: {vessel.vesselName}, with UUID: {vessel.id} beginning omni radar GUI update.");
+
                 for (int i = 0; i < rCount; i++)
                 {
                     if (availableRadars[i] == null || availableRadars[i].gameObject == null) continue;
+
+                    //if (BDArmorySettings.DEBUG_RADAR)
+                    //    Debug.Log($"[BDArmory.UpdateRadarGUI]: radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.vesselName} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, currIndex: {currIndex}, arrSize: {arrSize}");
+
                     if (!availableRadars[i].canScan || availableRadars[i].vessel != vessel) continue;
 
                     float currentAngle = availableRadars[i].currentAngle;
@@ -1563,9 +1570,17 @@ namespace BDArmory.Radar
                 directionalFieldOfView = (availableRadars.Count > 0) ? (availableRadars[0].radarMinMaxAzLimits[1]) : 0.5f * availableIRSTs[0].directionalFieldOfView;
                 Rect scanRect = new Rect(0, 0, RadarDisplayRect.width, RadarDisplayRect.height);
 
+                //if (BDArmorySettings.DEBUG_RADAR)
+                //    Debug.Log($"[BDArmory.UpdateRadarGUI]: Vessel: {vessel.vesselName}, with UUID: {vessel.id} beginning non-omni radar GUI update.");
+
                 for (int i = 0; i < rCount; i++)
                 {
-                    if (!availableRadars[i].canScan) continue;
+                    if (availableRadars[i] == null || availableRadars[i].gameObject == null) continue;
+
+                    //if (BDArmorySettings.DEBUG_RADAR)
+                    //    Debug.Log($"[BDArmory.UpdateRadarGUI]: radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.vesselName} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, currIndex: {currIndex}, arrSize: {arrSize}");
+
+                    if (!availableRadars[i].canScan || availableRadars[i].vessel != vessel) continue;
                     bool islocked = availableRadars[i].locked;
                     //float lockScanAngle = linkedRadars[i].lockScanAngle;
                     float currentAngle = availableRadars[i].currentAngle;
@@ -1603,7 +1618,8 @@ namespace BDArmory.Radar
 
                 for (int i = 0; i < iCount; i++)
                 {
-                    if (!availableIRSTs[i].canScan) continue;
+                    if (availableIRSTs[i] == null || availableIRSTs[i].gameObject == null) continue;
+                    if (!availableIRSTs[i].canScan || availableIRSTs[i].vessel != vessel) continue;
                     float currentAngle = availableIRSTs[i].currentAngle;
                     float indicatorAngle = currentAngle; //locked ? lockScanAngle : currentAngle;
                     scanPosArr[currIndex] =

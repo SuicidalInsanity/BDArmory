@@ -3780,7 +3780,7 @@ namespace BDArmory.Weapons.Missiles
                             }
                             float alpha = Mathf.Max(1f - BDAMath.Sqrt(Vector3.Distance(TargetPosition, vessel.CoM)) / 256f, 0.1f);
                             TargetAccelMovingAverage.Update(TargetAcceleration, alpha * alpha);
-                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, TargetAccelMovingAverage.Value, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
+                            aamTarget = MissileGuidance.GetKappaTarget(TargetPosition, TargetVelocity, TargetAccelMovingAverage.Value, this, MissileState == MissileStates.PostThrust ? 0f : currentThrust * Throttle, kappaAngle, LoftRangeFac, LoftVertVelComp, FlightGlobals.getAltitudeAtPos(TargetPosition), terminalHomingRange, LoftAngle, loftSin, kappaTermSin, LoftRangeOverride, LoftMaxAltitude, gLimit > 0, out timeToImpact, out currgLimit, out currAoALimit, ref loftState);
                             // gCommand mode can get kinda touchy during the cruise phase of the loft
                             gCommand = loftState > LoftStates.Boost;
                             TimeToImpact = timeToImpact;

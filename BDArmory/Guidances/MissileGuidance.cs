@@ -544,7 +544,7 @@ namespace BDArmory.Guidances
         public static Vector3 GetKappaTarget(Vector3 targetPosition, Vector3 targetVelocity, Vector3 targetAccel,
             MissileLauncher ml, float thrust, float shapingAngle, float rangeFac, float vertVelComp,
             float targetAlt, float terminalHomingRange, float loftAngle, float loftSin, float termSin,
-            float midcourseRange, float maxAltitude, out float ttgo, out float gLimit, out float AoALimit,
+            float midcourseRange, float maxAltitude, bool usegLimEq, out float ttgo, out float gLimit, out float AoALimit,
             ref MissileBase.LoftStates loftState)
         {
             // Get surface velocity direction
@@ -591,11 +591,13 @@ namespace BDArmory.Guidances
                 // that way we don't overshoot the target
                 if (ttgoPlanar > 0f)
                     ttgo = Mathf.Min(0.5f * (ttgo + ttgoPlanar), 1.5f * ttgoPlanar);
-                if (ttgoVert > 0f)
-                    ttgo = Mathf.Min(ttgo, (vertVel > 0 ? 1.1f : 1.5f) * ttgoVert);
-                if (ttgoVert < ttgo && vertVel > 0)
+                if (loftState > MissileBase.LoftStates.Boost && ttgoVert > 0f)
                 {
-                    shapingAngle = 0f;
+                    ttgo = Mathf.Min(ttgo, (vertVel > 0 ? 1.1f : 1.5f) * ttgoVert);
+                    if (ttgoVert < ttgo && vertVel > 0)
+                    {
+                        shapingAngle = 0f;
+                    }
                 }
             }
 
@@ -610,7 +612,6 @@ namespace BDArmory.Guidances
             float ttgoInv = 1f / ttgo;
 
             Vector3 accel;
-            Vector3 gCompAccel;
             float leadTime;
 
             float sinTarget = 0f;
@@ -634,7 +635,7 @@ namespace BDArmory.Guidances
             float gLimLalpha;
             if (ml.gLimit > 0 && Lalpha > (gLimLalpha = (float)(vesselMass * PhysicsGlobals.GravitationalAcceleration) * ml.gLimit * AoAtoRad))
             {
-                Lalpha = gLimLalpha;
+                Lalpha = Mathf.Min(Lalpha, 2f * gLimLalpha);
                 TL = 0f;
                 maneuverCapability *= (gLimLalpha / Lalpha);
             }
@@ -653,14 +654,14 @@ namespace BDArmory.Guidances
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
             // Target accel
             accelSqr *= targetAccel.magnitude;
-            float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr), 8f, boostGuidance ? 12f : 16f) : boostGuidance ? 12f : 16f;
+            float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr), 8f, 16f) : 16f;
             //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetAccel: {(targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * (relSpeed) / BDAMath.Sqrt(accelSqr) : boostGuidance ? 12f : 16f)}");
 
             leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
 
             if (leadTime > 8f)
             {
-                float factor = (leadTimeMax - 8f) / (boostGuidance ? 12f : 16f - 8f);
+                float factor = (leadTimeMax - 8f) * 0.125f;
                 targetAccel *= factor * factor;
             }
             else
@@ -691,13 +692,32 @@ namespace BDArmory.Guidances
                 // turnRadius * (1 - pullDownSin) -> vertical dist required to go from current orientation to horizontal
                 // curvatureCompensation -> dist we must move target up / origin down by if we "unwrap" the world beneath them
                 // to put them on a flat surface (though in this case we *only* affect the vertical axis)
-                Vector3 turnLead = (turnRadius * (pullDownCos + termSin)) * planarDirectionToTarget + 
+                Vector3 turnLead = currVel * Time.fixedDeltaTime +
+                                   (turnRadius * (pullDownCos + termSin)) * planarDirectionToTarget + 
                                    (turnRadius * (1f - pullDownSin)) * upDirection; //(currSpeed * currSpeed * 0.0169952698051929473876953125f) * (pullDownSin * planarDirectionToTarget + (1f - pullDownCos) * upDirection);
                 //float turnTimeOffset = (loftTermAngle * Mathf.Deg2Rad + 0.5f * Mathf.PI - Mathf.Acos(pullDownCos)) * currSpeed * invG;
 
-                sinTarget = Vector3.Dot((predictedImpactPoint - ml.vessel.CoM - turnLead).normalized, -upDirection); //Vector3.Dot((targetPosition - ml.vessel.CoM), -upDirection) / R;
+                (float targetTermDist, Vector3 targetTermVec) = (predictedImpactPoint - ml.vessel.CoM - turnLead).MagNorm();
+                sinTarget = Vector3.Dot(targetTermVec, -upDirection); //Vector3.Dot((targetPosition - ml.vessel.CoM), -upDirection) / R;
 
                 boostGuidance = (midcourseRange > 0f) && (R > midcourseRange) && (sinTarget < termSin) && (-sinTarget < loftSin);
+                if (!boostGuidance && targetTermDist < 2f * terminalHomingRange && shapingAngle > 0)
+                {
+                    // Modulate kappaAngle if we're really close.
+                    float fac = (targetTermDist - terminalHomingRange);
+                    if (fac < 0)
+                    {
+                        shapingAngle = 0;
+                        ml.kappaAngle = 0;
+                        loftState = MissileBase.LoftStates.Terminal;
+                    }
+                    else
+                    {
+                        shapingAngle *= fac * fac / (terminalHomingRange * terminalHomingRange);
+                        ml.kappaAngle = shapingAngle;
+                        loftState = MissileBase.LoftStates.Midcourse;
+                    }
+                }
             }
 
             // If still in boost phase
@@ -751,10 +771,17 @@ namespace BDArmory.Guidances
                     }*/
                 }
 
-                gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
+                if (usegLimEq)
+                {
+                    accel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
+                }
+                else
+                {
+                    accel = accel.ProjectOnPlanePreNormalized(velDirection);
+                }
 
                 // Limit gs during climb
-                gLimit = Mathf.Min(gCompAccel.magnitude / g, ml.GetManeuvergLimit(0));
+                gLimit = Mathf.Min(accel.magnitude / g, ml.GetManeuvergLimit(0));
                 AoALimit = turnFactor < 1f ? AoALDMax : 30f;
 
                 if (-sinTarget > turnSin && targetAlt > maxAltitude)
@@ -961,10 +988,18 @@ namespace BDArmory.Guidances
             // Because adjustedPredictedRelImpactPoint is directly relative to the missile's CoM, we can directly use it instead of subtracting of the CoM
             //Vector3 accel = (K1 * ttgoInv) * (vF - currVel) + (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
             //accel = accel.ProjectOnPlanePreNormalized(velDirection);
-            gCompAccel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
-            // gLimit is based solely on acceleration normal to the velocity vector, technically this guidance law gives
-            // both normal acceleration and tangential acceleration but we can only really manage normal acceleration
-            gLimit = (gCompAccel).magnitude / (float)PhysicsGlobals.GravitationalAcceleration;
+            if (usegLimEq)
+            {
+                accel = (accel - ml.vessel.gravityForPos).ProjectOnPlanePreNormalized(velDirection);
+                // gLimit is based solely on acceleration normal to the velocity vector, technically this guidance law gives
+                // both normal acceleration and tangential acceleration but we can only really manage normal acceleration
+                gLimit = (accel).magnitude / (float)PhysicsGlobals.GravitationalAcceleration;
+            }
+            else
+            {
+                accel = accel.ProjectOnPlanePreNormalized(velDirection);
+                gLimit = -1f;
+            }
 
             // Debug output, useful for tuning
             // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
@@ -975,10 +1010,9 @@ namespace BDArmory.Guidances
             float leadTime2 = leadTime * leadTime;
             Vector3 currPos = ml.vessel.CoM;
             return new Vector3(
-                currPos.x + currVel.x * leadTime + gCompAccel.x * leadTime2,
-                currPos.y + currVel.y * leadTime + gCompAccel.y * leadTime2,
-                currPos.z + currVel.z * leadTime + gCompAccel.z * leadTime2);
-            //return ml.vessel.CoM + currVel * Mathf.Min(leadTime, 3f) + accel.ProjectOnPlanePreNormalized(velDirection) * Mathf.Min(leadTime * leadTime, 9f);
+                    currPos.x + currVel.x * leadTime + accel.x * leadTime2,
+                    currPos.y + currVel.y * leadTime + accel.y * leadTime2,
+                    currPos.z + currVel.z * leadTime + accel.z * leadTime2);
         }
 
         public static Vector3 VelTripleProduct(Vector3 currVel, Vector3 desiredDir)
