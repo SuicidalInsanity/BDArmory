@@ -317,6 +317,7 @@
     <Compile Include="Utils\ObjectPoolNonUnity.cs" />
     <Compile Include="Utils\OtherUtils.cs" />
     <Compile Include="Utils\PartExploderSystem.cs" />
+    <Compile Include="Utils\PIDUtils.cs" />
     <Compile Include="Utils\ProjectileUtils.cs" />
     <Compile Include="Utils\ResourceUtils.cs" />
     <Compile Include="Utils\SmoothingUtils.cs" />

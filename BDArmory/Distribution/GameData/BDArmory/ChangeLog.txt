@@ -6,6 +6,7 @@
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
+	- Fix setting world velocity not accounting for Krakensbane properly in some cases.
 	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
 	- Can now apply self-sealing tanks to cockpits with liquid fuel tankage.
 - UI:
@@ -45,6 +46,9 @@
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
 	- Add a "Retreat Distance" slider to the AI to allow customising the distance to retreat by when an orbiting vessel comes under attack.
+	- Overhaul the pilot AI's aiming and extending logic for level- and dive-bombing against both landed and airborne targets.
+		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
+		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate (or half the minimum for triangles) to prevent unphysical armor calculations.
 - Sensors:
@@ -85,7 +89,6 @@
 		- Nuclear warheads now have Arm/Detonate Action Groups.
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
-		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Lasers:
 		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance.
 		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
@@ -116,8 +119,8 @@
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
-      			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
-			- Custom turrets now compatible with turret multi-targeting.		
+			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+			- Custom turrets now compatible with turret multi-targeting.
 			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
 		- Switch detonation distance override sliders to use a semi-log range to allow larger distances.

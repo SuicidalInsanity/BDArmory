@@ -95,7 +95,8 @@ namespace BDArmory.Weapons.Missiles
             UI_FloatRange(minValue = 0f, maxValue = 180f, stepIncrement = 5f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]
         public float maxOffBoresight = 180;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DetonationDistanceOverride"), UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Detonation distance override
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DetonationDistanceOverride"),
+            UI_FloatSemiLogRange(minValue = 1f, maxValue = 1000f, sigFig = 2, withZero = true, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Detonation distance override
         public float DetonationDistance = -1;
         public float DetonationDistanceSqr => DetonationDistance > 0 ? DetonationDistance * DetonationDistance : -1; // Account for the -1 special value when checking against Sqr distance.
 
