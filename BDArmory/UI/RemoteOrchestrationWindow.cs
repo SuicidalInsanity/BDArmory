@@ -178,7 +178,7 @@ namespace BDArmory.UI
 
             _windowHeight = offset;
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectRemoteOrchestration); // Prevent it from going off the screen edges.
         }
     }

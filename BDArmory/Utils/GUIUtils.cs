@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections;
-using UniLinq;
+using System.Linq;
 using UnityEngine;
 
 using BDArmory.Control;
@@ -440,6 +440,15 @@ namespace BDArmory.Utils
         public static void ResizeGuiWindow(Rect windowrect, Vector2 mousePos)
         {
             GUIUtilsInstance.Reset();
+        }
+
+        /// <summary>
+        /// Only do GUI.DragWindow on the left mouse button.
+        /// </summary>
+        public static void DragWindow()
+        {
+            if (Event.current.button != 0) return;
+            GUI.DragWindow();
         }
 
         public class ExtraGUIRect

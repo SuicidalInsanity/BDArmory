@@ -459,6 +459,7 @@ namespace BDArmory.UI
                             nameof(AI.minAltitude),
                             nameof(AI.maxAltitude),
                             nameof(AI.bombingAltitude),
+                            nameof(AI.divebombingAngle),
 
                             nameof(AI.maxSpeed),
                             nameof(AI.takeOffSpeed),
@@ -499,7 +500,7 @@ namespace BDArmory.UI
                             nameof(AI.extendDistanceAirToAir),
                             nameof(AI.extendAngleAirToAir),
                             nameof(AI.extendDistanceAirToGroundGuns),
-                            nameof(AI.extendDistanceAirToGround),
+                            nameof(AI.extendDistanceBombing),
                             nameof(AI.extendTargetVel),
                             nameof(AI.extendTargetAngle),
                             nameof(AI.extendTargetDist),
@@ -657,11 +658,11 @@ namespace BDArmory.UI
                     {
                         var fieldInfo = AI.GetType().GetField(field);
                         if (fieldInfo != null)
-                        { fieldInfo.SetValue(AI, Convert.ChangeType(inputFields[field].currentValue, fieldInfo.FieldType)); }
+                        { fieldInfo.SetValue(AI, Convert.ChangeType(inputFields[field].CurrentValue, fieldInfo.FieldType)); }
                         else // Check if it's a property instead of a field.
                         {
                             var propInfo = AI.GetType().GetProperty(field);
-                            propInfo.SetValue(AI, Convert.ChangeType(inputFields[field].currentValue, propInfo.PropertyType));
+                            propInfo.SetValue(AI, Convert.ChangeType(inputFields[field].CurrentValue, propInfo.PropertyType));
                         }
                     }
                     catch (Exception e) { Debug.LogError($"[BDArmory.BDArmoryAIGUI]: Failed to set current value of {field}: " + e.Message); }
@@ -771,7 +772,7 @@ namespace BDArmory.UI
             stylesConfigured = true;
         }
 
-        enum Section { UpToEleven, PID, Altitude, Speed, Control, Evasion, Terrain, Ramming, Combat, Misc, FixedAutoTuneFields, VehicleType }; // Sections and other important toggles.
+        enum Section { UpToEleven, PID, Altitude, Speed, Control, Evasion, Terrain, Ramming, Combat, Bombing, Misc, FixedAutoTuneFields, VehicleType }; // Sections and other important toggles.
         static Dictionary<Section, bool> showSection = Enum.GetValues(typeof(Section)).Cast<Section>().ToDictionary(s => s, s => false);
         readonly Dictionary<Section, float> sectionHeights = [];
         const float contentBorder = 0.2f * entryHeight;
@@ -792,6 +793,11 @@ namespace BDArmory.UI
         Rect SettinglabelRect(float lines)
         {
             return new Rect(contentInnerMargin, lines * entryHeight, labelWidth, entryHeight);
+        }
+        Rect SettingSliderRect(float lines, float contentWidth, int pos, int of, int span)
+        {
+            var width = (contentWidth - 2 * contentMargin - labelWidth) / of;
+            return new Rect(sliderIndent + pos * width, (lines + 0.2f) * entryHeight, span * width, entryHeight);
         }
         Rect SettingSliderRect(float lines, float contentWidth)
         {
@@ -839,8 +845,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
@@ -868,8 +874,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
@@ -896,8 +902,8 @@ namespace BDArmory.UI
                         else
                         {
                             var field = inputFields[fieldName];
-                            field.tryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
-                            value = (float)field.currentValue;
+                            field.TryParseValue(GUI.TextField(SettingTextRect(line, width), field.possibleValue, 8, field.style));
+                            value = (float)field.CurrentValue;
                         }
                         if (contextTipsEnabled)
                         {
@@ -1014,6 +1020,9 @@ namespace BDArmory.UI
                                 showSection[Section.Control] = GUI.Toggle(SubsectionRect(line), showSection[Section.Control], StringUtils.Localize("#LOC_BDArmory_AIWindow_Control"), showSection[Section.Control] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Control"
 
                                 line += 1.2f;
+                                showSection[Section.Bombing] = GUI.Toggle(SubsectionRect(line), showSection[Section.Bombing], StringUtils.Localize("#LOC_BDArmory_AIWindow_Bombing"), showSection[Section.Bombing] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Bombing"
+
+                                line += 1.2f;
                                 showSection[Section.Evasion] = GUI.Toggle(SubsectionRect(line), showSection[Section.Evasion], StringUtils.Localize("#LOC_BDArmory_AIWindow_EvadeExtend"), showSection[Section.Evasion] ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Evasion"
 
                                 line += 1.2f;
@@ -1055,7 +1064,7 @@ namespace BDArmory.UI
                                 minHeight = contentTop + (line + 1f) * entryHeight + _windowMargin;
                             }
 
-                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Evasion] || showSection[Section.Terrain] || showSection[Section.Ramming] || showSection[Section.Misc])
+                            if (showSection[Section.PID] || showSection[Section.Altitude] || showSection[Section.Speed] || showSection[Section.Control] || showSection[Section.Bombing] || showSection[Section.Evasion] || showSection[Section.Terrain] || showSection[Section.Ramming] || showSection[Section.Misc])
                             {
                                 scrollViewVectors[AIType.PilotAI] = GUI.BeginScrollView(new Rect(contentIndent, contentTop + entryHeight * 1.5f, ColumnWidth * 2 - contentIndent, WindowHeight - entryHeight * 1.5f - 2 * contentTop), scrollViewVectors.GetValueOrDefault(AIType.PilotAI), new Rect(0, 0, contentWidth - contentMargin * 2, height + contentTop));
 
@@ -1342,11 +1351,7 @@ namespace BDArmory.UI
                                             inputFields["defaultAltitude"].SetCurrentValue(AI.defaultAltitude);
                                         }
                                     }
-                                    altLines = ContentEntry(ContentType.FloatSlider, altLines, contentWidth, ref AI.bombingAltitude, nameof(AI.bombingAltitude), "BombingAltitude", $"{AI.bombingAltitude:0}m");
 
-                                    AI.divebombing = GUI.Toggle(ToggleButtonRects(altLines, 0, 2, contentWidth), AI.divebombing,
-StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);//"Hard Min Altitude"
-                                    altLines += 1.25f;
                                     GUI.EndGroup();
                                     sectionHeights[Section.Altitude] = Mathf.Lerp(sectionHeight, altLines, 0.15f);
                                     altLines += 0.1f;
@@ -1403,6 +1408,50 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                     ctrlLines += 0.1f;
                                     contentHeight += ctrlLines * entryHeight;
                                 }
+                                if (showSection[Section.Bombing])
+                                {
+                                    float bombingLines = 0.2f;
+                                    var sectionHeight = sectionHeights.GetValueOrDefault(Section.Combat);
+                                    GUI.BeginGroup(new(contentBorder, contentHeight + bombingLines * entryHeight, contentWidth, sectionHeight * entryHeight), GUIContent.none, BDArmorySetup.SelectedButtonStyle);
+                                    bombingLines += 0.25f;
+
+                                    AI.divebombing = GUI.Toggle(ToggleButtonRects(bombingLines, 0, 2, contentWidth), AI.divebombing, StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle);
+                                    bombingLines += 1.25f;
+
+                                    bombingLines = ContentEntry(ContentType.FloatSlider, bombingLines, contentWidth, ref AI.bombingAltitude, nameof(AI.bombingAltitude), "BombingAltitude", $"{AI.bombingAltitude:0}m");
+
+                                    if (AI.divebombing)
+                                    {
+                                        bombingLines = ContentEntry(ContentType.FloatSlider, bombingLines, contentWidth, ref AI.divebombingAngle, nameof(AI.divebombingAngle), "DiveBombingAngle", $"{AI.divebombingAngle:0}°");
+
+                                        GUI.Label(SettinglabelRect(bombingLines), $"{StringUtils.Localize($"#LOC_BDArmory_AIWindow_DiveBombingOvershootPID")}:", Label);
+                                        if (BDArmorySettings.DEBUG_TELEMETRY) AI.divebombCorrection.debug = GUI.Toggle(new Rect(contentInnerMargin + labelWidth * 2 / 3, bombingLines * entryHeight, labelWidth / 3, entryHeight), AI.divebombCorrection.debug, "Debug", AI.divebombCorrection.debug ? BoldLabel : Label);
+                                        GUI.Label(SettingSliderRect(bombingLines, contentWidth, 0, 9, 1), $"P:{AI.divebombCorrection.P:0.0}", Label);
+                                        AI.divebombCorrection.P = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 1, 9, 2), AI.divebombCorrection.P, 0, 10), 0.1f);
+                                        GUI.Label(SettingSliderRect(bombingLines, contentWidth, 3, 9, 1), $"I:{AI.divebombCorrection.I:0.0}", Label);
+                                        AI.divebombCorrection.I = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 4, 9, 2), AI.divebombCorrection.I, 0, 1), 0.1f);
+                                        GUI.Label(SettingSliderRect(bombingLines, contentWidth, 6, 9, 1), $"D:{AI.divebombCorrection.D:0.0}", Label);
+                                        AI.divebombCorrection.D = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 7, 9, 2), AI.divebombCorrection.D, 0, 1), 0.1f);
+                                        ++bombingLines;
+                                    }
+
+                                    GUI.Label(SettinglabelRect(bombingLines), $"{StringUtils.Localize($"#LOC_BDArmory_AIWindow_BombingLateralPID")}:", Label);
+                                    if (BDArmorySettings.DEBUG_TELEMETRY) AI.bombingLateralCorrection.debug = GUI.Toggle(new Rect(contentInnerMargin + labelWidth * 2 / 3, bombingLines * entryHeight, labelWidth / 3, entryHeight), AI.bombingLateralCorrection.debug, "Debug", AI.bombingLateralCorrection.debug ? BoldLabel : Label);
+                                    GUI.Label(SettingSliderRect(bombingLines, contentWidth, 0, 9, 1), $"P:{AI.bombingLateralCorrection.P:0.0}", Label);
+                                    AI.bombingLateralCorrection.P = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 1, 9, 2), AI.bombingLateralCorrection.P, 0, 2), 0.1f);
+                                    GUI.Label(SettingSliderRect(bombingLines, contentWidth, 3, 9, 1), $"I:{AI.bombingLateralCorrection.I:0.0}", Label);
+                                    AI.bombingLateralCorrection.I = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 4, 9, 2), AI.bombingLateralCorrection.I, 0, 1), 0.1f);
+                                    GUI.Label(SettingSliderRect(bombingLines, contentWidth, 6, 9, 1), $"D:{AI.bombingLateralCorrection.D:0.0}", Label);
+                                    AI.bombingLateralCorrection.D = BDAMath.RoundToUnit(GUI.HorizontalSlider(SettingSliderRect(bombingLines, contentWidth, 7, 9, 2), AI.bombingLateralCorrection.D, 0, 1), 0.1f);
+                                    ++bombingLines;
+
+                                    bombingLines = ContentEntry(ContentType.FloatSlider, bombingLines, contentWidth, ref AI.extendDistanceBombing, nameof(AI.extendDistanceBombing), "BombingExtendDistance", $"{AI.extendDistanceBombing:0}m");
+
+                                    GUI.EndGroup();
+                                    sectionHeights[Section.Combat] = Mathf.Lerp(sectionHeight, bombingLines, 0.15f);
+                                    bombingLines += 0.1f;
+                                    contentHeight += bombingLines * entryHeight;
+                                }
                                 if (showSection[Section.Evasion])
                                 {
                                     float evadeLines = 0.2f;
@@ -1445,7 +1494,6 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToAir, nameof(AI.extendDistanceAirToAir), "ExtendDistanceAirToAir", $"{AI.extendDistanceAirToAir:0}m");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendAngleAirToAir, nameof(AI.extendAngleAirToAir), "ExtendAngleAirToAir", $"{AI.extendAngleAirToAir:0}°");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToGroundGuns, nameof(AI.extendDistanceAirToGroundGuns), "ExtendDistanceAirToGroundGuns", $"{AI.extendDistanceAirToGroundGuns:0}m");
-                                        evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendDistanceAirToGround, nameof(AI.extendDistanceAirToGround), "ExtendDistanceAirToGround", $"{AI.extendDistanceAirToGround:0}m");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetVel, nameof(AI.extendTargetVel), "ExtendTargetVel", $"{AI.extendTargetVel:0.0}");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetAngle, nameof(AI.extendTargetAngle), "ExtendTargetAngle", $"{AI.extendTargetAngle:0}°");
                                         evadeLines = ContentEntry(ContentType.FloatSlider, evadeLines, contentWidth, ref AI.extendTargetDist, nameof(AI.extendTargetDist), "ExtendTargetDist", $"{AI.extendTargetDist:0}m");
@@ -1623,6 +1671,21 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_ControlHelp_clamps"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //max G + max AoA
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_ControlHelp_modeSwitches"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //post-stall
                                         GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_ControlHelp_Immelmann"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //Immelmann turn angle + bias
+                                    }
+                                    if (showSection[Section.Bombing])
+                                    {
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_divebombing"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        if (AI.divebombing)
+                                        {
+                                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_divebombing_alt"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_divebombing_angle"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        }
+                                        else
+                                        {
+                                            GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_alt"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        }
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_PID"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20));
+                                        GUILayout.Label(StringUtils.Localize("#LOC_BDArmory_AIWindow_infolink_Pilot_BombingHelp_Extend"), infoLinkStyle, Width(ColumnWidth - (contentMargin * 4) - 20)); //extend distances
                                     }
                                     if (showSection[Section.Evasion])
                                     {
@@ -2380,7 +2443,7 @@ StringUtils.Localize("#LOC_BDArmory_AIWindow_DiveBomb"), AI.divebombing ? BDArmo
                     autoResizingWindow = false;
                 }
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint)
             {

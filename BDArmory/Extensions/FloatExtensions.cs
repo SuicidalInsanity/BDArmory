@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using BDArmory.Utils;
 
 namespace BDArmory.Extensions
 {
@@ -23,5 +24,13 @@ namespace BDArmory.Extensions
         /// <returns>The cube of f.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Cube(this float f) => f * f * f;
+
+        /// <summary>
+        /// A convenience function for BDAMath.Sqrt(f).
+        /// </summary>
+        /// <param name="f"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Sqrt(this float f) => BDAMath.Sqrt(f);
     }
 }

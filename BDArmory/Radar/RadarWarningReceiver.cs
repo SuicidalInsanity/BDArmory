@@ -696,7 +696,6 @@ namespace BDArmory.Radar
 
             if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectRwr.position);
             BDArmorySetup.WindowRectRwr = GUI.Window(94353, BDArmorySetup.WindowRectRwr, WindowRwr, "Radar Warning Receiver", GUI.skin.window);
-            GUIUtils.UseMouseEventInRect(RwrDisplayRect);
         }
 
         internal void WindowRwr(int windowID)
@@ -787,7 +786,7 @@ namespace BDArmory.Radar
             {
                 resizingWindow = true;
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint && resizingWindow)
             {
@@ -801,6 +800,7 @@ namespace BDArmory.Radar
             // End Resizing code.
 
             GUIUtils.RepositionWindow(ref BDArmorySetup.WindowRectRwr);
+            GUIUtils.UseMouseEventInRect(BDArmorySetup.WindowRectRwr);
         }
 
         public static void PingRWR(Vessel v, Vector3 source, RWRThreatTypes type, float persistTime, Vessel vSource)

@@ -302,7 +302,7 @@ namespace BDArmory.UI
             height = Mathf.Lerp(height, (line + labelLines + ammolines) * buttonHeight, 0.15f);
             windowRect.height = height;
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref windowRect);
         }
 

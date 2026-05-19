@@ -1378,7 +1378,7 @@ namespace BDArmory.Radar
             {
                 resizingWindow = true;
             }
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint && resizingWindow)
             {

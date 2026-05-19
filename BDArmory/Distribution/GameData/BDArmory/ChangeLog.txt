@@ -6,7 +6,9 @@ IMPROVEMENTS / FIXES
 	- Fix Battle Damage 'Proc Min Penetration'; now properly functions as a minimum threshold for BD to occur.
 	- Added additional conditions for BD to occur, should stop seeing gimbals jam, etc, from scratch-the-paint chip damage.
 	- Modded EVA kerbals with WMs no longer get their vessel type changed.
+	- Fix setting world velocity not accounting for Krakensbane properly in some cases.
 	- Fix thermal conduction values using the wrong config values during armor setup. Thermal properties of unmodified parts are now their default values.
+	- Can now apply self-sealing tanks to cockpits with liquid fuel tankage.
 - UI:
 	- Updated German localisation from EzBro.
 	- Updated Japanese localisation from Taka005.
@@ -17,6 +19,11 @@ IMPROVEMENTS / FIXES
 	- Fix Craft Utilities Tool GUI mis-reporting craft Lift-To-Weight on craft load in some cases.
 	- Add a toggle in the gameplay settings section for toggling the option for weapons respecting crossfeed.
 	- Add a debug toggle specifically for part HP.
+	- Team Icons Color Picker now includes 16+ color swatch for quick color selection.
+		- Right clicking a swatch changes the swatch color to the currently selected color (if it's unique).
+		- Clicking the '+' adds the currently selected color as a new swatch (if it's unique).
+		- Ctrl-right clicking a swatch removes the swatch.
+		- If fewer than 16 preset swatches are in the settings.cfg, then they are padded up to 16 with default values.
 - AI / WM:
 	- Fix Guard Mode using incorrect heat signature value for IR missile selection.
 	- Add "Attack Uncontrolled Tgt." Weight to the Weapon Manager, setting this to negative makes the AI prioritize targets under control, thus avoiding wasting ammo on vehicles with knocked out crews. NOTE: Be cautious when using this on aircraft, this includes g-loc'd pilots!
@@ -40,6 +47,9 @@ IMPROVEMENTS / FIXES
 		- Add support for acoustic torpedoes.
 		- Uncommented point defense missile debug statements (now accessible via Debug Missiles + Debug AI) since they weren't really providing much of a performance saving, and they give better insight into what's happening when issues arise.
 	- Add a "Retreat Distance" slider to the AI to allow customising the distance to retreat by when an orbiting vessel comes under attack.
+	- Overhaul the pilot AI's aiming and extending logic for level- and dive-bombing against both landed and airborne targets.
+		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
+		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 - Sensors:
@@ -77,9 +87,9 @@ IMPROVEMENTS / FIXES
 		- Fixed rockets sometimes not applying kinetic damage when they penetrate armor.
 	- Warheads:
 		- Add "bulletDmgMult" field to BDCustomWarhead modules, allowing their damage to be tuned.
+		- Nuclear warheads now have Arm/Detonate Action Groups.
 	- Bombs:
 		- Add Symmetrical Firing option to bombs to enable simultaneously dropping a symmetry twin bomb at the same time the selected bomb is dropped.
-		- Fix bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Lasers:
 		- Lasers now do less damage over distance based on atmospheric and water attenuation. Compared to before, lasers do more damage at closer range and in vacuum or high altitudes, but less damage at distance.
 		- Added LASER_ATM_GAMMA and LASER_WATER_GAMMA in the settings.cfg laser attenuation in atmosphere and water.
@@ -118,16 +128,20 @@ IMPROVEMENTS / FIXES
 			- Fix bugs due to "missileTransform" being incorrectly set to one of the dummy transform's "missileTransform", which, when discarded / replaced upon load, will result in a completely incorrect aim point. MMLs will now use their first launch transform as their aiming transform.
 			- Fix weight of missiles in magazines being incorrectly added to launcher mass.
 			- Fix unguided weapons suddenly becoming guided after being launched from a MML.
+			- Fix reloadable rails not accounting for missile thickness when spawning ordnance.
+			- Add in various missing fields when spawning ordnance on reloadable rails.
 		- Custom Turrets:
 			- Add Lofted Aimpoint and Loft Vel. Fac. settings to missiles on custom turrets, giving them function parity with regular missile turrets.
 			- Fix custom turrets with no radar failing the launch authorization check.
-      			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
-			- Custom turrets now compatible with turret multi-targeting		
+			- Fix custom turrets incorporating guns with turrets (M102 howitzer, etc.) not targeting aircraft.
+			- Custom turrets now compatible with turret multi-targeting.
 			- Can now use custom turrets for anti-missile point defense.
 		- Improved debug telemetry output format.
+		- Switch detonation distance override sliders to use a semi-log range to allow larger distances.
 - Competition:
 	- Fix Waypoint mode immediately moving to next heat on start when running a surface AI WP race with multiple racers when Activate Guard After Gate is disabled.
 	- Groundspawn Waypoint Races will now spawn racers in a grid start arrangement instead of circle spawn.
+	- Add hidden settings for the max slider values of various tournament options.
 - Mod Support:
 	- Hack support for JonnyOThan's TweakScale Rescaled fork, for now we assume all parts have cubic mass scaling, which is incorrect, but will temporarily patch support for the mod, pending official support.
 

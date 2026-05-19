@@ -13,7 +13,7 @@ using BDArmory.WeaponMounts;
 using KSP.UI.Screens;
 using System;
 using System.Collections.Generic;
-using UniLinq;
+using System.Linq;
 using UnityEngine;
 using static BDArmory.Radar.RadarWarningReceiver;
 
@@ -853,21 +853,13 @@ namespace BDArmory.Weapons.Missiles
 
         private void OnStageOnProximity(BaseField baseField, object o)
         {
-            UI_FloatRange detonationDistance = (UI_FloatRange)Fields[nameof(DetonationDistance)].uiControlEditor;
-
             if (StageToTriggerOnProximity != 0)
             {
-                detonationDistance = (UI_FloatRange)Fields[nameof(DetonationDistance)].uiControlEditor;
-
-                detonationDistance.maxValue = 8000;
-
-                detonationDistance.stepIncrement = 50;
+                ((UI_FloatSemiLogRange)Fields[nameof(DetonationDistance)].uiControlEditor).UpdateLimits(1, 8000);
             }
             else
             {
-                detonationDistance.maxValue = 100;
-
-                detonationDistance.stepIncrement = 1;
+                ((UI_FloatSemiLogRange)Fields[nameof(DetonationDistance)].uiControlEditor).UpdateLimits(1, 1000);
             }
         }
 
@@ -2151,7 +2143,7 @@ namespace BDArmory.Weapons.Missiles
 
             GUILayout.EndVertical();
 
-            GUI.DragWindow();
+            GUIUtils.DragWindow();
             GUIUtils.RepositionWindow(ref guiWindowRect);
         }
 

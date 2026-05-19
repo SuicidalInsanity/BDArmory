@@ -581,7 +581,7 @@ namespace BDArmory.UI
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
             GUI.DrawTexture(resizeRect, GUIUtils.resizeTexture, ScaleMode.StretchToFill, true);
             if (Event.current.type == EventType.MouseDown && resizeRect.Contains(Event.current.mousePosition)) resizingWindow = true;
-            else GUI.DragWindow();
+            else GUIUtils.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint) windowSize.x += Mouse.delta.x / BDArmorySettings.UI_SCALE_ACTUAL;
             #endregion
         }
