@@ -12,7 +12,7 @@ from typing import Union
 # Third party imports
 import matplotlib.pyplot as plt
 
-VERSION = "2.2"
+VERSION = "2.3"
 
 parser = argparse.ArgumentParser(description="PVP score parser", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('tournament', type=str, nargs='*', help="Tournament folder to parse.")
@@ -140,7 +140,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
             json.dump(pvp_score, f, indent=2)
 
         if args.csv:
-            lines = ['Player,' + ','.join(players) + ',Sum'] + [f'{player},' + ','.join(str(s) for s in score_totals[player].values()) + f",{sum(score_totals[player].values())}" for player in players]
+            lines = ['Player,' + ','.join(players) + ',Sum'] + [f'{player},' + ','.join(str(score_totals[player][other]) for other in players) + f",{sum(score_totals[player].values())}" for player in players]
             with open(tournamentDir / "pvp_scores.csv", 'w') as f:
                 f.write('\n'.join(lines))
         
