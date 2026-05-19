@@ -751,12 +751,12 @@ namespace BDArmory.Damage
             HPMode = !HPMode;
             if (!HPMode)
             {
-                Events["ToggleHPOption"].guiName = StringUtils.Localize("Revert to Legacy HP calc");
+                Events[nameof(ToggleHPOption)].guiName = StringUtils.Localize("Revert to Legacy HP calc");
                 maxHitPoints = oldmaxHitpoints;
             }
             else
             {
-                Events["ToggleHPOption"].guiName = StringUtils.Localize("Test Refactored Calc");
+                Events[nameof(ToggleHPOption)].guiName = StringUtils.Localize("Test Refactored Calc");
                 oldmaxHitpoints = maxHitPoints;
                 maxHitPoints = -1;
             }

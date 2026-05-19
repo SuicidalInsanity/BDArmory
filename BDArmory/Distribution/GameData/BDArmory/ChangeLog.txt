@@ -1,4 +1,4 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.

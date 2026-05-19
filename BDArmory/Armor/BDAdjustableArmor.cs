@@ -56,12 +56,12 @@ namespace BDArmory.Armor
             if (scaleneTri)
             {
                 Fields[nameof(Width)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidthL");
-                Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriSca");
+                Events[nameof(ToggleTriTypeOption)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriSca");
             }
             else
             {
                 Fields[nameof(Width)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidth");
-                Events["ToggleTriTypeOption"].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriIso");
+                Events[nameof(ToggleTriTypeOption)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriIso");
             }
             GUIUtils.RefreshAssociatedWindows(part);
             if (applySym)
@@ -103,11 +103,11 @@ namespace BDArmory.Armor
 
             if (!clamped)
             {
-                Events["ToggleScaleClamp"].guiName = StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText");
+                Events[nameof(ToggleScaleClamp)].guiName = StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_enabledText");
             }
             else
             {
-                Events["ToggleScaleClamp"].guiName = StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText");
+                Events[nameof(ToggleScaleClamp)].guiName = StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText");
             }
             GUIUtils.RefreshAssociatedWindows(part);
             if (applySym)
@@ -166,7 +166,7 @@ namespace BDArmory.Armor
             origBreakingTorque = part.breakingTorque;
             if (isTriangularPanel && TriangleType != "Right")
             {
-                Events["ToggleTriTypeOption"].guiActiveEditor = true;
+                Events[nameof(ToggleTriTypeOption)].guiActiveEditor = true;
                 scaleneTransforms = part.FindModelTransforms(ScaleneTransformName);
                 UI_FloatSemiLogRange SWidth = (UI_FloatSemiLogRange)Fields[nameof(scaleneWidth)].uiControlEditor;
                 SWidth.onFieldChanged = AdjustSWidth;

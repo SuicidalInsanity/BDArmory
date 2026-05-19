@@ -836,7 +836,7 @@ namespace BDArmory.Control
                 }
                 storedSettings[vesselName].Add(new System.Tuple<string, object>(field.Name, field.GetValue(this)));
             }
-            Events["RestoreSettings"].active = true;
+            Events[nameof(RestoreSettings)].active = true;
             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: Stored AI settings for {vesselName}: " + string.Join(", ", storedSettings[vesselName].Select(s => s.Item1 + "=" + s.Item2)));
         }
         [KSPEvent(advancedTweakable = false, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_RestoreSettings", active = false)]//Restore Settings
@@ -896,7 +896,7 @@ namespace BDArmory.Control
                 }
             }
             StoreFARControlSurfaceSettings();
-            Events["RestoreControlSurfaceSettings"].active = true;
+            Events[nameof(RestoreControlSurfaceSettings)].active = true;
         }
         private static Dictionary<string, Dictionary<uint, List<System.Tuple<string, object>>>> storedFARControlSurfaceSettings; // Stored control surface settings for each vessel.
         void StoreFARControlSurfaceSettings()
@@ -1955,14 +1955,14 @@ namespace BDArmory.Control
             SetOnUpToElevenChanged();
             if ((HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor) && storedSettings != null && storedSettings.ContainsKey(HighLogic.LoadedSceneIsFlight ? vessel.GetName() : EditorLogic.fetch.ship.shipName))
             {
-                Events["RestoreSettings"].active = true;
+                Events[nameof(RestoreSettings)].active = true;
             }
             if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
             {
                 var vesselName = HighLogic.LoadedSceneIsFlight ? vessel.GetName() : EditorLogic.fetch.ship.shipName;
                 if ((storedControlSurfaceSettings != null && storedControlSurfaceSettings.ContainsKey(vesselName)) || (storedFARControlSurfaceSettings != null && storedFARControlSurfaceSettings.ContainsKey(vesselName)))
                 {
-                    Events["RestoreControlSurfaceSettings"].active = true;
+                    Events[nameof(RestoreControlSurfaceSettings)].active = true;
                 }
             }
             GameEvents.onPartActionUIShown.Add(PAWFirstOpened);

@@ -1215,7 +1215,7 @@ namespace BDArmory.Control
         public void ToggleDLZ()
         {
             BDArmorySettings.USE_DLZ_LAUNCH_RANGE = !BDArmorySettings.USE_DLZ_LAUNCH_RANGE;
-            Events["ToggleDLZ"].guiName = $" {StringUtils.Localize("#LOC_BDArmory_MissilesRange")}: {(BDArmorySettings.USE_DLZ_LAUNCH_RANGE ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false"))}";//"Use Dynamic Launch Range: True/False
+            Events[nameof(ToggleDLZ)].guiName = $" {StringUtils.Localize("#LOC_BDArmory_MissilesRange")}: {(BDArmorySettings.USE_DLZ_LAUNCH_RANGE ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false"))}";//"Use Dynamic Launch Range: True/False
             GUIUtils.RefreshAssociatedWindows(part);
         }
         */
@@ -5161,7 +5161,7 @@ namespace BDArmory.Control
                     ModuleAnimateGeneric anim = bay.part.Modules.GetModule(bay.DeployModuleIndex) as ModuleAnimateGeneric;
                     if (anim == null) continue;
 
-                    string toggleOption = anim.Events["Toggle"].guiName;
+                    string toggleOption = anim.Events[nameof(anim.Toggle)].guiName;
                     if (toggleOption == "Open")
                     {
                         anim.Toggle();
@@ -5175,7 +5175,7 @@ namespace BDArmory.Control
                     ModuleAnimateGeneric anim = bay.part.Modules.GetModule(bay.DeployModuleIndex) as ModuleAnimateGeneric;
                     if (anim == null) continue;
 
-                    string toggleOption = anim.Events["Toggle"].guiName;
+                    string toggleOption = anim.Events[nameof(anim.Toggle)].guiName;
                     if (toggleOption == "Close")
                     {
                         anim.Toggle();
