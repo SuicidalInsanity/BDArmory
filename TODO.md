@@ -23,6 +23,10 @@
 
 - Requests from discord:
 	- Elevation offset for the wing command formation editor.
+	- Dive-bombing: reduce rolling for steep dives.
+	- After dropping last bombs, fly away from the bombs briefly to avoid wing-slapping them.
+	- Better heuristic to avoid dropping bombs when way off target.
+
 	- ? Add an action group trigger to the WM based on the current target being an enemy vessel within a custom distance. - Make it a collapsable section of custom triggers to include other conditions later.
 	- Artillery aiming support
 	- Lift stacking improvements with logical wing segments

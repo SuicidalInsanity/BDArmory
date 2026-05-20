@@ -361,7 +361,7 @@ namespace BDArmory.Damage
             }
             if (HullTypeNum < 1 || HullTypeNum > HullInfo.materialNames.Count)
             {
-                Debug.LogWarning($"[BDArmory.HitpointTracker]: Invalid HullTypeNum found on {part.partInfo.name} on {part.vessel.vesselName}. Resetting to Aluminium.");
+                Debug.LogWarning($"[BDArmory.HitpointTracker]: Invalid HullTypeNum found on {part.partInfo.name} on {(HighLogic.LoadedSceneIsFlight ? part.vessel.vesselName : EditorLogic.fetch.ship.shipName)}. Resetting to Aluminium.");
                 HullTypeNum = 2; // Invalid hull type number, revert to default Aluminium
             }
             if (SelectedArmorType == "Legacy Armor")
@@ -1238,12 +1238,13 @@ namespace BDArmory.Damage
                 {
                     ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == "None") + 1;
                 }
+                if (ArmorTypeNum < 1) ArmorTypeNum = 1; // Safety fallback in case the above doesn't work or someone has set the value to 0. Otherwise, the following throws an index exception.
                 armorInfo = ArmorInfo.armors[ArmorInfo.armorNames[(int)ArmorTypeNum - 1]]; //what does this return if armorname cannot be found (mod armor removed/not present in install?)
 
                 //if (SelectedArmorType != ArmorInfo.armorNames[(int)ArmorTypeNum - 1]) //armor selection overridden by Editor widget
                 //{
                 //	armorInfo = ArmorInfo.armors[SelectedArmorType];
-                //    ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == SelectedArmorType); //adjust part's current armor setting to match
+                //    ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == SelectedArmorType) + 1; //adjust part's current armor setting to match
                 //}
                 guiArmorTypeString = string.IsNullOrEmpty(armorInfo.localizedName) ? armorInfo.name : StringUtils.Localize(armorInfo.localizedName);
                 SelectedArmorType = armorInfo.name;
@@ -1319,7 +1320,7 @@ namespace BDArmory.Damage
                 Armor = part.IsMissile() ? 2 : 10;
                 if (ArmorPanel)
                 {
-                    ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == "Steel") + 1;
+                    ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == "Mild Steel") + 1;
                     Armor = 25;
                     Density = 7850;
                     Diffusivity = 48.5f;

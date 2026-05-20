@@ -1720,10 +1720,11 @@ namespace BDArmory.VesselSpawning
             var thumbURLRoot = Path.GetFullPath(Path.Combine(KSPUtil.ApplicationRootPath, "thumbs"));
 
             List<string> folders = [craftBrowser.BaseFolder];
-            if (recurse) folders.AddRange(Directory.GetDirectories(craftBrowser.BaseFolder, "*", SearchOption.AllDirectories));
+            if (recurse) folders.AddRange(Directory.GetDirectories(craftBrowser.BaseFolder, "*", SearchOption.AllDirectories).Select(p => p.Substring(craftBrowser.BaseFolder.Length).Trim('/')));
             foreach (var folder in folders)
             {
-                craftBrowser.ChangeFolder(facility, folder, true);
+                craftBrowser.ChangeFolder(facility, folder, false);
+                Debug.Log($"[BDArmory.VesselMover]: Generating thumbnails for craft files in {craftBrowser.CurrentFolder}");
                 var thumbURLSubDir = $"/{Path.Combine(facility.ToString(), craftBrowser.CurrentFolder.Substring(craftBrowser.BaseFolder.Length).Trim('/'))}";
                 bool hasShownMessage = false;
                 foreach (var craft in craftBrowser.craftList.Keys)
