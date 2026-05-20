@@ -1500,7 +1500,8 @@ namespace BDArmory.Damage
                 hullInfo = HullInfo.materials[HullInfo.materialNames[(int)HullTypeNum - 1]];
             }
             var OldHullMassAdjust = HullMassAdjust;
-            HullMassAdjust = (partMass * hullInfo.massMod) - partMass;
+            if (part.mass <= part.partInfo.MinimumMass) HullMassAdjust = part.partInfo.MinimumMass * (1f - 1f / hullInfo.massMod); // Avoids convergence failure due to min mass.
+            else HullMassAdjust = (partMass * hullInfo.massMod) - partMass;
             guiHullTypeString = string.IsNullOrEmpty(hullInfo.localizedName) ? hullInfo.name : StringUtils.Localize(hullInfo.localizedName);
             if (hullInfo.maxTemp > 0)
             {
@@ -1636,7 +1637,7 @@ namespace BDArmory.Damage
             {
                 if (++iterations > 10)
                 {
-                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp. Aborting."); // FIXME This shouldn't be happening.
+                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp of {part.name}. Aborting.");
                     break;
                 }
                 if (_updateMass)
