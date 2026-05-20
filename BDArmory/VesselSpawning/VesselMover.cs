@@ -1724,7 +1724,6 @@ namespace BDArmory.VesselSpawning
             foreach (var folder in folders)
             {
                 craftBrowser.ChangeFolder(facility, folder, false);
-                Debug.Log($"[BDArmory.VesselMover]: Generating thumbnails for craft files in {craftBrowser.CurrentFolder}");
                 var thumbURLSubDir = $"/{Path.Combine(facility.ToString(), craftBrowser.CurrentFolder.Substring(craftBrowser.BaseFolder.Length).Trim('/'))}";
                 bool hasShownMessage = false;
                 foreach (var craft in craftBrowser.craftList.Keys)
@@ -1741,6 +1740,7 @@ namespace BDArmory.VesselSpawning
                         if (!hasShownMessage)
                         {
                             ScreenMessages.PostScreenMessage($"{StringUtils.Localize("#LOC_BDArmory_CraftBrowser_GenerateMissingThumbnailsGeneratingForCraftIn")} {craftBrowser.DisplayFolder}", 5);
+                            Debug.Log($"[BDArmory.VesselMover]: Generating thumbnails for craft files in {craftBrowser.CurrentFolder}");
                             hasShownMessage = true;
                         }
                         // Load the ship and take a thumbnail of it.

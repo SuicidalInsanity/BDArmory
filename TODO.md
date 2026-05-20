@@ -8,6 +8,7 @@
 - Improve custom turret aiming.
 - Rewrite the waypoints mode competition/tournament code to get rid of the remote orchestration (TournamentCoordinator) stuff.
 	- Add a racing grid spawn layout MxN facing the first waypoint and get custom spawn templates working with waypoints.
+- Figure out why "[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp. Aborting." is triggering for some craft.
 
 - Clean up invalid UTF-8 chars by searching for `[^\x00-\x7f±°ñ—α→θψφρqω₀π²·δ↔∫•∈"γgμν‽Δ↕]` (add more to exclude as necessary). Ignore localisation files.
 

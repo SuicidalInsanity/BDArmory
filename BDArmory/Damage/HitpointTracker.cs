@@ -1636,7 +1636,7 @@ namespace BDArmory.Damage
             {
                 if (++iterations > 10)
                 {
-                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp. Aborting.");
+                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp. Aborting."); // FIXME This shouldn't be happening.
                     break;
                 }
                 if (_updateMass)
