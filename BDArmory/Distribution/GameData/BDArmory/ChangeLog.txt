@@ -50,6 +50,7 @@
 	- Overhaul the pilot AI's aiming and extending logic for level- and dive-bombing against both landed and airborne targets.
 		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
 		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
+	- Adjust the climb-slope limiter to allow maintaining a decent slope at high speeds (relative to min speed) even if the TWR drops to almost 0. This is particularly relevant for prop engines.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 - Sensors:
