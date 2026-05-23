@@ -990,6 +990,8 @@ namespace BDArmory.Weapons.Missiles
             }
         }
 
+
+        float timeOfLastLaserUpdate = -1f;
         protected void UpdateLaserTarget(bool gpsRequest = false)
         {
             if (TargetAcquired)
@@ -998,9 +1000,10 @@ namespace BDArmory.Weapons.Missiles
                 if (lockedCamera && !lockedCamera.gimbalLimitReached && lockedCamera.groundStabilized && lockedCamera.surfaceDetected) //active laser target
                 {
                     TargetPosition = lockedCamera.groundTargetPosition;
-                    TargetVelocity = isCLOS ? Vector3.zero : (TargetPosition - lastLaserPoint) / Time.fixedDeltaTime;
+                    TargetVelocity = (isCLOS || timeOfLastLaserUpdate <= 0f) ? Vector3.zero : (TargetPosition - VectorUtils.GetWorldSurfacePostion(lastLaserPoint, vessel.mainBody)) / (Time.time - timeOfLastLaserUpdate);
+                    timeOfLastLaserUpdate = Time.time;
                     TargetAcceleration = Vector3.zero;
-                    lastLaserPoint = TargetPosition;
+                    lastLaserPoint = lockedCamera.bodyRelativeGTP;
                     if (!gpsRequest)
                         _lockFailTimer = 0f;
 
@@ -1013,22 +1016,23 @@ namespace BDArmory.Weapons.Missiles
 
                     return;
                 }
-                
+
                 //lost active laser target, home on last known position
-                Ray smokeRay = new Ray(vessel.CoM, (isCLOS && lockedCamera) ? lockedCamera.transform.position : (lastLaserPoint - vessel.CoM));
+                Vector3 prevLaserPoint = VectorUtils.GetWorldSurfacePostion(lastLaserPoint, vessel.mainBody);
+                Ray smokeRay = new Ray(vessel.CoM, (isCLOS && lockedCamera) ? lockedCamera.transform.position : (prevLaserPoint - vessel.CoM));
                 if ((!isCLOS || lockedCamera) && CMSmoke.RaycastSmoke(smokeRay))
                 {
                     float angle = VectorUtils.FullRangePerlinNoise(0.75f * Time.time, 10) * BDArmorySettings.SMOKE_DEFLECTION_FACTOR;
                     TargetPosition = isCLOS ?
                         VectorUtils.RotatePointAround(lockedCamera.targetPointPosition, smokeRay.origin, vessel.up, angle) :
-                        VectorUtils.RotatePointAround(lastLaserPoint, vessel.CoM, vessel.up, angle);
-                    lastLaserPoint = TargetPosition;
+                        VectorUtils.RotatePointAround(prevLaserPoint, vessel.CoM, vessel.up, angle);
+                    lastLaserPoint = VectorUtils.WorldPositionToGeoCoords(TargetPosition, vessel.mainBody);
                     if (!gpsRequest)
                         _lockFailTimer = 0f;
                 }
                 else
                 {
-                    TargetPosition = lastLaserPoint;
+                    TargetPosition = prevLaserPoint;
                     if (!gpsRequest)
                     {
                         _lockFailTimer += Time.fixedDeltaTime;
