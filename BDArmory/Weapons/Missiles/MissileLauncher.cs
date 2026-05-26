@@ -3777,6 +3777,7 @@ namespace BDArmory.Weapons.Missiles
                             {
                                 loftSin = Mathf.Sin(LoftAngle * Mathf.Deg2Rad);
                                 kappaTermSin = Mathf.Sin(LoftTermAngle * Mathf.Deg2Rad);
+                                loftState = LoftStates.Boost;
                             }
                             float alpha = Mathf.Max(1f - BDAMath.Sqrt(Vector3.Distance(TargetPosition, vessel.CoM)) / 256f, 0.1f);
                             TargetAccelMovingAverage.Update(TargetAcceleration, alpha * alpha);
@@ -4795,10 +4796,10 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetingMode == TargetingModes.Gps || TargetingMode == TargetingModes.None || TargetingMode == TargetingModes.Inertial)
             {
-                output.AppendLine($"Terminal Maneuvering: {terminalGuidanceShouldActivate}");
+                //output.AppendLine($"Terminal Maneuvering: {terminalGuidanceShouldActivate}");
                 if (terminalGuidanceType != "")
                 {
-                    output.AppendLine($"Terminal Targeting: {terminalGuidanceType} @ distance: {terminalGuidanceDistance} m");
+                    output.AppendLine($"Terminal Targeting: {terminalGuidanceType} @ distance: {terminalGuidanceDistance} m, Default On: {terminalGuidanceShouldActivate}");
 
                     if (TargetingModeTerminal == TargetingModes.Radar)
                     {

@@ -669,6 +669,11 @@ namespace BDArmory.Guidances
                 targetAccel = Vector3.zero;
             }
 
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+            {
+                ml.debugString.AppendLine($"Kappa Guidance, Loft State: {loftState}, ttgo: {ttgo:F2}, Lead Time: {leadTime:F2}");
+            }
+
             Vector3 predictedImpactPoint = AIUtils.PredictPosition(targetPosition, targetVelocity, targetAccel, leadTime + TimeWarp.fixedDeltaTime);
             /*new Vector3(
                         targetPosition.x + leadTime * targetVelocity.x,
@@ -717,6 +722,10 @@ namespace BDArmory.Guidances
                         ml.kappaAngle = shapingAngle;
                         loftState = MissileBase.LoftStates.Midcourse;
                     }
+                }
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    ml.debugString.AppendLine($"Range/Midcourse Range: {(R * 0.001f):F2}/{(midcourseRange * 0.001f):F2} km, sinTarget/termSin/loftSin: {sinTarget:F2}/{termSin:F2}/{loftSin:F2}, Loft? {boostGuidance}");
                 }
             }
 
@@ -783,6 +792,11 @@ namespace BDArmory.Guidances
                 // Limit gs during climb
                 gLimit = Mathf.Min(accel.magnitude / g, ml.GetManeuvergLimit(0));
                 AoALimit = turnFactor < 1f ? AoALDMax : 30f;
+
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    ml.debugString.AppendLine($"turnAngle: {(loftAngle * turnFactor):F2}°, turnSin: {turnSin:F2}, currTurng: {((turnFactor < 1f && turnFactor > -1f) ? (currSpeed * currSpeed * turnFactorMult * loftAngle * Mathf.Deg2Rad * turnSin) : 0f) / g:F2}");
+                }
 
                 if (-sinTarget > turnSin && targetAlt > maxAltitude)
                 {
@@ -953,6 +967,10 @@ namespace BDArmory.Guidances
             if (shapingAngle == 0f)
             {
                 accel = (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    ml.debugString.AppendLine($"K1: {K1:F2}, K2: {K2:F2}, posErr: {adjustedPredictedRelImpactPoint.ProjectOnPlanePreNormalized(velDirection)}, Shaping Guidance: False");
+                }
             }
             else
             {
@@ -969,6 +987,12 @@ namespace BDArmory.Guidances
                     currSpeed * (cos * vF.x - sin * (float)targetPredUp.x),
                     currSpeed * (cos * vF.y - sin * (float)targetPredUp.y),
                     currSpeed * (cos * vF.z - sin * (float)targetPredUp.z));
+
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                {
+                    ml.debugString.AppendLine($"K1: {K1:F2}, K2: {K2:F2}, posErr: {adjustedPredictedRelImpactPoint.ProjectOnPlanePreNormalized(velDirection)}, Shaping Guidance: True, velErr: {vF - currVel}, shapingAngle: {shapingAngle:F2}°");
+                }
+
                 K1 *= ttgoInv;
                 K2 *= ttgoInv * ttgoInv;
                 accel = new Vector3(
