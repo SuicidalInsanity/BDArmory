@@ -53,6 +53,8 @@
 	- Adjust the climb-slope limiter to allow maintaining a decent slope at high speeds (relative to min speed) even if the TWR drops to almost 0. This is particularly relevant for prop engines.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
+	- Armor cost, some stats tweaked to be more reasonable.
+	- Adds Reinforced Concrete and Silicon Carbide armor materials.
 - Sensors:
   - Improvements to target camera target switching behavior, should no longer switch to a new target while current laser ordnance is still in the air.
   - Multiple target cam support, craft with multiple cams can now simultaneously engage multiple targets with laser ordnance, one per camera.
