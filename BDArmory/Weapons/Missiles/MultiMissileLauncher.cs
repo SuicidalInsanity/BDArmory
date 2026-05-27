@@ -359,6 +359,16 @@ namespace BDArmory.Weapons.Missiles
             else Fields["attachOffset"].guiActiveEditor = false;
 
             UpdateLengthAndScale(Scale, Length, attachOffset);
+            if (HighLogic.LoadedSceneIsFlight)
+            {
+                DragCube DragCube = DragCubeSystem.Instance.RenderProceduralDragCube(part);
+                part.DragCubes.Procedural = true;
+                part.DragCubes.ClearCubes();
+                part.DragCubes.Cubes.Add(DragCube);
+                part.DragCubes.ResetCubeWeights();
+                part.DragCubes.ForceUpdate(true, true, false);
+                part.DragCubes.SetDragWeights();
+            }
         }
 
         public void updateMaxOffBoresight(float maxOffBoresight)

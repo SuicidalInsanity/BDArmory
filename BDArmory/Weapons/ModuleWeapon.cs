@@ -103,7 +103,7 @@ namespace BDArmory.Weapons
         private float fireAnimSpeed = 1;
         //is set when setting up animation so it plays a full animation for each shot (animation speed depends on rate of fire)
 
-        public float bulletBallisticCoefficient;
+        //public float bulletBallisticCoefficient;
 
         public WeaponTypes eWeaponType;
 
@@ -585,8 +585,8 @@ namespace BDArmory.Weapons
 
         //drag area of the bullet in m^2; equal to Cd * A with A being the frontal area of the bullet; as a first approximation, take Cd to be 0.3
         //bullet mass / bullet drag area.  Used in analytic estimate to speed up code
-        [KSPField]
-        public float bulletDragArea = 1.209675e-5f;
+        //[KSPField]
+        //public float bulletDragArea = 1.209675e-5f;
 
         private BulletInfo bulletInfo;
         private BulletInfo[] bulletInfoList;
@@ -2462,12 +2462,14 @@ namespace BDArmory.Weapons
                                     graphicsInfo.tracerEndWidth = tracerEndWidth;
                                     graphicsInfo.tracerLength = tracerLength;
                                     graphicsInfo.tracerLuminance = tracerLuminance;
+                                    graphicsInfo.smokeTexturePath = smokeTexturePath;
                                 }
                                 else
                                 {
                                     graphicsInfo.tracerStartWidth = nonTracerWidth;
                                     graphicsInfo.tracerEndWidth = nonTracerWidth;
                                     graphicsInfo.tracerLuminance = bulletLuminance;
+                                    graphicsInfo.smokeTexturePath = ""; //need to null this else every round will have smoke trails
 
                                     if (!string.IsNullOrEmpty(smokeTexturePath))
                                     {
@@ -2895,7 +2897,7 @@ namespace BDArmory.Weapons
                                             }
                                             else
                                             {
-                                                p.skinTemperature += (laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
+                                                p.skinTemperature += (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
 
                                                 if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
                                             }
