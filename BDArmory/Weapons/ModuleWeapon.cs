@@ -2777,7 +2777,7 @@ namespace BDArmory.Weapons
                                             /////////////////////////////////////////////////
                                             if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(p.vessel.vesselType))
                                             {
-                                                float EMPDamage = initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
+                                                float EMPDamage = laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
                                                 Part closestCommand = null;
                                                 float distToCommandSqr = float.PositiveInfinity; //lets find out which command part is closest to the hit
                                                 Vector3 commandDir = Vector3.zero;
@@ -2896,7 +2896,7 @@ namespace BDArmory.Weapons
                                             }
                                             else
                                             {
-                                                p.skinTemperature += (laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
+                                                p.skinTemperature += (initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime * (BDArmorySettings.DMG_MULTIPLIER / 100))); //add modifier to adjust damage by armor diffusivity value?
 
                                                 if (BDArmorySettings.DEBUG_WEAPONS) Debug.Log($"[BDArmory.ModuleWeapon]: Heatray Applying {damage} heat to {p.name}");
                                             }
