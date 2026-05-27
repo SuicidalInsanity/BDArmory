@@ -1159,6 +1159,33 @@ namespace BDArmory.Weapons.Missiles
                 }
             }
 
+            if (GuidanceMode != GuidanceModes.Kappa)
+            {
+                Fields[nameof(kappaAngle)].guiActive = false;
+                Fields[nameof(kappaAngle)].guiActiveEditor = false;
+            }
+            else
+            {
+                if (!GameSettings.ADVANCED_TWEAKABLES)
+                {
+                    Fields[nameof(kappaAngle)].guiActiveEditor = false;
+                }
+                else
+                {
+                    Fields[nameof(kappaAngle)].guiActiveEditor = true;
+                }
+
+                if (!BDArmorySettings.DEBUG_MISSILES)
+                {
+                    Fields[nameof(kappaAngle)].guiActive = false;
+
+                }
+                else
+                {
+                    Fields[nameof(kappaAngle)].guiActive = true;
+                }
+            }
+
             if (GuidanceMode != GuidanceModes.AAMLoft)
             {
                 Fields[nameof(LoftMinAltitude)].guiActive = false;

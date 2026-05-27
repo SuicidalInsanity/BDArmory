@@ -238,6 +238,9 @@ namespace BDArmory.Weapons.Missiles
                 Fields["SoftAscent"].guiActiveEditor = GuidanceMode == GuidanceModes.AGMBallistic;
             }
 
+            Fields[nameof(kappaAngle)].guiActive = false;
+            Fields[nameof(kappaAngle)].guiActiveEditor = false;
+
             if (GuidanceMode != GuidanceModes.AAMLoft)
             {
                 Fields[nameof(LoftMaxAltitude)].guiActive = false;

@@ -419,7 +419,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public bool terminalHoming = false;
 
-        [KSPField]
+        [KSPField(isPersistant = false, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_KappaAngle"), // Kappa Shaping Angle
+            UI_FloatRange(minValue = 0f, maxValue = 90f, stepIncrement = 0.5f, scene = UI_Scene.Flight, affectSymCounterparts = UI_Scene.All)]
         public float kappaAngle = 45; // Kappa Guidance Vertical Shaping Angle
 
         [KSPField]
