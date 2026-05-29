@@ -634,6 +634,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // Debug.Log($"DEBUG {Time.time} Correcting for floating origin shift of {(Vector3)BDKrakensbane.FloatingOriginOffset:G3} ({(Vector3)BDKrakensbane.FloatingOriginOffsetNonKrakensbane:G3}) for {vessel.vesselName} ({SourceVessel})");
                     TargetPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                    laserStartPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
                 }
             }
         }
