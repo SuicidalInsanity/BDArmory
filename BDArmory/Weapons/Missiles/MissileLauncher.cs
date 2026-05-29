@@ -2337,7 +2337,7 @@ namespace BDArmory.Weapons.Missiles
 
         private void SummarizeEngagement()
         {
-            Debug.Log($"[BDArmory.MissileLauncher]: Missile: {shortName} with UUID: {vessel.id} has concluded engagement with target: {debugGuidanceTarget}{(targetVessel ? $" ({targetVessel.Name()} with UUID {targetVessel.ID()})" : "")} at TimeIndex: {TimeIndex} s with a final distance of: {(vessel.CoM - (targetVessel ? targetVessel.position : TargetPosition)).magnitude} m and closing velocity of: {(vessel.Velocity() - (targetVessel && targetVessel.Vessel ? targetVessel.Vessel.Velocity() : (Vector3d)TargetVelocity)).magnitude} m/s at an altitude of: {vessel.altitude} m with air density: {vessel.atmDensity} kg/m³.");
+            Debug.Log($"[BDArmory.MissileLauncher]: Missile: {shortName} with UUID: {vessel.id} has concluded engagement with target: {debugGuidanceTarget}{(targetVessel ? $" ({targetVessel.Name()} with UUID {targetVessel.ID()})" : "")} at TimeIndex: {TimeIndex} s with a final distance of: {(vessel.CoM - (targetVessel ? targetVessel.position : TargetPosition)).magnitude} m and closing velocity of: {(vessel.Velocity() - (targetVessel && targetVessel.Vessel ? targetVessel.Vessel.Velocity() : (Vector3d)TargetVelocity)).magnitude} m/s at a terminal airspeed of: {vessel.srfSpeed} m/s at an altitude of: {vessel.altitude} m with air density: {vessel.atmDensity} kg/m³.");
         }
 
         private void CheckMiss()

@@ -984,9 +984,11 @@ namespace BDArmory.Weapons.Missiles
                 if (lockedCamera)
                 {
                     TargetAcquired = true;
-                    TargetPosition = lastLaserPoint = lockedCamera.groundTargetPosition;
+                    TargetPosition = lockedCamera.groundTargetPosition;
+                    lastLaserPoint = lockedCamera.bodyRelativeGTP;
                     targetingPod = lockedCamera;
                     lockedCamera.guidingOrdnance = true;
+                    timeOfLastLaserUpdate = -1f;
                 }
             }
         }
