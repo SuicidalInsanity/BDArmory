@@ -1,4 +1,8 @@
-﻿v1.13.0.0
+﻿IMPROVEMENTS / FIXES
+- UI:
+	- Don't drag the targeting window when slewing with the mouse.
+
+v1.13.0.0
 IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
