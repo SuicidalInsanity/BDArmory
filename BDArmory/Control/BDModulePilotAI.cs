@@ -836,7 +836,7 @@ namespace BDArmory.Control
                 }
                 storedSettings[vesselName].Add(new System.Tuple<string, object>(field.Name, field.GetValue(this)));
             }
-            Events["RestoreSettings"].active = true;
+            Events[nameof(RestoreSettings)].active = true;
             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.BDModulePilotAI]: Stored AI settings for {vesselName}: " + string.Join(", ", storedSettings[vesselName].Select(s => s.Item1 + "=" + s.Item2)));
         }
         [KSPEvent(advancedTweakable = false, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_RestoreSettings", active = false)]//Restore Settings
@@ -896,7 +896,7 @@ namespace BDArmory.Control
                 }
             }
             StoreFARControlSurfaceSettings();
-            Events["RestoreControlSurfaceSettings"].active = true;
+            Events[nameof(RestoreControlSurfaceSettings)].active = true;
         }
         private static Dictionary<string, Dictionary<uint, List<System.Tuple<string, object>>>> storedFARControlSurfaceSettings; // Stored control surface settings for each vessel.
         void StoreFARControlSurfaceSettings()
@@ -1955,14 +1955,14 @@ namespace BDArmory.Control
             SetOnUpToElevenChanged();
             if ((HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor) && storedSettings != null && storedSettings.ContainsKey(HighLogic.LoadedSceneIsFlight ? vessel.GetName() : EditorLogic.fetch.ship.shipName))
             {
-                Events["RestoreSettings"].active = true;
+                Events[nameof(RestoreSettings)].active = true;
             }
             if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
             {
                 var vesselName = HighLogic.LoadedSceneIsFlight ? vessel.GetName() : EditorLogic.fetch.ship.shipName;
                 if ((storedControlSurfaceSettings != null && storedControlSurfaceSettings.ContainsKey(vesselName)) || (storedFARControlSurfaceSettings != null && storedFARControlSurfaceSettings.ContainsKey(vesselName)))
                 {
-                    Events["RestoreControlSurfaceSettings"].active = true;
+                    Events[nameof(RestoreControlSurfaceSettings)].active = true;
                 }
             }
             GameEvents.onPartActionUIShown.Add(PAWFirstOpened);
@@ -2621,6 +2621,7 @@ namespace BDArmory.Control
                                     steerMode = SteerModes.Manoeuvering;
                                     isBombing = true;
                                 }
+                                target = vesselPos + GetLimitedClimbDirectionForSpeed(target - vesselPos); // Limit climb rate to avoid stalling.
                                 finalBombingAltitude = Mathf.Max(0, (float)v.altitude) + bombingAltOverTarget;
                                 DivebombReleaseMaxAltitude = finalBombingAltitude + terrainAlertThreatRange;
                                 DivebombReleaseMinSafeAltitude = Mathf.Max(0, (float)v.altitude) + terrainAlertThreshold;
@@ -3443,6 +3444,7 @@ namespace BDArmory.Control
                 if (targetRadarAltitude < defaultAltitude)
                     target += upDirection * ((float)vessel.radarAltitude - targetRadarAltitude); // Account for terrain changes if below defaultAltitude.
                 target = FlightPosition(target, extendDesiredMinRadarAltitude); // Further adjustments for speed, situation, etc. and desired minimum altitude after extending.
+                target = vesselPos + GetLimitedClimbDirectionForSpeed(target - vesselPos); // Limit climb rate to avoid stalling.
                 if (regainEnergy)
                 {
                     RegainEnergy(s, target - vessel.CoM);
@@ -4732,16 +4734,19 @@ namespace BDArmory.Control
         {
             if (Vector3.Dot(direction, upDirection) < 0)
             {
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"climb limit angle: unlimited");
                 return direction; //only use this if climbing
             }
 
             Vector3 planarDirection = direction.ProjectOnPlanePreNormalized(upDirection);
+            float speedRatio = (float)vessel.srfSpeed / minSpeed;
+            float angleLimit = Mathf.Clamp(speedRatio * (speedController.TWR + 1f) * (speedController.TWR + speedRatio), 5, 90);
+            if (VectorUtils.Angle(direction, planarDirection) < angleLimit)
+            {
+                return direction; // We're within the limit.
+            }
 
-            float angle = Mathf.Clamp((float)vessel.srfSpeed * 0.15f * speedController.TWR, 5, 90);
-
-            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"climb limit angle: {angle}");
-            return Vector3.RotateTowards(planarDirection, direction, angle * Mathf.Deg2Rad, 0);
+            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.AppendLine($"climb limit angle: {angleLimit}");
+            return Vector3.RotateTowards(planarDirection, direction, angleLimit * Mathf.Deg2Rad, 0);
         }
 
         void UpdateGAndAoALimits(FlightCtrlState s)

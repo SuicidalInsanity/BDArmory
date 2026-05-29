@@ -2238,9 +2238,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ChangetoLowAltitudeRange", active = true)]//Change to Low Altitude Range
         public void CruiseAltitudeRange()
         {
-            if (Events["CruiseAltitudeRange"].guiName == "Change to Low Altitude Range")
+            if (Events[nameof(CruiseAltitudeRange)].guiName == "Change to Low Altitude Range")
             {
-                Events["CruiseAltitudeRange"].guiName = "Change to High Altitude Range";
+                Events[nameof(CruiseAltitudeRange)].guiName = "Change to High Altitude Range";
 
                 UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudeField.maxValue = 500f;
@@ -2249,7 +2249,7 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                Events["CruiseAltitudeRange"].guiName = "Change to Low Altitude Range";
+                Events[nameof(CruiseAltitudeRange)].guiName = "Change to Low Altitude Range";
                 UI_FloatRange cruiseAltitudField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudField.maxValue = 25000f;
                 cruiseAltitudField.minValue = 500;

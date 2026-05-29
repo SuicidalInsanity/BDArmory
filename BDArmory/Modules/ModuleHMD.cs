@@ -32,12 +32,12 @@ namespace BDArmory.Modules
             HMD = !HMD;
             if (!HMD)
             {
-                Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Add HMD"
+                Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Add HMD"
                 _HMDCost = 0;
             }
             else
             {
-                Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
+                Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
                 _HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
             }
             GUIUtils.RefreshAssociatedWindows(part);
@@ -53,12 +53,12 @@ namespace BDArmory.Modules
 
                     if (!HMD)
                     {
-                        HMDSym.Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Enable self-sealing tank"
+                        HMDSym.Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Enable self-sealing tank"
                         HMDSym._HMDCost = 0;
                     }
                     else
                     {
-                        HMDSym.Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Disable self-sealing tank"
+                        HMDSym.Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Disable self-sealing tank"
                         HMDSym._HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
                     }
                     GUIUtils.RefreshAssociatedWindows(pSym.Current);
@@ -76,14 +76,14 @@ namespace BDArmory.Modules
             {
                 if (cockpit.minimumCrew >= 1)
                 {
-                    Events["ToggleHMD"].guiActiveEditor = true;
+                    Events[nameof(ToggleHMD)].guiActiveEditor = true;
                     if (!HMD)
                     {
-                        Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Add HMD"
+                        Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_On");//"Add HMD"
                     }
                     else
                     {
-                        Events["ToggleHMD"].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
+                        Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
                         _HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
                     }
                 }

@@ -1000,8 +1000,8 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = false;
                 Fields[nameof(CruiseSpeed)].guiActive = false;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = false;
-                Events["CruiseAltitudeRange"].guiActive = false;
-                Events["CruiseAltitudeRange"].guiActiveEditor = false;
+                Events[nameof(CruiseAltitudeRange)].guiActive = false;
+                Events[nameof(CruiseAltitudeRange)].guiActiveEditor = false;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = false;
                 Fields[nameof(CruisePopup)].guiActive = false;
                 Fields[nameof(CruisePopup)].guiActiveEditor = false;
@@ -1039,8 +1039,8 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = true;
                 Fields[nameof(CruiseSpeed)].guiActive = true;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = true;
-                Events["CruiseAltitudeRange"].guiActive = true;
-                Events["CruiseAltitudeRange"].guiActiveEditor = true;
+                Events[nameof(CruiseAltitudeRange)].guiActive = true;
+                Events[nameof(CruiseAltitudeRange)].guiActiveEditor = true;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = true;
                 if (canCruisePopup)
                 {

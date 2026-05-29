@@ -47,12 +47,12 @@ namespace BDArmory.Weapons
             if (Armed)
             {
                 guiStatusString = "ARMED";
-                Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+                Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
             }
             else
             {
                 guiStatusString = "Safe";
-                Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
+                Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
             }
         }
 
@@ -67,12 +67,12 @@ namespace BDArmory.Weapons
             if (IFF_On)
             {
                 guiIFFString = "Ignore Allies";
-                Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");//"Enable Engage Options"
+                Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Disable IFF");//"Enable Engage Options"
             }
             else
             {
                 guiIFFString = "Indescriminate";
-                Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
+                Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
             }
         }
 
@@ -100,7 +100,7 @@ namespace BDArmory.Weapons
         {
             Armed = true;
             guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+            Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
         }
 
         [KSPAction("Detonate")]
@@ -179,12 +179,12 @@ namespace BDArmory.Weapons
         {
             if (!isMissile)
             {
-                Events["Toggle"].guiActiveEditor = true;
-                Events["Toggle"].guiActive = true;
-                Events["ToggleIFF"].guiActiveEditor = true;
-                Events["ToggleIFF"].guiActive = true;
-                Events["ToggleProx"].guiActiveEditor = true;
-                Events["ToggleProx"].guiActive = true;
+                Events[nameof(Toggle)].guiActiveEditor = true;
+                Events[nameof(Toggle)].guiActive = true;
+                Events[nameof(ToggleIFF)].guiActiveEditor = true;
+                Events[nameof(ToggleIFF)].guiActive = true;
+                Events[nameof(ToggleProx)].guiActiveEditor = true;
+                Events[nameof(ToggleProx)].guiActive = true;
                 Fields[nameof(guiStatusString)].guiActiveEditor = true;
                 Fields[nameof(guiStatusString)].guiActive = true;
                 Fields[nameof(guiIFFString)].guiActiveEditor = true;
@@ -192,22 +192,22 @@ namespace BDArmory.Weapons
                 if (Armed)
                 {
                     guiStatusString = "ARMED";
-                    Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");
+                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");
                 }
                 else
                 {
                     guiStatusString = "Safe";
-                    Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");
+                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");
                 }
                 if (IFF_On)
                 {
                     guiIFFString = "Ignore Allies";
-                    Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");
+                    Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Disable IFF");
                 }
                 else
                 {
                     guiIFFString = "Indescriminate";
-                    Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");
+                    Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Enable IFF");
                 }
                 if (manualOverride)
                 {
@@ -223,12 +223,12 @@ namespace BDArmory.Weapons
             }
             else
             {
-                Events["Toggle"].guiActiveEditor = false;
-                Events["Toggle"].guiActive = false;
-                Events["ToggleIFF"].guiActiveEditor = false;
-                Events["ToggleIFF"].guiActive = false;
-                Events["ToggleProx"].guiActiveEditor = false;
-                Events["ToggleProx"].guiActive = false;
+                Events[nameof(Toggle)].guiActiveEditor = false;
+                Events[nameof(Toggle)].guiActive = false;
+                Events[nameof(ToggleIFF)].guiActiveEditor = false;
+                Events[nameof(ToggleIFF)].guiActive = false;
+                Events[nameof(ToggleProx)].guiActiveEditor = false;
+                Events[nameof(ToggleProx)].guiActive = false;
                 Fields[nameof(guiStatusString)].guiActiveEditor = false;
                 Fields[nameof(guiStatusString)].guiActive = false;
                 Fields[nameof(guiIFFString)].guiActiveEditor = false;

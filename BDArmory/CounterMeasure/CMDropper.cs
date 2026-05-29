@@ -102,7 +102,7 @@ namespace BDArmory.CounterMeasure
             if (part.FindModuleImplementing<MissileLauncher>() != null)
             {
                 isMissileCM = true;
-                Events["EventDropCM"].guiActive = false;
+                Events[nameof(EventDropCM)].guiActive = false;
                 Fields[nameof(ejectVelocity)].guiActive = false;
                 Fields[nameof(priority)].guiActive = false;
                 Fields[nameof(ejectVelocity)].guiActiveEditor = false;
@@ -111,7 +111,7 @@ namespace BDArmory.CounterMeasure
             else if (SpawnUtils.IsModularMissilePart(part))
             {
                 isMissileCM = true;
-                Events["EventDropCM"].guiActive = false;
+                Events[nameof(EventDropCM)].guiActive = false;
             }
 
             if (HighLogic.LoadedSceneIsFlight)

@@ -236,7 +236,7 @@ namespace BDArmory.WeaponMounts
 
             if (!autoReturn)
             {
-                Events["ReturnTurret"].guiActive = false;
+                Events[nameof(ReturnTurret)].guiActive = false;
             }
 
             if ((hasDeployAnimation && !startsDeployed) && !(isReloading && deployBlocksReload))
@@ -273,7 +273,7 @@ namespace BDArmory.WeaponMounts
 
             if (!autoReturn)
             {
-                Events["ReturnTurret"].guiActive = true;
+                Events[nameof(ReturnTurret)].guiActive = true;
             }
         }
 
@@ -361,7 +361,7 @@ namespace BDArmory.WeaponMounts
                 deployAnimState = GUIUtils.SetUpSingleAnimation(deployAnimationName, part);
                 if (state == StartState.Editor && !startsDeployed)
                 {
-                    Events["EditorToggleAnimation"].guiActiveEditor = true;
+                    Events[nameof(EditorToggleAnimation)].guiActiveEditor = true;
                 }
                 if (startsDeployed)
                 {
@@ -406,7 +406,7 @@ namespace BDArmory.WeaponMounts
 
                 if (!autoReturn)
                 {
-                    Events["ReturnTurret"].guiActive = true;
+                    Events[nameof(ReturnTurret)].guiActive = true;
                 }
             }
         }
