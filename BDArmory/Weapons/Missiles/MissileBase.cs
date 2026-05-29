@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile };
 
         protected MissileType _missileType = MissileType.Missile;
 
@@ -1068,7 +1068,7 @@ namespace BDArmory.Weapons.Missiles
                     SetLaserTargeting();
                     return;
                 }
-                
+
                 if (!gpsRequest)
                 {
                     _lockFailTimer += Time.fixedDeltaTime;
@@ -2048,28 +2048,20 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     int closestHitIndex = -1;
                                     float closestDist = float.MaxValue;
-                                    for (int i = 0; i < proximityHits.Length; i++)
+                                    for (int i = 0; i < hitCount; i++)
                                     {
                                         RaycastHit hit = proximityHits[i];
 
                                         if (closestDist < hit.distance) continue;
 
-                                        try
-                                        {
-                                            Part hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
-                                            if (hitPart == null) continue;
-                                            if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
+                                        Part hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                                        if (hitPart == null) continue;
+                                        if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
 
-                                            if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
-                                            {
-                                                closestHitIndex = i;
-                                                closestDist = hit.distance;
-                                            }
-                                        }
-                                        catch (Exception e)
+                                        if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
                                         {
-                                            // ignored
-                                            Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonationState: " + e.Message + "\n" + e.StackTrace);
+                                            closestHitIndex = i;
+                                            closestDist = hit.distance;
                                         }
                                     }
 
