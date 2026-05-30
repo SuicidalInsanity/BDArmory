@@ -4535,7 +4535,13 @@ namespace BDArmory.Weapons.Missiles
             homingModeTerminal = ParseHomingType(terminalHomingType);
 
             if (TargetingMode == TargetingModes.Gps)
+            {
+                if (TargetingModeTerminal != TargetingModes.None)
+                {
+                    terminalMaxOffBoresight = maxOffBoresight;
+                }
                 maxOffBoresight = 180;
+            }
 
             if (!terminalHoming && GuidanceMode == GuidanceModes.AAMLoft)
             {
