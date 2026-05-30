@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile};
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile };
 
         protected MissileType _missileType = MissileType.Missile;
 
@@ -634,6 +634,7 @@ namespace BDArmory.Weapons.Missiles
                 {
                     // Debug.Log($"DEBUG {Time.time} Correcting for floating origin shift of {(Vector3)BDKrakensbane.FloatingOriginOffset:G3} ({(Vector3)BDKrakensbane.FloatingOriginOffsetNonKrakensbane:G3}) for {vessel.vesselName} ({SourceVessel})");
                     TargetPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
+                    laserStartPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
                 }
             }
         }
@@ -1067,7 +1068,7 @@ namespace BDArmory.Weapons.Missiles
                     SetLaserTargeting();
                     return;
                 }
-                
+
                 if (!gpsRequest)
                 {
                     _lockFailTimer += Time.fixedDeltaTime;
@@ -2047,28 +2048,20 @@ namespace BDArmory.Weapons.Missiles
                                 {
                                     int closestHitIndex = -1;
                                     float closestDist = float.MaxValue;
-                                    for (int i = 0; i < proximityHits.Length; i++)
+                                    for (int i = 0; i < hitCount; i++)
                                     {
                                         RaycastHit hit = proximityHits[i];
 
                                         if (closestDist < hit.distance) continue;
 
-                                        try
-                                        {
-                                            Part hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
-                                            if (hitPart == null) continue;
-                                            if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
+                                        Part hitPart = hit.collider.gameObject.GetComponentInParent<Part>();
+                                        if (hitPart == null) continue;
+                                        if (ProjectileUtils.IsIgnoredPart(hitPart)) continue; // Ignore ignored parts.
 
-                                            if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
-                                            {
-                                                closestHitIndex = i;
-                                                closestDist = hit.distance;
-                                            }
-                                        }
-                                        catch (Exception e)
+                                        if (hitPart.vessel != SourceVessel && hitPart.vessel != vessel)
                                         {
-                                            // ignored
-                                            Debug.LogWarning("[BDArmory.MissileBase]: Exception thrown in CheckDetonationState: " + e.Message + "\n" + e.StackTrace);
+                                            closestHitIndex = i;
+                                            closestDist = hit.distance;
                                         }
                                     }
 
@@ -2238,9 +2231,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPEvent(guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ChangetoLowAltitudeRange", active = true)]//Change to Low Altitude Range
         public void CruiseAltitudeRange()
         {
-            if (Events["CruiseAltitudeRange"].guiName == "Change to Low Altitude Range")
+            if (Events[nameof(CruiseAltitudeRange)].guiName == "Change to Low Altitude Range")
             {
-                Events["CruiseAltitudeRange"].guiName = "Change to High Altitude Range";
+                Events[nameof(CruiseAltitudeRange)].guiName = "Change to High Altitude Range";
 
                 UI_FloatRange cruiseAltitudeField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudeField.maxValue = 500f;
@@ -2249,7 +2242,7 @@ namespace BDArmory.Weapons.Missiles
             }
             else
             {
-                Events["CruiseAltitudeRange"].guiName = "Change to Low Altitude Range";
+                Events[nameof(CruiseAltitudeRange)].guiName = "Change to Low Altitude Range";
                 UI_FloatRange cruiseAltitudField = (UI_FloatRange)Fields[nameof(CruiseAltitude)].uiControlEditor;
                 cruiseAltitudField.maxValue = 25000f;
                 cruiseAltitudField.minValue = 500;

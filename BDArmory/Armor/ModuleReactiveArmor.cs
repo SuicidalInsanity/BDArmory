@@ -135,7 +135,7 @@ namespace BDArmory.Armor
                 HP.ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == ERAplateMaterial) + 1;
                 if (HP.ArmorTypeNum == 0)
                 {
-                    HP.ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == "None");
+                    HP.ArmorTypeNum = ArmorInfo.armors.FindIndex(t => t.name == "None") + 1;
                     Debug.LogWarning($"[BDArmory.ReactiveArmor] WARNING: Part {part.name} has invalid armor type: {ERAplateMaterial}. Defaulted to Aluminum. Please fix ASAP!");
                 }
                 HP.ArmorSetup(null, null);

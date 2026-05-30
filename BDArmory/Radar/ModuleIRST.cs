@@ -191,7 +191,7 @@ namespace BDArmory.Radar
 
         void UpdateToggleGuiName()
         {
-            Events["Toggle"].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
+            Events[nameof(Toggle)].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
         }
         void Start()
         {

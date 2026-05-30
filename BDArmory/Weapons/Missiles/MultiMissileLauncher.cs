@@ -116,11 +116,11 @@ namespace BDArmory.Weapons.Missiles
 
             if (toggleBay == false)
             {
-                Events["ToggleBay"].guiName = StringUtils.Localize("#autoLOC_502069");//"Open"
+                Events[nameof(ToggleBay)].guiName = StringUtils.Localize("#autoLOC_502069");//"Open"
             }
             else
             {
-                Events["ToggleBay"].guiName = StringUtils.Localize("#autoLOC_502051");//""Close"
+                Events[nameof(ToggleBay)].guiName = StringUtils.Localize("#autoLOC_502051");//""Close"
             }
             if (deployState != null)
             {
@@ -178,7 +178,7 @@ namespace BDArmory.Weapons.Missiles
             }
             if (!string.IsNullOrEmpty(deployAnimationName))
             {
-                Events["ToggleBay"].guiActiveEditor = true;
+                Events[nameof(ToggleBay)].guiActiveEditor = true;
                 deployState = GUIUtils.SetUpSingleAnimation(deployAnimationName, part);
                 if (deployState != null)
                 {
@@ -260,7 +260,7 @@ namespace BDArmory.Weapons.Missiles
                         Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                         missileLauncher.missileName = subMunitionName;
                     }
-                    if (!permitJettison) missileLauncher.Events["Jettison"].guiActive = false;
+                    if (!permitJettison) missileLauncher.Events[nameof(missileLauncher.Jettison)].guiActive = false;
                     if (OverrideDropSettings)
                     {
                         missileLauncher.Fields[nameof(missileLauncher.dropTime)].guiActive = false;

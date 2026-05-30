@@ -234,14 +234,14 @@ namespace BDArmory.Control
                     {
                         if (mmes.Current.runningPrimary)
                         {
-                            if (afterburnerHasFuel) mmes.Current.Events["ModeEvent"].Invoke();
+                            if (afterburnerHasFuel) mmes.Current.Events[nameof(mmes.Current.ModeEvent)].Invoke();
                         }
                     }
                     else
                     {
                         if (!mmes.Current.runningPrimary)
                         {
-                            mmes.Current.Events["ModeEvent"].Invoke();
+                            mmes.Current.Events[nameof(mmes.Current.ModeEvent)].Invoke();
                         }
                     }
 
