@@ -579,6 +579,8 @@ namespace BDArmory.Guidances
             vertVel = -vertVel;
             float ttgoVert = vertR / vertVel;
 
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa ttgo: {ttgo}, ttgoPlanar: {ttgoPlanar}, ttgoVert: {ttgoVert}, vertVel: {vertVel}, vertR: {vertR}");
+
             // If going up and target is below, or target is below and going up
             if (vertVel * vertR < 0f)
             {
@@ -600,6 +602,8 @@ namespace BDArmory.Guidances
                     }
                 }
             }
+
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa ttgo post-clamp: {ttgo}");
 
             // Lead limiting
             if (ttgo <= 0f)
@@ -651,11 +655,11 @@ namespace BDArmory.Guidances
             // Excess accel available to the missile
             maneuverCapability *= ml.currLiftArea * BDArmorySettings.GLOBAL_LIFT_MULTIPLIER * (float)(((Math.Abs(targetAlt - ml.vessel.altitude) < 1000d) ? q : (0.5 * (currDensity = 0.5 * (currentBody.GetDensity(currentBody.GetPressure(targetAlt), currentBody.GetTemperature(targetAlt)) + ml.vessel.atmDensity)) * sqrSpeed)) / vesselMass) * (1f + TL);
             float accelSqr = Mathf.Max(maneuverCapability - 0.5f * Rdir.ProjectOnPlanePreNormalized(velDirection).magnitude * ttgoInv * ttgoInv, 0f);
-            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(relVelNorm).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - maneuverCapability: {maneuverCapability}, reqAccel: {0.5f * Rdir.ProjectOnPlanePreNormalized(velDirection).magnitude * ttgoInv * ttgoInv}, excessAccel: {accelSqr}");
             // Target accel
             accelSqr *= targetAccel.magnitude;
             float leadTimeMax = (accelSqr > 1e-15f) ? Mathf.Clamp(2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr), 8f, 16f) : 16f;
-            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetAccel: {(targetAccel.ProjectOnPlanePreNormalized(relVelNorm)).magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * (relSpeed) / BDAMath.Sqrt(accelSqr) : boostGuidance ? 12f : 16f)}");
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - targetVel: {targetVelocity.magnitude}, targetAccel: {targetAccel.magnitude}, accelSqr: {accelSqr}, leadTimeMax: {leadTimeMax}, unclampedLeadTimeMax: {((accelSqr > 1e-15f) ? 2f * BDAMath.Sqrt(targetVelocity.sqrMagnitude / accelSqr) : 16f)}");
 
             leadTime = Mathf.Clamp(ttgo, 0f, leadTimeMax);
 
@@ -706,6 +710,9 @@ namespace BDArmory.Guidances
                 sinTarget = Vector3.Dot(targetTermVec, -upDirection); //Vector3.Dot((targetPosition - ml.vessel.CoM), -upDirection) / R;
 
                 boostGuidance = (midcourseRange > 0f) && (R > midcourseRange) && (sinTarget < termSin) && (-sinTarget < loftSin);
+
+                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - sinTarget: {sinTarget}, termSin: {termSin}, angle cond: {sinTarget > termSin}, targetTermDist: {targetTermDist}, boostGuidance: {boostGuidance}");
+
                 if (!boostGuidance && targetTermDist < 2f * terminalHomingRange && shapingAngle > 0)
                 {
                     // Modulate kappaAngle if we're really close.
@@ -715,12 +722,14 @@ namespace BDArmory.Guidances
                         shapingAngle = 0;
                         ml.kappaAngle = 0;
                         loftState = MissileBase.LoftStates.Terminal;
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - Gone terminal at: {targetTermDist} m from PIP, shapingAngle clamped to 0!");
                     }
                     else
                     {
                         shapingAngle *= fac * fac / (terminalHomingRange * terminalHomingRange);
                         ml.kappaAngle = shapingAngle;
                         loftState = MissileBase.LoftStates.Midcourse;
+                        //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - Gone terminal at: {targetTermDist} m from PIP, shapingAngle clamped to {shapingAngle}!");
                     }
                 }
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
@@ -803,6 +812,8 @@ namespace BDArmory.Guidances
                     loftState = MissileBase.LoftStates.Midcourse;
                 }
 
+                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: turnFactor: {turnFactor}, vel: {currSpeed}, turnFactorMult: {turnFactorMult}, invTurnFactorMult: {1f / turnFactorMult}, tempgLim: {tempgLim}, propAccel: {(3f / currSpeed) * VelTripleProduct(currVel, turnDir).ProjectOnPlanePreNormalized(velDirection).magnitude / g}, curveAccel: {(currSpeed * currSpeed * turnFactorMult * loftAngle * Mathf.Deg2Rad * turnSin) / g}, gLimit: {gLimit}, AoALimit: {AoALimit}");
+
                 return ml.vessel.CoM + currVel * 3f + accel * 9f;
             }
 
@@ -833,6 +844,7 @@ namespace BDArmory.Guidances
                 float Fsqr;
                 float FR;
 
+                //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - Lalpha: {Lalpha}, c_m: {Lalpha / (ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed)}, D0: {D0}, d_0: {D0 / (ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed)}, eta: {eta}, thrust: {thrust}, TL: {TL}, q: {q}, m^2v^4: {(ml.vessel.totalMass * ml.vessel.totalMass * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed * ml.vessel.srfSpeed)}, R: {R}");
                 // The below derivation doesn't really work, I tried replacing the sin and cos with sinh and cosh, but
                 // looking at the derivation and the diff. eq. it is trying to satisfy, it is clear that the desired
                 // functions are actually sin and cos and not sinh and cosh, since the (F_2)^2 term is positive instead
@@ -851,6 +863,8 @@ namespace BDArmory.Guidances
                     {
                         K1 = -F2sqr * Rsqr / (2f + F2R);
                         K2 = F2sqr * Rsqr / (2f + F2R);
+
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]:Kappa Guidance, under thrust - F2sqr: {F2sqr}, F2R: {F2R}, eFR: Infinity, enFR: 0");
                     }
                     else
                     {
@@ -879,6 +893,8 @@ namespace BDArmory.Guidances
                     // FR values in Mathf.exp()
                     K1 = FR / (2f - FR);
                     K2 = Fsqr * Rsqr / (FR - 2f);
+
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, gliding - Fsqr: {Fsqr}, FR: {FR}, eFR: Infinity, enFR: 0, K1: {K1}, K2: {K2}");
                 }
                 else if (FR < 0.25f)
                 {
@@ -886,6 +902,7 @@ namespace BDArmory.Guidances
                     // issues, so we just set the values to the limit as FR -> 0
                     K1 = -2;
                     K2 = 6;
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, gliding - Fsqr: {Fsqr}, FR: {FR}, K1: -2, K2: 6");
                 }
                 else
                 {
@@ -895,6 +912,9 @@ namespace BDArmory.Guidances
 
                     K1 = (2f * Fsqr * Rsqr - FR * (eFR - enFR)) / denom;
                     K2 = (Fsqr * Rsqr * (eFR + enFR - 2f)) / denom;
+
+
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, gliding - Fsqr: {Fsqr}, FR: {FR}, eFR: {eFR}, enFR: {enFR}, denom: {denom}, K1: {K1}, K2: {K2}");
                 }
             }
             else
@@ -925,6 +945,8 @@ namespace BDArmory.Guidances
                 if (FR > 16f)
                 {
                     K2 = Fsqr * Rsqr / (FR - 1f);
+
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, {(thrust > D0 ? "under thrust - No Shaping - F2sqr" : "gliding - No Shaping - Fsqr")}: {Fsqr}, {(thrust > D0 ? "F2R" : "FR")}: {FR}, eFR: Infinity, enFR: 0, K1: 0, K2: {K2}");
                 }
                 else if (FR < 0.25f)
                 {
@@ -932,6 +954,7 @@ namespace BDArmory.Guidances
                     // K2 directly to 3, which is what the value converges to (which is the ideal gain for
                     // proportional navigation)
                     K2 = 3f;
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, {(thrust > D0 ? "under thrust - No Shaping - F2sqr" : "gliding - No Shaping - Fsqr")}: {Fsqr}, {(thrust > D0 ? "F2R" : "FR")}: {FR}, K1: 0, K2: 3");
                 }
                 else
                 {
@@ -939,6 +962,8 @@ namespace BDArmory.Guidances
                     float enFR = Mathf.Exp(-FR);
 
                     K2 = (Fsqr * Rsqr * (eFR - enFR)) / (eFR * (FR - 1f) + enFR * (FR + 1f));
+
+                    //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance, {(thrust > D0 ? "under thrust - No Shaping - F2sqr" : "gliding - No Shaping - Fsqr")}: {Fsqr}, {(thrust > D0 ? "F2R" : "FR")}: {FR}, eFR: {eFR}, enFR: {enFR}, K1: 0, K2: {K2}");
                 }
             }
 
@@ -966,6 +991,7 @@ namespace BDArmory.Guidances
             // Final velocity is shaped by shapingAngle, we want the missile to dive onto the target but we don't want to affect the horizontal components of velocity
             if (shapingAngle == 0f)
             {
+                vF = currVel;
                 accel = (K2 * ttgoInv * ttgoInv) * (adjustedPredictedRelImpactPoint);
                 if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
                 {
@@ -1027,7 +1053,7 @@ namespace BDArmory.Guidances
 
             // Debug output, useful for tuning
             // NOTE: Think of better way to present these, right now they're just spamming the log, maybe add them to the debug string and display it via the UI?
-            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance K1: {K1}, K2: {K2}, accel: {accel}, vF-currVel: {vF-currVel}, posError: {predictedImpactPoint- ml.vessel.CoM - currVel*ttgo}, g: {gLimit}, ttgo: {ttgo}");
+            //if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileGuidance]: Kappa Guidance - R: {R}, accel: {accel}, accelVert: {Vector3.Dot(accel, upDirection)}, accelVertVel: {Vector3.Dot(((K1 * ttgoInv) * (vF - currVel)).ProjectOnPlanePreNormalized(velDirection), upDirection)}, vF-currVel: {vF - currVel}, posError: {(predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(velDirection)}, posErrorUnrolled: {(adjustedPredictedRelImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(velDirection)}, vertPosError: {Vector3.Dot((predictedImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(velDirection), upDirection)}, vertPosErrorUnrolled: {Vector3.Dot((adjustedPredictedRelImpactPoint - ml.vessel.CoM).ProjectOnPlanePreNormalized(velDirection), upDirection)}, unrolledAngle: {unrolledAngle}, altDiff: {clampedPredictedImpactAlt - predictedImpactAlt}, missileAltDiff: {clampedPredictedImpactAlt - ml.vessel.altitude - FlightGlobals.currentMainBody.Radius}, vesselVertPos: {Vector3.Dot(ml.vessel.CoM, upDirection)}, g: {gLimit}, ttgo: {ttgo}");
 
             //accel = accel.ProjectOnPlanePreNormalized(velDirection);
             leadTime = Mathf.Min(leadTime, 3f);
@@ -2411,6 +2437,7 @@ namespace BDArmory.Guidances
                 //if (ml.torqueAoALimit.x > 0)
                 //    AoALim = Mathf.Min(maxAoA + Mathf.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
 
+                float boresightAngle = -1f;
                 Vector3 targetDirection;
                 float targetAngle;
                 if (activeGuidance)
@@ -2427,6 +2454,20 @@ namespace BDArmory.Guidances
                         targetDirection = Vector3.Slerp(velNorm, (10f * targetDirection).ProjectOnPlanePreNormalized(velNorm).normalized, AoALim / 90f);
                     }
 
+                    Vector3 boresightVector;
+                    if (ml.maxOffBoresight < 180f && (boresightAngle = VectorUtils.AnglePreNormalized(targetDirection, boresightVector = (ml.TargetPosition - ml.vessel.CoM).normalized)) > ml.maxOffBoresight)
+                    {
+                        Vector3 maneuverPlaneNormal = (Vector3.Cross(velNorm, targetDirection)).normalized;
+                        float tempBoresight = ml.maxOffBoresight;
+                        // If boresight > 180, we solve for the opposite cone
+                        if (tempBoresight > 90f)
+                        {
+                            tempBoresight = 180f - tempBoresight;
+                            boresightVector = -boresightVector;
+                        }
+
+                        targetDirection = VectorUtils.ConePlaneIntercept(targetDirection, maneuverPlaneNormal, boresightVector, Mathf.Cos(tempBoresight * Mathf.Deg2Rad), false);
+                    }
                 }
                 else
                 {
@@ -2547,7 +2588,7 @@ namespace BDArmory.Guidances
                     finalTorque = aeroTorque;
                 }
 
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) ml.debugString.AppendLine($"achieved g: {(ml.vessel.acceleration.ProjectOnPlanePreNormalized(velNorm).magnitude) * (1f / 9.81f):F2}, lift g: {liftForce / ml.part.mass * (1f / 9.81f):F2}, CL: {liftCurve.Evaluate(AoA):F2}\nAoA: {AoA:F2}, AoALim: {AoALim:F2}, MaxAoA: {maxAoA:F2}\nTargetAngle: {targetAngle:F2}, TurningAngle: {turningAngle:F2}, forward: {forward}, targetDirection: {targetDirection}\nmaxTorque (Aero): {maxTorque:F2} ({maxTorqueAero * dynamicq:F2}), currTorque: {(Vector3.Dot(finalTorque, aeroTorque) > 0 ? "+" : "-")}{finalTorque.magnitude:F2}, aeroTorque: -{aeroTorque.magnitude:F2}\nliftArea: {liftArea}, dragArea: {dragArea}");
+                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES) ml.debugString.AppendLine($"achieved g: {(ml.vessel.acceleration.ProjectOnPlanePreNormalized(velNorm).magnitude) * (1f / 9.81f):F2}, lift g: {liftForce / ml.part.mass * (1f / 9.81f):F2}, CL: {liftCurve.Evaluate(AoA):F2}\nAoA: {AoA:F2}, AoALim: {AoALim:F2}, MaxAoA: {maxAoA:F2}{(boresightAngle > 0f ? $", Seeker Angle: {boresightAngle:F2}/{ml.maxOffBoresight:F2}" : "")}\nTargetAngle: {targetAngle:F2}, TurningAngle: {turningAngle:F2}, forward: {forward}, targetDirection: {targetDirection}\nmaxTorque (Aero): {maxTorque:F2} ({maxTorqueAero * dynamicq:F2}), currTorque: {(Vector3.Dot(finalTorque, aeroTorque) > 0 ? "+" : "-")}{finalTorque.magnitude:F2}, aeroTorque: -{aeroTorque.magnitude:F2}\nliftArea: {liftArea}, dragArea: {dragArea}");
 
                 finalTorque = ml.transform.InverseTransformDirection(finalTorque).ProjectOnPlanePreNormalized(Vector3.forward);
 

@@ -234,6 +234,9 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public float terminalGuidanceDistance = 0.0f;
 
+        [KSPField]
+        public float terminalMaxOffBoresight = -1f;
+
         private bool terminalGuidanceActive;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_TerminalGuidance"), UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//Terminal Guidance: false true
@@ -2704,19 +2707,27 @@ namespace BDArmory.Weapons.Missiles
                 // Let the primary and terminal guidance mode worry about toggling this...
                 //TargetAcquired = false;
 
+                float tempMaxOffBoresight = terminalMaxOffBoresight > 0 ? terminalMaxOffBoresight : maxOffBoresight;
+
                 switch (TargetingModeTerminal)
                 {
                     case TargetingModes.Heat:
                         // gets ground heat targets and after locking one, disallows the lock to break to another target
+                        Ray targetRay = new Ray(vessel.CoM, tempTargetPos - vessel.CoM);
+                        Vector3 forward = GetForwardTransform();
+
+                        if (VectorUtils.AnglePreNormalized(targetRay.direction, forward) > tempMaxOffBoresight)
+                        {
+                            break;
+                        }
 
                         if (activeRadarRange < 0 && torpedo)
                         {
-                            heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, new Ray(vessel.CoM, tempTargetPos - vessel.CoM), TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity,
-                                FiredByWM, targetVessel, IFF: hasIFF);
+                            heatTarget = BDATargetManager.GetAcousticTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
                         }
                         else
                         {
-                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, new Ray(vessel.CoM, tempTargetPos - vessel.CoM), TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
+                            heatTarget = BDATargetManager.GetHeatTarget(SourceVessel, vessel, targetRay, TargetSignatureData.noTarget, lockedSensorFOV * 0.5f, heatThreshold, frontAspectHeatModifier, uncagedLock, targetCoM, lockedSensorFOVBias, lockedSensorVelocityBias, lockedSensorVelocityMagnitudeBias, lockedSensorMinAngularVelocity, FiredByWM, targetVessel, IFF: hasIFF);
                         }
 
                         if (heatTarget.exists && (heatTarget.isDecoy || CheckTargetEngagementEnvelope(heatTarget.targetInfo)))
@@ -2778,7 +2789,7 @@ namespace BDArmory.Weapons.Missiles
                         if (pingRWR) nextRWRPing = Time.time + RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME;
 
                         //RadarUtils.UpdateRadarLock(ray, maxOffBoresight, activeRadarMinThresh, ref scannedTargets, 0.4f, true, RadarWarningReceiver.RWRThreatTypes.MissileLock, true);
-                        int numLocked = RadarUtils.RadarUpdateMissileLock(ray, maxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
+                        int numLocked = RadarUtils.RadarUpdateMissileLock(ray, tempMaxOffBoresight, ref scannedTargets, RadarUtils.ACTIVE_MISSILE_PING_PERSIST_TIME, this, pingRWR);
                         float sqrThresh = terminalGuidanceDistance * terminalGuidanceDistance * 2.25f; // (terminalGuidanceDistance * 1.5f)^2
 
                         //float smallestAngle = maxOffBoresight;
@@ -2896,6 +2907,7 @@ namespace BDArmory.Weapons.Missiles
                     {
                         seekerTimeout = terminalSeekerTimeout;
                     }
+                    maxOffBoresight = tempMaxOffBoresight;
                     terminalGuidanceActive = true;
                     terminalGuidanceShouldActivate = false;
                     _lockFailTimer = -1; // Reset lockFailTimer
@@ -3824,10 +3836,14 @@ namespace BDArmory.Weapons.Missiles
                         }
                 }
 
-                if (VectorUtils.Angle(aamTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
+                /*Vector3 forward = GetForwardTransform();
+                if (VectorUtils.Angle(aamTarget - vessel.CoM, forward) > maxOffBoresight)
                 {
-                    aamTarget = TargetPosition;
-                }
+                    //aamTarget = Vector3.RotateTowards(TargetPosition - vessel.CoM, aamTarget - vessel.CoM, maxOffBoresight * Mathf.Deg2Rad, 99999f) + vessel.CoM;
+                    Vector3 relativeVec = aamTarget - vessel.CoM;
+                    Vector3 maneuverPlaneNormal = (Vector3.Cross(vessel.Velocity(), relativeVec)).normalized;
+                    aamTarget = VectorUtils.ConePlaneIntercept(relativeVec, maneuverPlaneNormal, forward, maxOffBoresight * Mathf.Deg2Rad, false);
+                }*/
 
                 /*//proxy detonation
                 var distThreshold = 0.5f * GetBlastRadius();
@@ -3859,14 +3875,14 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (TargetAcquired)
                 {
-                    //lose lock if seeker reaches gimbal limit
+                    /*//lose lock if seeker reaches gimbal limit
                     float targetViewAngle = VectorUtils.Angle(transform.forward, TargetPosition - vessel.CoM);
 
                     if (targetViewAngle > maxOffBoresight)
                     {
                         if (BDArmorySettings.DEBUG_MISSILES) Debug.Log("[BDArmory.MissileLauncher]: AGM Missile guidance failed - target out of view");
                         guidanceActive = false;
-                    }
+                    }*/
                     CheckMiss();
                 }
                 else
@@ -3902,10 +3918,10 @@ namespace BDArmory.Weapons.Missiles
                 float timeToImpact;
                 SLWTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
                 if (!torpedo) runningDepth = Mathf.Max(timeToImpact / 5, 0.1f) * 10;
-                if (VectorUtils.Angle(SLWTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
-                {
-                    SLWTarget = TargetPosition;
-                }
+                //if (VectorUtils.Angle(SLWTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
+                //{
+                //    SLWTarget = TargetPosition;
+                //}
                 if (!torpedo) SLWTarget = SLWTarget - targetVessel.Vessel.up * targetVessel.Vessel.radarAltitude;
                 float longitudinalOffset = 0;
                 if (longitudinalOffset == 0) longitudinalOffset = targetVessel.Vessel.GetRadius() * 0.75f * UnityEngine.Random.Range(-1, 1);

@@ -3778,20 +3778,31 @@ namespace BDArmory.Control
                             radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
                         }
 
-                        emergencyNotch = emergencyNotch && weaponManager.isChaffing;
-                        if (evasionMissileEmergencyNotchVel > 0 && weaponManager.isChaffing && (emergencyNotch || Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > evasionMissileEmergencyNotchVel))
+                        if (!inVacuum)
                         {
-                            emergencyNotch = true;
-                            // Emergency notch, get us notched ASAP!
-                            kinematicEvasionStatus = " (Emergency Notch)";
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.Append(" Emergency Notch!");
-                            breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
+                            emergencyNotch = emergencyNotch && weaponManager.isChaffing;
+                            if (evasionMissileEmergencyNotchVel > 0 && weaponManager.isChaffing && (emergencyNotch || Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > evasionMissileEmergencyNotchVel))
+                            {
+                                emergencyNotch = true;
+                                // Emergency notch, get us notched ASAP!
+                                kinematicEvasionStatus = " (Emergency Notch)";
+                                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.Append(" Emergency Notch!");
+                                breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
+                            }
+                            else
+                            {
+                                emergencyNotch = false;
+                                // Standard notch
+                                //breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                                const float halfPi = Mathf.PI * 0.5f;
+                                breakDirection = VectorUtils.ConePlaneIntercept(breakDirection, radarDir, -vessel.up, (dive ? (halfPi - diveAngle) : halfPi));
+                            }
                         }
                         else
                         {
+                            // No need to worry about diving or emergencyNotch in a vacuum...
                             emergencyNotch = false;
-                            // Standard notch
-                            breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                            breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
                         }
                     }
                     else
@@ -3944,7 +3955,7 @@ namespace BDArmory.Control
             FlyToPosition(s, target);
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Calculates the appropriate notch direction based on the direction to the radar, "radarDir",
         /// the commanded "diveAngle" (radians, +ve down, 0 is level flight), and "breakDirection", the preferred
         /// direction of travel (as there are potential two solutions).
@@ -4113,7 +4124,7 @@ namespace BDArmory.Control
 
             sol1 = new Vector3(xsol1, ysol1, zsol1);
             sol2 = new Vector3(xsol2, ysol2, zsol2);
-        }
+        }*/
 
         Vector3 MissileKinematicEvasion(Vector3 breakDirection, Vector3 threatDirection)
         {
