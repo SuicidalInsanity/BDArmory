@@ -1,4 +1,11 @@
 IMPROVEMENTS / FIXES
+- Weapons:
+	- Missiles:
+		- Improved missile "maxOffBoresight" limiting. Missiles will now try to turn as hard as they can in the commanded direction while keeping the target inside "maxOffBoresight".
+		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
+
+v1.13.0.0
+IMPROVEMENTS / FIXES
 - General:
 	- Fix GetBodyByName("Kerbin") issues for mods that replace Kerbin.
 	- Fix HP and cost scaling of parts when TweakScale is installed.

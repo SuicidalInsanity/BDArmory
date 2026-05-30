@@ -4853,7 +4853,7 @@ namespace BDArmory.Weapons.Missiles
                             output.AppendLine($"- Lock/Track: {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS} m^2 @ {activeRadarRange / 1000} km");
                         output.AppendLine($"- LOAL: {radarLOAL}");
                         if (radarLOAL) output.AppendLine($"  - Radar Search Time: {tempTerminalSeekerTimeout} s");
-                        output.AppendLine($"Max Offboresight: {maxOffBoresight}");
+                        output.AppendLine($"Max Off Boresight: {(terminalMaxOffBoresight > 0 ? terminalMaxOffBoresight : maxOffBoresight)}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");
                     }
 
@@ -4861,7 +4861,7 @@ namespace BDArmory.Weapons.Missiles
                     {
                         output.AppendLine($"Uncaged Lock: {uncagedLock}");
                         output.AppendLine($"Min Heat threshold: {heatThreshold}");
-                        output.AppendLine($"Max Offboresight: {maxOffBoresight}");
+                        output.AppendLine($"Max Off Boresight: {(terminalMaxOffBoresight > 0 ? terminalMaxOffBoresight : maxOffBoresight)}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");
                         output.AppendLine($"Seeker Search Time: {tempTerminalSeekerTimeout} s");
                     }
