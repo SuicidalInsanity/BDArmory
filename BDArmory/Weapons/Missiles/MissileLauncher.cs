@@ -4536,7 +4536,7 @@ namespace BDArmory.Weapons.Missiles
 
             if (TargetingMode == TargetingModes.Gps)
             {
-                if (TargetingModeTerminal != TargetingModes.None)
+                if (TargetingModeTerminal != TargetingModes.None && terminalMaxOffBoresight < 0f)
                 {
                     terminalMaxOffBoresight = maxOffBoresight;
                 }
