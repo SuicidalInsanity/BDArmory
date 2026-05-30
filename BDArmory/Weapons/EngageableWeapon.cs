@@ -50,11 +50,11 @@ namespace BDArmory.Weapons
 
             if (engageEnabled == false)
             {
-                Events["ToggleEngageOptions"].guiName = StringUtils.Localize("#LOC_BDArmory_EnableEngageOptions");//"Enable Engage Options"
+                Events[nameof(ToggleEngageOptions)].guiName = StringUtils.Localize("#LOC_BDArmory_EnableEngageOptions");//"Enable Engage Options"
             }
             else
             {
-                Events["ToggleEngageOptions"].guiName = StringUtils.Localize("#LOC_BDArmory_DisableEngageOptions");//"Disable Engage Options"
+                Events[nameof(ToggleEngageOptions)].guiName = StringUtils.Localize("#LOC_BDArmory_DisableEngageOptions");//"Disable Engage Options"
             }
 
             Fields[nameof(engageRangeMin)].guiActive = engageEnabled;
@@ -79,8 +79,8 @@ namespace BDArmory.Weapons
         }
         public void HideEngageOptions()
         {
-            Events["ToggleEngageOptions"].guiActive = false;
-            Events["ToggleEngageOptions"].guiActiveEditor = false;
+            Events[nameof(ToggleEngageOptions)].guiActive = false;
+            Events[nameof(ToggleEngageOptions)].guiActiveEditor = false;
             Fields[nameof(engageRangeMin)].guiActive = true;
             Fields[nameof(engageRangeMin)].guiActiveEditor = true;
             Fields[nameof(engageRangeMax)].guiActive = true;

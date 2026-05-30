@@ -1050,7 +1050,7 @@ namespace BDArmory.UI
                                     AI.StoreSettings();
                                 }
 
-                                if (AI.Events["RestoreSettings"].active == true)
+                                if (AI.Events[nameof(AI.RestoreSettings)].active == true)
                                 {
                                     line += 1f;
                                     GUIStyle restoreStyle = BDArmorySetup.ButtonStyle;
@@ -1601,7 +1601,7 @@ namespace BDArmory.UI
                                         AI.StoreControlSurfaceSettings(); //Hiding these in misc is probably not the best place to put them, but only so much space on the window header bar
                                     }
                                     miscLines += 1.25f;
-                                    if (AI.Events["RestoreControlSurfaceSettings"].active == true)
+                                    if (AI.Events[nameof(AI.RestoreControlSurfaceSettings)].active == true)
                                     {
                                         GUIStyle restoreStyle = BDArmorySetup.ButtonStyle;
                                         if (GUI.Button(ToggleButtonRect(miscLines, contentWidth), StringUtils.Localize("#LOC_BDArmory_RestoreControlSurfaceSettings"), restoreStyle))

@@ -94,7 +94,7 @@ namespace BDArmory.CounterMeasure
             if (part.FindModuleImplementing<MissileLauncher>() != null || SpawnUtils.IsModularMissilePart(part))
             {
                 isMissileECM = true;
-                Events["Toggle"].guiActive = false;
+                Events[nameof(Toggle)].guiActive = false;
             }
 
             gauge = (BDStagingAreaGauge)part.AddModule("BDStagingAreaGauge");

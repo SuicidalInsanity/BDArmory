@@ -220,8 +220,8 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseSpeed)].guiActive = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
-                Events["CruiseAltitudeRange"].guiActive = GuidanceMode == GuidanceModes.Cruise;
-                Events["CruiseAltitudeRange"].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
+                Events[nameof(CruiseAltitudeRange)].guiActive = GuidanceMode == GuidanceModes.Cruise;
+                Events[nameof(CruiseAltitudeRange)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
                 Fields[nameof(CruisePredictionTime)].guiActiveEditor = GuidanceMode == GuidanceModes.Cruise;
             }
 
@@ -231,11 +231,6 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(BallisticOverShootFactor)].guiActiveEditor = GuidanceMode == GuidanceModes.AGMBallistic;
                 Fields[nameof(BallisticAngle)].guiActive = GuidanceMode == GuidanceModes.AGMBallistic;
                 Fields[nameof(BallisticAngle)].guiActiveEditor = GuidanceMode == GuidanceModes.AGMBallistic;
-            }
-            if (Fields["SoftAscent"] != null)
-            {
-                Fields["SoftAscent"].guiActive = GuidanceMode == GuidanceModes.AGMBallistic;
-                Fields["SoftAscent"].guiActiveEditor = GuidanceMode == GuidanceModes.AGMBallistic;
             }
 
             Fields[nameof(kappaAngle)].guiActive = false;
@@ -779,8 +774,8 @@ namespace BDArmory.Weapons.Missiles
 
         private void SetupsFields()
         {
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = true;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = true;
 
             if (isTimed)
             {
@@ -811,15 +806,15 @@ namespace BDArmory.Weapons.Missiles
                 WeaponNameWindow.OnActionGroupEditorClosed.Add(OnActionGroupEditorClosed);
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = true;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = false;
-                Events["SwitchTargetingMode"].guiActiveEditor = true;
-                Events["SwitchGuidanceMode"].guiActiveEditor = true;
+                Events[nameof(SwitchTargetingMode)].guiActiveEditor = true;
+                Events[nameof(SwitchGuidanceMode)].guiActiveEditor = true;
             }
             else
             {
                 Fields[nameof(CruiseAltitude)].guiActiveEditor = false;
                 Fields[nameof(CruiseSpeed)].guiActiveEditor = false;
-                Events["SwitchTargetingMode"].guiActiveEditor = false;
-                Events["SwitchGuidanceMode"].guiActiveEditor = false;
+                Events[nameof(SwitchTargetingMode)].guiActiveEditor = false;
+                Events[nameof(SwitchGuidanceMode)].guiActiveEditor = false;
                 SetMissileTransform();
             }
 
@@ -1531,20 +1526,20 @@ namespace BDArmory.Weapons.Missiles
 
         private void UpdateMenus(bool visible)
         {
-            Events["HideUI"].active = visible;
-            Events["ShowUI"].active = !visible;
+            Events[nameof(HideUI)].active = visible;
+            Events[nameof(ShowUI)].active = !visible;
         }
 
         private void OnActionGroupEditorOpened()
         {
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = false;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = false;
         }
 
         private void OnActionGroupEditorClosed()
         {
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = true;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = true;
         }
 
         /// <summary>
