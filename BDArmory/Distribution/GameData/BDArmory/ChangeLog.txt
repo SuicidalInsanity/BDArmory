@@ -47,7 +47,8 @@ IMPROVEMENTS / FIXES
 	- Fix AI not respecting Max Missiles Per Target setting when dropping bombs.
 	- Fix Surface AI circling last waypoint when it finishes a WP race.
 	- Fix AI usage of radar-warning receiver not always being consistent, sometimes not "noticing" a radar missile fired at it.
-	- Improve AI missile notching. AI will not accurately notch / beam missiles while diving, as well as when flying level.
+	- Re-worked logic and implementation for Kinematic Missile Evasion, AI will do a much better job of avoiding missiles kinematically.
+	- Improve AI missile notching. AI will now accurately notch / beam missiles while diving, as well as when flying level.
 	- Added "Msl Emergency Notch Vel" to the Pilot AI. If the AI is chaffing, and has a range-rate greater than "Msl Emergency Notch Vel", the AI will immediately stop whatever maneuver it's trying to perform and instead try to "notch" (more accurately, "beam") the missile / radar as soon as possible. Setting this to 0 will disable the feature, and it is by default set to 0. (NOTE: It is highly recommended users press the (i) button at the top of the AI menu and read the infolink for more information on any AI setting).
 	- Improve AI missile turret usage behavior, now instead of timing out after half of "Firing Interval" elapses, the turret must make no progress towards the target for half of "Firing Interval" to time out.
 	- Point Defense AI:
