@@ -4583,8 +4583,16 @@ namespace BDArmory.Weapons.Missiles
                 float temp = maneuvergLimParsed[i];
                 if (temp < 0)
                 {
-                    maneuvergLimParsed[i] = 20f;
-                    invManeuvergLimit[i] = 0.05f;
+                    if (i == 0)
+                    {
+                        maneuvergLimParsed[0] = 20f;
+                        invManeuvergLimit[0] = 0.05f;
+                    }
+                    else
+                    {
+                        maneuvergLimParsed[i] = maneuvergLimParsed[0];
+                        invManeuvergLimit[i] = invManeuvergLimit[0];
+                    }
                 }
                 else
                 {
