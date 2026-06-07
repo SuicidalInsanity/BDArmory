@@ -2558,8 +2558,8 @@ namespace BDArmory.Guidances
                                     //    torque = LHS;
                                     //else
                                     //{
-                                    torque = 0f;
-                                    aeroTorque = (maxTorque / aeroTorque.magnitude) * aeroTorque;
+                                        torque = 0f;
+                                        aeroTorque = (maxTorque / aeroTorque.magnitude) * aeroTorque;
                                     //}
                                 }
                                 // The second case is where we've gone over in the opposite direction, in which case we must reduce our torque
