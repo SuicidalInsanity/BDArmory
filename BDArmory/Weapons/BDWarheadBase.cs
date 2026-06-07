@@ -26,8 +26,10 @@ namespace BDArmory.Weapons
 
         public BDTeam Team { get; set; } = BDTeam.Get("Neutral");
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ProximityTriggerDistance"), UI_FloatRange(minValue = 0f, maxValue = 100f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_ProximityTriggerDistance"),
+            UI_FloatSemiLogRange(minValue = 1f, maxValue = 1000f, sigFig = 2, withZero = true, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
         public float detonationRange = -1f; // give ability to set proximity range
+
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DetonateAtMinimumDistance"), UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true", scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)] // Detonate At Minumum Distance
         public bool detonateAtMinimumDistance = false;
 
@@ -45,12 +47,12 @@ namespace BDArmory.Weapons
             if (Armed)
             {
                 guiStatusString = "ARMED";
-                Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+                Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
             }
             else
             {
                 guiStatusString = "Safe";
-                Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
+                Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
             }
         }
 
@@ -65,12 +67,12 @@ namespace BDArmory.Weapons
             if (IFF_On)
             {
                 guiIFFString = "Ignore Allies";
-                Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");//"Enable Engage Options"
+                Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Disable IFF");//"Enable Engage Options"
             }
             else
             {
                 guiIFFString = "Indescriminate";
-                Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
+                Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
             }
         }
 
@@ -82,13 +84,13 @@ namespace BDArmory.Weapons
             manualOverride = !manualOverride;
             if (manualOverride)
             {
-                Fields["detonationRange"].guiActiveEditor = true;
-                Fields["detonationRange"].guiActive = true;
+                Fields[nameof(detonationRange)].guiActiveEditor = true;
+                Fields[nameof(detonationRange)].guiActive = true;
             }
             else
             {
-                Fields["detonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -98,7 +100,7 @@ namespace BDArmory.Weapons
         {
             Armed = true;
             guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+            Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
         }
 
         [KSPAction("Detonate")]
@@ -155,11 +157,11 @@ namespace BDArmory.Weapons
             /*
             if (BDArmorySettings.ADVANCED_EDIT)
             {
-                //Fields["tntMass"].guiActiveEditor = true;
+                //Fields[nameof(tntMass)].guiActiveEditor = true;
 
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).minValue = 0f;
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).maxValue = 3000f;
-                //((UI_FloatRange)Fields["tntMass"].uiControlEditor).stepIncrement = 5f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).minValue = 0f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).maxValue = 3000f;
+                //((UI_FloatRange)Fields[nameof(tntMass)].uiControlEditor).stepIncrement = 5f;
             }
             */
             WarheadSpecificSetup();
@@ -177,64 +179,64 @@ namespace BDArmory.Weapons
         {
             if (!isMissile)
             {
-                Events["Toggle"].guiActiveEditor = true;
-                Events["Toggle"].guiActive = true;
-                Events["ToggleIFF"].guiActiveEditor = true;
-                Events["ToggleIFF"].guiActive = true;
-                Events["ToggleProx"].guiActiveEditor = true;
-                Events["ToggleProx"].guiActive = true;
-                Fields["guiStatusString"].guiActiveEditor = true;
-                Fields["guiStatusString"].guiActive = true;
-                Fields["guiIFFString"].guiActiveEditor = true;
-                Fields["guiIFFString"].guiActive = true;
+                Events[nameof(Toggle)].guiActiveEditor = true;
+                Events[nameof(Toggle)].guiActive = true;
+                Events[nameof(ToggleIFF)].guiActiveEditor = true;
+                Events[nameof(ToggleIFF)].guiActive = true;
+                Events[nameof(ToggleProx)].guiActiveEditor = true;
+                Events[nameof(ToggleProx)].guiActive = true;
+                Fields[nameof(guiStatusString)].guiActiveEditor = true;
+                Fields[nameof(guiStatusString)].guiActive = true;
+                Fields[nameof(guiIFFString)].guiActiveEditor = true;
+                Fields[nameof(guiIFFString)].guiActive = true;
                 if (Armed)
                 {
                     guiStatusString = "ARMED";
-                    Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");
+                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");
                 }
                 else
                 {
                     guiStatusString = "Safe";
-                    Events["Toggle"].guiName = StringUtils.Localize("Arm Warhead");
+                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");
                 }
                 if (IFF_On)
                 {
                     guiIFFString = "Ignore Allies";
-                    Events["ToggleIFF"].guiName = StringUtils.Localize("Disable IFF");
+                    Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Disable IFF");
                 }
                 else
                 {
                     guiIFFString = "Indescriminate";
-                    Events["ToggleIFF"].guiName = StringUtils.Localize("Enable IFF");
+                    Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Enable IFF");
                 }
                 if (manualOverride)
                 {
-                    Fields["detonationRange"].guiActiveEditor = true;
-                    Fields["detonationRange"].guiActive = true;
+                    Fields[nameof(detonationRange)].guiActiveEditor = true;
+                    Fields[nameof(detonationRange)].guiActive = true;
                 }
                 else
                 {
-                    Fields["detonationRange"].guiActiveEditor = false;
-                    Fields["detonationRange"].guiActive = false;
+                    Fields[nameof(detonationRange)].guiActiveEditor = false;
+                    Fields[nameof(detonationRange)].guiActive = false;
                 }
                 WarheadSpecificUISetup();
             }
             else
             {
-                Events["Toggle"].guiActiveEditor = false;
-                Events["Toggle"].guiActive = false;
-                Events["ToggleIFF"].guiActiveEditor = false;
-                Events["ToggleIFF"].guiActive = false;
-                Events["ToggleProx"].guiActiveEditor = false;
-                Events["ToggleProx"].guiActive = false;
-                Fields["guiStatusString"].guiActiveEditor = false;
-                Fields["guiStatusString"].guiActive = false;
-                Fields["guiIFFString"].guiActiveEditor = false;
-                Fields["guiIFFString"].guiActive = false;
-                Fields["detonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
-                Fields["detonateAtMinimumDistance"].guiActiveEditor = false;
-                Fields["detonateAtMinimumDistance"].guiActive = false;
+                Events[nameof(Toggle)].guiActiveEditor = false;
+                Events[nameof(Toggle)].guiActive = false;
+                Events[nameof(ToggleIFF)].guiActiveEditor = false;
+                Events[nameof(ToggleIFF)].guiActive = false;
+                Events[nameof(ToggleProx)].guiActiveEditor = false;
+                Events[nameof(ToggleProx)].guiActive = false;
+                Fields[nameof(guiStatusString)].guiActiveEditor = false;
+                Fields[nameof(guiStatusString)].guiActive = false;
+                Fields[nameof(guiIFFString)].guiActiveEditor = false;
+                Fields[nameof(guiIFFString)].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActiveEditor = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActive = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -266,7 +268,7 @@ namespace BDArmory.Weapons
                                 distanceFromStart = Vector3.Distance(part.vessel.transform.position, sourcevessel.transform.position);
                             }
                         }
-                        if (Checkproximity(distanceFromStart))
+                        if (CheckProximity(distanceFromStart))
                         {
                             Detonate();
                         }
@@ -291,7 +293,7 @@ namespace BDArmory.Weapons
             { hasDetonated = true; } // Don't trigger explosions on scene changes.
         }
 
-        private bool Checkproximity(float distanceFromStart)
+        private bool CheckProximity(float distanceFromStart)
         {
             bool detonate = false;
 

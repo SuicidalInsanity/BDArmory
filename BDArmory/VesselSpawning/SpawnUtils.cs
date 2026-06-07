@@ -643,7 +643,7 @@ namespace BDArmory.VesselSpawning
         /// This works by spawning in a spawnprobe at the current camera coordinates so that we can clean up the other vessels properly.
         /// </summary>
         /// <returns></returns>
-        public IEnumerator RemoveAllVessels()
+        public IEnumerator RemoveAllVessels(bool tryAgain = true)
         {
             DisableAllBulletsAndRockets(); // First get rid of any bullets and rockets flying around (missiles count as vessels).
             var vesselsToKill = FlightGlobals.Vessels.ToList();
@@ -652,8 +652,16 @@ namespace BDArmory.VesselSpawning
             var tic = Time.time;
             if (spawnProbe != null) // If the spawnProbe is null, then just try to kill everything anyway.
             {
+                bool failed = false;
                 spawnProbe.Landed = false; // Tell KSP that it's not landed so KSP doesn't mess with its position.
                 yield return new WaitWhile(() => spawnProbe != null && (!spawnProbe.loaded || spawnProbe.packed) && Time.time - tic < 30);
+                if (spawnProbe != null)
+                {
+                    spawnProbe.SetVelocity(Vector3.zero);
+                    spawnProbe.acceleration = Vector3d.zero;
+                    spawnProbe.IgnoreGForces(1500);
+                    spawnProbe.IgnoreSpeed(1500);
+                }
                 // Switch to the spawn probe. Give up after 30s.
                 while (spawnProbe != null && FlightGlobals.ActiveVessel != spawnProbe && Time.time - tic < 30)
                 {
@@ -663,10 +671,17 @@ namespace BDArmory.VesselSpawning
                     }
                     catch (Exception e)
                     {
-                        Debug.LogError($"[BDArmory.SpawnUtils]: Failed to switch to the SpawnProbe, proceeding with trying to kill everything.\n{e.Message}\n{e.StackTrace}");
+                        failed = true;
+                        if (tryAgain) Debug.LogError($"[BDArmory.SpawnUtils]: Failed to switch to the SpawnProbe. Trying again.\n{e.Message}\n{e.StackTrace}");
+                        else Debug.LogError($"[BDArmory.SpawnUtils]: Failed to switch to the SpawnProbe, proceeding with trying to kill everything.\n{e.Message}\n{e.StackTrace}");
                         break;
                     }
                     yield return waitForFixedUpdate;
+                }
+                if (failed && tryAgain)
+                {
+                    yield return RemoveAllVessels(false);
+                    yield break;
                 }
             }
             // Kill all other vessels (including debris).

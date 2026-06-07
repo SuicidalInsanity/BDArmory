@@ -102,16 +102,16 @@ namespace BDArmory.CounterMeasure
             if (part.FindModuleImplementing<MissileLauncher>() != null)
             {
                 isMissileCM = true;
-                Events["EventDropCM"].guiActive = false;
-                Fields["ejectVelocity"].guiActive = false;
-                Fields["priority"].guiActive = false;
-                Fields["ejectVelocity"].guiActiveEditor = false;
-                Fields["priority"].guiActiveEditor = false;
+                Events[nameof(EventDropCM)].guiActive = false;
+                Fields[nameof(ejectVelocity)].guiActive = false;
+                Fields[nameof(priority)].guiActive = false;
+                Fields[nameof(ejectVelocity)].guiActiveEditor = false;
+                Fields[nameof(priority)].guiActiveEditor = false;
             }
             else if (SpawnUtils.IsModularMissilePart(part))
             {
                 isMissileCM = true;
-                Events["EventDropCM"].guiActive = false;
+                Events[nameof(EventDropCM)].guiActive = false;
             }
 
             if (HighLogic.LoadedSceneIsFlight)
@@ -151,7 +151,7 @@ namespace BDArmory.CounterMeasure
             else
             {
                 SetupCMType();
-                Fields["ejectVelocity"].guiActiveEditor = cmType != CountermeasureTypes.Smoke;
+                Fields[nameof(ejectVelocity)].guiActiveEditor = cmType != CountermeasureTypes.Smoke;
             }
         }
 

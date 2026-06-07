@@ -25,6 +25,23 @@ namespace BDArmory.UI
         private float prevHueSlider = 0f;
         private Texture2D hueTexture;
 
+        private GUIStyle style;
+        private GUIStyle GetStyle(Color color)
+        {
+            if (style == null)
+            {
+                style = new()
+                {
+                    padding = new(0, 0, 0, 0),
+                    normal = new GUIStyleState { background = prefabColorPreview }
+                };
+            }
+            prefabColorPreview.SetPixel(0, 0, color);
+            prefabColorPreview.Apply();
+            style.normal.background = prefabColorPreview;
+            return style;
+        }
+
         protected void Awake()
         {
             HorizPos = (Screen.width / 2) - (displayTextureWidth / 2);
@@ -95,26 +112,23 @@ namespace BDArmory.UI
                 BDTISetup.Instance.showColorSelect = false;
                 BDTISetup.Instance.UpdateTeamColor = true;
             }
-            //preset colors
-            GUIStyle style = new() { normal = new GUIStyleState { background = prefabColorPreview } };
 
-            int row = 0, column = 0;
-            KeyValuePair<int, Color> setColor = default;
+            //preset colors
+            int row = 0, column = 0, index = 0;
+            KeyValuePair<int, Color> setColor = new(-1, default);
             foreach (var presetColor in BDTISetup.Instance.ColorPresets)
             {
-                prefabColorPreview.SetPixel(0, 0, presetColor.Value);
-                prefabColorPreview.Apply();
-                style.normal.background = prefabColorPreview;
-                if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), new GUIContent(""), style))
+                if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), new GUIContent(""), GetStyle(presetColor)))
                 {
                     switch (Event.current.button)
                     {
                         case 1: // right click
-                            setColor = new(presetColor.Key, selectedColor);
+                            if ((Event.current.modifiers & EventModifiers.Control) != 0) setColor = new(index, new(0, 0, 0, 0)); // Ctrl-right click to remove
+                            else if (selectedColor.a != 0) setColor = new(index, selectedColor); // Update color
                             break;
                         default:
-                            selectedColor = presetColor.Value;
-                            selectedColorPreview.SetPixel(0, 0, presetColor.Value);
+                            selectedColor = presetColor;
+                            selectedColorPreview.SetPixel(0, 0, presetColor);
                             selectedColorPreview.Apply();
                             break;
                     }
@@ -125,19 +139,36 @@ namespace BDArmory.UI
                     column = 0;
                     ++row;
                 }
+                ++index;
             }
-            if (setColor.Key > 0)
+            if (setColor.Key >= 0)
             {
-                // If the color isn't already in the other presets, update it.
-                if (!BDTISetup.Instance.ColorPresets.Where(kvp => kvp.Key != setColor.Key).Select(kvp => kvp.Value).Contains(setColor.Value))
-                    BDTISetup.Instance.ColorPresets[setColor.Key] = setColor.Value;
+                if (setColor.Value.a == 0)
+                {
+                    BDTISetup.Instance.ColorPresets.RemoveAt(setColor.Key);
+                }
+                else
+                {
+                    // If the color isn't already in the presets, update it.
+                    if (!BDTISetup.Instance.ColorPresets.Contains(setColor.Value))
+                        BDTISetup.Instance.ColorPresets[setColor.Key] = setColor.Value;
+                }
             }
-            // box for chosen color
 
-            selectedColorPreview.SetPixel(0, 0, selectedColor);
-            selectedColorPreview.Apply();
-            style.normal.background = selectedColorPreview;
-            GUI.Box(new Rect(HorizPos + displayTextureWidth + 10, VertPos + displayTextureHeight + 10, 30, 30), new GUIContent(""), style);
+            // "Add preset" button
+            column = BDTISetup.Instance.ColorPresets.Count / 2;
+            row = BDTISetup.Instance.ColorPresets.Count % 2;
+            if (GUI.Button(new Rect(HorizPos + 10 + column * 20, VertPos + displayTextureHeight + 5 + 20 * row, 15, 15), (Event.current.modifiers & EventModifiers.Control) != 0 ? " -" : " +", GetStyle(new(0, 0, 0, 0))))
+            {
+                // Left click: Add the current colour as a new entry.
+                if (Event.current.button == 0 && selectedColor.a != 0 && !BDTISetup.Instance.ColorPresets.Contains(selectedColor))
+                {
+                    BDTISetup.Instance.ColorPresets.Add(selectedColor);
+                }
+            }
+
+            // box for chosen color
+            GUI.Box(new Rect(HorizPos + displayTextureWidth + 10, VertPos + displayTextureHeight + 10, 30, 30), new GUIContent(""), GetStyle(selectedColor));
         }
         float updateTimer;
 

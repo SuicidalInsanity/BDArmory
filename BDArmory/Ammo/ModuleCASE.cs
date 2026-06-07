@@ -82,8 +82,8 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                 var internalmag = part.FindModuleImplementing<ModuleWeapon>();
                 if (internalmag != null)
                 {
-                    Fields["CASELevel"].guiActiveEditor = false;
-                    Fields["CASEmass"].guiActiveEditor = false;
+                    Fields[nameof(CASELevel)].guiActiveEditor = false;
+                    Fields[nameof(CASEmass)].guiActiveEditor = false;
                 }
                 else
                 {
@@ -93,7 +93,7 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                             if (resource.Current == null) continue;
                             resourceAmount.Add(resource.Current.maxAmount);
                         }
-                    UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields["CASELevel"].uiControlEditor;
+                    UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields[nameof(CASELevel)].uiControlEditor;
                     ATrangeEditor.onFieldChanged = CASESetup;
                     origMass = part.mass;
                     //origScale = part.rescaleFactor;

@@ -859,7 +859,8 @@ namespace BDArmory.Weapons
         [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_DefaultDetonationRange", guiActiveEditor = false)]//Fuzed Detonation Range
         public float defaultDetonationRange = 3500; // maxairDetrange works for altitude fuzing, use this for VT fuzing
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ProximityFuzeRadius"), UI_FloatRange(minValue = 0f, maxValue = 300f, stepIncrement = 1f, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_ProximityFuzeRadius"),
+            UI_FloatSemiLogRange(minValue = 1f, maxValue = 1000f, sigFig = 2, withZero = true, scene = UI_Scene.Editor, affectSymCounterparts = UI_Scene.All)]//Proximity Fuze Radius
         public float detonationRange = -1f; // give ability to set proximity range
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DetonateAtMinimumDistance"), UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled")]
@@ -880,19 +881,19 @@ namespace BDArmory.Weapons
 
             if (advancedAmmoOption == true)
             {
-                Events["ToggleAmmoConfig"].guiName = StringUtils.Localize("#LOC_BDArmory_advanced");//"Advanced Ammo Config"
-                Events["ConfigAmmo"].guiActive = true;
-                Events["ConfigAmmo"].guiActiveEditor = true;
-                Fields["AmmoTypeNum"].guiActive = false;
-                Fields["AmmoTypeNum"].guiActiveEditor = false;
+                Events[nameof(ToggleAmmoConfig)].guiName = StringUtils.Localize("#LOC_BDArmory_advanced");//"Advanced Ammo Config"
+                Events[nameof(ConfigAmmo)].guiActive = true;
+                Events[nameof(ConfigAmmo)].guiActiveEditor = true;
+                Fields[nameof(AmmoTypeNum)].guiActive = false;
+                Fields[nameof(AmmoTypeNum)].guiActiveEditor = false;
             }
             else
             {
-                Events["ToggleAmmoConfig"].guiName = StringUtils.Localize("#LOC_BDArmory_simple");//"Simple Ammo Config
-                Events["ConfigAmmo"].guiActive = false;
-                Events["ConfigAmmo"].guiActiveEditor = false;
-                Fields["AmmoTypeNum"].guiActive = true;
-                Fields["AmmoTypeNum"].guiActiveEditor = true;
+                Events[nameof(ToggleAmmoConfig)].guiName = StringUtils.Localize("#LOC_BDArmory_simple");//"Simple Ammo Config
+                Events[nameof(ConfigAmmo)].guiActive = false;
+                Events[nameof(ConfigAmmo)].guiActiveEditor = false;
+                Fields[nameof(AmmoTypeNum)].guiActive = true;
+                Fields[nameof(AmmoTypeNum)].guiActiveEditor = true;
                 useCustomBelt = false;
             }
             GUIUtils.RefreshAssociatedWindows(part);
@@ -1018,11 +1019,11 @@ namespace BDArmory.Weapons
             useThisWeaponForAim = !useThisWeaponForAim;
             if (useThisWeaponForAim == false)
             {
-                Events["setAimOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
+                Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
             }
             else
             {
-                Events["setAimOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideTrue");//"Revert Aim Override"
+                Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideTrue");//"Revert Aim Override"
                 using (List<Part>.Enumerator craftPart = EditorLogic.fetch.ship.parts.GetEnumerator())
                     while (craftPart.MoveNext())
                     {
@@ -1036,7 +1037,7 @@ namespace BDArmory.Weapons
                                 if (weapon.Current.useThisWeaponForAim)
                                 {
                                     weapon.Current.useThisWeaponForAim = false;
-                                    weapon.Current.Events["setAimOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
+                                    weapon.Current.Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
                                     GUIUtils.RefreshAssociatedWindows(weapon.Current.part);
                                 }
                             }
@@ -1091,7 +1092,7 @@ namespace BDArmory.Weapons
         bool bindingKey = false;
         IEnumerator BindCustomFireKey()
         {
-            Events["SetCustomFireKey"].guiName = StringUtils.Localize("#LOC_BDArmory_InputSettings_recordedInput");
+            Events[nameof(SetCustomFireKey)].guiName = StringUtils.Localize("#LOC_BDArmory_InputSettings_recordedInput");
             bindingKey = true;
             int id = 0;
             BDKeyBinder.BindKey(id);
@@ -1117,7 +1118,7 @@ namespace BDArmory.Weapons
                 }
                 yield return null;
             }
-            Events["SetCustomFireKey"].guiName = StringUtils.Localize("#LOC_BDArmory_SetCustomFireKey");
+            Events[nameof(SetCustomFireKey)].guiName = StringUtils.Localize("#LOC_BDArmory_SetCustomFireKey");
         }
         public void SetCustomFireKey(string key, bool applySym = true)
         {
@@ -1224,8 +1225,8 @@ namespace BDArmory.Weapons
             part.stagingIconAlwaysShown = true;
             part.stackIconGrouping = StackIconGrouping.SAME_TYPE;
 
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = true;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = true;
             ParseWeaponType(weaponType);
 
             // extension for feature_engagementenvelope
@@ -1233,16 +1234,16 @@ namespace BDArmory.Weapons
             if (isAPS)
             {
                 engageMissile = false; //missiles targeted separately from base WM targeting logic, having this is unnecessary and can cause problems with radar slaving
-                Fields["engageMissile"].guiActive = false;
-                Fields["engageMissile"].guiActiveEditor = false;
+                Fields[nameof(engageMissile)].guiActive = false;
+                Fields[nameof(engageMissile)].guiActiveEditor = false;
                 if (!dualModeAPS)
                 {
                     HideEngageOptions();
-                    Events["ShowUI"].active = false;
-                    Events["HideUI"].active = false;
-                    Events["Toggle"].active = false;
-                    Fields["priority"].guiActive = false;
-                    Fields["priority"].guiActiveEditor = false;
+                    Events[nameof(ShowUI)].active = false;
+                    Events[nameof(HideUI)].active = false;
+                    Events[nameof(Toggle)].active = false;
+                    Fields[nameof(priority)].guiActive = false;
+                    Fields[nameof(priority)].guiActiveEditor = false;
                 }
                 ParseAPSType(APSType);
             }
@@ -1283,8 +1284,8 @@ namespace BDArmory.Weapons
 
             if (roundsPerMinute >= 1500 || (eWeaponType == WeaponTypes.Laser && !pulseLaser))
             {
-                Events["ToggleRipple"].guiActiveEditor = false;
-                Fields["useRippleFire"].guiActiveEditor = false;
+                Events[nameof(ToggleRipple)].guiActiveEditor = false;
+                Fields[nameof(useRippleFire)].guiActiveEditor = false;
                 useRippleFire = false;
                 canRippleFire = false;
                 if (HighLogic.LoadedSceneIsFlight)
@@ -1307,13 +1308,13 @@ namespace BDArmory.Weapons
 
             if (!(isChaingun || eWeaponType == WeaponTypes.Rocket))//disable rocket RoF slider for non rockets
             {
-                Fields["roundsPerMinute"].guiActiveEditor = false;
+                Fields[nameof(roundsPerMinute)].guiActiveEditor = false;
             }
             else
             {
                 try
                 {
-                    UI_FloatRange RPMEditor = (UI_FloatRange)Fields["roundsPerMinute"].uiControlEditor; // FIXME this is throwing an invalid cast for rocket pods sometimes
+                    UI_FloatRange RPMEditor = (UI_FloatRange)Fields[nameof(roundsPerMinute)].uiControlEditor; // FIXME this is throwing an invalid cast for rocket pods sometimes
                     if (isChaingun)
                     {
                         RPMEditor.maxValue = baseRPM;
@@ -1332,44 +1333,44 @@ namespace BDArmory.Weapons
             {
                 if (advancedAmmoOption == true)
                 {
-                    Events["ToggleAmmoConfig"].guiName = StringUtils.Localize("#LOC_BDArmory_advanced");//"Advanced Ammo Config"
-                    Events["ConfigAmmo"].guiActive = true;
-                    Events["ConfigAmmo"].guiActiveEditor = true;
-                    Fields["AmmoTypeNum"].guiActive = false;
-                    Fields["AmmoTypeNum"].guiActiveEditor = false;
+                    Events[nameof(ToggleAmmoConfig)].guiName = StringUtils.Localize("#LOC_BDArmory_advanced");//"Advanced Ammo Config"
+                    Events[nameof(ConfigAmmo)].guiActive = true;
+                    Events[nameof(ConfigAmmo)].guiActiveEditor = true;
+                    Fields[nameof(AmmoTypeNum)].guiActive = false;
+                    Fields[nameof(AmmoTypeNum)].guiActiveEditor = false;
                 }
                 else
                 {
-                    Events["ToggleAmmoConfig"].guiName = StringUtils.Localize("#LOC_BDArmory_simple");//"Simple Ammo Config
-                    Events["ConfigAmmo"].guiActive = false;
-                    Events["ConfigAmmo"].guiActiveEditor = false;
-                    Fields["AmmoTypeNum"].guiActiveEditor = true;
+                    Events[nameof(ToggleAmmoConfig)].guiName = StringUtils.Localize("#LOC_BDArmory_simple");//"Simple Ammo Config
+                    Events[nameof(ConfigAmmo)].guiActive = false;
+                    Events[nameof(ConfigAmmo)].guiActiveEditor = false;
+                    Fields[nameof(AmmoTypeNum)].guiActiveEditor = true;
                     if (!canHotSwap)
-                        Fields["AmmoTypeNum"].guiActive = false;
+                        Fields[nameof(AmmoTypeNum)].guiActive = false;
                     else
-                        Fields["AmmoTypeNum"].guiActive = true;
+                        Fields[nameof(AmmoTypeNum)].guiActive = true;
                 }
-                UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields["AmmoTypeNum"].uiControlEditor;
+                UI_FloatRange ATrangeEditor = (UI_FloatRange)Fields[nameof(AmmoTypeNum)].uiControlEditor;
                 ATrangeEditor.maxValue = (float)ammoList.Count;
                 ATrangeEditor.onFieldChanged = SetupAmmo;
-                UI_FloatRange ATrangeFlight = (UI_FloatRange)Fields["AmmoTypeNum"].uiControlFlight;
+                UI_FloatRange ATrangeFlight = (UI_FloatRange)Fields[nameof(AmmoTypeNum)].uiControlFlight;
                 ATrangeFlight.maxValue = (float)ammoList.Count;
                 ATrangeFlight.onFieldChanged = SetupAmmo;
             }
             else //disable ammo selector
             {
-                Fields["AmmoTypeNum"].guiActive = false;
-                Fields["AmmoTypeNum"].guiActiveEditor = false;
-                Events["ToggleAmmoConfig"].guiActiveEditor = false;
+                Fields[nameof(AmmoTypeNum)].guiActive = false;
+                Fields[nameof(AmmoTypeNum)].guiActiveEditor = false;
+                Events[nameof(ToggleAmmoConfig)].guiActiveEditor = false;
             }
-            UI_FloatRange FAOEditor = (UI_FloatRange)Fields["FiringTolerance"].uiControlEditor;
+            UI_FloatRange FAOEditor = (UI_FloatRange)Fields[nameof(FiringTolerance)].uiControlEditor;
             FAOEditor.onFieldChanged = FAOCos;
-            UI_FloatRange FAOFlight = (UI_FloatRange)Fields["FiringTolerance"].uiControlFlight;
+            UI_FloatRange FAOFlight = (UI_FloatRange)Fields[nameof(FiringTolerance)].uiControlFlight;
             FAOFlight.onFieldChanged = FAOCos;
-            Fields["FiringTolerance"].guiActive = FireAngleOverride;
-            Fields["FiringTolerance"].guiActiveEditor = FireAngleOverride;
-            Fields["fireBurstLength"].guiActive = BurstOverride;
-            Fields["fireBurstLength"].guiActiveEditor = BurstOverride;
+            Fields[nameof(FiringTolerance)].guiActive = FireAngleOverride;
+            Fields[nameof(FiringTolerance)].guiActiveEditor = FireAngleOverride;
+            Fields[nameof(fireBurstLength)].guiActive = BurstOverride;
+            Fields[nameof(fireBurstLength)].guiActiveEditor = BurstOverride;
             if (BurstFire)
             {
                 BeltFed = false;
@@ -1407,7 +1408,7 @@ namespace BDArmory.Weapons
                 {
                     externalAmmo = true;
                 }
-                Events["ToggleAmmoConfig"].guiActiveEditor = false;
+                Events[nameof(ToggleAmmoConfig)].guiActiveEditor = false;
             }
             if (eWeaponType == WeaponTypes.Laser)
             {
@@ -1431,13 +1432,13 @@ namespace BDArmory.Weapons
                 }
                 rocketPod = false;
                 //disable fuze GUI elements
-                Fields["defaultDetonationRange"].guiActive = false;
-                Fields["defaultDetonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
-                Fields["detonationRange"].guiActiveEditor = false;
-                Fields["guiAmmoTypeString"].guiActiveEditor = false; //ammoswap
-                Fields["guiAmmoTypeString"].guiActive = false;
-                Events["ToggleAmmoConfig"].guiActiveEditor = false;
+                Fields[nameof(defaultDetonationRange)].guiActive = false;
+                Fields[nameof(defaultDetonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
+                Fields[nameof(guiAmmoTypeString)].guiActiveEditor = false; //ammoswap
+                Fields[nameof(guiAmmoTypeString)].guiActive = false;
+                Events[nameof(ToggleAmmoConfig)].guiActiveEditor = false;
                 tracerBaseSWidth = tracerStartWidth;
                 tracerBaseEWidth = tracerEndWidth;
                 laserTexList = BDAcTools.ParseNames(laserTexturePath);
@@ -1529,7 +1530,7 @@ namespace BDArmory.Weapons
 
                 //setup transforms
                 fireTransforms = part.FindModelTransforms(fireTransformName);
-                if (fireTransforms.Length == 0) Debug.LogError("[BDArmory.ModuleWeapon] Weapon missing fireTransform [" + fireTransformName + "]! Please fix your model");
+                if (fireTransforms.Length == 0) Debug.LogError($"[BDArmory.ModuleWeapon] Weapon missing fireTransform [{fireTransformName}]! Please fix your model");
                 shellEjectTransforms = part.FindModelTransforms(shellEjectTransformName);
                 if (shellEjectTransforms.Length > 0 && shellPool == null) SetupShellPool();
 
@@ -1621,11 +1622,11 @@ namespace BDArmory.Weapons
 
                 if (ammoList.Count > 1)
                 {
-                    UI_FloatRange ATrangeFlight = (UI_FloatRange)Fields["AmmoTypeNum"].uiControlFlight;
+                    UI_FloatRange ATrangeFlight = (UI_FloatRange)Fields[nameof(AmmoTypeNum)].uiControlFlight;
                     ATrangeFlight.maxValue = (float)ammoList.Count;
                     if (!canHotSwap)
                     {
-                        Fields["AmmoTypeNum"].guiActive = false;
+                        Fields[nameof(AmmoTypeNum)].guiActive = false;
                     }
                 }
                 baseDeviation = maxDeviation; //store original MD value
@@ -1640,7 +1641,7 @@ namespace BDArmory.Weapons
             else if (HighLogic.LoadedSceneIsEditor)
             {
                 fireTransforms = part.FindModelTransforms(fireTransformName);
-                if (fireTransforms.Length == 0) Debug.LogError("[BDArmory.ModuleWeapon] Weapon missing fireTransform [" + fireTransformName + "]! Please fix your model");
+                if (fireTransforms.Length == 0) Debug.LogError($"[BDArmory.ModuleWeapon] Weapon missing fireTransform [{fireTransformName}]! Please fix your model");
                 WeaponNameWindow.OnActionGroupEditorOpened.Add(OnActionGroupEditorOpened);
                 WeaponNameWindow.OnActionGroupEditorClosed.Add(OnActionGroupEditorClosed);
                 if (useCustomBelt)
@@ -1692,14 +1693,14 @@ namespace BDArmory.Weapons
             }
             if (!turret)
             {
-                Fields["onlyFireInRange"].guiActive = false;
-                Fields["onlyFireInRange"].guiActiveEditor = false;
+                Fields[nameof(onlyFireInRange)].guiActive = false;
+                Fields[nameof(onlyFireInRange)].guiActiveEditor = false;
             }
             if (HighLogic.LoadedSceneIsEditor || HighLogic.LoadedSceneIsFlight)
             {
                 if ((turret || eWeaponType != WeaponTypes.Rocket) || (eWeaponType == WeaponTypes.Rocket && (!rocketPod || (rocketPod && externalAmmo))))
                 {
-                    Events["Jettison"].guiActive = false;
+                    Events[nameof(Jettison)].guiActive = false;
                     Actions["AGJettison"].active = false;
                 }
             }
@@ -1735,7 +1736,7 @@ namespace BDArmory.Weapons
             if (hasDeployAnim)
             {
                 deployState = GUIUtils.SetUpSingleAnimation(deployAnimName, part);
-                Events["ToggleDeploy"].guiActiveEditor = true;
+                Events[nameof(ToggleDeploy)].guiActiveEditor = true;
                 if (deployState != null)
                 {
                     deployState.normalizedTime = 0;
@@ -1978,33 +1979,33 @@ namespace BDArmory.Weapons
         {
             if (eFuzeType == BulletFuzeTypes.Proximity || eFuzeType == BulletFuzeTypes.Flak || eFuzeType == BulletFuzeTypes.Timed || beehive)
             {
-                Fields["defaultDetonationRange"].guiActive = true;
-                Fields["defaultDetonationRange"].guiActiveEditor = true;
-                Fields["detonationRange"].guiActive = true;
-                Fields["detonationRange"].guiActiveEditor = true;
+                Fields[nameof(defaultDetonationRange)].guiActive = true;
+                Fields[nameof(defaultDetonationRange)].guiActiveEditor = true;
+                Fields[nameof(detonationRange)].guiActive = true;
+                Fields[nameof(detonationRange)].guiActiveEditor = true;
                 // detonationRange = -1;
             }
             else
             {
-                Fields["defaultDetonationRange"].guiActive = false;
-                Fields["defaultDetonationRange"].guiActiveEditor = false;
-                Fields["detonationRange"].guiActive = false;
-                Fields["detonationRange"].guiActiveEditor = false;
+                Fields[nameof(defaultDetonationRange)].guiActive = false;
+                Fields[nameof(defaultDetonationRange)].guiActiveEditor = false;
+                Fields[nameof(detonationRange)].guiActive = false;
+                Fields[nameof(detonationRange)].guiActiveEditor = false;
             }
             if (eWeaponType == WeaponTypes.Rocket && proximityDetonation)
             {
-                Fields["detonateAtMinimumDistance"].guiActive = true;
-                Fields["detonateAtMinimumDistance"].guiActiveEditor = true;
+                Fields[nameof(detonateAtMinimumDistance)].guiActive = true;
+                Fields[nameof(detonateAtMinimumDistance)].guiActiveEditor = true;
             }
             else
             {
-                Fields["detonateAtMinimumDistance"].guiActive = false;
-                Fields["detonateAtMinimumDistance"].guiActiveEditor = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActive = false;
+                Fields[nameof(detonateAtMinimumDistance)].guiActiveEditor = false;
             }
             if (useThisWeaponForAim)
-                Events["setAimOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideTrue");//"Revert Aim Override"
+                Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideTrue");//"Revert Aim Override"
             else
-                Events["setAimOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
+                Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
 
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -2015,15 +2016,15 @@ namespace BDArmory.Weapons
             FireAngleOverride = !FireAngleOverride;
             if (!FireAngleOverride)
             {
-                Events["ToggleOverrideAngle"].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Enable");// Enable Firing Angle Override
+                Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Enable");// Enable Firing Angle Override
             }
             else
             {
-                Events["ToggleOverrideAngle"].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Disable");// Disable Firing Angle Override
+                Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Disable");// Disable Firing Angle Override
             }
 
-            Fields["FiringTolerance"].guiActive = FireAngleOverride;
-            Fields["FiringTolerance"].guiActiveEditor = FireAngleOverride;
+            Fields[nameof(FiringTolerance)].guiActive = FireAngleOverride;
+            Fields[nameof(FiringTolerance)].guiActiveEditor = FireAngleOverride;
 
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -2033,15 +2034,15 @@ namespace BDArmory.Weapons
             BurstOverride = !BurstOverride;
             if (!BurstOverride)
             {
-                Events["ToggleBurstLengthOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Enable");// Enable Firing Angle Override
+                Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Enable");// Enable Firing Angle Override
             }
             else
             {
-                Events["ToggleBurstLengthOverride"].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Disable");// Disable Firing Angle Override
+                Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Disable");// Disable Firing Angle Override
             }
 
-            Fields["fireBurstLength"].guiActive = BurstOverride;
-            Fields["fireBurstLength"].guiActiveEditor = BurstOverride;
+            Fields[nameof(fireBurstLength)].guiActive = BurstOverride;
+            Fields[nameof(fireBurstLength)].guiActiveEditor = BurstOverride;
 
             GUIUtils.RefreshAssociatedWindows(part);
         }
@@ -2054,11 +2055,11 @@ namespace BDArmory.Weapons
 
             if (toggleDeployState == false)
             {
-                Events["ToggleDeploy"].guiName = StringUtils.Localize("#autoLOC_6001080");//"Deploy"
+                Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize("#autoLOC_6001080");//"Deploy"
             }
             else
             {
-                Events["ToggleDeploy"].guiName = StringUtils.Localize("#autoLOC_6001339");//""Retract"
+                Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize("#autoLOC_6001339");//""Retract"
             }
             if (deployState != null)
             {
@@ -2121,13 +2122,13 @@ namespace BDArmory.Weapons
         {
             if (p == null)
             {
-                Fields["customTurretID"].guiActiveEditor = false;
+                Fields[nameof(customTurretID)].guiActiveEditor = false;
                 return;
             }
             var turret = p.FindModuleImplementing<ModuleCustomTurret>();
             if (turret != null)
             {
-                Fields["customTurretID"].guiActiveEditor = true;
+                Fields[nameof(customTurretID)].guiActiveEditor = true;
                 return;
             }
             FindTurretInParents(p.parent);
@@ -2276,20 +2277,20 @@ namespace BDArmory.Weapons
 
         private void UpdateMenus(bool visible)
         {
-            Events["HideUI"].active = visible;
-            Events["ShowUI"].active = !visible;
+            Events[nameof(HideUI)].active = visible;
+            Events[nameof(ShowUI)].active = !visible;
         }
 
         private void OnActionGroupEditorOpened()
         {
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = false;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = false;
         }
 
         private void OnActionGroupEditorClosed()
         {
-            Events["HideUI"].active = false;
-            Events["ShowUI"].active = true;
+            Events[nameof(HideUI)].active = false;
+            Events[nameof(ShowUI)].active = true;
         }
 
         [KSPEvent(guiActiveEditor = true, guiName = "#LOC_BDArmory_HideWeaponGroupUI", active = false)]//Hide Weapon Group UI
@@ -2778,7 +2779,7 @@ namespace BDArmory.Weapons
                                             /////////////////////////////////////////////////
                                             if (!VesselModuleRegistry.IgnoredVesselTypes.Contains(p.vessel.vesselType))
                                             {
-                                                float EMPDamage = initialDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
+                                                float EMPDamage = laserDamage * (pulseLaser ? 1 : TimeWarp.fixedDeltaTime) * (BDArmorySettings.DMG_MULTIPLIER / 100);
                                                 Part closestCommand = null;
                                                 float distToCommandSqr = float.PositiveInfinity; //lets find out which command part is closest to the hit
                                                 Vector3 commandDir = Vector3.zero;
@@ -6150,7 +6151,7 @@ namespace BDArmory.Weapons
                     targetAcquired = true;
                     targetAcquisitionType = TargetAcquisitionType.Visual;
                     if (wm.slavingTurrets && turret) slaved = false;
-                    if (BDArmorySettings.DEBUG_APS)
+                    if (BDArmorySettings.DEBUG_APS && BDArmorySettings.DEBUG_WEAPONS)
                     {
                         Debug.Log("[BDArmory.ModuleWeapon] tgtVelocity: " + tgtVelocity + "; tgtPosition: " + targetPosition + "; tgtAccel: " + targetAcceleration);
                         Debug.Log($"[BDArmory.ModuleWeapon - {(vessel != null ? vessel.GetName() : "null")}] Lead Offset: {fixedLeadOffset}, FinalAimTgt: {finalAimTarget}, tgt CosAngle {targetCosAngle}, wpn CosAngle {targetAdjustedMaxCosAngle}, Wpn Autofire: {autoFire}");

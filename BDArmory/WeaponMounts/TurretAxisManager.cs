@@ -147,7 +147,7 @@ namespace BDArmory.WeaponMounts
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool CanMove()
         {
-            if (timeOfLastMoveCommand >= Time.fixedTime)
+            if (timeOfLastMoveCommand >= Time.time)
             {
                 return false;
             }
@@ -158,7 +158,7 @@ namespace BDArmory.WeaponMounts
                 return false;
             }
 
-            timeOfLastMoveCommand = Time.fixedTime;
+            timeOfLastMoveCommand = Time.time;
 
             return true;
         }

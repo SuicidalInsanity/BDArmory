@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -269,9 +269,9 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
 
         public void SetChooseOptions()
         {
-            UI_ChooseOption broadside = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields["OrbitDirectionName"].uiControlFlight : Fields["OrbitDirectionName"].uiControlEditor);
+            UI_ChooseOption broadside = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(OrbitDirectionName)].uiControlFlight : Fields[nameof(OrbitDirectionName)].uiControlEditor);
             broadside.onFieldChanged = ChooseOptionsUpdated;
-            // UI_ChooseOption surface = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields["SurfaceTypeName"].uiControlFlight : Fields["SurfaceTypeName"].uiControlEditor);
+            // UI_ChooseOption surface = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(SurfaceTypeName)].uiControlFlight : Fields[nameof(SurfaceTypeName)].uiControlEditor);
             // surface.onFieldChanged = ChooseOptionsUpdated;
         }
 
@@ -295,7 +295,7 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
 
         void SetOnUpToElevenChanged()
         {
-            var field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields["upToEleven"].uiControlFlight : Fields["upToEleven"].uiControlEditor);
+            var field = (UI_Toggle)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(upToEleven)].uiControlFlight : Fields[nameof(upToEleven)].uiControlEditor);
             field.onFieldChanged = TurnItUpToEleven; // Only triggered on UI interaction.
             if (upToEleven) TurnItUpToEleven(); // The initially loaded values are not the alternate ones.
         }

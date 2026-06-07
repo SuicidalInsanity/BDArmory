@@ -137,6 +137,27 @@ namespace BDArmory.Utils
             }
         }
 
+        static FloatCurve GaussianQuantileApp = new([
+            new(0f, 0.0f, 1.253314f, 1.253314f),
+            new(0.5762892f, 0.8f, 1.7259735f, 1.7259735f),
+            new(0.8663856f, 1.5f, 3.8604795f, 3.8604795f),
+            new(1f, 4.5f, 60f, 0.0f),
+        ]);
+
+        public static float GaussianQuant()
+        {
+            // Technically this will raise an exception if the first random produces a zero (which should never happen now that it's log(1-rnd))
+            try
+            {
+                return GaussianQuantileApp.Evaluate(UnityEngine.Random.value);
+            }
+            catch (Exception e)
+            { // I have no idea what exception Mathf.Log raises when it gets a zero
+                Debug.LogWarning("[BDArmory.VectorUtils]: Exception thrown in Gaussian: " + e.Message + "\n" + e.StackTrace);
+                return 0;
+            }
+        }
+
         /// <summary>
         /// Generate a Vector3 with elements from an approximately normal distribution (mean: 0, std.dev: 1).
         /// </summary>
@@ -594,6 +615,19 @@ namespace BDArmory.Utils
             float x = v1.x - v2.x, y = v1.y - v2.y, z = v1.z - v2.z;
             float normalizationFactor = 1f / BDAMath.Sqrt(x * x + y * y + z * z);
             return new Vector3(x * normalizationFactor, y * normalizationFactor, z * normalizationFactor);
+        }
+
+        /// <summary>
+        /// Get vector sum, scaled by a scale vector.
+        /// </summary>
+        /// <param name="v1">First vector.</param>
+        /// <param name="v2">Second vector.</param>
+        /// <param name="scale">Scale vector.</param>
+        /// <returns>v1.Scale(scale) + v2.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 ScaledSum(Vector3 v1, Vector3 v2, Vector3 scale)
+        {
+            return new Vector3(scale.x * v1.x + v2.x, scale.y * v1.y + v2.y, scale.z * v1.z + v2.z);
         }
 
         /// <summary>

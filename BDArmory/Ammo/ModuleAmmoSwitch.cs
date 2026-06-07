@@ -109,22 +109,22 @@ namespace BDArmory.Ammo
                 if (HighLogic.LoadedSceneIsFlight) hasLaunched = true;
                 if (hasGUI)
                 {
-                    Events["nextTankSetupEvent"].guiActive = availableInFlight;
-                    Events["nextTankSetupEvent"].guiActiveEditor = availableInEditor;
-                    Events["previousTankSetupEvent"].guiActive = availableInFlight;
-                    Events["previousTankSetupEvent"].guiActiveEditor = availableInEditor;
+                    Events[nameof(nextTankSetupEvent)].guiActive = availableInFlight;
+                    Events[nameof(nextTankSetupEvent)].guiActiveEditor = availableInEditor;
+                    Events[nameof(previousTankSetupEvent)].guiActive = availableInFlight;
+                    Events[nameof(previousTankSetupEvent)].guiActiveEditor = availableInEditor;
                 }
                 else
                 {
-                    Events["nextTankSetupEvent"].guiActive = false;
-                    Events["nextTankSetupEvent"].guiActiveEditor = false;
-                    Events["previousTankSetupEvent"].guiActive = false;
-                    Events["previousTankSetupEvent"].guiActiveEditor = false;
+                    Events[nameof(nextTankSetupEvent)].guiActive = false;
+                    Events[nameof(nextTankSetupEvent)].guiActiveEditor = false;
+                    Events[nameof(previousTankSetupEvent)].guiActive = false;
+                    Events[nameof(previousTankSetupEvent)].guiActiveEditor = false;
                 }
 
                 if (HighLogic.CurrentGame == null || HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
                 {
-                    Fields["addedCost"].guiActiveEditor = displayCurrentTankCost;
+                    Fields[nameof(addedCost)].guiActiveEditor = displayCurrentTankCost;
                 }
 
                 initialized = true;

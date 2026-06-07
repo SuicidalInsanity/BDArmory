@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 using BDArmory.Extensions;
@@ -101,8 +101,10 @@ namespace BDArmory.Guidances
             double a = 9.80665f * missile.BallisticOverShootFactor;
             double d = missile.vessel.GetFutureAltitude(predictionTime);
 
-            double time1 = (-vi + Math.Sqrt(vi * vi - 4 * (0.5f * a) * (-d))) / a;
-            double time2 = (-vi - Math.Sqrt(vi * vi - 4 * (0.5f * a) * (-d))) / a;
+            double det = Math.Sqrt(vi * vi - 4 * (0.5f * a) * (-d));
+
+            double time1 = (-vi + det) / a;
+            double time2 = (-vi - det) / a;
 
             return Math.Max(time1, time2);
         }

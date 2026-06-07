@@ -86,14 +86,14 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                 GameEvents.onEditorShipModified.Add(ShipModified);
                 if (!isRectangularMagazine)
                 {
-                    Fields["rowCount"].guiActiveEditor = false;
+                    Fields[nameof(rowCount)].guiActiveEditor = false;
                 }
-                UI_FloatRange Ammo = (UI_FloatRange)Fields["ammoCount"].uiControlEditor;
+                UI_FloatRange Ammo = (UI_FloatRange)Fields[nameof(ammoCount)].uiControlEditor;
                 Ammo.maxValue = maxAmmo;
             }
             if (HighLogic.LoadedSceneIsFlight)
             {
-                UI_ProgressBar ordnance = (UI_ProgressBar)Fields["ammoRemaining"].uiControlFlight;
+                UI_ProgressBar ordnance = (UI_ProgressBar)Fields[nameof(ammoRemaining)].uiControlFlight;
                 ordnance.maxValue = ammoCount;
                 ammoRemaining = ammoCount;
             }
@@ -221,8 +221,8 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                                     //Debug.Log($"[MissileMagazine] Missile bounds are {missile.collider.bounds.size.x.ToString("0.00")}, {missile.collider.bounds.size.y.ToString("0.00")}, {missile.collider.bounds.size.z.ToString("0.00")}");
                                     //this will grab missile body dia/length, something something folding fins. But given BDA missiles are IRL scale instead of ~0.7 kerbalscale, including fins would make the mags *really* large
                                     MissileLauncher MLConfig = missile.FindModuleImplementing<MissileLauncher>();
-                                    Fields["loadedMissileName"].guiActive = true;
-                                    Fields["loadedMissileName"].guiActiveEditor = true;
+                                    Fields[nameof(loadedMissileName)].guiActive = true;
+                                    Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                                     loadedMissileName = MLConfig.GetShortName();
                                     GUIUtils.RefreshAssociatedWindows(part);
                                     missileMass = AccountForAmmo ? missile.partInfo.partPrefab.mass : 0;

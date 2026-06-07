@@ -47,10 +47,15 @@ namespace BDArmory.Targeting
 
         public string Name()
         {
-            return (vessel ? vessel.name : (isDecoy ? "Decoy" : "Null"));
+            return (vessel ? vessel.vesselName : (isDecoy ? "Decoy" : "Null"));
         }
 
-        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f)
+        public Guid ID()
+        {
+            return (vessel ? vessel.id : Guid.Empty);
+        }
+
+        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f, float _glintMod = -1f)
         {
             //orbital = v.InOrbit();
             //orbit = v.orbit;
@@ -59,7 +64,6 @@ namespace BDArmory.Targeting
             vessel = v;
             velocity = v.Velocity();
             IRSource = heatpart;
-            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : v.CoM, v.mainBody);
             acceleration = v.acceleration_immediate;
             exists = true;
             notchVMod = _notchVMod;
@@ -75,6 +79,8 @@ namespace BDArmory.Targeting
             {
                 targetInfo = v.gameObject.AddComponent<TargetInfo>();
             }
+
+            geoPos = VectorUtils.WorldPositionToGeoCoords(IRSource != null ? IRSource.transform.position : (_glintMod > 0 ? v.CoM + _glintMod * targetInfo.GetRadarGlint() : v.CoM), v.mainBody);
 
             Team = null;
 

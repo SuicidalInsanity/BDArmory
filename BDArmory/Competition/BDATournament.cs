@@ -2462,7 +2462,7 @@ namespace BDArmory.Competition
                 if (BDATournament.Instance == null || BDATournament.Instance.tournamentID == 0) yield break;
                 BDArmorySetup.windowBDAToolBarEnabled = true;
                 LoadedVesselSwitcher.Instance.SetVisible(true);
-                VesselSpawnerWindow.Instance.SetVisible(true);
+                // VesselSpawnerWindow.Instance.SetVisible(true);
                 RWPSettings.SetRWP(BDArmorySettings.RUNWAY_PROJECT, BDArmorySettings.RUNWAY_PROJECT_ROUND); // Reapply the RWP settings if RWP is active as some may be overridden by the above.
                 BDATournament.Instance.RunTournament();
             }

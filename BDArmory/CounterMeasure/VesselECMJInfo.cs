@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -207,8 +207,8 @@ namespace BDArmory.CounterMeasure
                     {
                         // ignore null, unloaded
                         if (loadedvessels.Current == null || !loadedvessels.Current.loaded || loadedvessels.Current == vessel) continue;
-                        float distance = (loadedvessels.Current.CoM - vessel.CoM).magnitude;
-                        if (distance < jStrength * 10)
+                        float distanceSqr = (loadedvessels.Current.CoM - vessel.CoM).sqrMagnitude;
+                        if (distanceSqr < jStrength * jStrength * 100f)
                         {
                             RadarWarningReceiver.PingRWR(loadedvessels.Current, vessel.CoM, RadarWarningReceiver.RWRThreatTypes.Jamming, 0.2f, vessel);
                             //Debug.Log($"[ECMDebug]: jammer on {vessel.GetName()} active! Pinging RWR on {loadedvessels.Current.GetName()}");

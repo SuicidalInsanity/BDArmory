@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -455,7 +455,7 @@ namespace BDArmory.Control
 
         public void SetChooseOptions()
         {
-            UI_ChooseOption pidmode = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields["pidMode"].uiControlFlight : Fields["pidMode"].uiControlEditor);
+            UI_ChooseOption pidmode = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(pidMode)].uiControlFlight : Fields[nameof(pidMode)].uiControlEditor);
             pidmode.onFieldChanged = ChooseOptionsUpdated;
         }
 

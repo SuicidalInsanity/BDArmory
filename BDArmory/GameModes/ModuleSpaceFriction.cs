@@ -101,6 +101,7 @@ namespace BDArmory.GameModes
 
         void Start()
         {
+            if (!HighLogic.LoadedSceneIsFlight) return;
             if (vessel.rootPart == part) //if we're an external non-root repulsor part, don't check for dupes in root.
             {
                 foreach (var repMod in vessel.rootPart.FindModulesImplementing<ModuleSpaceFriction>())
@@ -114,31 +115,28 @@ namespace BDArmory.GameModes
                 }
             }
             resourceID = PartResourceLibrary.Instance.GetDefinition(resourceName).id;
-            if (HighLogic.LoadedSceneIsFlight)
+            if (!RepulsorOverride) //MSF added via Spawn utilities for Space Hacks
             {
-                if (!RepulsorOverride) //MSF added via Spawn utilities for Space Hacks
-                {
-                    using (var engine = VesselModuleRegistry.GetModuleEngines(vessel).GetEnumerator())
-                        while (engine.MoveNext())
-                        {
-                            if (engine.Current == null) continue;
-                            if (engine.Current.independentThrottle) continue; //only grab primary thrust engines
-                            frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100)); //FIXME - Look into grabbing max thrust from velCurve, if for whatever reason a rocket engine has one of these
-                            //have this called onvesselModified?
-                        }
-                    frictMult /= 6; //doesn't need to be 100% of thrust at max speed, Ai will already self-limit; this also has the AI throttle down, which allows for slamming the throttle full for braking/coming about, instead of being stuck with lower TwR
-                    repulsors = VesselModuleRegistry.GetRepulsorModules(vessel);
-                    using (var r = repulsors.GetEnumerator())
-                        while (r.MoveNext())
-                        {
-                            if (r.Current == null) continue;
-                            r.Current.part.PhysicsSignificance = 1;
-                        }
-                }
-                else
-                {
-                    spaceFrictionModules = VesselModuleRegistry.GetModules<ModuleSpaceFriction>(vessel);
-                }
+                using (var engine = VesselModuleRegistry.GetModuleEngines(vessel).GetEnumerator())
+                    while (engine.MoveNext())
+                    {
+                        if (engine.Current == null) continue;
+                        if (engine.Current.independentThrottle) continue; //only grab primary thrust engines
+                        frictMult += (engine.Current.maxThrust * (engine.Current.thrustPercentage / 100)); //FIXME - Look into grabbing max thrust from velCurve, if for whatever reason a rocket engine has one of these
+                                                                                                           //have this called onvesselModified?
+                    }
+                frictMult /= 6; //doesn't need to be 100% of thrust at max speed, Ai will already self-limit; this also has the AI throttle down, which allows for slamming the throttle full for braking/coming about, instead of being stuck with lower TwR
+                repulsors = VesselModuleRegistry.GetRepulsorModules(vessel);
+                using (var r = repulsors.GetEnumerator())
+                    while (r.MoveNext())
+                    {
+                        if (r.Current == null) continue;
+                        r.Current.part.PhysicsSignificance = 1;
+                    }
+            }
+            else
+            {
+                spaceFrictionModules = VesselModuleRegistry.GetModules<ModuleSpaceFriction>(vessel);
             }
         }
 

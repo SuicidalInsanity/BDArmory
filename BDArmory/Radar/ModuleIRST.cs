@@ -191,7 +191,7 @@ namespace BDArmory.Radar
 
         void UpdateToggleGuiName()
         {
-            Events["Toggle"].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
+            Events[nameof(Toggle)].guiName = irstEnabled ? StringUtils.Localize("#autoLOC_bda_1000036") : StringUtils.Localize("#autoLOC_bda_1000037");		// fixme - fix localizations
         }
         void Start()
         {
@@ -329,9 +329,9 @@ namespace BDArmory.Radar
                 tur.Dispose();
                 if (lockingTurret)
                 {
-                    lockingTurret.Fields["minPitch"].guiActiveEditor = false;
-                    lockingTurret.Fields["maxPitch"].guiActiveEditor = false;
-                    lockingTurret.Fields["yawRange"].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
                 }
             }
         }

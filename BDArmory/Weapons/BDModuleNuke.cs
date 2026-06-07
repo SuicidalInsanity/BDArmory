@@ -109,7 +109,7 @@ namespace BDArmory.Weapons
         {
             Armed = true;
             guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events["Toggle"].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+            Events[nameof(ArmAG)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
         }
 
         [KSPAction("Detonate")]
@@ -132,15 +132,15 @@ namespace BDArmory.Weapons
                         }
                         part.force_activate();
                     }
-                    Fields["status"].guiActive = false;
-                    Fields["status"].guiActiveEditor = false;
+                    // Fields[nameof(status)].guiActive = false;
+                    // Fields[nameof(status)].guiActiveEditor = false;
                 }
                 else
                 {
-                    //Fields["status"].guiActive = false;
-                    // Fields["fuelleft"].guiActive = false;
-                    //Fields["status"].guiActiveEditor = false;
-                    // Fields["fuelleft"].guiActiveEditor = false;
+                    //Fields[nameof(status)].guiActive = false;
+                    // Fields[nameof(fuelleft)].guiActive = false;
+                    //Fields[nameof(status)].guiActiveEditor = false;
+                    // Fields[nameof(fuelleft)].guiActiveEditor = false;
                 }
                 Sourcevessel = part.vessel.GetName();
 

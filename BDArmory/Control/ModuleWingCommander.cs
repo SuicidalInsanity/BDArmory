@@ -253,7 +253,7 @@ namespace BDArmory.Control
                         };
                         labelStyle = new(BDArmorySetup.BDGuiSkin.label) { alignment = TextAnchor.MiddleLeft };
                         formationLabelStyle = new(labelStyle) { alignment = TextAnchor.LowerCenter, wordWrap = false, clipping = TextClipping.Overflow };
-                        sliderStyle = new(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically.
+                        sliderStyle = new(BDArmorySetup.BDGuiSkin.horizontalSlider) { margin = new(0, 0, 10, 0) }; // This centres the slider vertically for GUILayout.
                         sliderThumbStyle = new(BDArmorySetup.BDGuiSkin.horizontalSliderThumb);
                         guiInit = true;
                     }
@@ -807,12 +807,12 @@ namespace BDArmory.Control
                 };
                 GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true, 1, color, 0, 0);
             }
-            // Note: Use white and transparent PNGs for these textures to allow blending to any color.
-            static Texture2D Boat { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "boat"), false); } } = null;
-            static Texture2D Plane { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "plane"), false); } } = null;
-            static Texture2D Tank { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "tank"), false); } } = null;
-            static Texture2D Vtol { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "vtol"), false); } } = null;
-            static Texture2D Generic { get { return field ? field : field = GameDatabase.Instance.GetTexture(Path.Combine(BDArmorySetup.textureDir, "Formation", "generic"), false); } } = null;
+            // Note: Use white and transparent PNGs for these textures to allow blending to any color. Also, we can't use Path.Combine for GameDatabase queries as it's not portable.
+            static Texture2D Boat { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/boat", false); } } = null;
+            static Texture2D Plane { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/plane", false); } } = null;
+            static Texture2D Tank { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/tank", false); } } = null;
+            static Texture2D Vtol { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/vtol", false); } } = null;
+            static Texture2D Generic { get { return field ? field : field = GameDatabase.Instance.GetTexture(BDArmorySetup.textureDir + "Formation/generic", false); } } = null;
         }
         #endregion
     }

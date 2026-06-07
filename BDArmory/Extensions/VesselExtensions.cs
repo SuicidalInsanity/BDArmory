@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
@@ -262,7 +262,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
+            result.center -= vessel.ReferenceTransform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }
@@ -271,7 +271,7 @@ namespace BDArmory.Extensions
         {
             Bounds result = default;
             bool flag = false;
-            var vesselRot = vessel.transform.rotation;
+            Quaternion vesselRot = vessel.transform.rotation;
             Quaternion vesselRefRot = vessel.ReferenceTransform.rotation;
             if (vesselRot == vesselRefRot)
             {
@@ -297,7 +297,7 @@ namespace BDArmory.Extensions
                     }
                 }
             }
-            result.center = vessel.ReferenceTransform.InverseTransformPoint(result.center);
+            result.center -= vessel.ReferenceTransform.position;
             vessel.SetRotation(vesselRot);
             return result;
         }
@@ -325,7 +325,7 @@ namespace BDArmory.Extensions
                 r * new Vector3(-bounds.extents.x, bounds.extents.y, bounds.extents.z),
             ];
             return new Bounds(
-                viewer.InverseTransformPoint(t.TransformPoint(bounds.center)),
+                viewer.InverseTransformDirection(t.TransformDirection(bounds.center) + t.position - viewer.position),
                 new Vector3(
                     2f * corners.Max(c => Mathf.Abs(c.x)),
                     2f * corners.Max(c => Mathf.Abs(c.y)),

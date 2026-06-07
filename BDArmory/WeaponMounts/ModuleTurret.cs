@@ -471,35 +471,35 @@ namespace BDArmory.WeaponMounts
 
         void SetupTweakables()
         {
-            UI_FloatRange minPitchRange = (UI_FloatRange)Fields["minPitch"].uiControlEditor;
+            UI_FloatRange minPitchRange = (UI_FloatRange)Fields[nameof(minPitch)].uiControlEditor;
             if (minPitchLimit > 90)
             {
                 minPitchLimit = minPitch;
             }
             if (minPitchLimit == 0)
             {
-                Fields["minPitch"].guiActiveEditor = false;
+                Fields[nameof(minPitch)].guiActiveEditor = false;
             }
             minPitchRange.minValue = minPitchLimit;
             minPitchRange.maxValue = 0;
             if (minPitchLimit != 0)
                 minPitchRange.stepIncrement = Mathf.Pow(10, Mathf.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(minPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
 
-            UI_FloatRange maxPitchRange = (UI_FloatRange)Fields["maxPitch"].uiControlEditor;
+            UI_FloatRange maxPitchRange = (UI_FloatRange)Fields[nameof(maxPitch)].uiControlEditor;
             if (maxPitchLimit > 90)
             {
                 maxPitchLimit = maxPitch;
             }
             if (maxPitchLimit == 0)
             {
-                Fields["maxPitch"].guiActiveEditor = false;
+                Fields[nameof(maxPitch)].guiActiveEditor = false;
             }
             maxPitchRange.maxValue = maxPitchLimit;
             maxPitchRange.minValue = 0;
             if (maxPitchLimit != 0)
                 maxPitchRange.stepIncrement = Mathf.Pow(10, Mathf.Min(1f, Mathf.Floor(Mathf.Log10(Mathf.Abs(maxPitchLimit)) + (1 - Mathf.Log10(20f) - 1e-4f)))) / 10f; // Use between 20 and 200 divisions
 
-            UI_FloatRange yawRangeEd = (UI_FloatRange)Fields["yawRange"].uiControlEditor;
+            UI_FloatRange yawRangeEd = (UI_FloatRange)Fields[nameof(yawRange)].uiControlEditor;
             if (yawRangeLimit > 360)
             {
                 yawRangeLimit = yawRange;
@@ -507,7 +507,7 @@ namespace BDArmory.WeaponMounts
 
             if (yawRangeLimit == 0)
             {
-                Fields["yawRange"].guiActiveEditor = false;
+                Fields[nameof(yawRange)].guiActiveEditor = false;
             }
             else if (yawRangeLimit < 0)
             {
@@ -529,7 +529,7 @@ namespace BDArmory.WeaponMounts
         }
         void SetupStandbyLocalRotation(BaseField field = null, object obj = null)
         {
-            UI_FloatRange yawStandbyAngleEd = (UI_FloatRange)Fields["yawStandbyAngle"].uiControlEditor;
+            UI_FloatRange yawStandbyAngleEd = (UI_FloatRange)Fields[nameof(yawStandbyAngle)].uiControlEditor;
             yawStandbyAngleEd.minValue = -yawRange / 2f;
             yawStandbyAngleEd.maxValue = yawRange / 2f;
             yawStandbyAngle = Mathf.Clamp(yawStandbyAngle, yawStandbyAngleEd.minValue, yawStandbyAngleEd.maxValue);
@@ -587,7 +587,7 @@ namespace BDArmory.WeaponMounts
 
         public void DisableYawStandbyAngle()
         {
-            Fields["yawStandbyAngle"].guiActiveEditor = false;
+            Fields[nameof(yawStandbyAngle)].guiActiveEditor = false;
             _yawStandbyAngleEnabled = false;
         }
 

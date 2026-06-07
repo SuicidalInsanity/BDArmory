@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,7 +47,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
         //public float tntmass = 1;
         AvailablePart missilePart;
         public Part SpawnedMissile;
-        public bool SpawnMissile(Transform MissileTransform, float offset = 0, bool deductAmmo = true)
+        public bool SpawnMissile(Transform MissileTransform, float offset = 0, float vOffset = 0, bool deductAmmo = true)
         {
             if (railAmmo >= 1 || BDArmorySettings.INFINITE_ORDINANCE)
             {
@@ -61,8 +61,10 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         {
                             var partNode = new ConfigNode();
                             PartSnapshot(missilePart.partPrefab).CopyTo(partNode);
-                            //SpawnedMissile = CreatePart(partNode, MissileTransform.transform.position - MissileTransform.TransformDirection(missilePart.partPrefab.srfAttachNode.originalPosition),
-                            SpawnedMissile = CreatePart(partNode, offset > 0 ? (MissileTransform.position + MissileTransform.forward * offset) : MissileTransform.transform.position, MissileTransform.rotation, this.part);
+                            var position = MissileTransform.position;
+                            position += offset * MissileTransform.forward;
+                            position += vOffset * MissileTransform.right;
+                            SpawnedMissile = CreatePart(partNode, position, MissileTransform.rotation, this.part);
                             ModuleMissileRearm MMR = SpawnedMissile.FindModuleImplementing<ModuleMissileRearm>();
                             if (MMR != null) SpawnedMissile.RemoveModule(MMR);
                             if (!BDArmorySettings.INFINITE_ORDINANCE && deductAmmo)
@@ -132,10 +134,10 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                 StartCoroutine(GetMissileValues(MML));
             //GameEvents.onEditorShipModified.Add(ShipModified);
             if (maxAmmo < 0) maxAmmo = railAmmo;
-            if (maxAmmo == 1) Fields["railAmmo"].guiActiveEditor = false;
+            if (maxAmmo == 1) Fields[nameof(railAmmo)].guiActiveEditor = false;
             else
             {
-                UI_FloatRange Ammo = (UI_FloatRange)Fields["railAmmo"].uiControlEditor;
+                UI_FloatRange Ammo = (UI_FloatRange)Fields[nameof(railAmmo)].uiControlEditor;
                 Ammo.maxValue = maxAmmo;
             }
             if (HighLogic.LoadedSceneIsFlight)
@@ -148,7 +150,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                         linkedMagazines.Add(mmm.Current);
                         magazineAmmo += (int)mmm.Current.ammoCount;
                     }
-                UI_ProgressBar ordnance = (UI_ProgressBar)Fields["ammoRemaining"].uiControlFlight;
+                UI_ProgressBar ordnance = (UI_ProgressBar)Fields[nameof(ammoRemaining)].uiControlFlight;
                 ordnance.maxValue = railAmmo;
                 ammoRemaining = railAmmo;
             }

@@ -142,6 +142,12 @@ namespace BDArmory.Radar
         public float _radarChaffNotchRFac;
 
         [KSPField]
+        public FloatCurve radarGlintCurve = new FloatCurve();		//FloatCurve defining the reduction in received RCS due to a range gate
+
+        [KSPField]
+        public float radarGlintMult = -1f;
+
+        [KSPField]
         public int sonarType = 0; //0 = Radar; 1 == Active Sonar; 2 == Passive Sonar
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_DynamicRadar", advancedTweakable = true),//Disable Radar vs ARMs
@@ -173,7 +179,6 @@ namespace BDArmory.Radar
         public float currentAngle;
 
         private float ReferenceUpdateTime = -1f;
-        public float TimeSinceReferenceUpdate => Time.fixedTime - ReferenceUpdateTime;
 
         // Variables to pre-calculate transform directions
         public Vector3 currPosition;
@@ -182,7 +187,6 @@ namespace BDArmory.Radar
         public Vector3 currRight;
 
         private float DisplayUpdateTime = -1f;
-        public float TimeSinceDisplayUpdate => Time.fixedTime - DisplayUpdateTime;
 
         // Rotated forward vector according to azimuth and elevation
         // offsets for display purposes
@@ -384,7 +388,7 @@ namespace BDArmory.Radar
 
         void UpdateToggleGuiName()
         {
-            Events["Toggle"].guiName = radarEnabled ? StringUtils.Localize("#autoLOC_bda_1000000") : StringUtils.Localize("#autoLOC_bda_1000001");		// #autoLOC_bda_1000000 = Disable Radar		// #autoLOC_bda_1000001 = Enable Radar
+            Events[nameof(Toggle)].guiName = radarEnabled ? StringUtils.Localize("#autoLOC_bda_1000000") : StringUtils.Localize("#autoLOC_bda_1000001");		// #autoLOC_bda_1000000 = Disable Radar		// #autoLOC_bda_1000001 = Enable Radar
         }
         void Start()
         {
@@ -729,9 +733,9 @@ namespace BDArmory.Radar
                 tur.Dispose();
                 if (lockingTurret)
                 {
-                    lockingTurret.Fields["minPitch"].guiActiveEditor = false;
-                    lockingTurret.Fields["maxPitch"].guiActiveEditor = false;
-                    lockingTurret.Fields["yawRange"].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.minPitch)].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.maxPitch)].guiActiveEditor = false;
+                    lockingTurret.Fields[nameof(lockingTurret.yawRange)].guiActiveEditor = false;
                 }
             }
 
@@ -790,7 +794,7 @@ namespace BDArmory.Radar
 
         public void UpdateReferenceTransform()
         {
-            if (TimeSinceReferenceUpdate < Time.fixedDeltaTime)
+            if (ReferenceUpdateTime >= Time.time)
                 return;
 
             if (omnidirectional)
@@ -817,17 +821,18 @@ namespace BDArmory.Radar
 
             currDisplayForward = currForward;
 
-            ReferenceUpdateTime = Time.fixedTime;
+            ReferenceUpdateTime = Time.time;
         }
 
         public void UpdateDisplayTransform()
         {
-            if (TimeSinceDisplayUpdate < Time.fixedDeltaTime)
+            if (DisplayUpdateTime >= Time.time)
                 return;
             UpdateReferenceTransform();
 
             if (radarElOffset != 0 || radarAzOffset != 0)
                 currDisplayForward = Quaternion.AngleAxis(radarElOffset, currRight) * Quaternion.AngleAxis(-radarAzOffset, currUp) * currForward;
+            DisplayUpdateTime = Time.time;
         }
 
         void FixedUpdate()
@@ -847,7 +852,7 @@ namespace BDArmory.Radar
 
                     if (BDArmorySettings.DEBUG_RADAR)
                     {
-                        Debug.Log($"[BDArmory.ModuleRadar] Vessel: {vessel.name}, {(sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {name}, beginning lock checks.");
+                        Debug.Log($"[BDArmory.ModuleRadar] Vessel: {vessel.vesselName}, {(sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {name}, beginning lock checks.");
                     }
                     if (locked)
                     {
@@ -1088,7 +1093,7 @@ namespace BDArmory.Radar
                     lockedTargetIndex = currLocks - 1; // Set lockedTargetIndex to the last index
 
                     if (BDArmorySettings.DEBUG_RADAR)
-                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()})");
+                        Debug.Log($"[BDArmory.ModuleRadar]: - Acquired lock on target ({attemptedLocks[i].Name()}) with UUID {attemptedLocks[i].ID()}");
 
                     vesselRadarData.AddRadarContact(this, lockedTarget, true);
                     //vesselRadarData.UpdateLockedTargets();
@@ -1220,7 +1225,7 @@ namespace BDArmory.Radar
             Vector3 vectorToTarget = lockedTarget.position - currPosition;
             if (VectorUtils.Angle(vectorToTarget, this.lockedTarget.position - currPosition) > multiLockFOV * 0.5f)
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to FoV!");
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to FoV!");
                 UnlockTargetAt(index, true);
                 return;
             }
@@ -1229,7 +1234,7 @@ namespace BDArmory.Radar
                 new Ray(currPosition, lockedTarget.predictedPosition - currPosition),
                 lockedTarget.predictedPosition, lockRotationAngle * 2, this, lockedSignalPersist, true, index, lockedTarget.vessel))
             {
-                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} at index: {index} unlocked due to failed lock checks!");
+                if (BDArmorySettings.DEBUG_RADAR) Debug.Log($"[BDArmory.ModuleRadar] Target: {lockedTarget.Name()} with UUID {lockedTarget.ID()} at index: {index} unlocked due to failed lock checks!");
                 UnlockTargetAt(index, true);
                 return;
             }

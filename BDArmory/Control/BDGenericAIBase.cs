@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -233,7 +233,7 @@ namespace BDArmory.Control
 
         protected void RefreshPartWindow()
         {
-            Events["TogglePilot"].guiName = pilotEnabled ? StringUtils.Localize("#LOC_BDArmory_DeactivatePilot") : StringUtils.Localize("#LOC_BDArmory_ActivatePilot");//"Deactivate Pilot""Activate Pilot"
+            Events[nameof(TogglePilot)].guiName = pilotEnabled ? StringUtils.Localize("#LOC_BDArmory_DeactivatePilot") : StringUtils.Localize("#LOC_BDArmory_ActivatePilot");//"Deactivate Pilot""Activate Pilot"
         }
 
         [KSPEvent(guiActive = true, guiName = "#LOC_BDArmory_TogglePilot", active = true)]//Toggle Pilot
@@ -314,7 +314,7 @@ namespace BDArmory.Control
 
             if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI)
             {
-                GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.name}\n{debugString.ToString()}");
+                GUI.Label(new Rect(200, Screen.height - 350, 600, 350), $"{vessel.vesselName} UUID: {vessel.id}\n{debugString.ToString()}");
             }
         }
 

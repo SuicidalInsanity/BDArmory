@@ -45,7 +45,7 @@ namespace BDArmory.UI
 
         public static string textureDir = "BDArmory/Textures/";
 
-        public Dictionary<int, Color> ColorPresets = new Dictionary<int, Color>();
+        public List<Color> ColorPresets = [];
 
         //legacy version check
         bool LegacyTILoaded = false;
@@ -192,7 +192,6 @@ namespace BDArmory.UI
             }
 
             AddToolbarButton();
-            SetUpColorSwatch();
             LoadConfig();
             UpdateList();
 
@@ -322,21 +321,8 @@ namespace BDArmory.UI
         public void HideToolbarGUI()
         {
             showTeamIconGUI = false;
+            showColorSelect = false;
             SaveConfig();
-        }
-
-        public static void SetUpColorSwatch()
-        {
-            try
-            {
-                Debug.Log("[BDTeamIcons]=== Loading settings.cfg ===");
-
-                SettingsDataField.presetSetup();
-            }
-            catch (NullReferenceException)
-            {
-                Debug.Log("[BDTeamIcons]=== Failed to load settings config ===");
-            }
         }
 
         public static void LoadConfig()
