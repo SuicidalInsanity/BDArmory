@@ -2371,7 +2371,7 @@ namespace BDArmory.Guidances
             }
 
             //guidance
-            if (airSpeed > 1f || (ml.vacuumSteerable && ml.Throttle > 0))
+            if ((airSpeed > 1f || (ml.vacuumSteerable && ml.Throttle > 0)) && maxTorque > 0)
             {
                 /* This is what the torque on the missile due to aero forces would be
                 Vector3 aeroTorque = Vector3.Cross(forcePos - ml.vessel.CoM,
@@ -2407,7 +2407,7 @@ namespace BDArmory.Guidances
                 */
 
                 //float currMaxAoA = maxAoA + Mathf.Min(0.1f * maxAoA, 2f);
-                float AoALim = torqueLimiter ? Mathf.Min(maxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : maxAoA;
+                float AoALim = (torqueLimiter && !ml.vessel.InVacuum()) ? Mathf.Min(maxAoA, getTorqueAoALimit(ml, liftArea, dragArea, (1f - torqueMargin) * maxTorque)) : maxAoA;
                 //if (ml.torqueAoALimit.x > 0)
                 //    AoALim = Mathf.Min(maxAoA + Mathf.Min(0.1f * maxAoA, 2f), 1.2f * ml.torqueAoALimit.x * ml.torqueAoALimit.y / (float)airSpeed * BDAMath.Sqrt(ml.torqueAoALimit.z / (float)airDensity));
 

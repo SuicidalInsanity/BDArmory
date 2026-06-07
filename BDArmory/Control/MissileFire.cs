@@ -7627,7 +7627,7 @@ namespace BDArmory.Control
                                                   Missile.TargetingMode == MissileBase.TargetingModes.Inertial ||
                                                   Missile.GuidanceMode == MissileBase.GuidanceModes.None)
                                             {
-                                                if (targetWeapon != null && targetYield > candidateYield) continue; //prioritize biggest Boom
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() != WeaponClasses.Bomb && targetYield > candidateYield) continue; //prioritize biggest Boom
                                                 if (distance < Missile.engageRangeMin) continue; //select missiles we can use now
                                                                                                  //targetYield = candidateYield;
                                                 candidateAGM = true;
@@ -7650,10 +7650,10 @@ namespace BDArmory.Control
 
                                             if (candidateAntiRad)
                                             {
-                                                if (targetWeapon != null && targetYield > candidateYield) continue; //prioritize biggest Boom
-                                                                                                                    //targetYield = candidateYield;
-                                                                                                                    //targetWeapon = item.Current;
-                                                                                                                    //targetWeaponPriority = candidatePriority;
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() != WeaponClasses.Bomb && targetYield > candidateYield) continue; //prioritize biggest Boom
+                                                                                                                                                                           //targetYield = candidateYield;
+                                                                                                                                                                           //targetWeapon = item.Current;
+                                                                                                                                                                           //targetWeaponPriority = candidatePriority;
                                                 candidateAGM = true;
                                             }
                                         }
@@ -7662,7 +7662,7 @@ namespace BDArmory.Control
                                             if (candidateAntiRad) continue; //keep antirad missile;
                                             if (targetingPods.Count <= 0 || (foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude > Mathf.Max(100, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))) candidateYield *= 0.1f;
 
-                                            if (targetWeapon != null && targetYield > candidateYield) continue; //prioritize biggest Boom
+                                            if (targetWeapon != null && targetWeapon.GetWeaponClass() != WeaponClasses.Bomb && targetYield > candidateYield) continue; //prioritize biggest Boom
                                             candidateAGM = true;
                                             //targetYield = candidateYield;
                                             //targetWeapon = item.Current;
@@ -7703,7 +7703,7 @@ namespace BDArmory.Control
                                                         candidateYield *= 0.1f;
                                                     }
                                                 }
-                                                if (targetWeapon != null && targetYield > candidateYield) continue;
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() != WeaponClasses.Bomb && targetYield > candidateYield) continue;
                                                 //targetYield = candidateYield;
                                                 //targetWeapon = item.Current;
                                                 //targetWeaponPriority = candidatePriority;
@@ -7717,7 +7717,7 @@ namespace BDArmory.Control
                                         if (distance < ((EngageableWeapon)item.Current).engageRangeMin || firedMissiles >= maxMissilesOnTarget || (unguidedWeapon && distance > ((EngageableWeapon)item.Current).engageRangeMax / 10))
                                             candidateYield *= -1f; // if within min range, negatively weight weapon - allows weapon to still be selected if all others lost/out of ammo
                                         if (!vessel.LandedOrSplashed || (vessel.LandedOrSplashed && (distance > gunRange || targetWeapon == null || (distance <= gunRange && targetWeapon != null && (targetWeapon.GetWeaponClass() != WeaponClasses.Rocket || targetWeapon.GetWeaponClass() != WeaponClasses.Gun))))) // If we're not airborne, we want to prioritize guns
-                                        {
+                                        {																																																											//What about IFV type vehicles with a gun + TOW missiles? Shouldn't the missiles get used first?
                                             if (distance <= gunRange && candidateYield < 1 && targetWeapon != null) continue; //missiles are within min range/can't lock, don't replace existing gun if in gun range
                                             if (targetWeaponPriority < candidatePriority) //use priority gun
                                             {
