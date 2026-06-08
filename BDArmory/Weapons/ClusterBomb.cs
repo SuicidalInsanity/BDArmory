@@ -46,7 +46,29 @@ namespace BDArmory.Weapons
             }
 
             submunitions = new List<GameObject>();
-            IEnumerator<Transform> sub = part.FindModelTransforms("submunition").AsEnumerable().GetEnumerator();
+            Transform[] sub = part.FindModelTransforms("submunition");
+            
+            for (int i = 0; i < sub.Length; i++)
+            {
+                Transform curr = sub[i];
+                if (curr == null) continue;
+                submunitions.Add(curr.gameObject);
+
+                if (HighLogic.LoadedSceneIsFlight)
+                {
+                    Rigidbody subRb = curr.gameObject.GetComponent<Rigidbody>();
+                    if (!subRb)
+                    {
+                        subRb = curr.gameObject.AddComponent<Rigidbody>();
+                    }
+
+                    subRb.isKinematic = true;
+                    subRb.mass = part.mass / sub.Length;
+                }
+                curr.gameObject.SetActive(false);
+            }
+
+            /*IEnumerator<Transform> sub = part.FindModelTransforms("submunition").AsEnumerable().GetEnumerator();
 
             while (sub.MoveNext())
             {
@@ -66,7 +88,7 @@ namespace BDArmory.Weapons
                 }
                 sub.Current.gameObject.SetActive(false);
             }
-            sub.Dispose();
+            sub.Dispose();*/
 
             fairings = new List<GameObject>();
             IEnumerator<Transform> fairing = part.FindModelTransforms("fairing").AsEnumerable().GetEnumerator();

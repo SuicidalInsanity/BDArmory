@@ -8030,17 +8030,21 @@ namespace BDArmory.Control
                             MissileBase ml = (MissileBase)weaponCandidate;
                             //if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false; //handled by bool smartWeapon select
 
-                            bool readyMissiles = false;
-                            using (var msl = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
-                                while (msl.MoveNext())
-                                {
-                                    if (msl.Current == null) continue;
-                                    if (msl.Current.GetWeaponChannel() > weaponChannel) continue;
-                                    if (msl.Current.launched) continue;
-                                    readyMissiles = true;
-                                    break;
-                                }
-                            if (!readyMissiles) return false;
+                            bool readyMissiles = !(ml.GetWeaponChannel() > weaponChannel || ml.launched);
+                            if (!readyMissiles)
+                            {
+                                using (var msl = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
+                                    while (msl.MoveNext())
+                                    {
+                                        if (msl.Current == null) continue;
+                                        if (msl.Current.GetWeaponChannel() > weaponChannel) continue;
+                                        if (msl.Current.launched) continue;
+                                        if (msl.Current.GetShortName() == ml.GetShortName()) continue;
+                                        readyMissiles = true;
+                                        break;
+                                    }
+                                if (!readyMissiles) return false;
+                            }
                             // lock radar if needed
                             if (ml.TargetingMode == MissileBase.TargetingModes.Radar)
                             {
@@ -9963,7 +9967,7 @@ namespace BDArmory.Control
                 foreach (MissileBase currMissile in pointDefenseMissileArray) //have guardMode requirement?
                 {
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}, for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD beginning processing for missile: {(currMissile == null ? "null" : currMissile.shortName)}, hasFired: {currMissile.HasFired || currMissile.launched}, for initial target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
 
                     if (currMissile == null) continue;
                     MissileLauncher launcher = currMissile as MissileLauncher;
@@ -10056,15 +10060,27 @@ namespace BDArmory.Control
                     }
 
                     if (BDArmorySettings.DEBUG_APS)
-                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD processing for missile: {currMissile.shortName}, for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")}");
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD continuing processing for missile: {currMissile.shortName}, for target: {(targetVessel != null ? targetVessel.GetName() : "null")} with UUID: {(targetVessel != null ? targetVessel.id : "null")} at range: {targetDist}");
 
-                    if (targetDist < currMissile.engageRangeMin) continue;
+                    if (targetDist < currMissile.engageRangeMin)
+                    {
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to min dist, targetDist/minDist: {targetDist}/{currMissile.engageRangeMin}.");
+                        continue;
+                    }
                     bool viableTarget = true;
 
-                    if (!CheckEngagementEnvelope(currMissile, targetDist, targetVessel)) continue;
+                    if (!CheckEngagementEnvelope(currMissile, targetDist, targetVessel))
+                    {
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected target due to engagement envelope.");
+                        continue;
+                    }
                     bool torpedo = launcher && launcher.torpedo; //TODO - work out MMG torpedo support?
                                                                  //Also, what about missiles that launch torpedoes?
-                    if (targetVessel.Splashed != torpedo) continue; // If there is a type mismatch, skip current missile
+                    if (targetVessel.Splashed != torpedo)
+                    {
+                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD rejected splashed target due to non-torpedo.");
+                        continue; // If there is a type mismatch, skip current missile
+                    }
 
                     switch (currMissile.TargetingMode)
                     {
@@ -10153,7 +10169,12 @@ namespace BDArmory.Control
                                     INSDetected = (INSTarget.exists && INSTarget.vessel == targetVessel);
                                 }
 
-                                if (!INSDetected) continue;
+                                if (!INSDetected)
+                                {
+                                    if (BDArmorySettings.DEBUG_APS)
+                                        Debug.Log($"[BDArmory.MissileFire - {(this.vessel != null ? vessel.GetName() : "null")}]: PD INSDetected failed!");
+                                    continue;
+                                }
                             }
                             break;
                         case MissileBase.TargetingModes.Heat:
