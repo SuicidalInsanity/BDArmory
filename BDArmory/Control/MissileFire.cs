@@ -449,6 +449,8 @@ namespace BDArmory.Control
         float bombFlightTime; // Time from when "fire" command is sent until impact.
         public float bombAirTime => bombFlightTime;
 
+        bool hasBombs;
+
         //targeting pods
         public ModuleTargetingCamera mainTGP = null;
         public List<ModuleTargetingCamera> targetingPods { get { if (modulesNeedRefreshing) RefreshModules(); return _targetingPods; } }
@@ -4701,6 +4703,7 @@ namespace BDArmory.Control
             pointDefenseMissiles.Clear();
             //gunRippleIndex.Clear(); //since there keeps being issues with the more limited ripple dict, lets just make it perisitant for all weapons on the craft
             hasAntiRadiationOrdnance = false;
+            hasBombs = false;
             antiradTargets = 0; // Reset antirad targets
             if (vessel == null || !vessel.loaded) return;
 
@@ -4884,6 +4887,7 @@ namespace BDArmory.Control
                             //antiradTargets.Union(OtherUtils.ParseEnumArray<RadarWarningReceiver.RWRThreatTypes>(ml != null ? ml.antiradTargetTypes : "0,5"));
                             antiradTargets |= (ml != null ? ml.antiradTargets : BDModularGuidance.modularGuidanceAntiRadTargetTypes);
                         }
+                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;                        
                     }
                 }
 
@@ -7510,6 +7514,7 @@ namespace BDArmory.Control
                             case (WeaponClasses.Bomb):
                                 {
                                     if (vessel.Splashed && vessel.altitude < targetVessel.altitude) continue; //I guess depth charges would sorta apply here, but those are SLW instead
+
                                     MissileLauncher Bomb = item.Current as MissileLauncher;
                                     if (Bomb.reloadableRail != null && (Bomb.reloadableRail.ammoCount < 1 && !BDArmorySettings.INFINITE_ORDINANCE)) continue; //don't select when out of ordnance
                                                                                                                                                               //if (firedMissiles >= maxMissilesOnTarget) continue;// Max missiles are fired, try another weapon
@@ -7543,6 +7548,7 @@ namespace BDArmory.Control
                                             }
                                             else //if equal priority, use standard weighting
                                             {
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() == WeaponClasses.Missile) continue; //missiles take priority over bombs
                                                 if (targetBombYield < candidateYield)//prioritized by biggest boom
                                                 {
                                                     targetWeapon = item.Current;
@@ -7563,6 +7569,7 @@ namespace BDArmory.Control
                                             }
                                             else //if equal priority, use standard weighting
                                             {
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() == WeaponClasses.Missile) continue; //missiles take priority over bombs
                                                 if (targetBombYield < candidateYield)//prioritized by biggest boom
                                                 {
                                                     targetWeapon = item.Current;
@@ -7581,6 +7588,7 @@ namespace BDArmory.Control
                                             }
                                             else //if equal priority, use standard weighting
                                             {
+                                                if (targetWeapon != null && targetWeapon.GetWeaponClass() == WeaponClasses.Missile) continue; //missiles take priority over bombs
                                                 if ((candidateUnguided ? targetBombYield / 2 : targetBombYield) < candidateYield) //prioritize biggest Boom, but preference guided bombs
                                                 {
                                                     targetWeapon = item.Current;
@@ -8029,7 +8037,6 @@ namespace BDArmory.Control
                         {
                             MissileBase ml = (MissileBase)weaponCandidate;
                             //if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false; //handled by bool smartWeapon select
-
                             bool readyMissiles = false;
                             using (var msl = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
                                 while (msl.MoveNext())
@@ -8141,6 +8148,11 @@ namespace BDArmory.Control
                                 }
                                 return true;
                             }
+                            if (hasBombs)
+                            {
+                                if (engageableWeapon.GetEngageGroundTargets() && guardTarget.LandedOrSplashed)
+                                    return true; //still evaluate missile for A2G if bombs present so plane can select them and extend as necessary, vs doing bombing runs                               
+                            }
                             if (BDArmorySettings.DEBUG_MISSILES)
                             {
                                 Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} - Failed DLZ test: {weaponCandidate.GetShortName()}, distance: {distanceToTarget}, DLZ min/max: {dlz.minLaunchRange}/{dlz.maxLaunchRange}");
@@ -8150,7 +8162,10 @@ namespace BDArmory.Control
 
                     case WeaponClasses.Bomb:
                         if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false;
-                        if (!vessel.LandedOrSplashed) // TODO: bomb always allowed?
+                        if (distanceToTarget < vessel.horizontalSrfSpeed * bombFlightTime) return false; //too close, dropped bomb will overshoot
+                        if (!vessel.LandedOrSplashed) 
+                        {
+                            if (!BombAimerAltitudeLimits()) return false;
                             using (var bomb = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
                                 while (bomb.MoveNext())
                                 {
@@ -8159,6 +8174,7 @@ namespace BDArmory.Control
                                     if (bomb.Current.launched) continue;
                                     return true;
                                 }
+                        }
                         break;
 
                     case WeaponClasses.Rocket:
