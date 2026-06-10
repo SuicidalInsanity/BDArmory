@@ -5878,7 +5878,7 @@ namespace BDArmory.Weapons
                     slaved = true;
                     targetRadius = isVessel ? weaponManager.mainTGP.lockedVessel.GetRadius() : 35f;
                     targetPosition = weaponManager.slavedPosition;
-                    targetVelocity = Vector3.zero; //tgtCam returns 0 for these
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f; //tgtCam returns 0 for these, but we still need to account for the frame velocity
                     targetAcceleration = Vector3.zero;
                     if (isVessel) targetIsLandedOrSplashed = weaponManager.mainTGP.lockedVessel.LandedOrSplashed;
                     else targetIsLandedOrSplashed = false;
@@ -6023,9 +6023,9 @@ namespace BDArmory.Weapons
                 if (BDArmorySetup.Instance.showingWindowGPS && weaponManager.designatedGPSCoords != Vector3d.zero && !aiControlled)
                 {
                     GPSTarget = true;
-                    targetVelocity = Vector3d.zero;
                     targetPosition = weaponManager.designatedGPSInfo.worldPos;
                     targetRadius = 35f;
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f;
                     targetAcceleration = Vector3d.zero;
                     targetIsLandedOrSplashed = true;
                     targetAcquired = true;

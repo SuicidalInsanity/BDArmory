@@ -1,8 +1,9 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
 - Weapons:
-	- Weapons:
+	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
+  - Bullets:
 		- Fix bulletDmgMult not applying to explosion damage.
 	- Missiles:
 		- Improved missile "maxOffBoresight" limiting. Missiles will now try to turn as hard as they can in the commanded direction while keeping the target inside "maxOffBoresight".

@@ -2035,7 +2035,7 @@ namespace BDArmory.Radar
 
         private void RefreshAvailableLinks()
         {
-            if (!HighLogic.LoadedSceneIsFlight || vessel == null || weaponManager == null || !FlightGlobals.ready || FlightGlobals.Vessels == null)
+            if (!HighLogic.LoadedSceneIsFlight || vessel == null || weaponManager == null || FlightGlobals.fetch == null || FlightGlobals.Vessels == null || !FlightGlobals.ready)
             {
                 return;
             }

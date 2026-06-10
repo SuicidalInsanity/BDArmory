@@ -3332,7 +3332,6 @@ namespace BDArmory.Control
                             }
                             else // Level bombing airborne target.
                             {
-                                // Use the A2A distance plus a bit to stabilise (but not more than the A2G distance).
                                 // Assume the current speed is around the actual max speed of the craft and use a drop time corresponding to 2x blast radius.
                                 extendDistance = extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, idleSpeed) * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
                                 shouldExtend = hDistSqr < extendDistance * extendDistance && (
