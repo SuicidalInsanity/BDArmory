@@ -8162,19 +8162,15 @@ namespace BDArmory.Control
 
                     case WeaponClasses.Bomb:
                         if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false;
-                        if (distanceToTarget < vessel.horizontalSrfSpeed * bombFlightTime) return false; //too close, dropped bomb will overshoot
-                        if (!vessel.LandedOrSplashed) 
-                        {
-                            if (!BombAimerAltitudeLimits()) return false;
+                        if (!vessel.LandedOrSplashed) // TODO: bomb always allowed?
                             using (var bomb = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
-                                while (bomb.MoveNext())
-                                {
-                                    if (bomb.Current == null) continue;
-                                    if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
-                                    if (bomb.Current.launched) continue;
-                                    return true;
-                                }
-                        }
+                            while (bomb.MoveNext())
+                            {
+                                if (bomb.Current == null) continue;
+                                if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
+                                if (bomb.Current.launched) continue;
+                                return true;
+                            }
                         break;
 
                     case WeaponClasses.Rocket:
