@@ -4869,6 +4869,7 @@ namespace BDArmory.Weapons.Missiles
                         if (radarLOAL) output.AppendLine($"  - Radar Search Time: {tempTerminalSeekerTimeout} s");
                         output.AppendLine($"Max Off Boresight: {(terminalMaxOffBoresight > 0 ? terminalMaxOffBoresight : maxOffBoresight)}");
                         output.AppendLine($"Locked FOV: {lockedSensorFOV}");
+                        output.AppendLine($"Chaff Sensitivity: {chaffEffectivity}");
                     }
 
                     if (TargetingModeTerminal == TargetingModes.Heat)
