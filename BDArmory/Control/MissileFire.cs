@@ -84,6 +84,7 @@ namespace BDArmory.Control
         private List<IBDWeapon> weaponTypesSLW = [];
 
         [KSPField(guiActiveEditor = false, isPersistant = true, guiActive = false)] public int weaponIndex;
+        private int oldWeaponIndex = 0;
 
         //ScreenMessage armedMessage;
         ScreenMessage selectionMessage;
@@ -4642,7 +4643,7 @@ namespace BDArmory.Control
 
         void DisplaySelectedWeaponMessage()
         {
-            if (BDArmorySetup.GAME_UI_ENABLED && vessel == FlightGlobals.ActiveVessel)
+            if (BDArmorySetup.GAME_UI_ENABLED && vessel == FlightGlobals.ActiveVessel && weaponIndex != oldWeaponIndex)
             {
                 ScreenMessages.RemoveMessage(selectionMessage);
                 selectionMessage.textInstance = null;
@@ -4651,6 +4652,7 @@ namespace BDArmory.Control
                 selectionMessage.style = ScreenMessageStyle.UPPER_CENTER;
 
                 ScreenMessages.PostScreenMessage(selectionMessage);
+                oldWeaponIndex = weaponIndex;
             }
         }
 

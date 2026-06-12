@@ -213,6 +213,7 @@ namespace BDArmory.Settings
         [BDAPersistentSettingsField] public static float HMDCost = 2000f;
         [BDAPersistentSettingsField] public static float LASER_ATM_GAMMA = 0.000158f;                // Transmission factor for laser in atmosphere. ~75% transmission over 1800m. Based on Figure 6: https://www.mdpi.com/2073-4433/12/7/918
         [BDAPersistentSettingsField] public static float LASER_WATER_GAMMA = 0.151f;                  // Transmission factor for laser in water. 15% at 10m, ~3% at 20m, ~0% at 30m. Based on transmittance (c, Table 2) coefficient for clear water https://www.mdpi.com/1424-8220/25/10/3057.
+        [BDAPersistentSettingsField] public static float CUSTOM_TURRET_AIM_ASSIST = 3;                //give weapons on custom turrets this many degrees of free Turret traverse to assist vs stock robotics suckiness
         #endregion
 
         #region FX

@@ -1,12 +1,11 @@
-using System;
-using UnityEngine;
-
 using BDArmory.Extensions;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace BDArmory.WeaponMounts
 {
@@ -277,7 +276,6 @@ namespace BDArmory.WeaponMounts
                 Destroy(pitchAxisManager);
             }
         }
-
         public void AimToTarget(Vector3 targetPosition, bool pitch = true, bool yaw = true, bool activeWeap = false)
         {
             AimInDirection(targetPosition - _referenceTransform.position, pitch, yaw, activeWeap);

@@ -56,6 +56,7 @@ namespace BDArmory.WeaponMounts
         public bool slaved = false;
         public bool manuallyControlled = false;
         public bool isYawRotor => Servo != null;
+        public bool isLocked = false;
         MissileFire WeaponManager
         {
             get
@@ -67,8 +68,8 @@ namespace BDArmory.WeaponMounts
         }
         public override void OnStart(StartState state)
         {
-            base.OnStart(state);            
-            yawTransform = part.FindModelTransform(yawTransformName);            
+            base.OnStart(state);
+            yawTransform = part.FindModelTransform(yawTransformName);
             var hinge = part.FindModuleImplementing<ModuleRoboticServoHinge>();
             if (hinge != null)
             {
@@ -86,6 +87,7 @@ namespace BDArmory.WeaponMounts
                 {
                     Debug.LogWarning("[BDArmory.ModuleCustomTurret]: " + part.partInfo.title + " has no bottomTransform");
                 }
+                if (hinge.servoIsLocked) isLocked = true;
             }
             var servo = part.FindModuleImplementing<ModuleRoboticRotationServo>();
             if (servo != null)
@@ -108,6 +110,7 @@ namespace BDArmory.WeaponMounts
                 {
                     Debug.LogWarning("[BDArmory.ModuleCustomTurret]: " + part.partInfo.title + " has no bottomTransform");
                 }
+                if (servo.servoIsLocked) isLocked = true;
             }
             if (!referenceTransform)
             {
@@ -176,7 +179,12 @@ namespace BDArmory.WeaponMounts
         void FixedUpdate()
         {
             if (!HighLogic.LoadedSceneIsFlight || turretID == 0) return;
-
+            if ((Hinge && (Hinge.servoIsLocked || !Hinge.servoIsMotorized)) || (Servo && (Servo.servoIsLocked || !Servo.servoIsMotorized)))
+            {
+                isLocked = true;
+                return;
+            }
+            isLocked = false;
             slaved = false;
 
             MissileFire wm = WeaponManager;

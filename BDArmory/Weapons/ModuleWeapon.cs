@@ -21,6 +21,7 @@ using System.Text;
 using System.Linq;
 using UnityEngine;
 using static BDArmory.Bullets.PooledBullet;
+using System.Net;
 
 namespace BDArmory.Weapons
 {
@@ -272,6 +273,7 @@ namespace BDArmory.Weapons
         [KSPField] public int turretID = 0;
         public ModuleTurret turret;
         public List<ModuleCustomTurret> customTurret = new List<ModuleCustomTurret>();
+        public Transform customTurretRefTransform;
         public MissileFire WeaponManager
         {
             get
@@ -1710,13 +1712,24 @@ namespace BDArmory.Weapons
                 float yaw = 0;
                 float minP = 0;
                 float maxP = 0;
+                if (!turret || turret.yawRange / 2 + turret.maxPitch < 2) //gun has a slight gimbal to provide a degree of aimassist vs a full turreted weapon
+                {
+                    customTurretRefTransform = (new GameObject()).transform; //we need a ref transform cloned from fireTransform, because servoes use firetransform foraiming
+                    customTurretRefTransform.SetParent(fireTransforms[0].parent); //if fireTransform also turreted to give some wiggle to compensate for lack of granularity
+                    customTurretRefTransform.localPosition = Vector3.zero; //with stock Robotics, then servoes aren't going to be able to aim currectly
+                    customTurretRefTransform.rotation = Quaternion.FromToRotation(customTurretRefTransform.forward, fireTransforms[0].forward); //as their aim reference point is also moving, throwing off aim error
+                    customTurretRefTransform.RotateAround(customTurretRefTransform.position, customTurretRefTransform.transform.forward, VectorUtils.Angle(customTurretRefTransform.up, fireTransforms[0].up)); //rotate model on horizontal plane towards last gate
+                    //pitchTransform needs to have a localRotation of 0! if using fireTransform, need to have fireTransform parented to something that has Z+ forward, Y+ up, X+ right 
+                    fireTransforms[0].SetParent(customTurretRefTransform);
+                }
                 using (var servo = VesselModuleRegistry.GetModules<ModuleCustomTurret>(vessel).GetEnumerator())
                     while (servo.MoveNext())
                     {
                         if (servo.Current == null) continue;
+                        if (servo.Current.isLocked) continue;
                         if ((int)servo.Current.turretID != (int)customTurretID) continue;
                         customTurret.Add(servo.Current);
-                        servo.Current.SetReferenceTransform(fireTransforms[0]);
+                        servo.Current.SetReferenceTransform(customTurretRefTransform);
                         if (servo.Current.fullRotation) yaw = 360;
                         else
                         {
@@ -1731,6 +1744,23 @@ namespace BDArmory.Weapons
                 customMinPitch = minP;
                 customMaxPitch = maxP;
                 if (customTurret.Count == 0) customTurretID = 0;
+                if (customTurretID > 0 && maxP + yaw > 0) //no mounting a gun on a locked servo for free gimbal
+                {
+                    if (!turret)
+                    {
+                        turret = (ModuleTurret)part.AddModule("ModuleTurret");
+                        turret.baseTransform = customTurretRefTransform;
+                        turret.pitchTransform = fireTransforms[0];
+                        turret.yawTransform = fireTransforms[0]; //reasonably certain there aren't any multibarrel fixed guns out there...
+                        turret.SetReferenceTransform(fireTransforms[0]);
+                        turret.turretWeapon = this;
+                    }                
+                    turret.minPitch = - BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
+                    turret.maxPitch = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
+                    turret.yawRange = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST;
+                    turret.pitchSpeedDPS = 50;
+                    turret.yawSpeedDPS = 50;
+                }
             }
             //setup animations
             if (hasDeployAnim)
@@ -4226,6 +4256,7 @@ namespace BDArmory.Weapons
                     {
                         if (customTurret[i] == null) continue;
                         if (customTurret[i].vessel != vessel) continue;
+                        if (customTurret[i].isLocked) continue;
                         customTurret[i].ReturnTurret();
                     }
                 }
@@ -4543,6 +4574,7 @@ namespace BDArmory.Weapons
             if (slaved && !targetAcquired) return;
             if (turret)
             {
+                if (customTurret.Count > 0 && customTurret[0].isLocked && turret.Yaw <= BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST) return;
                 bool origSmooth = turret.smoothRotation;
                 if (aiControlled || slaved)
                 {
@@ -4555,6 +4587,7 @@ namespace BDArmory.Weapons
             {
                 if (customTurret[i] == null) continue;
                 if (customTurret[i].vessel != vessel) continue;
+                if (customTurret[i].isLocked) continue;
                 customTurret[i].AimToTarget(finalAimTarget); //no aimbot turrets when target out of sight
             }
         }
@@ -6169,6 +6202,7 @@ namespace BDArmory.Weapons
                     {
                         if (customTurret[i] == null) continue;
                         if (customTurret[i].vessel != vessel) continue;
+                        if (customTurret[i].isLocked) continue;
                         customTurret[i].ReturnTurret();
                     }
                 }
@@ -6428,6 +6462,7 @@ namespace BDArmory.Weapons
                 {
                     if (customTurret[i] == null) continue;
                     if (customTurret[i].vessel != vessel) continue;
+                    if (customTurret[i].isLocked) continue;
                     yield return new WaitWhileFixed(() => !customTurret[i].ReturnTurret()); //wait till turret has returned
                 }
             }
