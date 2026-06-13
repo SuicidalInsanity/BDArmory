@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
-VERSION = "25.3"
+VERSION = "25.4"
 
 parser = argparse.ArgumentParser(description="Tournament log parser", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('tournament', type=str, nargs='*', help="Tournament folder to parse.")
@@ -674,7 +674,7 @@ for tournamentNumber, tournamentDir in enumerate(tournamentDirs):
                 if args.score and not args.no_cumulative:
                     f.write(f"\n\nName \\ Cumulative Score Per Round," + ",".join(f"{r:>7d}" for r in range(len(next(iter(per_round_scores.values()))))))
                     for craft in sorted(per_round_scores, key=lambda craft: summary['craft'][craft]['score'], reverse=True):
-                        f.write(f"\n{craft.replace(",", ".")}," + ",".join(f"{s:.2f}" for s in cumsum(per_round_scores[craft])))
+                        f.write(f"\n{craft.replace(',', '.')}," + ",".join(f"{s:.2f}" for s in cumsum(per_round_scores[craft])))
 
     else:
         print(f"No valid log files found in {tournamentDir}.")
