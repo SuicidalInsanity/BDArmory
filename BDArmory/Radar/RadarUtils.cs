@@ -1789,13 +1789,26 @@ namespace BDArmory.Radar
                         missile.activeRadarGlintCurve, missile.activeRadarGlintMult,
                         missile.vessel, loadedvessels.Current, loadedvessels.Current.CoM, distance,
                         out terrainR, out terrainAngle, out notchMultiplier, out notchVMod, out notchRMod, out glintMod, true))
+                    {
+                        if (BDArmorySettings.DEBUG_RADAR)
+                        {
+                            Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to terrain!");
+                        }
                         continue;
+                    }
 
                     // get vessel's radar signature
                     TargetInfo ti = GetVesselRadarSignature(loadedvessels.Current);
                     float signature = 10f;
                     // See comment in RadarUpdateScanBoresight for more info about this.
-                    if (ti.Vessel == null) continue;
+                    if (ti.Vessel == null)
+                    {
+                        if (BDArmorySettings.DEBUG_RADAR)
+                        {
+                            Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to missile vessel in TargetInfo!");
+                        }
+                        continue; 
+                    }
 
                     if (ti != null)
                     {
@@ -1833,6 +1846,20 @@ namespace BDArmory.Radar
                                 dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: distance, _glintMod: glintMod);
                                 dataIndex++;
                             }
+                        }
+                        else
+                        {
+                            if (BDArmorySettings.DEBUG_RADAR)
+                            {
+                                Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected due to failing sig check! signature: {signature}/{minDetectSig}, SCRcheck: {SCRcheck}{(SCRcheck ? $", baseSignature: {baseSignature}/{minDetectSig}, SCR: {GetRadarNotchingSCR(baseSignature, fov, distance * 0.001f, terrainR, terrainAngle)}/{missile.activeRadarMinTrackSCR}" : "")}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (BDArmorySettings.DEBUG_RADAR)
+                        {
+                            Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateMissileLock}}] Target rejected, out of range!");
                         }
                     }
 
@@ -2646,8 +2673,9 @@ namespace BDArmory.Radar
                 Vector3 relV = missile.vessel.Velocity() - mf.vessel.Velocity();
                 bool approaching = Vector3.Dot(relV, vectorFromMissile) > 0;
                 bool teammate = false; // Missile isn't coming from teammate
-                if (missile.SourceVessel != null && missile.SourceVessel.ActiveController().WM != null)
-                    teammate = (missile.SourceVessel.ActiveController().WM.team == mf.team) && (missile.targetVessel != null ? (missile.targetVessel.Vessel != mf.vessel) : true); // Missile is fired from teammate and not locked onto us
+                MissileFire missileController;
+                if (missile.SourceVessel != null && (missileController = missile.SourceVessel.ActiveController().WM) != null)
+                    teammate = (missileController.team == mf.team) && (missile.targetVessel != null ? (missile.targetVessel.Vessel != mf.vessel) : true); // Missile is fired from teammate and not locked onto us
                 var missileBlastRadiusSqr = teammate ? mf.vessel.GetRadius() : 3f * Mathf.Max(missile.GetBlastRadius(), mf.vessel.GetRadius()); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
                 missileBlastRadiusSqr *= missileBlastRadiusSqr;
                 
@@ -2655,7 +2683,7 @@ namespace BDArmory.Radar
                             (
                                 (missile.TargetPosition - (mf.vessel.CoM + (mf.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
                                 mf.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(mf.cmThreshold, mf.evadeThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
-                                ((missile.TargetingMode == MissileBase.TargetingModes.Radar && !teammate) && (VectorUtils.Angle(missile.GetForwardTransform(), vectorFromMissile) <= Mathf.Clamp(missile.lockedSensorFOV * 0.5f + missile.maxOffBoresight, 20f, 75f))) // We are within radar FOV of missile boresight.
+                                ((missile.TargetingMode == MissileBase.TargetingModes.Radar && !teammate) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                             ));
             }
             else
@@ -2681,7 +2709,7 @@ namespace BDArmory.Radar
                                     (
                                         (missile.TargetPosition - (wm.vessel.CoM + (wm.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
                                         wm.vessel.PredictClosestApproachSqrSeparation(missile.vessel, Mathf.Max(wm.evadeThreshold, wm.cmThreshold)) < missileBlastRadiusSqr || // Closest approach is within blast radius of missile. 
-                                        ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(forwardTransform, vectorFromMissile) <= Mathf.Clamp(missile.lockedSensorFOV, 40f, 90f) * 0.5f)) // We are within radar FOV of missile boresight.
+                                        ((missile.TargetingMode == MissileBase.TargetingModes.Radar) && (VectorUtils.Angle(missile.TargetPosition - missile.vessel.CoM, vectorFromMissile) <= (missile.radarLOALSearching ? missile.maxOffBoresight : missile.lockedSensorFOV * 0.5f))) // We are within radar FOV of missile boresight.
                                     ));
                     }
             }
