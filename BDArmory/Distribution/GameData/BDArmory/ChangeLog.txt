@@ -1,4 +1,4 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
 - Weapons:
@@ -10,6 +10,8 @@ IMPROVEMENTS / FIXES
 		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
 		- Fixed "CLOS"'s commanded acceleration being incorrect.
 		- Fixed "maxTorque = 0" + "maxAeroTorque = 0" missiles bugging out and potentially causing crashes.
+- RWP:
+	- Fix control surface actuator speed hack.
 
 v1.13.0.0
 IMPROVEMENTS / FIXES
