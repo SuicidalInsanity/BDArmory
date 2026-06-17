@@ -241,6 +241,7 @@ namespace BDArmory.Radar
 
         private static int numAspectsForOverallRTEval = 83; // Use the first N rows of rcsAspectsRealTime for evaluating overall craft RCS
         public static float[,] editorRCSAspects = new float[3, 3]; // Worst three aspects
+        public static float[,] RCSMatrix = new float[107, 3]; // RCS Matrix for aspected
         static Shader RCSshader;
         static double[] rcsValues;
         static Color32[] pixels;
@@ -866,6 +867,7 @@ namespace BDArmory.Radar
             {
                 ti.radarBaseSignature = rcsTotal;
                 ti.radarSignatureMatrix = rcsMatrix;
+                RCSMatrix = rcsMatrix;
             }
 
             return ti;
