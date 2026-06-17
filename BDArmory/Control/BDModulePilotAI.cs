@@ -3739,12 +3739,6 @@ namespace BDArmory.Control
                         {
                             notch = true;
                             dive = true;
-                            if (weaponManager.incomingMissileTime > weaponManager.cmThreshold)
-                            {
-                                float t = Mathf.Clamp01((weaponManager.incomingMissileTime - weaponManager.cmThreshold) / (weaponManager.evadeThreshold - weaponManager.cmThreshold));
-                                t = -1.72f * t * t * t + 4.06f * t * t - 3.34f * t + 1f;
-                                diveAngle = Mathf.Lerp(35f, 75f, t); // Gradually dive more as missile gets closer
-                            }
                         }
                         else if (kinematicEvasionState == KinematicEvasionStates.Notch)
                         {
@@ -3763,6 +3757,14 @@ namespace BDArmory.Control
                         float angle = Mathf.Clamp((float)vessel.radarAltitude - minAltitude, 0, diveScale) / diveScale * 90;
                         float angleAdjMissile = Mathf.Max(Mathf.Asin(((float)vessel.radarAltitude - (float)weaponManager.incomingMissileVessel.radarAltitude) /
                             weaponManager.incomingMissileDistance) * Mathf.Rad2Deg, 0f); // Don't dive into the missile if it's coming from below
+
+                        if (weaponManager.incomingMissileTime > weaponManager.cmThreshold)
+                        {
+                            float t = Mathf.Clamp01((weaponManager.incomingMissileTime - weaponManager.cmThreshold) / (weaponManager.evadeThreshold - weaponManager.cmThreshold));
+                            t = -1.72f * t * t * t + 4.06f * t * t - 3.34f * t + 1f;
+                            diveAngle = Mathf.Lerp(35f, 75f, t); // Gradually dive more as missile gets closer
+                        }
+
                         diveAngle = Mathf.Clamp(angle - angleAdjMissile, 0, diveAngle) * Mathf.Deg2Rad;
                         //breakDirection = Vector3.RotateTowards(breakDirection, -upDirection, angle, 0);
                     }
