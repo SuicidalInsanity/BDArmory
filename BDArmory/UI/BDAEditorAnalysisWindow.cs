@@ -19,7 +19,6 @@ namespace BDArmory.UI
         private ApplicationLauncherButton toolbarButton = null;
 
         private bool showRcsWindow = false;
-        private string windowTitle = !Settings.BDArmorySettings.ASPECTED_RCS ? "BDArmory Radar Cross Section Analysis (Worst Three Aspects)" : "BDArmory Radar Cross Section Analysis (Front/Side/Polar Plot)";
         private Rect windowRect = new Rect(300, 150, !Settings.BDArmorySettings.ASPECTED_RCS ? 650 : 670, 500);
 
         private bool takeSnapshot = false;
@@ -177,6 +176,7 @@ namespace BDArmory.UI
         {
             if (showRcsWindow)
             {
+                string windowTitle = !Settings.BDArmorySettings.ASPECTED_RCS ? "BDArmory Radar Cross Section Analysis (Worst Three Aspects)" : "BDArmory Radar Cross Section Analysis (Front/Side/Polar Plot)";
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, windowRect.position);
                 windowRect = GUI.Window(GUIUtility.GetControlID(FocusType.Passive), windowRect, WindowRcs, windowTitle, BDArmorySetup.BDGuiSkin.window);
             }
@@ -254,7 +254,7 @@ namespace BDArmory.UI
                 for (int i = 1; i <= numCircles; i++)
                 {
                     float rcsVal = i * stepRcs;
-                    float normalizedRcs = rcsVal / maxRcs;
+                    float normalizedRcs = rcsVal / cachedMaxRCS;
                     float radius = normalizedRcs * maxPlotRadius;
 
                     string labelText = rcsVal.ToString("F1");
@@ -381,7 +381,7 @@ namespace BDArmory.UI
             rcsReductionFactor = 1.0f;
 
             int rcsCount = 0;
-            List<Part>.Enumerator parts = EditorLogic.fetch.ship.Parts.GetEnumerator();
+            using List<Part>.Enumerator parts = EditorLogic.fetch.ship.Parts.GetEnumerator();
             while (parts.MoveNext())
             {
                 ModuleECMJammer rcsJammer = parts.Current.GetComponent<ModuleECMJammer>();
@@ -395,7 +395,6 @@ namespace BDArmory.UI
                     }
                 }
             }
-            parts.Dispose();
 
             if (rcsCount > 0)
                 rcsReductionFactor = Mathf.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
@@ -595,7 +594,7 @@ namespace BDArmory.UI
             }
 
             // --- Step B: Draw Grid ---
-            Color gridColor = new Color(1f, 1f, 1f, 1f); // Solid Black
+            Color gridColor = new Color(1f, 1f, 1f, 1f); // Solid White
 
             DrawLineOnArray(centerX, 0, centerX, height - 1, gridColor);
             DrawLineOnArray(0, centerY, width - 1, centerY, gridColor);
