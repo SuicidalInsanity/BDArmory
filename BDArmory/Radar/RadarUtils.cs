@@ -318,7 +318,7 @@ namespace BDArmory.Radar
             }
         }
 
-        private static float RCSMatrixEval(float[,] rcsMatrix, float overallRCS, float azAngle, float elAngle)
+        public static float RCSMatrixEval(float[,] rcsMatrix, float overallRCS, float azAngle, float elAngle)
         {
             float rcs;
 

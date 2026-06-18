@@ -27,6 +27,7 @@ namespace BDArmory.UI
         private float rcsOverride = -1;
         private float rcsGCF = 1.0f;
         private static float rcsElevationIndex = 0f;
+        private float[] rcsElevations = [-90f, -45f, -20f, -10f, -5f, -2.5f, 0f, 2.5f, 5f, 10f, 20f, 45f, 90f];
 
         private ModuleRadar[] radars;
         private GUIContent[] radarsGUI;
@@ -41,6 +42,7 @@ namespace BDArmory.UI
         // Cache variables to avoid regenerating the texture every frame
         private Texture2D cachedPolarPlot = null;
         private float cachedPolarPlotElevation = float.MinValue;
+        private float cachedMaxRCS = 1f;
 
         void Awake()
         {
@@ -203,15 +205,7 @@ namespace BDArmory.UI
             float selectedElevation = 0f;
             if (Settings.BDArmorySettings.ASPECTED_RCS)
             {
-                // Extract unique elevations for the slider
-                List<float> uniqueElevations = new List<float>();
-                int rows = RadarUtils.RCSMatrix.GetLength(0);
-                for (int i = 0; i < rows; i++)
-                {
-                    float elev = RadarUtils.RCSMatrix[i, 1];
-                    if (!uniqueElevations.Contains(elev)) uniqueElevations.Add(elev);
-                }
-                uniqueElevations.Sort();
+                float maxSliderIndex = 12f;
 
                 // Define the plot area
                 Rect plotRect = new Rect(430, 70, 200, 200);
@@ -219,49 +213,40 @@ namespace BDArmory.UI
                 // Define the slider area (to the right of the plot)
                 Rect sliderRect = new Rect(plotRect.x + plotRect.width + 10, plotRect.y, 20, plotRect.height);
 
-                selectedElevation = 0f;
-                if (uniqueElevations.Count > 0)
+                // NOTE: 'rcsElevationIndex' should be defined as a class-level static float to persist value between frames
+                // e.g., private static float rcsElevationIndex = 18f; (Index 18 corresponds to 0 degrees)
+
+                // If uninitialized (0), set to index 18 to start at 0 degrees elevation
+                if (rcsElevationIndex == 0f)
                 {
-                    // NOTE: 'rcsElevationIndex' should be defined as a class-level static float to persist value between frames
-                    // e.g., private static float rcsElevationIndex = 0f;
-                    if (rcsElevationIndex == 0f && uniqueElevations.Contains(0f))
-                    {
-                        rcsElevationIndex = uniqueElevations.IndexOf(0f);
-                    }
-
-                    rcsElevationIndex = Mathf.Clamp(rcsElevationIndex, 0, uniqueElevations.Count - 1);
-
-                    // Draw Vertical Slider (Top value = max index, Bottom value = 0)
-                    rcsElevationIndex = GUI.VerticalSlider(sliderRect, rcsElevationIndex, uniqueElevations.Count - 1, 0);
-
-                    int elevIndex = Mathf.RoundToInt(rcsElevationIndex);
-                    selectedElevation = uniqueElevations[elevIndex];
+                    rcsElevationIndex = 6f;
                 }
 
+                // Clamp index to the fixed range 0..36
+                rcsElevationIndex = Mathf.Clamp(rcsElevationIndex, 0, maxSliderIndex);
+
+                // Draw Vertical Slider
+                rcsElevationIndex = GUI.VerticalSlider(sliderRect, rcsElevationIndex, maxSliderIndex, 0);
+
+                // Calculate selected elevation based on 5-degree increments
+                int elevIndex = Mathf.RoundToInt(rcsElevationIndex);
+                selectedElevation = rcsElevations[elevIndex];
+
                 // Optimization: Only regenerate texture if necessary (data changed or elevation changed)
+                float maxRcs = 1f;
                 if (needRegen || cachedPolarPlot == null || Mathf.Abs(cachedPolarPlotElevation - selectedElevation) > 0.01f)
                 {
                     if (cachedPolarPlot != null) Destroy(cachedPolarPlot);
-                    cachedPolarPlot = GenerateRCSPolarPlot(RadarUtils.RCSMatrix, selectedElevation, RadarUtils.GetTexture3);
+                    cachedPolarPlot = GenerateRCSPolarPlot(RadarUtils.RCSMatrix, selectedElevation, RadarUtils.GetTexture3, out maxRcs);
                     cachedPolarPlotElevation = selectedElevation;
+                    cachedMaxRCS = maxRcs;
                 }
 
                 GUI.DrawTexture(plotRect, cachedPolarPlot, ScaleMode.StretchToFill);
 
                 // Draw Labels for Concentric Circles
-                float maxRcs = 0f;
-                for (int i = 0; i < rows; i++)
-                {
-                    if (Mathf.Abs(RadarUtils.RCSMatrix[i, 1] - selectedElevation) < 0.01f)
-                    {
-                        float rcs = (1 - BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) * RadarUtils.RCSMatrix[i, 2] + BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT * RadarUtils.rcsTotal;
-                        if (rcs > maxRcs) maxRcs = rcs;
-                    }
-                }
-                if (maxRcs == 0) maxRcs = 1f;
-
                 int numCircles = 5;
-                float stepRcs = maxRcs / numCircles;
+                float stepRcs = cachedMaxRCS / numCircles;
                 float centerX = plotRect.x + plotRect.width / 2;
                 float centerY = plotRect.y + plotRect.height / 2;
                 float maxPlotRadius = (plotRect.width / 2) - 10;
@@ -272,17 +257,14 @@ namespace BDArmory.UI
                     float normalizedRcs = rcsVal / maxRcs;
                     float radius = normalizedRcs * maxPlotRadius;
 
-                    string labelText = rcsVal.ToString("F1");// + " m²";
+                    string labelText = rcsVal.ToString("F1");
 
                     // Vertical Axis Labels (Y-Axis)
                     // Centered horizontally on the plot, positioned at radius distance vertically
-                    float labelX = centerX - 20; // Offset to center text (assuming ~40px width)
+                    float labelX = centerX + 2;
 
                     // Top Label (North/Up)
                     GUI.Label(new Rect(labelX, centerY - radius - 13, 40, 20), labelText);
-
-                    // Bottom Label (South/Down)
-                    //GUI.Label(new Rect(labelX, centerY + radius - 13, 40, 20), labelText);
                 }
             }
             else
@@ -419,12 +401,13 @@ namespace BDArmory.UI
                 rcsReductionFactor = Mathf.Max((rcsReductionFactor * rcsCount), 0.0f);    //same formula as in VesselECMJInfo must be used here!
         }
 
-        public static Texture2D GenerateRCSPolarPlot(float[,] rcsMatrix, float el, Texture2D aircraft)
+        public static Texture2D GenerateRCSPolarPlot(float[,] rcsMatrix, float el, Texture2D aircraft, out float maxRcs)
         {
             // 1. Validate inputs
             if (rcsMatrix == null || aircraft == null)
             {
                 Debug.LogError("Invalid input: rcsMatrix or aircraft is null.");
+                maxRcs = 1f;
                 return null;
             }
 
@@ -471,64 +454,33 @@ namespace BDArmory.UI
             processedAircraftTex.SetPixels(processedPixels);
             processedAircraftTex.Apply();
 
-            // 3. Filter and Expand RCS Data to 0-360 degrees
-            float epsilon = 0.01f;
+            // 3. Generate RCS Data using RadarUtils.RCSMatrixEval from 0 to 360 degrees
             List<(float azimuth, float rcs)> validData = new List<(float azimuth, float rcs)>();
-            int rows = rcsMatrix.GetLength(0);
 
-            // First pass: Identify valid elevation rows and collect original data
-            List<(float azimuth, float rcs)> originalValidPoints = new List<(float azimuth, float rcs)>();
-
-            for (int i = 0; i < rows; i++)
+            // Iterate azimuth from -180 to 180 with a step of 5
+            for (int az = -180; az <= 180; az += 5)
             {
-                float elev = rcsMatrix[i, 1];
-                if (Mathf.Abs(elev - el) < epsilon)
-                {
-                    float az = rcsMatrix[i, 0];
-                    float rcs = (1 - BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) * rcsMatrix[i, 2] + BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT * RadarUtils.rcsTotal;
-
-                    if (az >= 0 && az <= 180)
-                    {
-                        originalValidPoints.Add((az, rcs));
-                    }
-                }
-            }
-
-            if (originalValidPoints.Count == 0)
-            {
-                Debug.LogWarning("No RCS data found for elevation: " + el);
-                return processedAircraftTex;
-            }
-
-            // Second pass: Create symmetrical data from 0 to 360
-            foreach (var point in originalValidPoints)
-            {
-                float az = point.azimuth;
-                float rcs = point.rcs;
-
+                // Calculate RCS using the matrix eval assuming left/right symmetry
+                float rcs = RadarUtils.RCSMatrixEval(rcsMatrix, RadarUtils.rcsTotal, Mathf.Abs(az), el);
                 validData.Add((az, rcs));
-
-                if (az > 0 && az < 180)
-                {
-                    float symAz = 360.0f - az;
-                    validData.Add((symAz, rcs));
-                }
             }
 
-            validData.Sort((a, b) => a.azimuth.CompareTo(b.azimuth));
+            // Note: Sorting is not strictly necessary as the loop generates sequential data,
+            // but retained if future logic requires specific ordering guarantees.
+            // validData.Sort((a, b) => a.azimuth.CompareTo(b.azimuth));
 
             // 4. Setup Plot Parameters
             int centerX = width / 2;
             int centerY = height / 2;
 
-            float maxRcs = validData.Max(d => d.rcs);
+            maxRcs = validData.Max(d => d.rcs);
             float minRcs = 0f;
             float range = maxRcs - minRcs;
             if (range == 0) range = 1f;
 
             int maxPlotRadius = Mathf.Min(width, height) / 2 - 10;
 
-            float aircraftScaleFactor = 0.8f;
+            float aircraftScaleFactor = 0.3f;
             int aircraftMaxRadius = Mathf.RoundToInt(maxPlotRadius * aircraftScaleFactor);
 
             Texture2D finalTexture = new Texture2D(width, height, TextureFormat.RGBA32, false);
@@ -683,7 +635,7 @@ namespace BDArmory.UI
                 if (r > maxPlotRadius) r = maxPlotRadius;
 
                 int x = Mathf.RoundToInt(centerX + r * Mathf.Sin(rad));
-                int y = Mathf.RoundToInt(centerY - r * Mathf.Cos(rad));
+                int y = Mathf.RoundToInt(centerY + r * Mathf.Cos(rad));
 
                 if (x >= 0 && x < width && y >= 0 && y < height)
                 {
@@ -699,7 +651,7 @@ namespace BDArmory.UI
                 if (nextR > maxPlotRadius) nextR = maxPlotRadius;
 
                 int nextX = Mathf.RoundToInt(centerX + nextR * Mathf.Sin(nextRad));
-                int nextY = Mathf.RoundToInt(centerY - nextR * Mathf.Cos(nextRad));
+                int nextY = Mathf.RoundToInt(centerY + nextR * Mathf.Cos(nextRad));
 
                 DrawLineOnArray(nextX, nextY, x, y, plotColor);
             }
