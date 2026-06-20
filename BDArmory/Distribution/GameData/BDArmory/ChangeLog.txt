@@ -1,6 +1,10 @@
 IMPROVEMENTS / FIXES
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
+- AI / WM:
+	- Fix AI considering radar missiles not painting them with a radar as incoming.
+- Sensors:
+	- Split `HMDCost` into `HMDCost` which represents a fixed per-cockpit cost of the system, and `HMDCostPerSeat` which represents a per-seat cost of the system. Defaults to 1500 and 500 respectively.
 - Weapons:
 	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
   - Bullets:

@@ -1497,7 +1497,7 @@ namespace BDArmory.Weapons.Missiles
                     radarTarget = TargetSignatureData.noTarget;
                     TargetAcquired = true;
                     TargetPosition = transform.position + (startDirection * 5000);
-                    TargetVelocity = Vector3.zero; // Set the relative target velocity to 0.
+                    TargetVelocity = Vector3.zero; // Set the target velocity to 0.
                     TargetAcceleration = Vector3.zero;
                     if (!radarLOALSearching)
                     {
