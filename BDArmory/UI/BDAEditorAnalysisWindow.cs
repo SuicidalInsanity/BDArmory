@@ -25,7 +25,7 @@ namespace BDArmory.UI
         private float rcsReductionFactor;
         private float rcsOverride = -1;
         private float rcsGCF = 1.0f;
-        private static float rcsElevationIndex = 0f;
+        private static int rcsElevationIndex = -1;
         private float[] rcsElevations = [-90f, -45f, -20f, -10f, -5f, -2.5f, 0f, 2.5f, 5f, 10f, 20f, 45f, 90f];
 
         private ModuleRadar[] radars;
@@ -205,7 +205,7 @@ namespace BDArmory.UI
             float selectedElevation = 0f;
             if (Settings.BDArmorySettings.ASPECTED_RCS)
             {
-                float maxSliderIndex = 12f;
+                int maxSliderIndex = rcsElevations.Length - 1;
 
                 // Define the plot area
                 Rect plotRect = new Rect(430, 70, 200, 200);
@@ -213,24 +213,18 @@ namespace BDArmory.UI
                 // Define the slider area (to the right of the plot)
                 Rect sliderRect = new Rect(plotRect.x + plotRect.width + 10, plotRect.y, 20, plotRect.height);
 
-                // NOTE: 'rcsElevationIndex' should be defined as a class-level static float to persist value between frames
-                // e.g., private static float rcsElevationIndex = 18f; (Index 18 corresponds to 0 degrees)
-
-                // If uninitialized (0), set to index 18 to start at 0 degrees elevation
-                if (rcsElevationIndex == 0f)
+                // Initialize to the first valid index if rcsElevationIndex is still at its invalid default (-1)
+                if (rcsElevationIndex == -1)
                 {
-                    rcsElevationIndex = 6f;
+                    if ((rcsElevationIndex = rcsElevations.IndexOf(0f)) == -1)
+                        rcsElevationIndex = rcsElevations.Length / 2;
                 }
 
-                // Clamp index to the fixed range 0..36
-                rcsElevationIndex = Mathf.Clamp(rcsElevationIndex, 0, maxSliderIndex);
-
                 // Draw Vertical Slider
-                rcsElevationIndex = GUI.VerticalSlider(sliderRect, rcsElevationIndex, maxSliderIndex, 0);
+                rcsElevationIndex = Mathf.Clamp(Mathf.RoundToInt(GUI.VerticalSlider(sliderRect, rcsElevationIndex, maxSliderIndex, 0)), 0, maxSliderIndex);
 
-                // Calculate selected elevation based on 5-degree increments
-                int elevIndex = Mathf.RoundToInt(rcsElevationIndex);
-                selectedElevation = rcsElevations[elevIndex];
+                // Calculate selected elevation
+                selectedElevation = rcsElevations[rcsElevationIndex];
 
                 // Optimization: Only regenerate texture if necessary (data changed or elevation changed)
                 float maxRcs = 1f;
