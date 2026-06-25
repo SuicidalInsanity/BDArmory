@@ -19,7 +19,7 @@ namespace BDArmory.UI
         private ApplicationLauncherButton toolbarButton = null;
 
         private bool showRcsWindow = false;
-        private Rect windowRect = new Rect(300, 150, !Settings.BDArmorySettings.ASPECTED_RCS ? 650 : 670, 500);
+        private Rect windowRect = new Rect(300, 150, !BDArmorySettings.ASPECTED_RCS ? 650 : 670, 500);
 
         private bool takeSnapshot = false;
         private float rcsReductionFactor;
@@ -176,7 +176,7 @@ namespace BDArmory.UI
         {
             if (showRcsWindow)
             {
-                string windowTitle = !Settings.BDArmorySettings.ASPECTED_RCS ? "BDArmory Radar Cross Section Analysis (Worst Three Aspects)" : "BDArmory Radar Cross Section Analysis (Front/Side/Polar Plot)";
+                string windowTitle = !BDArmorySettings.ASPECTED_RCS ? "BDArmory Radar Cross Section Analysis (Worst Three Aspects)" : "BDArmory Radar Cross Section Analysis (Front/Side/Polar Plot)";
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, windowRect.position);
                 windowRect = GUI.Window(GUIUtility.GetControlID(FocusType.Passive), windowRect, WindowRcs, windowTitle, BDArmorySetup.BDGuiSkin.window);
             }
@@ -191,7 +191,7 @@ namespace BDArmory.UI
 
             GUI.Label(new Rect(10, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[0, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[0, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
             GUI.Label(new Rect(220, 40, 200, 20), $"Az {RadarUtils.editorRCSAspects[1, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[1, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
-            GUI.Label(new Rect(430, 40, 200, 20), Settings.BDArmorySettings.ASPECTED_RCS ? "RCS Polar Plot" :
+            GUI.Label(new Rect(430, 40, 200, 20), BDArmorySettings.ASPECTED_RCS ? "RCS Polar Plot" :
             $"Az {RadarUtils.editorRCSAspects[2, 0].ToString("0")}, El {RadarUtils.editorRCSAspects[2, 1].ToString("0")}", BDArmorySetup.SelectedButtonStyle);
 
             // Optimization: Check if we need to regenerate the plot data before resetting the flag
@@ -203,7 +203,7 @@ namespace BDArmory.UI
             GUI.DrawTexture(new Rect(10, 70, 200, 200), RadarUtils.GetTexture1, ScaleMode.StretchToFill);
             GUI.DrawTexture(new Rect(220, 70, 200, 200), RadarUtils.GetTexture2, ScaleMode.StretchToFill);
             float selectedElevation = 0f;
-            if (Settings.BDArmorySettings.ASPECTED_RCS)
+            if (BDArmorySettings.ASPECTED_RCS)
             {
                 int maxSliderIndex = rcsElevations.Length - 1;
 
@@ -264,13 +264,13 @@ namespace BDArmory.UI
             else
                 GUI.DrawTexture(new Rect(430, 70, 200, 200), RadarUtils.GetTexture3, ScaleMode.StretchToFill);
 
-            float editorUIRCS0 = (!Settings.BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[0, 2] : (RadarUtils.editorRCSAspects[0, 2] * (1 - Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
-            float editorUIRCS1 = (!Settings.BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[1, 2] : (RadarUtils.editorRCSAspects[1, 2] * (1 - Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
-            float editorUIRCS2 = (!Settings.BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[2, 2] : (RadarUtils.editorRCSAspects[2, 2] * (1 - Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * Settings.BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
+            float editorUIRCS0 = (!BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[0, 2] : (RadarUtils.editorRCSAspects[0, 2] * (1 - BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
+            float editorUIRCS1 = (!BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[1, 2] : (RadarUtils.editorRCSAspects[1, 2] * (1 - BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
+            float editorUIRCS2 = (!BDArmorySettings.ASPECTED_RCS) ? RadarUtils.editorRCSAspects[2, 2] : (RadarUtils.editorRCSAspects[2, 2] * (1 - BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT) + RadarUtils.rcsTotal * BDArmorySettings.ASPECTED_RCS_OVERALL_RCS_WEIGHT);
 
             GUI.Label(new Rect(10, 275, 200, 20), RadarUtils.RCSString(editorUIRCS0), BDArmorySetup.BDGuiSkin.label);
             GUI.Label(new Rect(220, 275, 200, 20), RadarUtils.RCSString(editorUIRCS1), BDArmorySetup.BDGuiSkin.label);
-            GUI.Label(new Rect(430, 275, 200, 20), Settings.BDArmorySettings.ASPECTED_RCS ? $"RCS (m²) at {selectedElevation.ToString("F1")} deg El" : RadarUtils.RCSString(editorUIRCS2), BDArmorySetup.BDGuiSkin.label);
+            GUI.Label(new Rect(430, 275, 200, 20), BDArmorySettings.ASPECTED_RCS ? $"RCS (m²) at {selectedElevation.ToString("F1")} deg El" : RadarUtils.RCSString(editorUIRCS2), BDArmorySetup.BDGuiSkin.label);
 
 
             GUIStyle style = BDArmorySetup.BDGuiSkin.label;
