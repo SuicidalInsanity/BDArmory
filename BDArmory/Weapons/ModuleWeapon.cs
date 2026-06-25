@@ -2332,15 +2332,14 @@ namespace BDArmory.Weapons
                         }
 
                         GUIUtils.DrawTextureOnWorldPos(pointingAtPosition, BDArmorySetup.Instance.greenDotTexture, new Vector2(6, 6), 0);
-
-                        if (atprAcquired)
-                        {
-                            GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
-                        }
                     }
                     else
                     {
                         reticlePosition = bulletPrediction;
+                    }
+                    if (atprAcquired)
+                    {
+                        GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
                     }
                 }
                 else
@@ -6058,6 +6057,8 @@ namespace BDArmory.Weapons
                                 if (v.Current == null || !v.Current.loaded || VesselModuleRegistry.IgnoredVesselTypes.Contains(v.Current.vesselType)) continue;
                                 if (!v.Current.IsControllable) continue;
                                 if (v.Current == vessel) continue;
+                                var targetWM = v.Current.ActiveController().WM;
+                                if (targetWM != null && targetWM.Team == weaponManager.Team) continue; // Don't select friendlies. Can still select neutral.
                                 Vector3 targetVector = v.Current.CoM - part.transform.position;
                                 var turretInRange = turret && turret.TargetInRange(v.Current.CoM, maxEffectiveDistance, 20);
                                 if (!(turretInRange || Vector3.Dot(targetVector, fireTransforms[0].forward) > 0)) continue;
@@ -6245,7 +6246,7 @@ namespace BDArmory.Weapons
                         else //APS using slug ammo
                         {
                             tgtDeflected = true;
-                        }                        
+                        }
                     }
                 }
                 else
