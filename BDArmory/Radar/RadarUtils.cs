@@ -133,7 +133,7 @@ namespace BDArmory.Radar
         private static float[,] rcsAspectsRealTime = new float[107, 2] {
             { 0f, 0f},
             { 90f, 0f},
-            { 180f, 0f},
+            { 0f, 90f},
             { 11.25f, 0f},
             { 22.5f, 0f},
             { 33.75f, 0f},
@@ -232,10 +232,10 @@ namespace BDArmory.Radar
             { 112.5f, -66.31579f},
             { 157.5f, 66.31579f},
             { 157.5f, -66.31579f},
-            { 0f, 90f},
             { 0f, -90f},
             { 90f, 90f},
             { 90f, -90f},
+            { 180f, 0f},
             { 180f, 90f},
             { 180f, -90f},
         };
@@ -249,6 +249,7 @@ namespace BDArmory.Radar
         private static int numAspectsForOverallRTEval = 83; // Use the first N rows of rcsAspectsRealTime for evaluating overall craft RCS
         public static float[,] editorRCSAspects = new float[3, 3]; // Worst three aspects
         public static Vector3[] editorRCSAspectsDir = new Vector3[3];
+        public static float[,] RCSMatrix = null; // RCS Matrix for aspected
         static Shader RCSshader;
         static double[] rcsValues;
         static Color32[] pixels;
@@ -256,7 +257,7 @@ namespace BDArmory.Radar
         /// <summary>
         /// Force radar signature update
         /// Optionally, pass in a list of the vessels to update, otherwise all vessels in BDATargetManager.LoadedVessels get updated.
-        /// 
+        ///
         /// This appears to cause a rather large amount of memory to be consumed (not actually a leak though).
         /// </summary>
         public static void ForceUpdateRadarCrossSections(List<Vessel> vessels = null)
@@ -325,7 +326,7 @@ namespace BDArmory.Radar
             }
         }
 
-        private static float RCSMatrixEval(float[,] rcsMatrix, float overallRCS, float azAngle, float elAngle)
+        public static float RCSMatrixEval(float[,] rcsMatrix, float overallRCS, float azAngle, float elAngle)
         {
             float rcs;
 
@@ -813,9 +814,12 @@ namespace BDArmory.Radar
                 RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[1], vesselbounds, radarDistance, radarFOV, rcsRendering2, drawTexture2);
                 RenderSinglePass(v, t, inEditorZoom, editorRCSAspectsDir[2], vesselbounds, radarDistance, radarFOV, rcsRendering3, drawTexture3);
 
+                // Store RCS Matrix
+                RCSMatrix = rcsMatrix;
             }
             else
             {
+                RCSMatrix = null;
                 // revert presentation (only if outside editor and thus vessel is a real vessel)
                 if (HighLogic.LoadedSceneIsFlight)
                 {
@@ -1213,7 +1217,7 @@ namespace BDArmory.Radar
                 radarCam.fieldOfView = Mathf.Atan(vesselbounds.size.magnitude / distanceToShip) * 180 / Mathf.PI;
             else
                 radarCam.fieldOfView = radarFOV;
-            // setup rendertexture            
+            // setup rendertexture
 
             /////////////////
             Color StealthAdjust;
@@ -2019,7 +2023,7 @@ namespace BDArmory.Radar
                         float glintMod; // = 1f;
 
                         Vector3 directionToTarget = vectorToTarget / distance;
-                        
+
                         if (!RadarTerrainNotchingCheck(radar.sonarMode == ModuleRadar.SonarModes.None, position,
                             radar.radarRangeGate, radar.radarVelocityGate,
                             radar.radarMaxVelocityGate, radar.radarMaxRangeGate, radar.radarMinVelocityGate, radar.radarMinRangeGate,
@@ -2255,7 +2259,7 @@ namespace BDArmory.Radar
                 //do not multiply chaff factor here
 
                 float baseSignature = signature; // Kept for notching
-                
+
                 if (radar.radarCanNotch)
                     signature *= notchMultiplier;
 
@@ -2375,7 +2379,7 @@ namespace BDArmory.Radar
                         distance = BDAMath.Sqrt(distance);
 
                         signature *= Mathf.Clamp(VectorUtils.Angle(vectorToTarget, -irst.vessel.upAxis) / 90, 0.5f, 1.5f);
-                        //ground will mask thermal sig                        
+                        //ground will mask thermal sig
                         signature *= (GetRadarGroundClutterModifier(irst.GroundClutterFactor, position, vectorToTarget / distance, tInfo) * (tInfo.isSplashed ? 12 : 1));
                         //cold ocean on the other hand...
 
@@ -2523,7 +2527,7 @@ namespace BDArmory.Radar
                     Vector3 vesselDirection = loadedvessels.Current.CoM - position;
                     Vector3 vesselProjectedDirection = (vesselDirection).ProjectOnPlanePreNormalized(upVector);
                     float vesselDistanceSqr = (vesselDirection).sqrMagnitude;
-                    
+
                     if (tInfo.isMissile)
                     {
                         // This is performed in CanSeeTarget for regular vessels
@@ -2539,7 +2543,7 @@ namespace BDArmory.Radar
                             tInfo.isMissile = false; // The target vessel has lost it's missile base component and should no longer count as a missile. This can happen for modular missiles that are getting destroyed.
                             continue;
                         }
-                        
+
                         if (missileBase.SourceVessel == myWpnManager.vessel) continue; // ignore missiles we've fired
                         float sightDistance = 0;
 
@@ -2604,7 +2608,7 @@ namespace BDArmory.Radar
                             {
                                 // We hardcode identification within 0.33 * maxViewDistance, if not
                                 // detected by MWS or indentified, passive missiles are unidentified
-                                
+
                                 // This does leave radar missiles in a weird spot where a RWR-less
                                 // vessel can tell it's a radar missile from > ID range...
                                 case MissileBase.TargetingModes.Heat:
@@ -2649,7 +2653,7 @@ namespace BDArmory.Radar
                         {
                             float maxRadarRWRRange = 0f;
                             if (tgtMF && tgtMF.vesselRadarData) maxRadarRWRRange = tgtMF.vesselRadarData.MaxRadarRange() * 2;
-                            
+
                             // Is there any possibility that we're within RWR range...
                             if (vesselDistanceSqr < maxRadarRWRRange * maxRadarRWRRange)
                             {
@@ -2723,7 +2727,7 @@ namespace BDArmory.Radar
                     teammate = (missileController.team == mf.team) && (missile.targetVessel != null ? (missile.targetVessel.Vessel != mf.vessel) : true); // Missile is fired from teammate and not locked onto us
                 var missileBlastRadiusSqr = teammate ? mf.vessel.GetRadius() : 3f * Mathf.Max(missile.GetBlastRadius(), mf.vessel.GetRadius()); // Blast radius or self radius, whichever is larger (use self radius if missile is from teammate)
                 missileBlastRadiusSqr *= missileBlastRadiusSqr;
-                
+
                 return (missile.HasFired && missile.MissileState > MissileBase.MissileStates.Drop && approaching && maneuverCapability &&
                             (
                                 (missile.TargetPosition - (mf.vessel.CoM + (mf.vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude < missileBlastRadiusSqr || // Target position is within blast radius of missile.
