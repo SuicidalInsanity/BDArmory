@@ -251,7 +251,7 @@ namespace BDArmory.Radar
         public static Vector3[] editorRCSAspectsDir = new Vector3[3];
         public static float[,] RCSMatrix = null; // RCS Matrix for aspected
         static Shader RCSshader;
-        static double[] rcsValues;
+        static double[] rcsValues = [];
         static Color32[] pixels;
 
         /// <summary>
@@ -692,13 +692,14 @@ namespace BDArmory.Radar
                 SetHangarRender(false);
 
             float rcsVariable = 0f;
-            if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
+            //if (editorRCSAspects is null) editorRCSAspects = new float[3, 3];
             Array.Clear(editorRCSAspects, 0, 9);
-            if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
+            //if (editorRCSAspectsDir is null) editorRCSAspectsDir = new Vector3[3];
             Array.Clear(editorRCSAspectsDir, 0, 3);
-            if (rcsValues is null)
-                rcsValues = new double[numAspects];
-            else
+            //if (rcsValues is null)
+            //    rcsValues = new double[numAspects];
+            //else
+            if (rcsValues.Length != numAspects)
                 Array.Resize(ref rcsValues, numAspects);
             Array.Clear(rcsValues, 0, numAspects);
             Vector3 aspect;
