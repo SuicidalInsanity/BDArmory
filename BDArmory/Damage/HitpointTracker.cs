@@ -5,6 +5,7 @@ using BDArmory.Modules;
 using BDArmory.Settings;
 using BDArmory.UI;
 using BDArmory.Utils;
+using BDArmory.Weapons.Missiles;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -689,21 +690,26 @@ namespace BDArmory.Damage
             }
         }
 
-        private void UpdatePartMass(ref float Safetymass)
+        private void UpdatePartMass(ref float safetyMass, ref float missileMass)
         {
-            if (isProcWing || isProcPart || isProcWheel || isVariantPart)
+            if (safetyMass < 0)
             {
-                if (Safetymass < 0)
-                {
-                    var SST = part.GetComponent<ModuleSelfSealingTank>();
-                    if (SST != null)
-                    { Safetymass = SST.FBmass + SST.FISmass; }
-                    else Safetymass = 0;
-                }
+                var SST = part.GetComponent<ModuleSelfSealingTank>();
+                if (SST != null)
+                { safetyMass = SST.FBmass + SST.FISmass; }
+                else safetyMass = 0;
             }
-            else if (Safetymass < 0) Safetymass = 0;
+            else if (safetyMass < 0) safetyMass = 0;
+            if (missileMass < 0)
+            {
+                var mm = part.GetComponent<ModuleMissileMagazine>();
+                if (mm != null)
+                { missileMass = mm.MissileMass; }
+                else missileMass = 0;
+            }
+            else if (missileMass < 0) missileMass = 0;
             part.UpdateMass(); // Make sure the mass modifiers are accounted for when updating partMass.
-            partMass = part.mass - armorMass - HullMassAdjust - Safetymass;
+            partMass = part.mass - armorMass - HullMassAdjust - safetyMass - missileMass;
         }
 
         #region HeartBleed
@@ -907,8 +913,8 @@ namespace BDArmory.Damage
                         }
                         if (isProcPart || isProcWheel || isVariantPart)
                         {
-                            structuralVolume = armorVolume * Mathf.PI / 6f * 0.1f; // Box area * sphere/cube ratio * 10cm. We use sphere/cube ratio to get similar results as part.GetAverageBoundSize().
-                            density = (partMass * 1000f) / structuralVolume;
+                            //structuralVolume = armorVolume * Mathf.PI / 6f * 0.1f; // Box area * sphere/cube ratio * 10cm. We use sphere/cube ratio to get similar results as part.GetAverageBoundSize().
+                            //density = (partMass * 1000f) / structuralVolume;
                             //if (density > 1e5f || density < 10)
                             if (density > 1e5f || density < 145) //this should cause HP clamping for hollow parts when they reach stock Struct tube thickness or therabouts
                             {
@@ -919,7 +925,16 @@ namespace BDArmory.Damage
                             density = Mathf.Clamp(density, 250, 10000);
                             structuralMass = density * structuralVolume;
                             //might instead need to grab Procpart mass/size vars via reflection
-                            hitpoints = (structuralMass * hitpointMultiplier * 0.333f) * (isProcWheel ? 2.6f : 5.2f);
+                            //how do we determine the difference between a part variant that's a tex change and a model change?
+                            //stock variant parts (rover core, tanks, etc)/proparts
+                            //capsules don't need HP mod, default structVol calc doesn't need HP mult
+                            //variant panels need? HP mod, default structVol calc doesn't need HP mult
+                            //mk1 LFO tanks don't need HP mult, default structVol calc don't need HP mult
+                            //procParts need HP mult, default structVol calc doesn't need HP mult
+                            //looks like base structural volume calc works for procparts, stock variants; testing vs KF wheels looks like a 2.6x mult is still warranted.
+                            //Debug.Log($"part {part.partInfo.title} structVol {structuralVolume}; baseHP {(structuralMass * hitpointMultiplier * 0.333f):F2}; modHP: {((structuralMass * hitpointMultiplier * 0.333f) * (isProcWheel ? 2.6f : 5.2f)):F2}");
+                            //hitpoints = (structuralMass * hitpointMultiplier * 0.333f) * (isProcWheel ? 2.6f : 5.2f);
+                            hitpoints = (structuralMass * hitpointMultiplier * 0.333f) * (isProcWheel ? 2.6f : 1);
                         }
                         if (clampHP)
                         {
@@ -1629,7 +1644,8 @@ namespace BDArmory.Damage
             var oldArmorMass = armorMass;
             var oldHullMass = HullMassAdjust;
             var oldTSMassMult = _tweakScaleMassMultiplier;
-            float Safetymass = -1;
+            float safetyMass = -1;
+            float missileMass = -1;
             bool geometryChecked = false;
             int iterations = 0;
 
@@ -1669,7 +1685,7 @@ namespace BDArmory.Damage
                             _armorModified = true;
                         }
                     }
-                    UpdatePartMass(ref Safetymass);
+                    UpdatePartMass(ref safetyMass, ref missileMass);
                     if (!Mathf.Approximately(tmpMass, partMass))
                     {
                         _hullModified = _armorModified = true;

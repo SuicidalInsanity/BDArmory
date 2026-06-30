@@ -1,4 +1,7 @@
 ﻿IMPROVEMENTS / FIXES
+- General:
+	- Fix missile magazine missile mass no longer affected by hull material.
+	- Fix HP values of parts using ModulepartVariants; they should be a bit mroe sensible now.
 - UI:
 	- Fix 'Selected Weapon: xxx' message spam when under AI control.
 - AI:
@@ -6,9 +9,9 @@
 - Weapons:
 	- Custom Turrets:
 		- Custom Turrets can now be set to add an amount of aim-assist to fixed guns or turrets with < 2deg traverse that are mounted on them, to help with stock robotics granularity.
-		- Adds new BDA settings field - CUSTOM_TURRET_AIM_ASSIST - to set degrees of aim assist to apply
+		- Adds new BDA settings field - CUSTOM_TURRET_AIM_ASSIST - to set degrees of aim assist to apply.
 	- Ammo:
-		- Implements resizable ammo container module that scales with shell size and selected max quantity
+		- Implements resizable ammo container module that scales with shell size and selected max quantity.
 
 v1.13.0.0
 IMPROVEMENTS / FIXES

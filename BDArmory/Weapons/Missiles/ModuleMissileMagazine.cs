@@ -18,6 +18,8 @@ namespace BDArmory.Weapons.Missiles
         private float missileMass = 0;
         private float missileCost = 0;
 
+        public float MissileMass => missileMass;
+
         [KSPField(isPersistant = true, guiActive = true, guiName = "#LOC_BDArmory_WeaponName", guiActiveEditor = false), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name 
         public string loadedMissileName = "";
 
