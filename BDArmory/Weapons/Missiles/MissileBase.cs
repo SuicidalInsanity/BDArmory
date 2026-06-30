@@ -1293,24 +1293,22 @@ namespace BDArmory.Weapons.Missiles
                                 if (!ActiveRadar)
                                     updateRadarCS = true;
                                 ActiveRadar = true;
+
+                                if (weaponClass == WeaponClasses.SLW)
+                                {
+                                    RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
+                                }
+                                else
+                                {
+                                    RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
+                                }
+                                if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
                                 return;
                             }
 
                             if (!ActiveRadar && Time.time - TimeFired > 1)
                             {
-                                if (locksCount < 2)
-                                {
-                                    if (weaponClass == WeaponClasses.SLW)
-                                    {
-                                        RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.Torpedo, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                                    }
-                                    else
-                                    {
-                                        RadarWarningReceiver.PingRWR(ray, lockedSensorFOV, RadarWarningReceiver.RWRThreatTypes.MissileLaunch, RadarUtils.LAUNCH_PING_PERSIST_TIME, vessel);
-                                    }
-                                    if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileBase]: {shortName} with UUID: {vessel.id}: Pitbull! Radar missileBase has gone active on target: {radarTarget.Name()} with UUID: {radarTarget.ID()}. Radar sig strength: {radarTarget.signalStrength:0.0}");
-                                }
-                                else
+                                if (locksCount > 2)
                                 {
                                     guidanceActive = false;
                                     checkMiss = true;
@@ -1499,7 +1497,7 @@ namespace BDArmory.Weapons.Missiles
                     radarTarget = TargetSignatureData.noTarget;
                     TargetAcquired = true;
                     TargetPosition = transform.position + (startDirection * 5000);
-                    TargetVelocity = vessel.Velocity(); // Set the relative target velocity to 0.
+                    TargetVelocity = Vector3.zero; // Set the target velocity to 0.
                     TargetAcceleration = Vector3.zero;
                     if (!radarLOALSearching)
                     {

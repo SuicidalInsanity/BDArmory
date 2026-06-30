@@ -2362,15 +2362,14 @@ namespace BDArmory.Weapons
                         }
 
                         GUIUtils.DrawTextureOnWorldPos(pointingAtPosition, BDArmorySetup.Instance.greenDotTexture, new Vector2(6, 6), 0);
-
-                        if (atprAcquired)
-                        {
-                            GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
-                        }
                     }
                     else
                     {
                         reticlePosition = bulletPrediction;
+                    }
+                    if (atprAcquired)
+                    {
+                        GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
                     }
                 }
                 else
@@ -5913,7 +5912,7 @@ namespace BDArmory.Weapons
                     slaved = true;
                     targetRadius = isVessel ? weaponManager.mainTGP.lockedVessel.GetRadius() : 35f;
                     targetPosition = weaponManager.slavedPosition;
-                    targetVelocity = Vector3.zero; //tgtCam returns 0 for these
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f; //tgtCam returns 0 for these, but we still need to account for the frame velocity
                     targetAcceleration = Vector3.zero;
                     if (isVessel) targetIsLandedOrSplashed = weaponManager.mainTGP.lockedVessel.LandedOrSplashed;
                     else targetIsLandedOrSplashed = false;
@@ -6058,9 +6057,9 @@ namespace BDArmory.Weapons
                 if (BDArmorySetup.Instance.showingWindowGPS && weaponManager.designatedGPSCoords != Vector3d.zero && !aiControlled)
                 {
                     GPSTarget = true;
-                    targetVelocity = Vector3d.zero;
                     targetPosition = weaponManager.designatedGPSInfo.worldPos;
                     targetRadius = 35f;
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f;
                     targetAcceleration = Vector3d.zero;
                     targetIsLandedOrSplashed = true;
                     targetAcquired = true;
@@ -6091,6 +6090,8 @@ namespace BDArmory.Weapons
                                 if (v.Current == null || !v.Current.loaded || VesselModuleRegistry.IgnoredVesselTypes.Contains(v.Current.vesselType)) continue;
                                 if (!v.Current.IsControllable) continue;
                                 if (v.Current == vessel) continue;
+                                var targetWM = v.Current.ActiveController().WM;
+                                if (targetWM != null && targetWM.Team == weaponManager.Team) continue; // Don't select friendlies. Can still select neutral.
                                 Vector3 targetVector = v.Current.CoM - part.transform.position;
                                 var turretInRange = turret && turret.TargetInRange(v.Current.CoM, maxEffectiveDistance, 20);
                                 if (!(turretInRange || Vector3.Dot(targetVector, fireTransforms[0].forward) > 0)) continue;
@@ -6279,7 +6280,7 @@ namespace BDArmory.Weapons
                         else //APS using slug ammo
                         {
                             tgtDeflected = true;
-                        }                        
+                        }
                     }
                 }
                 else

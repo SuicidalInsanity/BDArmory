@@ -3332,7 +3332,6 @@ namespace BDArmory.Control
                             }
                             else // Level bombing airborne target.
                             {
-                                // Use the A2A distance plus a bit to stabilise (but not more than the A2G distance).
                                 // Assume the current speed is around the actual max speed of the craft and use a drop time corresponding to 2x blast radius.
                                 extendDistance = extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, idleSpeed) * BDAMath.Sqrt(2f * bombingAltOverTarget / bodyGravity);
                                 shouldExtend = hDistSqr < extendDistance * extendDistance && (
@@ -3740,12 +3739,6 @@ namespace BDArmory.Control
                         {
                             notch = true;
                             dive = true;
-                            if (weaponManager.incomingMissileTime > weaponManager.cmThreshold)
-                            {
-                                float t = Mathf.Clamp01((weaponManager.incomingMissileTime - weaponManager.cmThreshold) / (weaponManager.evadeThreshold - weaponManager.cmThreshold));
-                                t = -1.72f * t * t * t + 4.06f * t * t - 3.34f * t + 1f;
-                                diveAngle = Mathf.Lerp(35f, 75f, t); // Gradually dive more as missile gets closer
-                            }
                         }
                         else if (kinematicEvasionState == KinematicEvasionStates.Notch)
                         {
@@ -3764,6 +3757,14 @@ namespace BDArmory.Control
                         float angle = Mathf.Clamp((float)vessel.radarAltitude - minAltitude, 0, diveScale) / diveScale * 90;
                         float angleAdjMissile = Mathf.Max(Mathf.Asin(((float)vessel.radarAltitude - (float)weaponManager.incomingMissileVessel.radarAltitude) /
                             weaponManager.incomingMissileDistance) * Mathf.Rad2Deg, 0f); // Don't dive into the missile if it's coming from below
+
+                        if (weaponManager.incomingMissileTime > weaponManager.cmThreshold)
+                        {
+                            float t = Mathf.Clamp01((weaponManager.incomingMissileTime - weaponManager.cmThreshold) / (weaponManager.evadeThreshold - weaponManager.cmThreshold));
+                            t = -1.72f * t * t * t + 4.06f * t * t - 3.34f * t + 1f;
+                            diveAngle = Mathf.Lerp(35f, 75f, t); // Gradually dive more as missile gets closer
+                        }
+
                         diveAngle = Mathf.Clamp(angle - angleAdjMissile, 0, diveAngle) * Mathf.Deg2Rad;
                         //breakDirection = Vector3.RotateTowards(breakDirection, -upDirection, angle, 0);
                     }
@@ -3780,20 +3781,31 @@ namespace BDArmory.Control
                             radarDir = VectorUtils.NormalizedDiff(missileThreatMB.radarTarget.lockedByRadar.vessel.CoM, vessel.CoM); // Use radar parent vessel dir
                         }
 
-                        emergencyNotch = emergencyNotch && weaponManager.isChaffing;
-                        if (evasionMissileEmergencyNotchVel > 0 && weaponManager.isChaffing && (emergencyNotch || Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > evasionMissileEmergencyNotchVel))
+                        if (!inVacuum)
                         {
-                            emergencyNotch = true;
-                            // Emergency notch, get us notched ASAP!
-                            kinematicEvasionStatus = " (Emergency Notch)";
-                            if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.Append(" Emergency Notch!");
-                            breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
+                            emergencyNotch = emergencyNotch && weaponManager.isChaffing;
+                            if (evasionMissileEmergencyNotchVel > 0 && weaponManager.isChaffing && (emergencyNotch || Mathf.Abs(Vector3.Dot(vesselVel, radarDir)) > evasionMissileEmergencyNotchVel))
+                            {
+                                emergencyNotch = true;
+                                // Emergency notch, get us notched ASAP!
+                                kinematicEvasionStatus = " (Emergency Notch)";
+                                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_AI) debugString.Append(" Emergency Notch!");
+                                breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
+                            }
+                            else
+                            {
+                                emergencyNotch = false;
+                                // Standard notch
+                                //breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                                const float halfPi = Mathf.PI * 0.5f;
+                                breakDirection = VectorUtils.ConePlaneIntercept(breakDirection, radarDir, -vessel.up, (dive ? (halfPi - diveAngle) : halfPi));
+                            }
                         }
                         else
                         {
+                            // No need to worry about diving or emergencyNotch in a vacuum...
                             emergencyNotch = false;
-                            // Standard notch
-                            breakDirection = NotchDir(breakDirection, radarDir, dive ? diveAngle : 0f);
+                            breakDirection = vesselVel.ProjectOnPlanePreNormalized(radarDir);
                         }
                     }
                     else
@@ -3946,7 +3958,7 @@ namespace BDArmory.Control
             FlyToPosition(s, target);
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Calculates the appropriate notch direction based on the direction to the radar, "radarDir",
         /// the commanded "diveAngle" (radians, +ve down, 0 is level flight), and "breakDirection", the preferred
         /// direction of travel (as there are potential two solutions).
@@ -4115,7 +4127,7 @@ namespace BDArmory.Control
 
             sol1 = new Vector3(xsol1, ysol1, zsol1);
             sol2 = new Vector3(xsol2, ysol2, zsol2);
-        }
+        }*/
 
         Vector3 MissileKinematicEvasion(Vector3 breakDirection, Vector3 threatDirection)
         {
