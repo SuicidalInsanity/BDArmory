@@ -32,11 +32,15 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
         [KSPField] 
         public string ammoName = "50CalAmmo";
         [KSPField] 
-        public float ammoCaliber = 12.7f;
+        public float cartridgeDiamenter = 12.7f;
+
+        [KSPField]
+        public float roundLength = -1;
         [KSPField(isPersistant = true)]
         public Vector2 bulletScale = Vector2.zero;
         [KSPField]
         public bool isRectangularMagazine = true;
+
         [KSPField]
         public string scaleTransformName;
         Transform ScaleTransform;
@@ -45,7 +49,7 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
 
         public void Start()
         {
-            var caliber = ammoCaliber / 1000;
+            var caliber = cartridgeDiamenter / 1000;
             
             if (HighLogic.LoadedSceneIsEditor)
             {
@@ -58,11 +62,15 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                         //exposed bullet length = 2-3 caliber, depending on type
                         //gets you bulletlength = 9 x caliber; drum diameter = 27 * caliber (plus 1 for material of drum wall thickness)
                         //at a drum dia of 3x bullet length you can get 36 per one layer
-                        //length is (ammoAmount / 36), rounded up, + 1 beause it's a spiral, not flat, caliber                        
-                        bulletScale = new Vector2(caliber * 27, caliber); //width, length
+                        //length is (ammoAmount / 36), rounded up, + 1 beause it's a spiral, not flat, caliber
+                        var length = roundLength > 0 ? roundLength * 3 : caliber * 27;
+                        bulletScale = new Vector2(length, caliber); //diameter, width
                     }
                     else
-                        if (bulletScale == Vector2.zero) bulletScale = new Vector2(caliber, caliber * 9); //width, length
+                    {
+                        var length = roundLength > 0 ? roundLength : caliber * 9;
+                        if (bulletScale == Vector2.zero) bulletScale = new Vector2(caliber, roundLength); //width, length
+                    }
                 }
                 if (!isRectangularMagazine)
                 {
