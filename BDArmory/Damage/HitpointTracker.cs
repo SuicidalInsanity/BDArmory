@@ -699,7 +699,6 @@ namespace BDArmory.Damage
                 { safetyMass = SST.FBmass + SST.FISmass; }
                 else safetyMass = 0;
             }
-            else if (safetyMass < 0) safetyMass = 0;
             if (missileMass < 0)
             {
                 var mm = part.GetComponent<ModuleMissileMagazine>();
@@ -707,7 +706,6 @@ namespace BDArmory.Damage
                 { missileMass = mm.MissileMass; }
                 else missileMass = 0;
             }
-            else if (missileMass < 0) missileMass = 0;
             part.UpdateMass(); // Make sure the mass modifiers are accounted for when updating partMass.
             partMass = part.mass - armorMass - HullMassAdjust - safetyMass - missileMass;
         }

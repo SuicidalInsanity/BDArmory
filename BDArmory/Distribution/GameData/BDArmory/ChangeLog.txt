@@ -1,7 +1,7 @@
 IMPROVEMENTS / FIXES
 - General:
-	- Fix missile magazine missile mass no longer affected by hull material.
-	- Fix HP values of parts using ModulepartVariants; they should be a bit more sensible now.
+	- Missile magazine missile mass is no longer affected by hull material part mass modifiers.
+	- Fix HP values of parts using ModulePartVariants; they should be a bit more sensible now.
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
   - Fix 'Selected Weapon: xxx' message spam when under AI control.

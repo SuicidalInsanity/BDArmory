@@ -17,7 +17,7 @@ namespace BDArmory.Weapons.Missiles
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity
-UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.All)]
+UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 1, withZero = true, scene = UI_Scene.All)]
         public float ammoCapacity = 500;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length

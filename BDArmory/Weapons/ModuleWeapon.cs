@@ -21,7 +21,6 @@ using System.Text;
 using System.Linq;
 using UnityEngine;
 using static BDArmory.Bullets.PooledBullet;
-using System.Net;
 
 namespace BDArmory.Weapons
 {
