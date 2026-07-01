@@ -1743,7 +1743,7 @@ namespace BDArmory.Weapons
                 customMinPitch = minP;
                 customMaxPitch = maxP;
                 if (customTurret.Count == 0) customTurretID = 0;
-                if (customTurretID > 0 && maxP + yaw > 0) //no mounting a gun on a locked servo for free gimbal
+                if (customTurretID > 0 && maxP - minP + yaw > 0) //no mounting a gun on a locked servo for free gimbal
                 {
                     if (!turret)
                     {
