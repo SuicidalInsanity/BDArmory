@@ -519,6 +519,35 @@ namespace BDArmory.Utils
             // window.Dispose();
         }
 
+        /// <summary>
+        /// Refresh the UI for the given resource in the PAW.
+        /// </summary>
+        /// <param name="part">The part.</param>
+        /// <param name="resource">The resource to refresh.</param>
+        /// <param name="all">Stop after the first found matching resource or look for multiple matching resources (not sure if a PAW can have more than 1).</param>
+        public static void RefreshPAWResource(Part part, PartResource resource, bool all = false)
+        {
+            var PAW = part.PartActionWindow;
+            if (PAW == null) return;
+            foreach (var uiPartActionItem in PAW.ListItems)
+            {
+                if (uiPartActionItem is not UIPartActionResourceEditor) continue;
+                var resourceUI = uiPartActionItem as UIPartActionResourceEditor;
+                if (resourceUI.Resource != resource) continue;
+                resourceUI.resourceMax.text = KSPUtil.LocalizeNumber(resource.maxAmount, "F1");
+                resourceUI.resourceAmnt.text = KSPUtil.LocalizeNumber(resource.amount, "F1");
+                if (resourceUI.Window.usingNumericValue)
+                {
+                    resourceUI.inputField.text = KSPUtil.LocalizeNumber(resource.amount, "#.0##");
+                }
+                else
+                {
+                    resourceUI.slider.onValueChanged.Invoke(resourceUI.slider.value);
+                }
+                if (!all) break;
+            }
+        }
+
 
         /// <summary>
         /// Disable zooming with the scroll wheel if the mouse is over a registered GUI window.

@@ -18,11 +18,11 @@ namespace BDArmory.Weapons.Missiles
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity
-UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
+        UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
         public float ammoCapacity = 500;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
-UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
+        UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene.All, affectSymCounterparts = UI_Scene.All)]
         public float rowCount = 20;
 
         [KSPField(advancedTweakable = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoMass")]//Ammo Mass when full
@@ -147,7 +147,7 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                         mam.UpdateScaling(bulletScale);
                     }
                 UpdateStackNode();
-                StartCoroutine(AmmoVolumeChanged());
+                AmmoVolumeChanged();
             }
         }
 
@@ -169,7 +169,7 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
             part.DragCubes.SetDragWeights();
 
             UpdateStackNode();
-            StartCoroutine(AmmoVolumeChanged());
+            AmmoVolumeChanged();
         }
 
         public void UpdateStackNode()
@@ -207,15 +207,12 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
             }
         }
 
-        IEnumerator AmmoVolumeChanged()
-        {
-            var wait = new WaitForSecondsFixed(0.25f);            
+        void AmmoVolumeChanged()
+        {          
             ammoMass = $"{ammoCapacity * ammoResource.info.density * 1000} kg";
             ammoResource.maxAmount = ammoCapacity;
             ammoResource.amount = ammoCapacity; // Math.Min(resource.Current.amount, resource.Current.maxAmount);
-            yield return wait;
-            if (PAW != null) PAW.displayDirty = true;
-            //GUIUtils.RefreshAssociatedWindows(part); //doesn't catch resource slider changes...?
+            GUIUtils.RefreshPAWResource(part, ammoResource);
         }
         private UIPartActionWindow _PAW = null;
 
