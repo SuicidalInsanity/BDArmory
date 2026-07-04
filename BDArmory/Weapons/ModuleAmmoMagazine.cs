@@ -1,10 +1,11 @@
+using BDArmory.Bullets;
+using BDArmory.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Text;
-using BDArmory.Utils;
-using BDArmory.Bullets;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -17,7 +18,7 @@ namespace BDArmory.Weapons.Missiles
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity
-UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 1, withZero = true, scene = UI_Scene.All)]
+UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
         public float ammoCapacity = 500;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
@@ -32,10 +33,10 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
         [KSPField] 
         public string ammoName = "50CalAmmo";
         [KSPField] 
-        public float cartridgeDiamenter = 12.7f;
+        public float cartridgeDiameter = 12.7f; //in millimeters
 
         [KSPField]
-        public float roundLength = -1;
+        public float roundLength = -1; //length of entire round, in mm
         [KSPField(isPersistant = true)]
         public Vector2 bulletScale = Vector2.zero;
         [KSPField]
@@ -47,9 +48,13 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
 
         PartResource ammoResource;
 
+        [KSPField] public string stackNodePosition;
+
+        Dictionary<string, Vector3> originalStackNodePosition;
+
         public void Start()
         {
-            var caliber = cartridgeDiamenter / 1000;
+            var caliber = cartridgeDiameter / 1000;
             
             if (HighLogic.LoadedSceneIsEditor)
             {
@@ -63,12 +68,12 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                         //gets you bulletlength = 9 x caliber; drum diameter = 27 * caliber (plus 1 for material of drum wall thickness)
                         //at a drum dia of 3x bullet length you can get 36 per one layer
                         //length is (ammoAmount / 36), rounded up, + 1 beause it's a spiral, not flat, caliber
-                        var length = roundLength > 0 ? roundLength * 3 : caliber * 27;
-                        bulletScale = new Vector2(length, caliber); //diameter, width
+                        var length = roundLength > 0 ? (roundLength * 3) / 1000 : caliber * 27;
+                        bulletScale = new Vector2(length, caliber); //drum diameter, width
                     }
                     else
                     {
-                        var length = roundLength > 0 ? roundLength : caliber * 9;
+                        var length = roundLength > 0 ? roundLength / 1000 : caliber * 9;
                         if (bulletScale == Vector2.zero) bulletScale = new Vector2(caliber, roundLength); //width, length
                     }
                 }
@@ -76,6 +81,7 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                 {
                     Fields[nameof(rowCount)].guiActiveEditor = false;
                 }
+                ParseStackNodePosition();
             }
             using (IEnumerator<PartResource> res = part.Resources.GetEnumerator())
                 while (res.MoveNext())
@@ -98,7 +104,8 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
             }
             else
             {
-                UI_FloatRange scale = (UI_FloatRange)Fields[nameof(ammoCapacity)].uiControlEditor;
+                UI_FloatSemiLogRange scale = (UI_FloatSemiLogRange)Fields[nameof(ammoCapacity)].uiControlEditor;
+                scale.UpdateLimits(scale.minValue, maxAmmo);
                 scale.maxValue = maxAmmo;
                 scale.onFieldChanged = UpdateScale;
                 UI_FloatRange rows = (UI_FloatRange)Fields[nameof(rowCount)].uiControlEditor;
@@ -106,6 +113,19 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                 rows.onFieldChanged = UpdateScale;
             }
             UpdateScaling(bulletScale);
+        }
+
+        void ParseStackNodePosition()
+        {
+            originalStackNodePosition = new Dictionary<string, Vector3>();
+            string[] nodes = stackNodePosition.Split(new char[] { ';' });
+            for (int i = 0; i < nodes.Length; i++)
+            {
+                string[] split = nodes[i].Split(new char[] { ',' });
+                string id = split[0];
+                Vector3 position = new Vector3(float.Parse(split[1]), float.Parse(split[2]), float.Parse(split[3]));
+                originalStackNodePosition.Add(id, position);
+            }
         }
 
         public void UpdateScale(BaseField field, object obj)
@@ -126,6 +146,7 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
                         mam.rowCount = rowCount;
                         mam.UpdateScaling(bulletScale);
                     }
+                UpdateStackNode();
                 StartCoroutine(AmmoVolumeChanged());
             }
         }
@@ -147,8 +168,45 @@ UI_FloatRange(minValue = 1f, maxValue = 40, stepIncrement = 1f, scene = UI_Scene
             part.DragCubes.ForceUpdate(true, true, false);
             part.DragCubes.SetDragWeights();
 
+            UpdateStackNode();
             StartCoroutine(AmmoVolumeChanged());
         }
+
+        public void UpdateStackNode()
+        {
+            using (List<AttachNode>.Enumerator stackNode = part.attachNodes.GetEnumerator())
+                while (stackNode.MoveNext())
+                {
+                    if (stackNode.Current?.nodeType != AttachNode.NodeType.Stack ||
+                        !originalStackNodePosition.ContainsKey(stackNode.Current.id)) continue;
+                    if (isRectangularMagazine) continue;
+                    if (stackNode.Current.id == "top" || stackNode.Current.id == "bottom")
+                    {
+                        Vector3 prevPos = stackNode.Current.position;                    
+                        if (stackNode.Current.id == "top")
+                        {
+                            stackNode.Current.position.y = originalStackNodePosition[stackNode.Current.id].y + ScaleTransform.localScale.z / 2;
+                            MoveParts(stackNode.Current, stackNode.Current.position - prevPos);
+                        }
+                        else
+                        {
+                            stackNode.Current.position.y = originalStackNodePosition[stackNode.Current.id].y - ScaleTransform.localScale.z / 2;
+                            MoveParts(stackNode.Current, stackNode.Current.position - prevPos);                         
+                        }
+                    }
+                    
+                }
+        }
+        public void MoveParts(AttachNode node, Vector3 delta)
+        {
+            if (node.attachedPart is Part pushTarget)
+            {
+                if (pushTarget == null) return;
+                Vector3 worldDelta = part.transform.TransformVector(delta);
+                pushTarget.transform.position += worldDelta;
+            }
+        }
+
         IEnumerator AmmoVolumeChanged()
         {
             var wait = new WaitForSecondsFixed(0.25f);            
