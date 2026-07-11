@@ -8,6 +8,7 @@ IMPROVEMENTS / FIXES
 	- Replaced ventral RCS editor view with polar plot showing RCS values by craft azimuth when “Real-Time Aspected RCS” is enabled.
 - Weapons:
 	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
+	- Fix rocket RoF not matching selected value.
   - Bullets:
 		- Fix bulletDmgMult not applying to shaped charge kinetic damage.
 	- Missiles:
@@ -15,6 +16,7 @@ IMPROVEMENTS / FIXES
 		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
 		- Fixed "CLOS"'s commanded acceleration being incorrect.
 		- Fixed "maxTorque = 0" + "maxAeroTorque = 0" missiles bugging out and potentially causing crashes.
+		- Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
 - RWP:
 	- Fix control surface actuator speed hack.
 
