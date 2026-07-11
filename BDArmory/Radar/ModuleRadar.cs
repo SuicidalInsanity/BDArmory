@@ -59,7 +59,7 @@ namespace BDArmory.Radar
         public string directionalFieldOfView = "90";   //relevant for NON-omnidirectional only
 
         [KSPField]
-        public string elevationFOV = "-1f";             //FoV of the radar in the vertical axis
+        public string elevationFOV = "-1";             //FoV of the radar in the vertical axis
 
         public float radarAzOffset = 0f;
         public float radarAzFOV = 90f;
