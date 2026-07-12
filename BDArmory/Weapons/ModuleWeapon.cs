@@ -103,7 +103,7 @@ namespace BDArmory.Weapons
         private float fireAnimSpeed = 1;
         //is set when setting up animation so it plays a full animation for each shot (animation speed depends on rate of fire)
 
-        public float bulletBallisticCoefficient;
+        //public float bulletBallisticCoefficient;
 
         public WeaponTypes eWeaponType;
 
@@ -585,8 +585,8 @@ namespace BDArmory.Weapons
 
         //drag area of the bullet in m^2; equal to Cd * A with A being the frontal area of the bullet; as a first approximation, take Cd to be 0.3
         //bullet mass / bullet drag area.  Used in analytic estimate to speed up code
-        [KSPField]
-        public float bulletDragArea = 1.209675e-5f;
+        //[KSPField]
+        //public float bulletDragArea = 1.209675e-5f;
 
         private BulletInfo bulletInfo;
         private BulletInfo[] bulletInfoList;
@@ -2332,15 +2332,14 @@ namespace BDArmory.Weapons
                         }
 
                         GUIUtils.DrawTextureOnWorldPos(pointingAtPosition, BDArmorySetup.Instance.greenDotTexture, new Vector2(6, 6), 0);
-
-                        if (atprAcquired)
-                        {
-                            GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
-                        }
                     }
                     else
                     {
                         reticlePosition = bulletPrediction;
+                    }
+                    if (atprAcquired)
+                    {
+                        GUIUtils.DrawTextureOnWorldPos(atprTargetPosition, BDArmorySetup.Instance.openGreenSquare, new Vector2(20, 20), 0);
                     }
                 }
                 else
@@ -2463,12 +2462,14 @@ namespace BDArmory.Weapons
                                     graphicsInfo.tracerEndWidth = tracerEndWidth;
                                     graphicsInfo.tracerLength = tracerLength;
                                     graphicsInfo.tracerLuminance = tracerLuminance;
+                                    graphicsInfo.smokeTexturePath = smokeTexturePath;
                                 }
                                 else
                                 {
                                     graphicsInfo.tracerStartWidth = nonTracerWidth;
                                     graphicsInfo.tracerEndWidth = nonTracerWidth;
                                     graphicsInfo.tracerLuminance = bulletLuminance;
+                                    graphicsInfo.smokeTexturePath = ""; //need to null this else every round will have smoke trails
 
                                     if (!string.IsNullOrEmpty(smokeTexturePath))
                                     {
@@ -5878,7 +5879,7 @@ namespace BDArmory.Weapons
                     slaved = true;
                     targetRadius = isVessel ? weaponManager.mainTGP.lockedVessel.GetRadius() : 35f;
                     targetPosition = weaponManager.slavedPosition;
-                    targetVelocity = Vector3.zero; //tgtCam returns 0 for these
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f; //tgtCam returns 0 for these, but we still need to account for the frame velocity
                     targetAcceleration = Vector3.zero;
                     if (isVessel) targetIsLandedOrSplashed = weaponManager.mainTGP.lockedVessel.LandedOrSplashed;
                     else targetIsLandedOrSplashed = false;
@@ -6023,9 +6024,9 @@ namespace BDArmory.Weapons
                 if (BDArmorySetup.Instance.showingWindowGPS && weaponManager.designatedGPSCoords != Vector3d.zero && !aiControlled)
                 {
                     GPSTarget = true;
-                    targetVelocity = Vector3d.zero;
                     targetPosition = weaponManager.designatedGPSInfo.worldPos;
                     targetRadius = 35f;
+                    targetVelocity = -BDKrakensbane.FrameVelocityV3f;
                     targetAcceleration = Vector3d.zero;
                     targetIsLandedOrSplashed = true;
                     targetAcquired = true;
@@ -6056,6 +6057,8 @@ namespace BDArmory.Weapons
                                 if (v.Current == null || !v.Current.loaded || VesselModuleRegistry.IgnoredVesselTypes.Contains(v.Current.vesselType)) continue;
                                 if (!v.Current.IsControllable) continue;
                                 if (v.Current == vessel) continue;
+                                var targetWM = v.Current.ActiveController().WM;
+                                if (targetWM != null && targetWM.Team == weaponManager.Team) continue; // Don't select friendlies. Can still select neutral.
                                 Vector3 targetVector = v.Current.CoM - part.transform.position;
                                 var turretInRange = turret && turret.TargetInRange(v.Current.CoM, maxEffectiveDistance, 20);
                                 if (!(turretInRange || Vector3.Dot(targetVector, fireTransforms[0].forward) > 0)) continue;
@@ -6243,7 +6246,7 @@ namespace BDArmory.Weapons
                         else //APS using slug ammo
                         {
                             tgtDeflected = true;
-                        }                        
+                        }
                     }
                 }
                 else

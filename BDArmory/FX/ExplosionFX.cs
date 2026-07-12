@@ -46,6 +46,7 @@ namespace BDArmory.FX
         public bool isFX { get; set; }
         public float CASEClamp { get; set; }
         public float dmgMult { get; set; }
+        public float kineticDmgMult { get; set; }
         public float apMod { get; set; }
         public float travelDistance { get; set; }
         bool isReportingWeapon = false;
@@ -1301,7 +1302,7 @@ namespace BDArmory.FX
                                     BulletHitFX.CreateBulletHit(part, eventToExecute.HitPoint, eventToExecute.Hit, eventToExecute.Hit.normal, true, Caliber, penetrationFactor > 0 ? penetrationFactor : 0f, SourceVesselTeam, eventToExecute.ColliderLocalHitPoint);
                                     if (BDArmorySettings.DEBUG_DAMAGE) Debug.Log($"[BDArmory.ExplosionsFX] Applying ballistic damage to part with base mass: {(warheadType == WarheadTypes.ShapedCharge ? Power * 0.0555f : ProjMass)} kg{(warheadType == WarheadTypes.ShapedCharge ? $" and spall mass: {Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI}." : "")} kg");
                                     // Want to add more damage for HEAT, so we'll add 25% of the estimated spall density, we assume the HEAT hole has twice the area of the HEAT jet to account for the material flowing backwards.
-                                    damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, dmgMult,
+                                    damage = part.AddBallisticDamage(warheadType == WarheadTypes.ShapedCharge ? (Power * 0.0555f + Mathf.Max(eventToExecute.SpallSectionalDensity, 0.0f) * 1e-9f * 0.125f * Caliber * Caliber * Mathf.PI) : ProjMass, Caliber, dmgMult * BDArmorySettings.EXP_DMG_MOD_HEAT, penetrationFactor, kineticDmgMult > 0f ? kineticDmgMult : 1f,
                                         warheadType switch
                                         {
                                             WarheadTypes.ShapedCharge => SCVelocity,
@@ -1447,7 +1448,7 @@ namespace BDArmory.FX
         public static void CreateExplosion(Vector3 position, float tntMassEquivalent, string explModelPath, string soundPath, ExplosionSourceType explosionSourceType,
             float caliber = 120, Part explosivePart = null, string sourceVesselName = null, string sourceVesselTeam = null, string sourceWeaponName = null, Vector3 direction = default,
             float angle = 100f, bool isfx = false, float projectilemass = 0, float caseLimiter = -1, float dmgMutator = 1, WarheadTypes warheadType = WarheadTypes.Standard, Part Hitpart = null,
-            float apMod = 1f, float distancetravelled = -1, Vector3 sourceVelocity = default, bool bulletHitRegistered = true)
+            float apMod = 1f, float distancetravelled = -1, Vector3 sourceVelocity = default, bool bulletHitRegistered = true, float kineticDmgMult = -1f)
         {
             if (BDArmorySettings.DEBUG_MISSILES && explosionSourceType == ExplosionSourceType.Missile && (!explosionFXPools.ContainsKey(explModelPath) || !audioClips.ContainsKey(soundPath)))
             { Debug.Log($"[BDArmory.ExplosionFX]: Setting up object pool for explosion of type {explModelPath} with audio {soundPath}{(sourceWeaponName != null ? $" for {sourceWeaponName}" : "")}"); }
@@ -1488,6 +1489,7 @@ namespace BDArmory.FX
             eFx.ProjMass = projectilemass;
             eFx.CASEClamp = caseLimiter;
             eFx.dmgMult = dmgMutator;
+            eFx.kineticDmgMult = kineticDmgMult;
             eFx.projectileHitPart = Hitpart;
             eFx.pEmitters = newExplosion.GetComponentsInChildren<KSPParticleEmitter>();
             eFx.audioSource = newExplosion.GetComponent<AudioSource>();

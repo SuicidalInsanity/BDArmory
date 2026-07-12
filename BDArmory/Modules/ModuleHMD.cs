@@ -1,4 +1,4 @@
-﻿using KSP.Localization;
+using KSP.Localization;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace BDArmory.Modules
             else
             {
                 Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
-                _HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
+                _HMDCost = BDArmorySettings.HMDCost + BDArmorySettings.HMDCostPerSeat * part.CrewCapacity;
             }
             GUIUtils.RefreshAssociatedWindows(part);
             using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
@@ -59,7 +59,7 @@ namespace BDArmory.Modules
                     else
                     {
                         HMDSym.Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Disable self-sealing tank"
-                        HMDSym._HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
+                        HMDSym._HMDCost = BDArmorySettings.HMDCost + BDArmorySettings.HMDCostPerSeat * part.CrewCapacity;
                     }
                     GUIUtils.RefreshAssociatedWindows(pSym.Current);
                 }
@@ -84,7 +84,7 @@ namespace BDArmory.Modules
                     else
                     {
                         Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
-                        _HMDCost = BDArmorySettings.HMDCost * part.CrewCapacity;
+                        _HMDCost = BDArmorySettings.HMDCost + BDArmorySettings.HMDCostPerSeat * part.CrewCapacity;
                     }
                 }
                 else part.RemoveModule(this); //don't assign to drone cores

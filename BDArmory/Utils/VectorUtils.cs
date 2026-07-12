@@ -718,5 +718,207 @@ namespace BDArmory.Utils
         /// <param name="unit">The unit to round to.</param>
         /// <returns>A new Vector3 rounded to the unit.</returns>
         public static Vector3 Rounded(this Vector3 v, float unit) => v.Round(unit);
+
+        /// <summary>
+        /// Solves for the cone-plane intersect problem, returning the solution closest to "desiredDir".
+        /// </summary>
+        /// <param name="desiredDir">Desired direction.</param>
+        /// <param name="planeNormal">Normalized normal vector of the plane.</param>
+        /// <param name="coneDir">Normalized cone direction vector.</param>
+        /// <param name="coneHalfAngle">Cone half-angle in radians.</param>
+        /// <returns>Solution of the cone-plane intercept problem.</returns>
+        public static Vector3 ConePlaneIntercept(Vector3 desiredDir, Vector3 planeNormal, Vector3 coneDir, float coneHalfAngle, bool forceCone = false)
+        {
+            // This function solves the system of equations in the form:
+            // coneDir dot V = cos(theta)
+            // planeNormal dot V = 0
+            // ||V|| = 1
+
+            // It essentially solves for the intersection of a plane and a cone, both centered at the origin,
+            // where coneDir is the cone's direction vector, and planeNormal is the normal vector of the plane.
+            // Because the solutions are lines, we close the system by enforcing unit-vector results.
+
+            float cosCone = Mathf.Cos(coneHalfAngle);
+
+            float x1 = coneDir.x;
+            float y1 = coneDir.y;
+            float z1 = coneDir.z;
+
+            float x2 = planeNormal.x;
+            float y2 = planeNormal.y;
+            float z2 = planeNormal.z;
+
+            float dot = Vector3.Dot(coneDir, planeNormal);
+
+            // Because the equation solved requires division by the appropriate component of the cross product, we
+            // must check if it isn't 0.
+            float crossx = y1 * z2 - z1 * y2;
+            if (Mathf.Abs(crossx) > Mathf.Epsilon)
+            {
+                // If it is, we can solve for the two x-solutions
+                float newCosCone = calcConePlane(x1, x2, y2, z2, crossx, dot, cosCone, forceCone, out float xsol1, out float xsol2);
+                if (forceCone && newCosCone < 1.5f)
+                {
+                    Vector3 projectedConeDir = new Vector3(
+                        coneDir.x - planeNormal.x * dot,
+                        coneDir.y - planeNormal.y * dot,
+                        coneDir.z - planeNormal.z * dot);
+                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                }
+                // Giving us the two vector solutions
+                calcConePlaneYZ(x1, x2, y1, y2, z1, z2, xsol1, xsol2, crossx, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                // We pick the vector most aligned with breakDirection
+                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            // If the solving for the x-component isn't possible due to crossx being 0, we try y
+            float crossy = z1 * x2 - x1 * z2;
+            if (Mathf.Abs(crossy) > Mathf.Epsilon)
+            {
+                float newCosCone = calcConePlane(y1, y2, x2, z2, crossy, dot, cosCone, forceCone, out float ysol1, out float ysol2);
+                if (forceCone && newCosCone < 1.5f)
+                {
+                    Vector3 projectedConeDir = new Vector3(
+                        coneDir.x - planeNormal.x * dot,
+                        coneDir.y - planeNormal.y * dot,
+                        coneDir.z - planeNormal.z * dot);
+                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                }
+                calcConePlaneXZ(x1, x2, y1, y2, z1, z2, ysol1, ysol2, crossy, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            // And if y is also zero we try z
+            float crossz = x1 * y2 - y1 * x2;
+            if (Mathf.Abs(crossz) > Mathf.Epsilon)
+            {
+                float newCosCone = calcConePlane(z1, z2, x2, y2, crossz, dot, cosCone, forceCone, out float zsol1, out float zsol2);
+                if (forceCone && newCosCone < 1.5f)
+                {
+                    Vector3 projectedConeDir = new Vector3(
+                        coneDir.x - planeNormal.x * dot,
+                        coneDir.y - planeNormal.y * dot,
+                        coneDir.z - planeNormal.z * dot);
+                    return Vector3.RotateTowards(coneDir, projectedConeDir, coneHalfAngle, 99999f);
+                }
+                calcConePlaneXY(x1, x2, y1, y2, z1, z2, zsol1, zsol2, crossz, newCosCone, out Vector3 sol1, out Vector3 sol2);
+                if (Vector3.Dot(desiredDir, sol1) > Vector3.Dot(desiredDir, sol2))
+                {
+                    return sol1;
+                }
+                else
+                {
+                    return sol2;
+                }
+            }
+
+            // If the down and radar vectors are in-line, then we have a planar solution, and we just return breakDirection
+            return desiredDir;
+        }
+
+        /// <summary>
+        /// This solves for the component corresponding to the d1/d2 values (I.E. x1/x2 solves for x) of the cone-plane intersection
+        /// problem. a2 and b2 are the two other components of the normal vector of the plane (I.E. y2, z2 for x1/x2). Due to these
+        /// being added, the order is irrelevant.
+        /// Note that if a solution isn't found, then cosCone is adjusted until there is a single solution.
+        /// </summary>
+        /// <param name="d1">Component of the cone's vector corresponding to the component to be solved for.</param>
+        /// <param name="d2">Component of the plane's normal vector corresponding to the component to be solved for.</param>
+        /// <param name="a2">Other component of the plane's normal vector (I.E. y/z for x).</param>
+        /// <param name="b2">Other component of the plane's normal vector (I.E. y/z for x).</param>
+        /// <param name="crossd">Cross product component in the direction to solve for (cone cross plane).</param>
+        /// <param name="dot">Dot product of the two vectors.</param>
+        /// <param name="cosCone">Cosine of the cone's half-angle.</param>
+        /// <param name="r1">Solution 1 of the problem.</param>
+        /// <param name="r2">Solution 2 of the problem.</param>
+        /// <returns></returns>
+        private static float calcConePlane(float d1, float d2, float a2, float b2, float crossd, float dot, float cosCone, bool forceCone, out float r1, out float r2)
+        {
+            float denominator = (1.0f - dot * dot);
+            float numerator = cosCone * (d1 - d2 * dot);
+            float determinant = numerator * numerator - denominator * (cosCone * cosCone * (a2 * a2 + b2 * b2) - crossd * crossd);
+
+            if (determinant < 0.0f)
+            {
+                if (determinant < -5e-5f)
+                {
+                    if (forceCone)
+                    {
+                        // Set cosCone to an impossible value and return
+                        cosCone = -10f;
+                        r1 = 0f;
+                        r2 = 0f;
+                        return cosCone;
+                    }
+
+                    // Otherwise solve for cosCone required for determinant to be zero
+                    cosCone = BDAMath.Sqrt(numerator * numerator / (denominator * (a2 * a2 + b2 * b2 - crossd * crossd)));
+                    determinant = 0.0f;
+                }
+                else
+                {
+                    determinant = 0.0f;
+                }
+            }
+            else
+                determinant = BDAMath.Sqrt(determinant);
+
+            r1 = (numerator - determinant) / denominator;
+            r2 = (numerator + determinant) / denominator;
+            return cosCone;
+        }
+
+        // Solves for the two other components of the solution given the X-component
+        private static void calcConePlaneYZ(float x1, float x2, float y1, float y2, float z1, float z2, float xsol1, float xsol2, float crossx, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossx = 1.0f / crossx;
+            float ysol1 = (z1 * x2 * xsol1 + z2 * (cosCone - x1 * xsol1)) * crossx;
+            float zsol1 = -(y1 * x2 * xsol1 + y2 * (cosCone - x1 * xsol1)) * crossx;
+            float ysol2 = (z1 * x2 * xsol2 + z2 * (cosCone - x1 * xsol2)) * crossx;
+            float zsol2 = -(y1 * x2 * xsol2 + y2 * (cosCone - x1 * xsol2)) * crossx;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
+        }
+
+        // Solves for the two other components of the solution given the Y-component
+        private static void calcConePlaneXZ(float x1, float x2, float y1, float y2, float z1, float z2, float ysol1, float ysol2, float crossy, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossy = 1.0f / crossy;
+            float xsol1 = -(z1 * y2 * ysol1 + z2 * (cosCone - y1 * ysol1)) * crossy;
+            float zsol1 = (x1 * y2 * ysol1 + x2 * (cosCone - y1 * ysol1)) * crossy;
+            float xsol2 = -(z1 * y2 * ysol2 + z2 * (cosCone - y1 * ysol2)) * crossy;
+            float zsol2 = (x1 * y2 * ysol2 + x2 * (cosCone - y1 * ysol2)) * crossy;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
+        }
+
+        // Solves for the two other components of the solution given the Z-component
+        private static void calcConePlaneXY(float x1, float x2, float y1, float y2, float z1, float z2, float zsol1, float zsol2, float crossz, float cosCone, out Vector3 sol1, out Vector3 sol2)
+        {
+            crossz = 1.0f / crossz;
+            float xsol1 = (y1 * z2 * zsol1 + y2 * (cosCone - z1 * zsol1)) * crossz;
+            float ysol1 = -(x1 * z2 * zsol1 + x2 * (cosCone - z1 * zsol1)) * crossz;
+            float xsol2 = (y1 * z2 * zsol2 + y2 * (cosCone - z1 * zsol2)) * crossz;
+            float ysol2 = -(x1 * z2 * zsol2 + x2 * (cosCone - z1 * zsol2)) * crossz;
+
+            sol1 = new Vector3(xsol1, ysol1, zsol1);
+            sol2 = new Vector3(xsol2, ysol2, zsol2);
+        }
     }
 }

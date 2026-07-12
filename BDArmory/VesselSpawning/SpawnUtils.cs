@@ -17,6 +17,7 @@ using BDArmory.Weapons.Missiles;
 using BDArmory.Weapons;
 using BDArmory.Damage;
 using BDArmory.FX;
+using System.Reflection;
 
 namespace BDArmory.VesselSpawning
 {
@@ -946,11 +947,21 @@ namespace BDArmory.VesselSpawning
         public void HackActuators(Vessel vessel, bool enable)
         {
             if (vessel == null || !vessel.loaded) return;
+            // Note: KSP continuously resets actuatorSpeed from originalActuatorSpeed in ModuleControlSurface, so we also need to modify that instead.
+            // We still modify actuatorSpeed directly too, since p-wings may depend on it.
+            FieldInfo originalActuatorSpeed = typeof(ModuleControlSurface).GetField("originalActuatorSpeed", BindingFlags.Instance | BindingFlags.NonPublic);
+            float hackedSpeed = 30;
+            if (originalActuatorSpeed == null)
+            {
+                Debug.LogError($"[BDArmory.SpawnUtils]: Unable to find the 'originalActuatorSpeed' field in ModuleControlSurface!");
+                return;
+            }
             if (enable)
             {
                 foreach (var ctrlSrf in VesselModuleRegistry.GetModules<ModuleControlSurface>(vessel))
                 {
-                    ctrlSrf.actuatorSpeed = 30;
+                    ctrlSrf.actuatorSpeed = hackedSpeed;
+                    originalActuatorSpeed.SetValue(ctrlSrf, hackedSpeed);
                     if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.ActuatorHacks]: Setting {ctrlSrf.name} actuation speed to : {ctrlSrf.actuatorSpeed}");
                 }
             }
@@ -964,6 +975,7 @@ namespace BDArmory.VesselSpawning
                         try
                         {
                             ctrlSrf.actuatorSpeed = float.Parse(actuatorSpeed);
+                            originalActuatorSpeed.SetValue(ctrlSrf, hackedSpeed);
                         }
                         catch (Exception e)
                         {
@@ -974,6 +986,7 @@ namespace BDArmory.VesselSpawning
                     {
                         Debug.LogWarning($"[BDArmory.BDArmorySetup]: No default value for actuatorSpeed found in partConfig for {ctrlSrf.name}, defaulting to 30°/s.");
                         ctrlSrf.actuatorSpeed = 30;
+                        originalActuatorSpeed.SetValue(ctrlSrf, hackedSpeed);
                     }
                 }
             }
@@ -981,13 +994,24 @@ namespace BDArmory.VesselSpawning
         public void HackActuators(ShipConstruct ship) // This version only needs to enable the hack.
         {
             if (ship == null) return;
+            FieldInfo originalActuatorSpeed = typeof(ModuleControlSurface).GetField("originalActuatorSpeed", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (originalActuatorSpeed == null)
+            {
+                Debug.LogError($"[BDArmory.SpawnUtils]: Unable to find the 'originalActuatorSpeed' field in ModuleControlSurface!");
+                return;
+            }
+            float hackedSpeed = 30;
             foreach (var part in ship.Parts)
             {
-                var ctrlSrf = part.FindModulesImplementing<ModuleControlSurface>();
-                if (ctrlSrf.Count() > 0)
+                var ctrlSrfs = part.FindModulesImplementing<ModuleControlSurface>();
+                if (ctrlSrfs.Count() > 0)
                 {
-                    foreach (var srf in ctrlSrf)
-                        srf.actuatorSpeed = 30;
+                    foreach (var ctrlSrf in ctrlSrfs)
+                    {
+                        ctrlSrf.actuatorSpeed = hackedSpeed;
+                        originalActuatorSpeed.SetValue(ctrlSrf, hackedSpeed);
+                        if (BDArmorySettings.DEBUG_SPAWNING) Debug.Log($"[BDArmory.ActuatorHacks]: Setting {ctrlSrf.name} actuation speed to : {ctrlSrf.actuatorSpeed}");
+                    }
                 }
             }
         }

@@ -29,14 +29,14 @@ namespace BDArmory.Radar
             16 * BDArmorySettings.RADAR_WINDOW_SCALE,
             16 * BDArmorySettings.RADAR_WINDOW_SCALE);
 
-        private int rCount;
+        private int rCount = 0;
 
         public int radarCount
         {
             get { return rCount; }
         }
 
-        private int iCount;
+        private int iCount = 0;
 
         public int irstCount
         {
@@ -1474,7 +1474,7 @@ namespace BDArmory.Radar
                     if (availableRadars[i] == null || availableRadars[i].gameObject == null) continue;
 
                     //if (BDArmorySettings.DEBUG_RADAR)
-                    //    Debug.Log($"[BDArmory.UpdateRadarGUI]: radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.vesselName} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, currIndex: {currIndex}, arrSize: {arrSize}");
+                    //    Debug.Log($"[BDArmory.UpdateRadarGUI][Omni]: Vessel: {vessel.id} radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.id} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, index: {i}/{rCount}, currIndex: {currIndex}, arrSize: {arrSize}");
 
                     if (!availableRadars[i].canScan || availableRadars[i].vessel != vessel) continue;
 
@@ -1530,7 +1530,7 @@ namespace BDArmory.Radar
 
                     float currentAngle = availableIRSTs[i].currentAngle;
 
-                    float radarAngle = VectorUtils.SignedAngle(availableIRSTs[i].irstForward, projectedVesselFwd, left);
+                    float radarAngle = VectorUtils.GetAngleOnPlane(availableIRSTs[i].irstForward, projectedVesselFwd, left);
 
                     if (!availableIRSTs[i].omnidirectional)
                     {
@@ -1578,7 +1578,7 @@ namespace BDArmory.Radar
                     if (availableRadars[i] == null || availableRadars[i].gameObject == null) continue;
 
                     //if (BDArmorySettings.DEBUG_RADAR)
-                    //    Debug.Log($"[BDArmory.UpdateRadarGUI]: radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.vesselName} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, currIndex: {currIndex}, arrSize: {arrSize}");
+                    //    Debug.Log($"[BDArmory.UpdateRadarGUI][Non-Omni]: Vessel: {vessel.id} radar: {availableRadars[i].name} on vessel: {availableRadars[i].vessel.id} being processed. Skip cond: {!availableRadars[i].canScan || availableRadars[i].vessel != vessel}, index: {i}/{rCount}, currIndex: {currIndex}, arrSize: {arrSize}");
 
                     if (!availableRadars[i].canScan || availableRadars[i].vessel != vessel) continue;
                     bool islocked = availableRadars[i].locked;
@@ -2035,7 +2035,7 @@ namespace BDArmory.Radar
 
         private void RefreshAvailableLinks()
         {
-            if (!HighLogic.LoadedSceneIsFlight || vessel == null || weaponManager == null || !FlightGlobals.ready || FlightGlobals.Vessels == null)
+            if (!HighLogic.LoadedSceneIsFlight || vessel == null || weaponManager == null || FlightGlobals.fetch == null || FlightGlobals.Vessels == null || !FlightGlobals.ready)
             {
                 return;
             }
@@ -2067,9 +2067,10 @@ namespace BDArmory.Radar
             }
 
             List<ModuleRadar>.Enumerator mr = vrd.availableRadars.GetEnumerator();
+            Vessel vrdVessel = vrd.vessel;
             while (mr.MoveNext())
             {
-                if (mr.Current == null) continue;
+                if (mr.Current == null && mr.Current.vessel != vrdVessel) continue; // Reject null and external radars
                 LinkToRadar(mr.Current);
             }
             mr.Dispose();

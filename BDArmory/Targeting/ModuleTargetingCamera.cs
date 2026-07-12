@@ -879,7 +879,7 @@ namespace BDArmory.Targeting
             {
                 ResizingWindow = true;
             }
-            else GUIUtils.DragWindow();
+            else if (!SlewingMouseCam) GUIUtils.DragWindow();
 
             if (Event.current.type == EventType.Repaint && ResizingWindow)
             {
