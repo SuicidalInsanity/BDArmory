@@ -117,6 +117,8 @@ namespace BDArmory.Weapons.Missiles
 
         void ParseStackNodePosition()
         {
+            if (string.IsNullOrEmpty(stackNodePosition)) return;
+
             originalStackNodePosition = new Dictionary<string, Vector3>();
             string[] nodes = stackNodePosition.Split(new char[] { ';' });
             for (int i = 0; i < nodes.Length; i++)
