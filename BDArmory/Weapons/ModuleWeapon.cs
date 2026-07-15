@@ -1276,10 +1276,13 @@ namespace BDArmory.Weapons
                     Debug.LogError($"[BDArmory.ModuleWeapon] {shortName} missing roundsPerMinute field in .cfg! Fix your .cfg!");
                 }
 
-                if (!isChaingun)
-                    roundsPerMinute = baseRPM;
-                else if (roundsPerMinute > baseRPM)
-                    roundsPerMinute = baseRPM;
+                if (eWeaponType != WeaponTypes.Rocket)
+                {
+                    if (!isChaingun)
+                        roundsPerMinute = baseRPM;
+                    else if (roundsPerMinute > baseRPM)
+                        roundsPerMinute = baseRPM;
+                }
             }
             else baseRPM = 3000;
 
