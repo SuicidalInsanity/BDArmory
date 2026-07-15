@@ -160,7 +160,7 @@ namespace BDArmory.Damage
         //Part vars
         private float partMass = 0f;
         public Vector3 partSize;
-        [KSPField(isPersistant = true)]
+        [KSPField(isPersistant = false)]
         public float maxSupportedArmor = -1; //upper cap on armor per part, overridable in MM/.cfg
         [KSPField(isPersistant = true)]
         public float armorVolume = -1;
@@ -547,6 +547,7 @@ namespace BDArmory.Damage
                 else
                     sizeAdjust = 0.5f; //armor on one side, otherwise will have armor thickness on both sides of the panel, nonsensical + double weight
             }
+            if (BDArmorySettings.DEBUG_HP) Debug.Log("[BDArmory.HitpointTracker]: part size is (X: " + partSize.x + ";, Y: " + partSize.y + "; Z: " + partSize.z);
             if (armorVolume < 0 || HighLogic.LoadedSceneIsEditor && (isProcPart || tweakscaled)) //make this persistant to get around differences in part bounds between SPH/Flight. Also reset if in editor and a procpart to account for resizing
             {
                 armorVolume =  // thickness * armor mass; moving it to Start since it only needs to be calc'd once
@@ -555,7 +556,6 @@ namespace BDArmory.Damage
                 {
                     armorVolume *= 0.63f; //part bounds dimensions when calced in Flight are consistantly 1.6-1.7x larger than correct SPH dimensions. Won't be exact, but good enough for legacy craft support
                 }
-                if (BDArmorySettings.DEBUG_HP) Debug.Log("[BDArmory.HitpointTracker]: part size is (X: " + partSize.x + ";, Y: " + partSize.y + "; Z: " + partSize.z);
                 if (BDArmorySettings.DEBUG_HP) Debug.Log("[BDArmory.HitpointTracker]: size adjust mult: " + sizeAdjust + "; part srf area: " + armorVolume);
             }
         }
@@ -1198,6 +1198,10 @@ namespace BDArmory.Damage
                     Armor = ArmorThickness;//set Armor amount to .cfg value
                                            //See also ln 1183-1186
             }
+            if (BDArmorySettings.DEBUG_ARMOR)
+            {
+                Debug.Log($"[ARMOR] max supported armor precalc for {part.name} is {maxSupportedArmor}");
+            }
             if (maxSupportedArmor < 0) //hasn't been set in cfg
             {
                 if (part.IsAero())
@@ -1209,10 +1213,10 @@ namespace BDArmory.Damage
                 }
                 else
                 {
-                    maxSupportedArmor = ((Mathf.Min(partSize.x, partSize.y, partSize.z) / 20) * 1000); //~62mm for Size1, 125mm for S2, 185mm for S3
-                    maxSupportedArmor /= 5;
+                    maxSupportedArmor = ((Mathf.Min(partSize.x, partSize.y, partSize.z) / 20f) * 1000f); //~62mm for Size1, 125mm for S2, 185mm for S3
+                    maxSupportedArmor /= 5f;
                     maxSupportedArmor = Mathf.Round(maxSupportedArmor);
-                    maxSupportedArmor *= 5;
+                    maxSupportedArmor *= 5f;
                 }
                 if (ArmorThickness > 10 && ArmorThickness > maxSupportedArmor)//part has custom armor value, use that
                 {
@@ -1225,7 +1229,7 @@ namespace BDArmory.Damage
             }
             if (BDArmorySettings.DEBUG_ARMOR)
             {
-                Debug.Log("[ARMOR] max supported armor for " + part.name + " is " + maxSupportedArmor);
+                Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Mathf.Min(partSize.x, partSize.y, partSize.z)}")}");
             }
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
             /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
