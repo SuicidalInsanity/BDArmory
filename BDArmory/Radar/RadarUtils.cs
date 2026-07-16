@@ -2646,7 +2646,7 @@ namespace BDArmory.Radar
                     {
                         bool canSeeTarget = (vesselDistanceSqr < maxViewDistance * maxViewDistance &&
                             VectorUtils.Angle(vesselProjectedDirection, lookDirection) < fov &&
-                            myWpnManager.CanSeeTarget(tInfo, false, false));
+                            myWpnManager.CanSeeTarget(tInfo, false, false) == 2);
 
                         MissileFire tgtMF = loadedvessels.Current.ActiveController().WM;
 

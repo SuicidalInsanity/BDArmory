@@ -521,7 +521,7 @@ namespace BDArmory.Control
                                 while (target.MoveNext())
                                 {
                                     if (target.Current == null) continue;
-                                    if (target.Current && target.Current.Vessel && weaponManager.CanSeeTarget(target.Current))
+                                    if (target.Current && target.Current.Vessel && weaponManager.CanSeeTarget(target.Current, true, true) > 0)
                                     {
                                         averagePos += FromTo(vessel, target.Current.Vessel).normalized;
                                     }

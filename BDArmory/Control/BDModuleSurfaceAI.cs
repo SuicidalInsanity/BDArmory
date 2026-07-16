@@ -362,8 +362,8 @@ namespace BDArmory.Control
             }
             foreach (var hit in debugHits) GUIUtils.DrawLineBetweenWorldPositions(hit.Item1, hit.Item1 + 5 * hit.Item2, 5 - 5 / debugHitFadeTime * (Time.time - hit.Item3), Color.magenta); // Collision Avoidance (width fades before they're removed)
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + targetDirection * 10f, 2, Color.blue);
-            GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM + vehicleWidth * vesselTransform.right, vessel.CoM + vehicleWidth * vesselTransform.right + (wasReversing ? -vessel.vesselTransform.up : vessel.vesselTransform.up) * (vehicleWidth + terrainAlertDetectionRadius), 2, Color.red);
-            GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM - vehicleWidth * vesselTransform.right, vessel.CoM - vehicleWidth * vesselTransform.right + (wasReversing ? -vessel.vesselTransform.up : vessel.vesselTransform.up) * (vehicleWidth + terrainAlertDetectionRadius), 2, Color.red);
+            GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM + vehicleWidth * vesselTransform.right, vessel.CoM + vehicleWidth * vesselTransform.right + (wasReversing ? -vesselTransform.up : vesselTransform.up) * (vehicleWidth + terrainAlertDetectionRadius), 2, Color.red);
+            GUIUtils.DrawLineBetweenWorldPositions(vessel.CoM - vehicleWidth * vesselTransform.right, vessel.CoM - vehicleWidth * vesselTransform.right + (wasReversing ? -vesselTransform.up : vesselTransform.up) * (vehicleWidth + terrainAlertDetectionRadius), 2, Color.red);
             //GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position + (0.05f * vesselTransform.right), vesselTransform.position + (0.05f * vesselTransform.right), 2, Color.green);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + vessel.srf_vel_direction.ProjectOnPlanePreNormalized(upDir) * 10f, 2, Color.green);
             GUIUtils.DrawLineBetweenWorldPositions(vesselTransform.position, vesselTransform.position + vesselTransform.up * 10f, 5, Color.red);
@@ -772,7 +772,7 @@ namespace BDArmory.Control
                                     targetVelocity = MaxSpeed;//out of engagement range, engines ahead full
                                 else if (distance <= MinEngagementRange * 1.25f) //coming within minEngagement range
                                 {
-                                    if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
+                                    if (maintainMinRange && (weaponManager.staleTarget.TryGetValue(targetVessel, out bool stale) && !stale)) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
                                     {
                                         //Add LoS provisions if target is behind hill/building?
                                         if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached

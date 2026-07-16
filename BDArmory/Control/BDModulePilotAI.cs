@@ -2057,7 +2057,7 @@ namespace BDArmory.Control
                 if (lastExtendTargetPosition != null) lastExtendTargetPosition -= BDKrakensbane.FloatingOriginOffsetNonKrakensbane;
             }
             var weaponManager = WeaponManager;
-            if (weaponManager && weaponManager.guardMode && weaponManager.staleTarget)
+            if (weaponManager && weaponManager.guardMode && weaponManager.staleTarget.TryGetValue(weaponManager.currentTarget.Vessel, out bool stale) && stale)
             {
                 targetStalenessTimer += Time.fixedDeltaTime;
                 if (targetStalenessTimer >= 1) //add some error to the predicted position every second
@@ -2492,8 +2492,8 @@ namespace BDArmory.Control
 
             var weaponManager = WeaponManager;
             if (weaponManager && weaponManager.currentTarget != null && weaponManager.currentTarget.Vessel == v)
-            { // If the WM's current target isn't v, then most of the rest of this doesn't make any sense.
-                if (!weaponManager.staleTarget) staleTargetVelocity = Vector3.zero; //if actively tracking target, reset last known velocity vector
+            { // If the WM's current target isn't v, then most of the rest of this doesn't make any sense.                
+                if (weaponManager.staleTarget.TryGetValue(v, out bool staleTarget) && !staleTarget) staleTargetVelocity = Vector3.zero; //if actively tracking target, reset last known velocity vector
                 missile = weaponManager.CurrentMissile;
                 if (missile != null)
                 {
@@ -2718,10 +2718,11 @@ namespace BDArmory.Control
                 {
                     finalMaxSteer = GetSteerLimiterForSpeedAndPower();
                 }
-                if (weaponManager.staleTarget) //lost track of target, but know it's in general area, simulate location estimate precision decay over time
+                if (weaponManager.staleTarget.TryGetValue(v, out bool staleTgt) && staleTgt) //lost track of target, but know it's in general area, simulate location estimate precision decay over time
                 {
                     if (staleTargetVelocity == Vector3.zero) staleTargetVelocity = v.Velocity(); //if lost target, follow last known velocity vector
-                    target += staleTargetPosition + staleTargetVelocity * weaponManager.detectedTargetTimeout;
+                    if (weaponManager.detectedTargetTimeout.TryGetValue(v, out float timeout))
+                        target += staleTargetPosition + staleTargetVelocity * timeout;
                 }
             }
 
@@ -2918,7 +2919,7 @@ namespace BDArmory.Control
                 weaponManager && (((steerMode == SteerModes.NormalFlight || steerMode == SteerModes.Aiming && weaponManager.CurrentMissile != null) || IsRunningWaypoints) && weaponManager.guardMode && // Also, if we know enemies are near, but they're beyond gun or visual range and we're not aiming a gun, or we're running a WP course and standard evasion isn't ideal
                     BDATargetManager.TargetList(weaponManager.Team).Where(target =>
                         !target.isMissile &&
-                        weaponManager.CanSeeTarget(target, true, true)
+                        weaponManager.CanSeeTarget(target, true, true) > 0
                     ).AllAndNotEmpty(target =>
                         (target.Vessel.CoM - vesselPos).sqrMagnitude > weaponManager.maxVisualGunRangeSqr
                     ))))

@@ -1269,6 +1269,7 @@ namespace BDArmory.UI
                         {
                             info.detected[reporter.Team] = true;
                         }
+                        if (reporter.staleTarget.TryGetValue(v, out bool stale) && stale) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
                     }
                 }
                 else
@@ -1303,6 +1304,7 @@ namespace BDArmory.UI
                 {
                     info.detected[reporter.Team] = true; //target is under radar detection
                 }
+                if (reporter.staleTarget.TryGetValue(v, out bool stale) && stale) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
             }
         }
 
@@ -1452,7 +1454,7 @@ namespace BDArmory.UI
                     if (target.Current == null) continue;
                     if (target.Current.WeaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.SafeOrbitalIntercept(mf))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current, true, true) > 0 && !target.Current.isMissile && target.Current.SafeOrbitalIntercept(mf))
                     {
                         if (finalTarget == null || (target.Current.IsCloser(finalTarget, mf)))
                         {
@@ -1473,7 +1475,7 @@ namespace BDArmory.UI
                     if (target.Current == null) continue;
                     if (target.Current.WeaponManager == null) continue;
                     //if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !excluding.Contains(target.Current) && target.Current.SafeOrbitalIntercept(mf))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current, true, true) > 0 && !excluding.Contains(target.Current) && target.Current.SafeOrbitalIntercept(mf))
                     {
                         finalTargets.Add(target.Current);
                     }
@@ -1491,7 +1493,7 @@ namespace BDArmory.UI
                     if (target.Current == null || target.Current.Vessel == null) continue;
                     if (target.Current.WeaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
+                    if (mf.CanSeeTarget(target.Current, true, true) > 0 && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         if (finalTarget == null || target.Current.NumFriendliesEngaging(mf.Team) < finalTarget.NumFriendliesEngaging(mf.Team))
                         {
@@ -1515,7 +1517,7 @@ namespace BDArmory.UI
                     if (target.Current == null || target.Current.Vessel == null) continue;
                     if (target.Current.WeaponManager == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
+                    if (mf.CanSeeTarget(target.Current, true, true) > 0 && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         float theta = VectorUtils.Angle(mf.vessel.srf_vel_direction, target.Current.transform.position - mf.vessel.transform.position);
                         float distance = (mf.vessel.transform.position - target.Current.position).magnitude;
@@ -1546,7 +1548,8 @@ namespace BDArmory.UI
                     if (targetMf == null) continue;
                     //Debug.Log("[BDArmory.BDATargetmanager]: evaluating " + target.Current.Vessel.GetName());
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current != null && target.Current.Vessel && mf.CanSeeTarget(target.Current) && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
+                    int tgtVisibility = mf.CanSeeTarget(target.Current, true, true);
+                    if (target.Current != null && target.Current.Vessel && tgtVisibility > 0 && !target.Current.isMissile && target.Current.isThreat && target.Current.SafeOrbitalIntercept(mf))
                     {
                         float targetScore = (target.Current == mf.currentTarget ? mf.targetBias : 1f) * (
                             1f +
@@ -1564,7 +1567,8 @@ namespace BDArmory.UI
                             mf.targetWeightProtectTeammate * target.Current.TargetPriProtectTeammate(targetMf, mf) +
                             mf.targetWeightProtectVIP * target.Current.TargetPriProtectVIP(targetMf, mf) +
                             mf.targetWeightAttackVIP * target.Current.TargetPriAttackVIP(targetMf) +
-                            (target.Current.Vessel.IsControllable ? 0f : mf.targetWeightUncontrolled));
+                            (target.Current.Vessel.IsControllable ? 0f : mf.targetWeightUncontrolled)) *
+                            (tgtVisibility == 1 ? 0.5f : 1f);
                         if (BDArmorySettings.DEBUG_AI || BDArmorySettings.DEBUG_TELEMETRY) debugTargetScores.Add((target.Current.Vessel.GetName(), targetScore));
                         if (finalTarget == null || targetScore > finalTargetScore)
                         {
@@ -1594,7 +1598,7 @@ namespace BDArmory.UI
                 {
                     if (target.Current == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && target.Current.isMissile && target.Current.isThreat && mf.CanSeeTarget(target.Current))
+                    if (target.Current && target.Current.Vessel && target.Current.isMissile && target.Current.isThreat && mf.CanSeeTarget(target.Current, true, true) == 2) //assuming you actually need to know *where* the missile is to engage it (barring silliness like nuclear airburst antimissile interceptors)
                     {
                         if (target.Current.MissileBaseModule)
                         {
@@ -1635,7 +1639,7 @@ namespace BDArmory.UI
                 {
                     if (target.Current == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current, true, true) == 2 && target.Current.isMissile && RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false))
                     {
                         if (target.Current.NumFriendliesEngaging(mf.Team) == 0)
                         {
@@ -1655,7 +1659,7 @@ namespace BDArmory.UI
                 {
                     if (target.Current == null) continue;
                     if ((mf.multiTargetNum > 1 || mf.multiMissileTgtNum > 1) && mf.targetsAssigned.Contains(target.Current)) continue;
-                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current) && target.Current.isMissile)
+                    if (target.Current && target.Current.Vessel && mf.CanSeeTarget(target.Current, true, true) == 2 && target.Current.isMissile)
                     {
                         bool isHostile = false;
                         if (target.Current.isThreat)
@@ -1681,7 +1685,7 @@ namespace BDArmory.UI
                     if (target.Current == null) continue;
                     if (mf.PDMslTgts.Contains(target.Current)) continue;
                     //Debug.Log($"[BDArmory.BDAtargetManager - {(mf.vessel != null ? mf.vessel.GetName() : "null")}] closestMissileThreat, checking {target.Current.Vessel.vesselName}");
-                    if (target.Current && target.Current.Vessel && target.Current.isMissile && mf.CanSeeTarget(target.Current))
+                    if (target.Current && target.Current.Vessel && target.Current.isMissile && mf.CanSeeTarget(target.Current, true, true) == 2)
                     {
                         //Debug.Log($"[BDArmory.BDAtargetManager - {(mf.vessel != null ? mf.vessel.GetName() : "null")}] closestMissileThreat, {target.Current.Vessel.vesselName} is missile...");
                         if (RadarUtils.MissileIsThreat(target.Current.MissileBaseModule, mf, false, true))

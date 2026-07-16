@@ -4218,9 +4218,12 @@ namespace BDArmory.Weapons
 
             Vector3 finalTarget = targetPosition;
             bool manualAiming = false;
-            if (aiControlled && !slaved && wm != null && (!targetAcquired || (wm.staleTarget && wm.detectedTargetTimeout > 0)))
+            bool staleTarget = false;
+            if (wm.staleTarget.TryGetValue(lastVisualTargetVessel, out bool stale)) staleTarget = stale;            
+            if (aiControlled && !slaved && wm != null && (!targetAcquired || 
+                (staleTarget && (wm.detectedTargetTimeout.TryGetValue(lastVisualTargetVessel, out float timeout) && timeout > 0))))
             {
-                if (wm.staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= wm.detectedTargetTimeout) //cap staletarget prediction to point when target forgotten
+                if (staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= wm.detectedTargetTimeout[lastVisualTargetVessel]) //cap staletarget prediction to point when target forgotten
                 {
                     if (BDKrakensbane.IsActive)
                     {
@@ -4342,7 +4345,7 @@ namespace BDArmory.Weapons
                             }
                         }
                     }
-                    else if (!targetAcquired && (wm == null || !wm.staleTarget))
+                    else if (!targetAcquired && (wm == null || !staleTarget))
                     {
                         float maxAimRange = targetAcquired ? (targetPosition - fireTransform.position).magnitude : maxTargetingRange;
                         targetPosition = fireTransform.position + fireTransform.forward * maxAimRange; // For fixed weapons, aim straight ahead (needed for targetDistance below for the trajectory sim) if no current target.
@@ -5160,7 +5163,7 @@ namespace BDArmory.Weapons
                     autoFireFailReason = "Not safe";
                 }
                 var wm = WeaponManager;
-                if (autoFire && wm.staleTarget && (lastVisualTargetVessel != null && lastVisualTargetVessel.LandedOrSplashed && vessel.LandedOrSplashed))
+                if (autoFire && (wm.staleTarget.TryGetValue(lastVisualTargetVessel, out bool stale) && stale) && (lastVisualTargetVessel != null && lastVisualTargetVessel.LandedOrSplashed && vessel.LandedOrSplashed))
                 {
                     autoFire = false; //ground Vee engaging another ground Vee which has ducked out of sight, don't fire
                                       // won't catch cloaked tanks, but oh well.

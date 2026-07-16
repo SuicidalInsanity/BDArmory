@@ -7,7 +7,11 @@ IMPROVEMENTS / FIXES
   - Fix 'Selected Weapon: xxx' message spam when under AI control.
 - AI / WM:
 	- Fix AI considering radar missiles not painting them with a radar as incoming.
-  - Fix AI selecting bombs over missiles when missiles have priority.
+	- Fix AI selecting bombs over missiles when missiles have priority.
+	- Surface AIs using 'Maintain Min Distance' now require LoS/detection to target to maintain dist; fights with target behind a building/terrain no longer prevent AI from maneuvering.
+	- Stale Target parameter for object permanence tracking of targets that have dipped out of sight now tracked per vessel.
+	- Fix staleTarget timeout not timing out.
+	- Target selection now properly takes LoS into account; no more AI fixation on a target behind cover when there's another target out in the open it can shoot.
 - Sensors:
 	- Split `HMDCost` into `HMDCost` which represents a fixed per-cockpit cost of the system, and `HMDCostPerSeat` which represents a per-seat cost of the system. Defaults to 1500 and 500 respectively.
 	- Replaced ventral RCS editor view with polar plot showing RCS values by craft azimuth when “Real-Time Aspected RCS” is enabled.
