@@ -9,11 +9,11 @@ using UnityEngine.UIElements;
 
 namespace BDArmory.Weapons.Missiles
 {
-    public class ModuleAmmoMagazine : PartModule//, IPartMassModifier, IPartCostModifier
+    public class ModuleAmmoMagazine : PartModule, IPartMassModifier//, IPartCostModifier
     {
-        //public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max(ammoCapacity, 0) //need to have this scale by some amount
+        public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => binMass;//need to have this scale by some amount
 
-        //public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
+        public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.FIXED;
         //public float GetModuleCost(float baseCost, ModifierStagingSituation situation) => Mathf.Max(ammoCapacity, 0); //ditto. default BDA ammobox cost?
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
@@ -44,6 +44,9 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public string scaleTransformName;
+
+        float binMass = 0;
+        public float BinMass => binMass;
         Transform ScaleTransform;
 
         PartResource ammoResource;
@@ -74,7 +77,7 @@ namespace BDArmory.Weapons.Missiles
                     else
                     {
                         var length = roundLength > 0 ? roundLength / 1000 : caliber * 9;
-                        if (bulletScale == Vector2.zero) bulletScale = new Vector2(caliber, roundLength); //width, length
+                        bulletScale = new Vector2(caliber, length); //width, length
                     }
                 }
                 if (!isRectangularMagazine)
@@ -158,9 +161,15 @@ namespace BDArmory.Weapons.Missiles
             if (ScaleTransform != null)
             {
                 if (isRectangularMagazine) //x, y are width, length, z is height
+                {
                     ScaleTransform.localScale = new Vector3((bulletScale.x * rowCount) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
+                    binMass = (((ScaleTransform.localScale.x * ScaleTransform.localScale.y) * 2) + ((ScaleTransform.localScale.x * ScaleTransform.localScale.z) * 2) + ((ScaleTransform.localScale.y * ScaleTransform.localScale.z) * 2)) * 13.5f - part.prefabMass; //Assuming bin walls 5mm Aluminium, 2700kg/m3, using prefab mass so we don't have to worry about mod bins not massing 10kg or w/e
+                }
                 else //x is length, y/z are dia
+                {
                     ScaleTransform.localScale = new Vector3(bulletScale.x + 0.05f, bulletScale.x + 0.05f, (Mathf.CeilToInt(ammoCapacity / 36) * bulletScale.y) + 0.05f + bulletScale.y);
+                    binMass = (2 * Mathf.PI * (ScaleTransform.localScale.y / 2) * ScaleTransform.localScale.x) * 13.5f - part.prefabMass;
+                }
             }
             DragCube DragCube = DragCubeSystem.Instance.RenderProceduralDragCube(part);
             part.DragCubes.Procedural = true;
@@ -195,8 +204,7 @@ namespace BDArmory.Weapons.Missiles
                             stackNode.Current.position.y = originalStackNodePosition[stackNode.Current.id].y - ScaleTransform.localScale.z / 2;
                             MoveParts(stackNode.Current, stackNode.Current.position - prevPos);                         
                         }
-                    }
-                    
+                    }                    
                 }
         }
         public void MoveParts(AttachNode node, Vector3 delta)
@@ -205,7 +213,15 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (pushTarget == null) return;
                 Vector3 worldDelta = part.transform.TransformVector(delta);
-                pushTarget.transform.position += worldDelta;
+                //pushTarget.transform.position += worldDelta;
+                if (pushTarget == part.parent) // push ourselves
+                {
+                    part.transform.position -= worldDelta;
+                }
+                else // push them
+                {
+                    pushTarget.transform.position += worldDelta;
+                }
             }
         }
 

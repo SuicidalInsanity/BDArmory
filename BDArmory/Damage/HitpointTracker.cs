@@ -690,7 +690,7 @@ namespace BDArmory.Damage
             }
         }
 
-        private void UpdatePartMass(ref float safetyMass, ref float missileMass)
+        private void UpdatePartMass(ref float safetyMass, ref float missileMass, ref float ammoMass)
         {
             if (safetyMass < 0)
             {
@@ -706,8 +706,15 @@ namespace BDArmory.Damage
                 { missileMass = mm.MissileMass; }
                 else missileMass = 0;
             }
+            if (missileMass < 0)
+            {
+                var am = part.GetComponent<ModuleAmmoMagazine>();
+                if (am != null)
+                { ammoMass = am.BinMass; }
+                else ammoMass = 0;
+            }
             part.UpdateMass(); // Make sure the mass modifiers are accounted for when updating partMass.
-            partMass = part.mass - armorMass - HullMassAdjust - safetyMass - missileMass;
+            partMass = part.mass - armorMass - HullMassAdjust - safetyMass - missileMass - ammoMass;
         }
 
         #region HeartBleed
@@ -1648,6 +1655,7 @@ namespace BDArmory.Damage
             var oldTSMassMult = _tweakScaleMassMultiplier;
             float safetyMass = -1;
             float missileMass = -1;
+            float ammoMass = -1;
             bool geometryChecked = false;
             int iterations = 0;
 
@@ -1687,7 +1695,7 @@ namespace BDArmory.Damage
                             _armorModified = true;
                         }
                     }
-                    UpdatePartMass(ref safetyMass, ref missileMass);
+                    UpdatePartMass(ref safetyMass, ref missileMass, ref ammoMass);
                     if (!Mathf.Approximately(tmpMass, partMass))
                     {
                         _hullModified = _armorModified = true;
