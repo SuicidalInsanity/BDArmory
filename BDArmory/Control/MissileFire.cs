@@ -705,7 +705,7 @@ namespace BDArmory.Control
 
         private string targetBiasLabel = StringUtils.Localize("#LOC_BDArmory_TargetPriority_CurrentTargetBias");
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_TargetPriority_CurrentTargetBias", advancedTweakable = true, groupName = "targetPriority", groupDisplayName = "#LOC_BDArmory_TargetPriority_Settings", groupStartCollapsed = true),//Current target bias
-            UI_FloatRange(minValue = -10f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
+            UI_FloatRange(minValue = 0f, maxValue = 10f, stepIncrement = 0.1f, scene = UI_Scene.All)]
         public float targetBias = 1.1f;
 
         private string targetPreferenceLabel = StringUtils.Localize("#LOC_BDArmory_TargetPriority_AirVsGround");

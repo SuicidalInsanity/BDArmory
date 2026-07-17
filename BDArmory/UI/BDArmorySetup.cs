@@ -909,7 +909,7 @@ namespace BDArmory.UI
                 { "multiMissileTgtNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
                 { "maxMissilesOnTarget", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
 
-                { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, -10, 10) },
+                { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
                 { "targetWeightRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
                 { "targetWeightAirPreference", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
                 { "targetWeightATA", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
@@ -1756,7 +1756,7 @@ namespace BDArmory.UI
                     GUI.Label(LabelRect(++priorityLines, priorityLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_targetBias"), leftLabel);//"current target bias"                 
                     if (!NumFieldsEnabled)
                     {
-                        OnGUIWM.targetBias = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(priorityLines, priorityLabelWidth), OnGUIWM.targetBias, -10, 10), 0.1f);
+                        OnGUIWM.targetBias = BDAMath.RoundToUnit(GUI.HorizontalSlider(SliderRect(priorityLines, priorityLabelWidth), OnGUIWM.targetBias, 0, 10), 0.1f);
                         GUI.Label(RightLabelRect(priorityLines), OnGUIWM.targetBias.ToString(), leftLabel);
                     }
                     else
