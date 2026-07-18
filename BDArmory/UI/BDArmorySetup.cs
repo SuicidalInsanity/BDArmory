@@ -2681,7 +2681,7 @@ namespace BDArmory.UI
                         BDArmorySettings.DEBUG_LINES = GUI.Toggle(SQuarterRect(line, 2), BDArmorySettings.DEBUG_LINES, StringUtils.Localize("#LOC_BDArmory_Settings_DebugLines"));//"Debug Lines"
                         if (GUI.Button(SQuarterRect(line, 3, 0.85f), StringUtils.Localize("#LOC_BDArmory_Settings_DebugMarker")))
                         {
-                            Debug.LogWarning($"[BDArmory] DEBUG DEBUG DEBUG at time {Time.time}s");
+                            Debug.LogWarning($"[BDArmory] DEBUG DEBUG DEBUG at time {Time.time}s (MET: {KSPUtil.PrintTimeStamp(FlightLogger.met, true, true)})");
                         }
                         BDArmorySettings.DEBUG_WEAPONS = GUI.Toggle(SQuarterRect(++line, 0), BDArmorySettings.DEBUG_WEAPONS, StringUtils.Localize("#LOC_BDArmory_Settings_DebugWeapons"));//"Debug Weapons"
                         BDArmorySettings.DEBUG_MISSILES = GUI.Toggle(SQuarterRect(line, 1), BDArmorySettings.DEBUG_MISSILES, StringUtils.Localize("#LOC_BDArmory_Settings_DebugMissiles"));//"Debug Missiles"
