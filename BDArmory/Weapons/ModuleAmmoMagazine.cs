@@ -5,7 +5,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -115,7 +114,7 @@ namespace BDArmory.Weapons.Missiles
                 rows.maxValue = Mathf.CeilToInt(BDAMath.Sqrt(maxAmmo));
                 rows.onFieldChanged = UpdateScale;
             }
-            UpdateScaling(bulletScale);
+            UpdateScaling();
         }
 
         void ParseStackNodePosition()
@@ -135,42 +134,36 @@ namespace BDArmory.Weapons.Missiles
 
         public void UpdateScale(BaseField field, object obj)
         {
-            if (ScaleTransform != null)
-            {
-                if (isRectangularMagazine) //x, y are width, length, z is height
-                    ScaleTransform.localScale = new Vector3((bulletScale.x * rowCount) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
-                else //x is length, y/z are dia
-                    ScaleTransform.localScale = new Vector3(bulletScale.x + 0.05f, bulletScale.x + 0.05f, (Mathf.CeilToInt(ammoCapacity / 36) * bulletScale.y) + 0.05f + bulletScale.y);
-                using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
-                    while (sym.MoveNext())
-                    {
-                        if (sym.Current == null) continue;
-                        var mam = sym.Current.FindModuleImplementing<ModuleAmmoMagazine>();
-                        if (mam == null) continue;
-                        mam.bulletScale = bulletScale;
-                        mam.rowCount = rowCount;
-                        mam.UpdateScaling(bulletScale);
-                    }
-                UpdateStackNode();
-                AmmoVolumeChanged();
-            }
+            UpdateScaling();
+            using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
+                while (sym.MoveNext())
+                {
+                    if (sym.Current == null) continue;
+                    var mam = sym.Current.FindModuleImplementing<ModuleAmmoMagazine>();
+                    if (mam == null) continue;
+                    mam.bulletScale = bulletScale;
+                    mam.rowCount = rowCount;
+                    mam.UpdateScaling();
+                }
         }
 
-        public void UpdateScaling(Vector2 scale)
+        public void UpdateScaling()
         {
             if (ScaleTransform != null)
             {
-                if (isRectangularMagazine) //x, y are width, length, z is height
+                if (isRectangularMagazine) //x, y are width, length, z is height, bulletScale = (caliber, length)
                 {
                     ScaleTransform.localScale = new Vector3((bulletScale.x * rowCount) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
-                    binMass = (((ScaleTransform.localScale.x * ScaleTransform.localScale.y) * 2) + ((ScaleTransform.localScale.x * ScaleTransform.localScale.z) * 2) + ((ScaleTransform.localScale.y * ScaleTransform.localScale.z) * 2)) * 13.5f - part.prefabMass; //Assuming bin walls 5mm Aluminium, 2700kg/m3, using prefab mass so we don't have to worry about mod bins not massing 10kg or w/e
+                    binMass = 2 * (ScaleTransform.localScale.x * ScaleTransform.localScale.y + ScaleTransform.localScale.x * ScaleTransform.localScale.z + ScaleTransform.localScale.y * ScaleTransform.localScale.z) * 0.0135f - part.prefabMass; //Assuming bin walls 5mm Aluminium, 2700kg/m3, using prefab mass so we don't have to worry about mod bins not massing 10kg or w/e
                 }
-                else //x is length, y/z are dia
+                else //z is length, x/y are dia, bulletScale = (drum diameter, caliber)
                 {
                     ScaleTransform.localScale = new Vector3(bulletScale.x + 0.05f, bulletScale.x + 0.05f, (Mathf.CeilToInt(ammoCapacity / 36) * bulletScale.y) + 0.05f + bulletScale.y);
-                    binMass = (2 * Mathf.PI * (ScaleTransform.localScale.y / 2) * ScaleTransform.localScale.x) * 13.5f - part.prefabMass;
+                    binMass = ((Mathf.PI * ScaleTransform.localScale.y * ScaleTransform.localScale.z) + (2 * Mathf.PI * (ScaleTransform.localScale.x / 2) * (ScaleTransform.localScale.x / 2))) * 0.0135f - part.prefabMass;
                 }
             }
+            binMass *= 1000;
+            binMass = Mathf.RoundToInt(binMass) / 1000;
             DragCube DragCube = DragCubeSystem.Instance.RenderProceduralDragCube(part);
             part.DragCubes.Procedural = true;
             part.DragCubes.ClearCubes();
@@ -185,6 +178,7 @@ namespace BDArmory.Weapons.Missiles
 
         public void UpdateStackNode()
         {
+            if (originalStackNodePosition == null) return;
             using (List<AttachNode>.Enumerator stackNode = part.attachNodes.GetEnumerator())
                 while (stackNode.MoveNext())
                 {
@@ -213,7 +207,6 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (pushTarget == null) return;
                 Vector3 worldDelta = part.transform.TransformVector(delta);
-                //pushTarget.transform.position += worldDelta;
                 if (pushTarget == part.parent) // push ourselves
                 {
                     part.transform.position -= worldDelta;
@@ -226,8 +219,8 @@ namespace BDArmory.Weapons.Missiles
         }
 
         void AmmoVolumeChanged()
-        {          
-            ammoMass = $"{ammoCapacity * ammoResource.info.density * 1000} kg";
+        {
+            ammoMass = $"{ammoCapacity * ammoResource.info.density * 1000:0.0} kg";
             ammoResource.maxAmount = ammoCapacity;
             ammoResource.amount = ammoCapacity; // Math.Min(resource.Current.amount, resource.Current.maxAmount);
             GUIUtils.RefreshPAWResource(part, ammoResource);
