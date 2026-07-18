@@ -1663,7 +1663,8 @@ namespace BDArmory.Damage
             {
                 if (++iterations > 10)
                 {
-                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp of {part.name}. Aborting.");
+                    // Note: this happens for very small parts with light mass types whose mass values don't stabilise sufficiently for the Mathf.Approximately check. Using BDAMath.Approximately seems to avoid this.
+                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp of {part.name} on {part.vessel.GetName()}. Aborting.");
                     break;
                 }
                 if (_updateMass)

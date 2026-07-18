@@ -14,7 +14,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy
 
-VERSION = "6.2"
+VERSION = "6.3"
 
 parser = argparse.ArgumentParser(description="Plot the scores of a tournament as they accumulated per round", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("tournament", nargs="?", type=str, help="The tournament to plot (optional).")
@@ -79,7 +79,7 @@ if args.save:
     plt.savefig(filename, dpi='figure', bbox_inches='tight', transparent=args.transparent)
     print(f"Image saved to {filename}")
     try:
-        subprocess.run(f'display {filename}'.split())
+        subprocess.run(['display', filename])
     except:
         pass
 else:
