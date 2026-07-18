@@ -4219,9 +4219,11 @@ namespace BDArmory.Weapons
             Vector3 finalTarget = targetPosition;
             bool manualAiming = false;
             bool staleTarget = false;
-            if (wm.staleTarget.TryGetValue(lastVisualTargetVessel, out bool stale)) staleTarget = stale;            
+            float timeout = 0;
+            if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
+            if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
             if (aiControlled && !slaved && wm != null && (!targetAcquired || 
-                (staleTarget && (wm.detectedTargetTimeout.TryGetValue(lastVisualTargetVessel, out float timeout) && timeout > 0))))
+                (staleTarget && timeout > 0)))
             {
                 if (staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= wm.detectedTargetTimeout[lastVisualTargetVessel]) //cap staletarget prediction to point when target forgotten
                 {
@@ -5163,11 +5165,15 @@ namespace BDArmory.Weapons
                     autoFireFailReason = "Not safe";
                 }
                 var wm = WeaponManager;
-                if (autoFire && (wm.staleTarget.TryGetValue(lastVisualTargetVessel, out bool stale) && stale) && (lastVisualTargetVessel != null && lastVisualTargetVessel.LandedOrSplashed && vessel.LandedOrSplashed))
+                if (autoFire && (lastVisualTargetVessel != null && lastVisualTargetVessel.LandedOrSplashed && vessel.LandedOrSplashed))
                 {
-                    autoFire = false; //ground Vee engaging another ground Vee which has ducked out of sight, don't fire
-                                      // won't catch cloaked tanks, but oh well.
-                    autoFireFailReason = "Stale target";
+                    if (wm.staleTarget.ContainsKey(lastVisualTargetVessel) && wm.staleTarget[lastVisualTargetVessel])
+                    {
+                        autoFire = false; //ground Vee engaging another ground Vee which has ducked out of sight, don't fire
+                                          // won't catch cloaked tanks, but oh well.
+                        autoFireFailReason = "Stale target";
+                    }
+                    else Debug.LogError($"[BDArmory.ModuleWeapon] staleTarget has null entry for {lastVisualTargetVessel.name}");
                 }
 
                 // if (eWeaponType != WeaponTypes.Rocket) //guns/lasers

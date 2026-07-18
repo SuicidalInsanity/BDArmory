@@ -874,6 +874,9 @@ namespace BDArmory.Control
                 SetMissileTurrets();
                 SetDeployableRails();
                 SetRotaryRails();
+                staleTarget.Clear();
+                staleTargetDebugString.Clear();
+                detectedTargetTimeout.Clear();
                 if (IsPrimaryWM) // Disabling guard mode on the primary disables guard mode on any non-primary WMs on the craft.
                     foreach (var wm in VesselModuleRegistry.GetMissileFires(vessel).Where(wm => !wm.IsPrimaryWM && wm.guardMode))
                         wm.ToggleGuardMode();
@@ -2529,7 +2532,7 @@ namespace BDArmory.Control
                             if (weapon.visualTargetVessel != null && weapon.visualTargetVessel.loaded)
                             {
                                 bool staleTgt = false;
-                                if (staleTarget.TryGetValue(weapon.visualTargetVessel, out bool st)) staleTgt = st;
+                                if (staleTarget.ContainsKey(weapon.visualTargetVessel)) staleTgt = staleTarget[weapon.visualTargetVessel];
                                 string stDebugTelem = "";
                                 if (staleTargetDebugString.TryGetValue(weapon.visualTargetVessel, out string debug)) stDebugTelem = debug;
                                 weaponAimDebugStrings.Add($" - Visual target {(weapon.visualTargetPart != null ? weapon.visualTargetPart.name : "CoM")} on {weapon.visualTargetVessel.vesselName}, distance: {(weapon.fireTransforms[0] != null ? (weapon.finalAimTarget - weapon.fireTransforms[0].position).magnitude : 0):F1}, radius: {weapon.targetRadius:F1} ({weapon.visualTargetVessel.GetBounds()}), max deviation: {weapon.maxDeviation}, firing tolerance: {weapon.FiringTolerance}, stale target: {staleTgt}{(staleTgt ? $" ({weapon.staleGoodTargetTime:0.0}s/{detectedTargetTimeout:0.0}s){stDebugTelem}" : "")}");
@@ -6125,7 +6128,7 @@ namespace BDArmory.Control
                             {
                                 if (target.Current == null) continue;
                                 if (target.Current.WeaponManager == null) continue;
-                                if (target.Current && target.Current.Vessel && CanSeeTarget(target.Current, true, true) > 0 && !targetsTried.Contains(target.Current))
+                                if (target.Current && target.Current.Vessel && CanSeeTarget(target.Current, true, true) > TargetVisibility.NotVisible && !targetsTried.Contains(target.Current))
                                 {
                                     targetsAssigned.Add(target.Current);
                                     targetsTried.Add(target.Current);
@@ -8387,16 +8390,21 @@ namespace BDArmory.Control
         Dictionary<Vessel, string> staleTargetDebugString = new Dictionary<Vessel, string>();
 
         FloatCurve SurfaceVisionOffset = null;
+        public enum TargetVisibility
+        {
+            NotVisible = 0,         //Target out of LoS/sensor detection, don't know it's there
+            RecentlyVisible = 1,    //Target was recently seen and known to be in X general area, but is currently off scope; stale target
+            Visible = 2             //Active visual/sensor detection of target
+        }
         /// <summary>
-        /// Check to see if a target craft is visible to this one, with options to test non visual detection, if the target isn't visible but was recently, and if this should
-        /// set stale target status for the weapon manager/AI. Returns a 0/1/2 value; 0 = Not Visible, 1 = Recently Visible (stale target), 2 = Visible
+        /// Check to see if a target craft is visible to this one, with options to test non visual detection and if the target isn't visible but was recently. Returns Not Visible, Recently Visible, Visible
         /// </summary>
         /// <param name="target"></param>
         /// <param name="checkForNonVisualDetection"></param>
         /// <param name="checkForstaleTarget"></param>
         /// <param name="setStaleTarget"></param>
         /// <returns></returns>
-        public int CanSeeTarget(TargetInfo target, bool checkForNonVisualDetection = true, bool checkForstaleTarget = true)
+        public TargetVisibility CanSeeTarget(TargetInfo target, bool checkForNonVisualDetection = true, bool checkForstaleTarget = true)
         {
             // fix cheating: we can see a target IF we either have a visual on it, OR it has been detected on radar/sonar/IRST
             // but to prevent AI from stopping an engagement just because a target dropped behind a small hill 5 seconds ago, clamp the timeout to 30 seconds
@@ -8406,10 +8414,10 @@ namespace BDArmory.Control
 
             //extend to allow teammates provide vision? Could count scouted threats as stale to prevent precise targeting, but at least let AI know something is out there
 
-            if (target == null || target.Vessel == null) return 0;
-            if (staleTargetDebugString.TryGetValue(target.Vessel, out var s)) staleTargetDebugString.Remove(target.Vessel);
-            if (staleTarget.TryGetValue(target.Vessel, out var stale)) staleTarget.Remove(target.Vessel);
-            if (detectedTargetTimeout.TryGetValue(target.Vessel, out var time)) detectedTargetTimeout.Remove(target.Vessel);
+            if (target == null || target.Vessel == null) return TargetVisibility.NotVisible;
+            if (staleTargetDebugString.ContainsKey(target.Vessel)) staleTargetDebugString.Remove(target.Vessel);
+            if (staleTarget.ContainsKey(target.Vessel)) staleTarget.Remove(target.Vessel);
+            if (detectedTargetTimeout.ContainsKey(target.Vessel)) detectedTargetTimeout.Remove(target.Vessel);
             // First check for radar/IRST detection, because that's the cheapest
             if (checkForNonVisualDetection)
             {
@@ -8419,7 +8427,7 @@ namespace BDArmory.Control
                 {
                     detectedTargetTimeout.Add(target.Vessel, 0);
                     staleTarget.Add(target.Vessel,false);
-                    return 2;
+                    return TargetVisibility.Visible;
                 }
                 //carrying antirads and picking up RWR pings?
                 if (rwr && rwr.rwrEnabled && rwr.displayRWR && hasAntiRadiationOrdnance)//see if RWR is picking up a ping from unseen radar source and craft has HARMs
@@ -8433,7 +8441,7 @@ namespace BDArmory.Control
                         {
                             detectedTargetTimeout.Add(target.Vessel, 0);
                             staleTarget.Add(target.Vessel, false);
-                            return 2;
+                            return TargetVisibility.Visible;
                         }
                     }
                 }
@@ -8462,40 +8470,40 @@ namespace BDArmory.Control
                     if (RadarUtils.TerrainCheck(target.Vessel.CoM + ((target.Vessel.vesselSize.y / 2) * vessel.up), vessel.CoM + (SurfaceVisionOffset.Evaluate((target.Vessel.CoM - vessel.CoM).magnitude) * vessel.up), FlightGlobals.currentMainBody)
                         || RadarUtils.TerrainCheck(vessel.CoM + targetDirection, vessel.CoM, FlightGlobals.currentMainBody)) ////target more than 1.5km away, do a paired raycast looking straight, and a raycast using an offset to adjust the horizonpoint to the target, should catch majority of intervening terrain. Clamps to 10km; beyond that, spotter (air)craft will be needed to share vision
                     {
-                        if (!checkForstaleTarget) return 0;
+                        if (!checkForstaleTarget) return TargetVisibility.Visible;
                         if (target.detectedTime.TryGetValue(Team, out float detectedTime) && Time.time - detectedTime < Mathf.Max(objectPermanenceThreshold, targetScanInterval)) //intervening terrain, has an ally seen the target?
                         {
                             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: Distant tgt {target.name} last seen {Time.time - detectedTime} seconds ago. Recalling last known position");
                             detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
                             staleTarget.Add(target.Vessel, true);
                             staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago at long range");
-                            return 1;
+                            return TargetVisibility.RecentlyVisible;
                         }
                         staleTarget.Add(target.Vessel, true);
-                        return 1;
+                        return TargetVisibility.RecentlyVisible;
                     }
                 }
                 else//target/vessel is flying, or ground Vees are within 1.5km of each other, standard LoS checks
                 {
                     if (RadarUtils.TerrainCheck((vessel.LandedOrSplashed ? target.Vessel.CoM + (vessel.up * (target.Vessel.vesselSize.y / 2)) : target.Vessel.CoM), vessel.CoM, FlightGlobals.currentMainBody))
                     {
-                        if (!checkForstaleTarget) return 0;
+                        if (!checkForstaleTarget) return TargetVisibility.NotVisible;
                         if (target.detectedTime.TryGetValue(Team, out float detectedTime) && Time.time - detectedTime < Mathf.Max(objectPermanenceThreshold, targetScanInterval))
                         {
                             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: {target.name} last seen {Time.time - detectedTime} seconds ago. Recalling last known position");
                             detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
                             staleTarget.Add(target.Vessel, true);
                             staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago at close range");
-                            return 1;
+                            return TargetVisibility.RecentlyVisible;
                         }
                         staleTarget.Add(target.Vessel, true);
-                        return 1;
+                        return TargetVisibility.RecentlyVisible;
                     }
                 }
 
                 detectedTargetTimeout.Add(target.Vessel, 0);
                 staleTarget.Add(target.Vessel, false);
-                return 2;
+                return TargetVisibility.Visible;
             }
 
             //can't see target, but did we see it recently?
@@ -8507,11 +8515,11 @@ namespace BDArmory.Control
                     detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
                     staleTarget.Add(target.Vessel, true);
                     staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago ({(target.Vessel.CoM - vessel.CoM).magnitude:0.0}m/{visDistance:0.0}m, {VectorUtils.Angle(-vessel.ReferenceTransform.forward, target.Vessel.CoM - vessel.CoM):0.0}°/{guardAngle * 1.1f / 2:0.0}°)");
-                    return 1;
+                    return TargetVisibility.RecentlyVisible;
                 }
-                return 0; //target long gone
+                return TargetVisibility.NotVisible; //target long gone
             }
-            return 0;
+            return TargetVisibility.NotVisible;
         }
 
         /// <summary>
@@ -9297,6 +9305,7 @@ namespace BDArmory.Control
 
         void UpdateGuardViewScan()
         {
+            staleTargetDebugString.Clear();
             results = RadarUtils.GuardScanInDirection(this, transform, guardAngle, guardRange, rwr);
             incomingThreatVessel = null;
             if (results.foundMissile)

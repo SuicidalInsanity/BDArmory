@@ -1246,7 +1246,7 @@ namespace BDArmory.Damage
             armorFieldEditor.maxValue = maxSupportedArmor;
             armorFieldEditor.minValue = 1f;
             armorFieldEditor.onFieldChanged = ArmorModified;
-            part.RefreshAssociatedWindows();
+            //part.RefreshAssociatedWindows(); //this gets called later in the same frame as SetUpPrefab finishes
         }
 
         public void ArmorSetup(BaseField field, object obj)

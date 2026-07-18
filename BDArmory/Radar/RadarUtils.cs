@@ -2507,6 +2507,8 @@ namespace BDArmory.Radar
             }
 
             //float maxScanDistance = Mathf.Max(maxMWSDistance, maxViewDistance);
+            myWpnManager.staleTarget.Clear();            
+            myWpnManager.detectedTargetTimeout.Clear(); //clean out dicts of any vessels that are no longer loaded/alive; loaded/living vessels get readded below
             using (var loadedvessels = BDATargetManager.LoadedVessels.GetEnumerator())
                 while (loadedvessels.MoveNext())
                 {
@@ -2646,7 +2648,7 @@ namespace BDArmory.Radar
                     {
                         bool canSeeTarget = (vesselDistanceSqr < maxViewDistance * maxViewDistance &&
                             VectorUtils.Angle(vesselProjectedDirection, lookDirection) < fov &&
-                            myWpnManager.CanSeeTarget(tInfo, false, false) == 2);
+                            myWpnManager.CanSeeTarget(tInfo, false, false) == MissileFire.TargetVisibility.Visible);
 
                         MissileFire tgtMF = loadedvessels.Current.ActiveController().WM;
 
