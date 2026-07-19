@@ -706,7 +706,7 @@ namespace BDArmory.Damage
                 { missileMass = mm.MissileMass; }
                 else missileMass = 0;
             }
-            if (missileMass < 0)
+            if (ammoMass < 0)
             {
                 var am = part.GetComponent<ModuleAmmoMagazine>();
                 if (am != null)
@@ -1569,7 +1569,7 @@ namespace BDArmory.Damage
 
             if (OldHullType != HullTypeNum || !Mathf.Approximately(OldHullMassAdjust, HullMassAdjust))
             {
-                if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated hull mass {OldHullMassAdjust}->{HullMassAdjust} (part mass {partMass}, total mass {part.mass + HullMassAdjust - OldHullMassAdjust}) or type {OldHullType}->{HullTypeNum} at time {Time.time}");
+                if (BDArmorySettings.DEBUG_HP) Debug.Log($"[BDArmory.HitpointTracker]: {part.name} updated hull mass {OldHullMassAdjust}->{HullMassAdjust} (partMass {partMass}, total mass {part.mass + HullMassAdjust - OldHullMassAdjust}) or type {OldHullType}->{HullTypeNum} at time {Time.time}");
                 OldHullType = HullTypeNum;
                 _updateMass = true;
             }
