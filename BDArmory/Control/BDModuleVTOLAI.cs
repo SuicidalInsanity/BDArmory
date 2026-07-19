@@ -277,7 +277,8 @@ UI_Toggle(enabledText = "#LOC_BDArmory_true", disabledText = "#LOC_BDArmory_fals
 
         public void ChooseOptionsUpdated(BaseField field, object obj)
         {
-            this.part.RefreshAssociatedWindows();
+            //this.part.RefreshAssociatedWindows();
+            GUIUtils.UpdateChooseOptionPAW(field, this);
             if (BDArmoryAIGUI.Instance != null)
             {
                 BDArmoryAIGUI.Instance.SetChooseOptionSliders();

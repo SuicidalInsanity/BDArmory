@@ -1778,7 +1778,7 @@ namespace BDArmory.UI
                                     if (Drivertype != (Drivertype = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line++, contentWidth), Drivertype, 0, VehicleMovementTypes.Length - 1))))
                                     {
                                         AI.SurfaceTypeName = VehicleMovementTypes[Drivertype].ToString();
-                                        AI.ChooseOptionsUpdated(null, null);
+                                        AI.ChooseOptionsUpdated(AI.Fields[nameof(AI.SurfaceTypeName)], AI);
                                     }
                                     if (contextTipsEnabled)
                                     {
@@ -1839,7 +1839,7 @@ namespace BDArmory.UI
                                         if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
                                         {
                                             AI.SetBroadsideDirection(AI.orbitDirections[broadsideDir]);
-                                            AI.ChooseOptionsUpdated(null, null);
+                                            AI.ChooseOptionsUpdated(AI.Fields[nameof(AI.SurfaceTypeName)], AI);
                                         }
                                         GUI.Label(SettinglabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + $": {AI.OrbitDirectionName}", Label);
                                         if (contextTipsEnabled)

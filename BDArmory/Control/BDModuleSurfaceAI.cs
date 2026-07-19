@@ -299,7 +299,8 @@ namespace BDArmory.Control
             Fields[nameof(CombatAltitude)].guiActiveEditor = SurfaceType == AIUtils.VehicleMovementType.Submarine;
             Fields[nameof(maintainMinRange)].guiActive = SurfaceType == AIUtils.VehicleMovementType.Land;
             Fields[nameof(maintainMinRange)].guiActiveEditor = SurfaceType == AIUtils.VehicleMovementType.Land;
-            part.RefreshAssociatedWindows();
+            //part.RefreshAssociatedWindows();
+            GUIUtils.UpdateChooseOptionPAW(field, this);
             if (BDArmoryAIGUI.Instance != null)
             {
                 BDArmoryAIGUI.Instance.SetChooseOptionSliders();

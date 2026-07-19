@@ -505,7 +505,7 @@ namespace BDArmory.Utils
         public static void RefreshAssociatedWindows(Part part)
         {
             if (part == null || part.PartActionWindow == null) return;
-            part.PartActionWindow.UpdateWindow();
+            //part.PartActionWindow.UpdateWindow();
             // part.PartActionWindow.displayDirty = true;
             // IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
             // while (window.MoveNext())
@@ -536,18 +536,43 @@ namespace BDArmory.Utils
                 if (resourceUI.Resource != resource) continue;
                 resourceUI.resourceMax.text = KSPUtil.LocalizeNumber(resource.maxAmount, "F1");
                 resourceUI.resourceAmnt.text = KSPUtil.LocalizeNumber(resource.amount, "F1");
-                if (resourceUI.Window.usingNumericValue)
+                if (resourceUI.Window.NumericSliders)
                 {
                     resourceUI.inputField.text = KSPUtil.LocalizeNumber(resource.amount, "#.0##");
                 }
                 else
                 {
-                    resourceUI.slider.onValueChanged.Invoke(resourceUI.slider.value);
+                    // Note: we set the value without triggering callbacks as that is what KSP does to round the slider to a nearest position, which we don't want.
+                    resourceUI.slider.SetValueWithoutNotify(Mathf.Lerp(resourceUI.slider.minValue, resourceUI.slider.maxValue, (float)(resource.amount / resource.maxAmount)));
                 }
                 if (!all) break;
             }
         }
 
+        /// <summary>
+        /// Update a UI_ChooseOption PAW slider when the field value is changed.
+        /// KSP updates most sliders automatically, but not these apparently.
+        /// </summary>
+        /// <param name="field">The field to update. If field is null, then all UI_ChooseOption fields are updated.</param>
+        /// <param name="obj">The partmodule object.</param>
+        public static void UpdateChooseOptionPAW(BaseField field, PartModule obj)
+        {
+            if (obj is null) return;
+            if (field is null)
+            {
+                foreach (var f in obj.Fields)
+                {
+                    if ((HighLogic.LoadedSceneIsFlight ? f.uiControlFlight : f.uiControlEditor) is UI_ChooseOption)
+                        UpdateChooseOptionPAW(f, obj);
+                }
+                return;
+            }
+            UI_ChooseOption uiControl = (HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) as UI_ChooseOption;
+            var pawChooseOption = uiControl.partActionItem as UIPartActionChooseOption;
+            if (pawChooseOption is null) return; // Not shown.
+            int newIndex = uiControl.options.IndexOf(field.GetValue(obj));
+            if (newIndex != -1) pawChooseOption.slider.value = newIndex;
+        }
 
         /// <summary>
         /// Disable zooming with the scroll wheel if the mouse is over a registered GUI window.

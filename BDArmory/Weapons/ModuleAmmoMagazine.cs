@@ -17,7 +17,7 @@ namespace BDArmory.Weapons.Missiles
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity
-        UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = true, scene = UI_Scene.All)]
+        UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = false, scene = UI_Scene.All)]
         public float ammoCapacity = 500;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
@@ -53,6 +53,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField] public string stackNodePosition;
 
         Dictionary<string, Vector3> originalStackNodePosition;
+
+        public bool hasCASEII = false;
 
         public void Start()
         {
@@ -153,17 +155,15 @@ namespace BDArmory.Weapons.Missiles
             {
                 if (isRectangularMagazine) //x, y are width, length, z is height, bulletScale = (caliber, length)
                 {
-                    ScaleTransform.localScale = new Vector3((bulletScale.x * rowCount) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
+                    ScaleTransform.localScale = new Vector3((bulletScale.x * Mathf.Min(ammoCapacity, rowCount)) + 0.05f, (bulletScale.x * Mathf.CeilToInt(ammoCapacity / rowCount)) + 0.05f, bulletScale.y + 0.05f);
                     binMass = 2 * (ScaleTransform.localScale.x * ScaleTransform.localScale.y + ScaleTransform.localScale.x * ScaleTransform.localScale.z + ScaleTransform.localScale.y * ScaleTransform.localScale.z) * 0.0135f - part.prefabMass; //Assuming bin walls 5mm Aluminium, 2700kg/m3, using prefab mass so we don't have to worry about mod bins not massing 10kg or w/e
                 }
                 else //z is length, x/y are dia, bulletScale = (drum diameter, caliber)
                 {
-                    ScaleTransform.localScale = new Vector3(bulletScale.x + 0.05f, bulletScale.x + 0.05f, (Mathf.CeilToInt(ammoCapacity / 36) * bulletScale.y) + 0.05f + bulletScale.y);
+                    ScaleTransform.localScale = new Vector3(bulletScale.x + 0.05f, bulletScale.x + 0.05f, (Mathf.CeilToInt(ammoCapacity / 36) * bulletScale.y) + 0.05f); // + ammoCapacity >= 36 ? bulletScale.y : 0); //if wanting to properly model height of spiral of ammobelt, probably unnecessary granularity/accuracy
                     binMass = ((Mathf.PI * ScaleTransform.localScale.y * ScaleTransform.localScale.z) + (2 * Mathf.PI * (ScaleTransform.localScale.x / 2) * (ScaleTransform.localScale.x / 2))) * 0.0135f - part.prefabMass;
                 }
             }
-            binMass *= 1000;
-            binMass = Mathf.RoundToInt(binMass) / 1000;
             DragCube DragCube = DragCubeSystem.Instance.RenderProceduralDragCube(part);
             part.DragCubes.Procedural = true;
             part.DragCubes.ClearCubes();
@@ -218,11 +218,12 @@ namespace BDArmory.Weapons.Missiles
             }
         }
 
-        void AmmoVolumeChanged()
+        public void AmmoVolumeChanged()
         {
-            ammoMass = $"{ammoCapacity * ammoResource.info.density * 1000:0.0} kg";
-            ammoResource.maxAmount = ammoCapacity;
-            ammoResource.amount = ammoCapacity; // Math.Min(resource.Current.amount, resource.Current.maxAmount);
+            int adjustedCapacity = Mathf.CeilToInt(ammoCapacity * (hasCASEII ? 0.8f : 1));
+            ammoMass = $"{adjustedCapacity * ammoResource.info.density * 1000:0.0} kg";
+            ammoResource.maxAmount = adjustedCapacity;
+            ammoResource.amount = adjustedCapacity; // Math.Min(resource.Current.amount, resource.Current.maxAmount);
             GUIUtils.RefreshPAWResource(part, ammoResource);
         }
         private UIPartActionWindow _PAW = null;

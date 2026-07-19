@@ -461,7 +461,8 @@ namespace BDArmory.Control
 
         public void ChooseOptionsUpdated(BaseField field, object obj)
         {
-            this.part.RefreshAssociatedWindows();
+            //this.part.RefreshAssociatedWindows();
+            GUIUtils.UpdateChooseOptionPAW(field, this);
             if (BDArmoryAIGUI.Instance != null)
             {
                 BDArmoryAIGUI.Instance.SetChooseOptionSliders();

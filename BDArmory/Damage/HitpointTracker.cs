@@ -312,7 +312,7 @@ namespace BDArmory.Damage
                 }
 
                 previousHitpoints = maxHitPoints_;
-                part.RefreshAssociatedWindows();
+                //part.RefreshAssociatedWindows();
                 return true;
             }
             else
@@ -390,7 +390,7 @@ namespace BDArmory.Damage
                     HullTypeNum = HullInfo.materials.FindIndex(t => t.name == "Aluminium") + 1;
                 }
                 SetHullMass();
-                part.RefreshAssociatedWindows();
+                //part.RefreshAssociatedWindows();
             }
             if (HighLogic.LoadedSceneIsFlight || HighLogic.LoadedSceneIsEditor)
             {
@@ -1454,7 +1454,7 @@ namespace BDArmory.Damage
                 armorFieldEditor.onFieldChanged = ArmorModified;
                 if (!armorReset)
                 {
-                    part.RefreshAssociatedWindows();
+                    //part.RefreshAssociatedWindows();
                 }
                 armorReset = true;
             }
@@ -1470,7 +1470,7 @@ namespace BDArmory.Damage
                 //armorFieldEditor.maxValue = 10; //max none armor to 10 (simulate part skin of alimunium)
                 //armorFieldEditor.minValue = 10;
 
-                part.RefreshAssociatedWindows();
+                //part.RefreshAssociatedWindows();
                 //GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
             }
         }
@@ -1664,7 +1664,8 @@ namespace BDArmory.Damage
                 if (++iterations > 10)
                 {
                     // Note: this happens for very small parts with light mass types whose mass values don't stabilise sufficiently for the Mathf.Approximately check. Using BDAMath.Approximately seems to avoid this.
-                    Debug.LogError($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp of {part.name} on {part.vessel.GetName()}. Aborting.");
+                    // It also seems to happen for some material changes that oscillate between two values. FIXME
+                    Debug.LogWarning($"[BDArmory.HitpointTracker]: Excessive number of loops when updating mass/armor/hull/hp of {part.name} on {(HighLogic.LoadedSceneIsEditor ? part.ship.shipName : part.vessel.GetName())}. Aborting.");
                     break;
                 }
                 if (_updateMass)
@@ -1697,7 +1698,7 @@ namespace BDArmory.Damage
                         }
                     }
                     UpdatePartMass(ref safetyMass, ref missileMass, ref ammoMass);
-                    if (!Mathf.Approximately(tmpMass, partMass))
+                    if (!BDAMath.Approximately(tmpMass, partMass, oldMass))
                     {
                         _hullModified = _armorModified = true;
                     }

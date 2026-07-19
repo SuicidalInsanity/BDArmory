@@ -12,6 +12,7 @@ using BDArmory.Utils;
 using BDArmory.VesselSpawning;
 using BDArmory.Weapons;
 using BDArmory.UI;
+using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Ammo
 {
@@ -75,10 +76,13 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
 
         static RaycastHit[] raycastHitBuffer = new RaycastHit[10]; // This gets enlarged as needed and is shared amongst all ModuleCASE instances.
 
+        ModuleAmmoMagazine AdjustableBin = null;
+
         public void Start()
         {
             if (HighLogic.LoadedSceneIsEditor)
             {
+                AdjustableBin = part.FindModuleImplementing<ModuleAmmoMagazine>();
                 var internalmag = part.FindModuleImplementing<ModuleWeapon>();
                 if (internalmag != null)
                 {
@@ -175,71 +179,109 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
             CASEcost = (CASELevel * 1000);
             //part.transform.localScale = (Vector3.one * (origScale + (CASELevel/10)));
             //Debug.Log("[BDArmory.ModuleCASE] part.mass = " + part.mass + "; CASElevel = " + CASELevel + "; CASEMass = " + CASEmass + "; Scale = " + part.transform.localScale);
-
-            if (Case2 && CASELevel != 2)
+            if (!AdjustableBin)
             {
-                int i = 0;
-                using (IEnumerator<PartResource> resource = part.Resources.GetEnumerator())
-                    while (resource.MoveNext())
-                    {
-                        if (resource.Current == null) continue;
-                        //if (resource.Current.maxAmount < 80) //original value < 100, at risk of fractional amount
-                        {
-                            resource.Current.maxAmount = resourceAmount[i];
-                        }
-                        //else resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.25);
-                        i++;
-                    }
-            }
-            if (!Case2 && CASELevel == 2)
-            {
-                using (IEnumerator<PartResource> resource = part.Resources.GetEnumerator())
-                    while (resource.MoveNext())
-                    {
-                        if (resource.Current == null) continue;
-                        resource.Current.maxAmount *= 0.8;
-                        resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount);
-                        resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                    }
-            }
-            using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
-                while (pSym.MoveNext())
+                if (Case2 && CASELevel != 2)
                 {
-                    if (pSym.Current == null) continue;
-
-                    var CASE = pSym.Current.FindModuleImplementing<ModuleCASE>();
-                    if (CASE == null) continue;
-                    CASE.externallyCalled = true;
-                    CASE.CASELevel = CASELevel;
-                    CASE.CASEmass = CASEmass;
-                    CASE.CASEcost = CASEcost;
-
-                    if (CASE.Case2 && CASE.CASELevel != 2)
-                    {
-                        using (IEnumerator<PartResource> resource = pSym.Current.Resources.GetEnumerator())
-                            while (resource.MoveNext())
+                    int i = 0;
+                    using (IEnumerator<PartResource> resource = part.Resources.GetEnumerator())
+                        while (resource.MoveNext())
+                        {
+                            if (resource.Current == null) continue;
+                            //if (resource.Current.maxAmount < 80) //original value < 100, at risk of fractional amount
                             {
-                                if (resource.Current == null) continue;
-                                resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.25);
-                                resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
+                                resource.Current.maxAmount = resourceAmount[i];
+                                GUIUtils.RefreshPAWResource(part, resource.Current);
                             }
-                    }
-                    if (!CASE.Case2 && CASE.CASELevel == 2)
-                    {
-                        using (IEnumerator<PartResource> resource = pSym.Current.Resources.GetEnumerator())
-                            while (resource.MoveNext())
-                            {
-                                if (resource.Current == null) continue;
-                                resource.Current.maxAmount *= 0.8;
-                                resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                            }
-                    }
-                    CASE.Case2 = CASE.CASELevel == 2 ? true : false;
-                    CASE.externallyCalled = false;
-                    GUIUtils.RefreshAssociatedWindows(pSym.Current);
+                            //else resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.25);
+                            i++;
+                        }
                 }
+                if (!Case2 && CASELevel == 2)
+                {
+                    using (IEnumerator<PartResource> resource = part.Resources.GetEnumerator())
+                        while (resource.MoveNext())
+                        {
+                            if (resource.Current == null) continue;
+                            resource.Current.maxAmount *= 0.8;
+                            resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount);
+                            resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
+                            GUIUtils.RefreshPAWResource(part, resource.Current);
+                        }
+                }
+
+                using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
+                    while (pSym.MoveNext())
+                    {
+                        if (pSym.Current == null) continue;
+
+                        var CASE = pSym.Current.FindModuleImplementing<ModuleCASE>();
+                        if (CASE == null) continue;
+                        CASE.externallyCalled = true;
+                        CASE.CASELevel = CASELevel;
+                        CASE.CASEmass = CASEmass;
+                        CASE.CASEcost = CASEcost;
+
+                        if (CASE.Case2 && CASE.CASELevel != 2)
+                        {
+                            using (IEnumerator<PartResource> resource = pSym.Current.Resources.GetEnumerator())
+                                while (resource.MoveNext())
+                                {
+                                    if (resource.Current == null) continue;
+                                    resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.25);
+                                    resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
+                                    GUIUtils.RefreshPAWResource(part, resource.Current);
+                                }
+                        }
+                        if (!CASE.Case2 && CASE.CASELevel == 2)
+                        {
+                            using (IEnumerator<PartResource> resource = pSym.Current.Resources.GetEnumerator())
+                                while (resource.MoveNext())
+                                {
+                                    if (resource.Current == null) continue;
+                                    resource.Current.maxAmount *= 0.8;
+                                    resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
+                                    GUIUtils.RefreshPAWResource(part, resource.Current);
+                                }
+                        }
+                        CASE.Case2 = CASE.CASELevel == 2 ? true : false;
+                        CASE.externallyCalled = false;
+                        //GUIUtils.RefreshAssociatedWindows(pSym.Current);
+                    }
+            }
+            else
+            {
+                if ((Case2 && CASELevel != 2) || (!Case2 && CASELevel == 2))
+                {
+                    AdjustableBin.hasCASEII = CASELevel == 2;
+                    AdjustableBin.AmmoVolumeChanged();
+                }
+
+                using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
+                    while (pSym.MoveNext())
+                    {
+                        if (pSym.Current == null) continue;
+
+                        var CASE = pSym.Current.FindModuleImplementing<ModuleCASE>();
+                        if (CASE == null) continue;
+                        CASE.externallyCalled = true;
+                        CASE.CASELevel = CASELevel;
+                        CASE.CASEmass = CASEmass;
+                        CASE.CASEcost = CASEcost;
+                        if (CASE.AdjustableBin != null)
+                        {
+                            if ((CASE.Case2 && CASE.CASELevel != 2) || (!CASE.Case2 && CASE.CASELevel == 2))
+                            {
+                                CASE.AdjustableBin.hasCASEII = CASELevel == 2;
+                                CASE.AdjustableBin.AmmoVolumeChanged();
+                            }
+                        }
+                        CASE.Case2 = CASE.CASELevel == 2 ? true : false;
+                        CASE.externallyCalled = false;
+                    }
+            }
             Case2 = CASELevel == 2 ? true : false;
-            GUIUtils.RefreshAssociatedWindows(part);
+            //GUIUtils.RefreshAssociatedWindows(part);
         }
         public override void OnLoad(ConfigNode node)
         {
