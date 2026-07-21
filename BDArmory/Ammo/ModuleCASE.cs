@@ -230,7 +230,7 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                                     if (resource.Current == null) continue;
                                     resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.25);
                                     resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                                    GUIUtils.RefreshPAWResource(part, resource.Current);
+                                    GUIUtils.RefreshPAWResource(pSym.Current, resource.Current);
                                 }
                         }
                         if (!CASE.Case2 && CASE.CASELevel == 2)
@@ -241,7 +241,7 @@ UI_FloatRange(minValue = 0f, maxValue = 100, stepIncrement = 0.5f, scene = UI_Sc
                                     if (resource.Current == null) continue;
                                     resource.Current.maxAmount *= 0.8;
                                     resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                                    GUIUtils.RefreshPAWResource(part, resource.Current);
+                                    GUIUtils.RefreshPAWResource(pSym.Current, resource.Current);
                                 }
                         }
                         CASE.Case2 = CASE.CASELevel == 2 ? true : false;

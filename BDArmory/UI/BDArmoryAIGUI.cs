@@ -1839,7 +1839,7 @@ namespace BDArmory.UI
                                         if (broadsideDir != (broadsideDir = Mathf.RoundToInt(GUI.HorizontalSlider(SettingSliderRect(line, contentWidth), broadsideDir, 0, AI.orbitDirections.Length - 1))))
                                         {
                                             AI.SetBroadsideDirection(AI.orbitDirections[broadsideDir]);
-                                            AI.ChooseOptionsUpdated(AI.Fields[nameof(AI.SurfaceTypeName)], AI);
+                                            AI.ChooseOptionsUpdated(AI.Fields[nameof(AI.OrbitDirectionName)], AI);
                                         }
                                         GUI.Label(SettinglabelRect(line++), StringUtils.Localize("#LOC_BDArmory_AIWindow_PreferredBroadsideDirection") + $": {AI.OrbitDirectionName}", Label);
                                         if (contextTipsEnabled)

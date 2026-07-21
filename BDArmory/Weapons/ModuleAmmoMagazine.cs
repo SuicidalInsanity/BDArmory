@@ -17,7 +17,7 @@ namespace BDArmory.Weapons.Missiles
         //public ModifierChangeWhen GetModuleCostChangeWhen() => ModifierChangeWhen.FIXED;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_AmmoCapacity"),//Ammo Capacity
-        UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = false, scene = UI_Scene.All)]
+        UI_FloatSemiLogRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, sigFig = 2, withZero = false, reducedPrecisionAtMin = true, scene = UI_Scene.All)]
         public float ammoCapacity = 500;
 
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorWidth"),// Length
@@ -116,7 +116,7 @@ namespace BDArmory.Weapons.Missiles
                 rows.maxValue = Mathf.CeilToInt(BDAMath.Sqrt(maxAmmo));
                 rows.onFieldChanged = UpdateScale;
             }
-            UpdateScaling();
+            UpdateScaling(false);
         }
 
         void ParseStackNodePosition()
@@ -149,7 +149,7 @@ namespace BDArmory.Weapons.Missiles
                 }
         }
 
-        public void UpdateScaling()
+        public void UpdateScaling(bool moveparts = true)
         {
             if (ScaleTransform != null)
             {
@@ -172,11 +172,11 @@ namespace BDArmory.Weapons.Missiles
             part.DragCubes.ForceUpdate(true, true, false);
             part.DragCubes.SetDragWeights();
 
-            UpdateStackNode();
+            UpdateStackNode(moveparts);
             AmmoVolumeChanged();
         }
 
-        public void UpdateStackNode()
+        public void UpdateStackNode(bool moveparts)
         {
             if (originalStackNodePosition == null) return;
             using (List<AttachNode>.Enumerator stackNode = part.attachNodes.GetEnumerator())
@@ -191,12 +191,12 @@ namespace BDArmory.Weapons.Missiles
                         if (stackNode.Current.id == "top")
                         {
                             stackNode.Current.position.y = originalStackNodePosition[stackNode.Current.id].y + ScaleTransform.localScale.z / 2;
-                            MoveParts(stackNode.Current, stackNode.Current.position - prevPos);
+                            if (moveparts) MoveParts(stackNode.Current, stackNode.Current.position - prevPos);
                         }
                         else
                         {
                             stackNode.Current.position.y = originalStackNodePosition[stackNode.Current.id].y - ScaleTransform.localScale.z / 2;
-                            MoveParts(stackNode.Current, stackNode.Current.position - prevPos);                         
+                            if (moveparts) MoveParts(stackNode.Current, stackNode.Current.position - prevPos);                         
                         }
                     }                    
                 }

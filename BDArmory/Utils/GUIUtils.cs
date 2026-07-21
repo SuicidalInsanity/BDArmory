@@ -502,9 +502,9 @@ namespace BDArmory.Utils
 
         //Thanks FlowerChild
         //refreshes part action window
-        public static void RefreshAssociatedWindows(Part part)
-        {
-            if (part == null || part.PartActionWindow == null) return;
+        //public static void RefreshAssociatedWindows(Part part)
+        //{
+            //if (part == null || part.PartActionWindow == null) return;
             //part.PartActionWindow.UpdateWindow();
             // part.PartActionWindow.displayDirty = true;
             // IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
@@ -517,7 +517,7 @@ namespace BDArmory.Utils
             //     }
             // }
             // window.Dispose();
-        }
+        //}
 
         /// <summary>
         /// Refresh the UI for the given resource in the PAW.

@@ -75,7 +75,7 @@ namespace BDArmory.Modules
                                 if (resource.Current == null) continue;
                                 resource.Current.maxAmount = Math.Floor(resource.Current.maxAmount * 1.11112);
                                 resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                                GUIUtils.RefreshPAWResource(part, resource.Current);
+                                GUIUtils.RefreshPAWResource(pSym.Current, resource.Current);
                             }
                     }
                     else
@@ -88,7 +88,7 @@ namespace BDArmory.Modules
                                 if (resource.Current == null) continue;
                                 resource.Current.maxAmount *= 0.9;
                                 resource.Current.amount = Math.Min(resource.Current.amount, resource.Current.maxAmount);
-                                GUIUtils.RefreshPAWResource(part, resource.Current);
+                                GUIUtils.RefreshPAWResource(pSym.Current, resource.Current);
                             }
                     }
                     //GUIUtils.RefreshAssociatedWindows(pSym.Current);
