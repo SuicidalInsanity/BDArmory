@@ -788,6 +788,7 @@ namespace BDArmory.Weapons.Missiles
                     if (!displayOrdinance) return;
                     if (!populateDummies)
                     {
+                        if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return; // Don't spam logs when the part isn't attached to the ship yet.
                         Debug.LogError($"[BDArmory.MultiMissileLauncher]: Reminder! Model {subMunitionPath} not found. Cannot populate missile dummies!");
                         return;
                     }
@@ -1613,6 +1614,7 @@ namespace BDArmory.Weapons.Missiles
                 var Template = GameDatabase.Instance.GetModel(modelpath);
                 if (Template == null)
                 {
+                    if (HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip()) return false; // Don't spam logs when the part isn't attached to the ship yet.
                     Debug.LogError("[BDArmory.MultiMissileLauncher]: model '" + modelpath + "' not found. Expect exceptions if trying to use this missile.");
                     return false;
                 }
