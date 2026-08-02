@@ -132,6 +132,7 @@ namespace BDArmory.Competition
         void Start()
         {
             UpdateGUIElements();
+            CleanDebrisAlways = BDArmorySettings.CLEAN_DEBRIS_ALWAYS;
             /*
             //Announcer
             headshotClip = SoundUtils.GetAudioClip("BDArmory/Sounds/Announcer/Headshot", true);
@@ -302,6 +303,7 @@ namespace BDArmory.Competition
 
         void OnDestroy()
         {
+            CleanDebrisAlways = false;
             StopCompetition();
             StopAllCoroutines();
         }
@@ -424,7 +426,7 @@ namespace BDArmory.Competition
             GameEvents.onVesselPartCountChanged.Remove(OnVesselModified);
             GameEvents.onVesselCreate.Remove(OnVesselModified);
             GameEvents.onCrewOnEva.Remove(OnCrewOnEVA);
-            GameEvents.onVesselCreate.Remove(DebrisDelayedCleanUp);
+            if (!CleanDebrisAlways) GameEvents.onVesselCreate.Remove(DebrisDelayedCleanUp);
             CometCleanup();
             rammingInformation = null; // Reset the ramming information.
             deadOrAlive = "";
@@ -440,7 +442,7 @@ namespace BDArmory.Competition
             competitionStarting = false;
             sequencedCompetitionStarting = false;
             GameEvents.onCollision.Add(AnalyseCollision); // Start collision detection
-            GameEvents.onVesselCreate.Add(DebrisDelayedCleanUp);
+            if (!CleanDebrisAlways) GameEvents.onVesselCreate.Add(DebrisDelayedCleanUp);
             CometCleanup(true);
             competitionStartTime = Planetarium.GetUniversalTime();
             nextUpdateTick = competitionStartTime + 2; // 2 seconds before we start tracking
@@ -2490,6 +2492,22 @@ namespace BDArmory.Competition
         #endregion
 
         #region Debris clean-up
+        public bool CleanDebrisAlways // Have the debris cleanup event handlers running all the time or just during competitions.
+        {
+            get;
+            set
+            {
+                if (field == value) return;
+                field = value;
+                BDArmorySettings.CLEAN_DEBRIS_ALWAYS = value;
+                GameEvents.onVesselCreate.Remove(DebrisDelayedCleanUp); // Remove it first to avoid accumulating event handlers.
+                if (value || competitionIsActive)
+                {
+                    GameEvents.onVesselCreate.Add(DebrisDelayedCleanUp);
+                    foreach (var vessel in FlightGlobals.VesselsLoaded) DebrisDelayedCleanUp(vessel);
+                }
+            }
+        } = false;
         private HashSet<Vessel> nonCompetitorsToRemove = new HashSet<Vessel>();
         public void RemoveNonCompetitors(bool now = false)
         {

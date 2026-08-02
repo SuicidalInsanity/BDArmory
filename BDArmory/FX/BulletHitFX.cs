@@ -19,8 +19,7 @@ namespace BDArmory.FX
         static bool hasOnVesselUnloaded = false;
         public static ObjectPool CreateDecalPool(string modelPath)
         {
-            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) // onVesselUnloaded event introduced in 1.11
-                hasOnVesselUnloaded = true;
+            if ((Versioning.version_major == 1 && Versioning.version_minor > 10) || Versioning.version_major > 1) hasOnVesselUnloaded = true; // onVesselUnloaded event introduced in 1.11
             var template = GameDatabase.Instance.GetModel(modelPath);
             var decal = template.AddComponent<Decal>();
             template.AddOrGetComponent<Renderer>();
@@ -38,13 +37,7 @@ namespace BDArmory.FX
             transform.SetParent(hit.collider.transform);
             transform.position = (colliderLocalHitPoint == default ? hit.point : transform.parent.TransformPoint(colliderLocalHitPoint)) + offset;
             transform.rotation = Quaternion.FromToRotation(Vector3.forward, hit.normal);
-            parentPart.OnJustAboutToDie += OnParentDestroy;
-            parentPart.OnJustAboutToBeDestroyed += OnParentDestroy;
-            if (hasOnVesselUnloaded)
-            {
-                OnVesselUnloaded_1_11(false); // Remove any previous onVesselUnloaded event handler (due to forced reuse in the pool).
-                OnVesselUnloaded_1_11(true); // Catch unloading events too.
-            }
+            AddHandlers();
             gameObject.SetActive(true);
         }
         public void SetColor(Color color)
@@ -63,29 +56,41 @@ namespace BDArmory.FX
 
         }
 
-        void OnParentDestroy()
+        void AddHandlers()
         {
+            // Note: part.explode triggers onPartWillDie, then sets the parent to null, then calls OnJustAboutToDie.
+            // So, onPartWillDie should be used instead of OnJustAboutToDie for parent parts, however, sometimes part.Die is called via other routes, so that needs handling too.
+            // FIXME There's still some route that occasionally leads to the Decal getting destroyed instead of disabled.
+            GameEvents.onPartWillDie.Add(OnParentWillDie); // Exploding and usual part destruction.
+            parentPart.OnJustAboutToDie += Deactivate; // Sometimes part.Die is called without triggering onPartWillDie, e.g., ConformalDecals does this if the parent part will die.
+            parentPart.OnJustAboutToBeDestroyed += Deactivate; // Packing, unloading, etc.
+            if (hasOnVesselUnloaded) OnVesselUnloaded_1_11(true); // Catch unloading events too.
+        }
+
+        void RemoveHandlers()
+        {
+            GameEvents.onPartWillDie.Remove(OnParentWillDie);
             if (parentPart is not null)
             {
-                parentPart.OnJustAboutToDie -= OnParentDestroy;
-                parentPart.OnJustAboutToBeDestroyed -= OnParentDestroy;
-                Deactivate();
+                parentPart.OnJustAboutToDie -= Deactivate;
+                parentPart.OnJustAboutToBeDestroyed -= Deactivate;
             }
+            if (hasOnVesselUnloaded) OnVesselUnloaded_1_11(false);
+        }
+
+        void OnParentWillDie(Part p)
+        {
+            if (p != parentPart) return;
+            Deactivate();
         }
 
         void OnVesselUnloaded(Vessel vessel)
         {
-            if (parentPart is not null && (parentPart.vessel is null || parentPart.vessel == vessel))
-            {
-                OnParentDestroy();
-            }
-            else if (parentPart is null)
-            {
+            if (parentPart is null || parentPart.vessel is null || parentPart.vessel == vessel)
                 Deactivate();
-            }
         }
 
-        void OnVesselUnloaded_1_11(bool addRemove) // onVesselUnloaded event introduced in 1.11
+        void OnVesselUnloaded_1_11(bool addRemove)
         {
             if (addRemove)
                 GameEvents.onVesselUnloaded.Add(OnVesselUnloaded);
@@ -101,17 +106,15 @@ namespace BDArmory.FX
 
         void OnDisable()
         {
+            RemoveHandlers();
             parentPart = null;
             transform.localScale = Vector3.one; // Reset localScale so that Unity doesn't mess with the size.
-            if (hasOnVesselUnloaded) // onVesselUnloaded event introduced in 1.11
-                OnVesselUnloaded_1_11(false);
         }
 
-        public void OnDestroy() // This shouldn't be happening except on exiting KSP, but sometimes they get destroyed instead of disabled!
+        public void OnDestroy() // This shouldn't be happening except on exiting KSP or reducing the pool size, but sometimes they get destroyed instead of disabled!
         {
-            // if (HighLogic.LoadedSceneIsFlight) Debug.LogError($"[BDArmory.BulletHitFX]: BulletHitFX on {parentPartName} ({parentVesselName}) was destroyed!");
-            if (hasOnVesselUnloaded) // onVesselUnloaded event introduced in 1.11
-                OnVesselUnloaded_1_11(false);
+            // if (HighLogic.LoadedSceneIsFlight) Debug.LogWarning($"[BDArmory.BulletHitFX]: BulletHitFX on {parentPartName} ({parentVesselName}) was destroyed!");
+            RemoveHandlers();
         }
     }
 

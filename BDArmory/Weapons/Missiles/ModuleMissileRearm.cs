@@ -10,6 +10,7 @@ using BDArmory.WeaponMounts;
 using BDArmory.Settings;
 using System.Text;
 using BDArmory.Utils;
+using BDArmory.Extensions;
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -182,7 +183,8 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                 }
             if (missilePart == null)
             {
-                Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part ({MissileName}) on {part.partInfo.name}");
+                if (!(HighLogic.LoadedSceneIsEditor && !part.ConnectedToShip())) // Don't spam logs when the part isn't attached to the ship yet.
+                    Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: Failed to find missile part ({MissileName}) on {part.partInfo.name}");
                 missileCost = 0;
                 missileMass = 0;
                 yield break;
@@ -221,7 +223,7 @@ UI_ProgressBar(affectSymCounterparts = UI_Scene.None, controlEnabled = false, sc
                     partConfigTemp = missilePart.partPrefab.partInfo.partUrlConfig;
                     Debug.LogWarning($"[BDArmory.ModuleMissileRearm]: GetConfig from partURL {missilePart.partPrefab.partInfo.partUrl} failed! Using missilePart.partPrefab.partInfo.partUrlConfig. Potentially multiple parts in one file!");
                 }
-                    
+
                 MML.subMunitionPath = MML.GetMeshurl(partConfigTemp);
             }
         }

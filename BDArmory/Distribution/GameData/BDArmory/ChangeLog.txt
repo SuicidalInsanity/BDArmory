@@ -1,6 +1,8 @@
-IMPROVEMENTS / FIXES
+﻿IMPROVEMENTS / FIXES
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
+	- Add a 'Log Marker' button to the debugging section to help with syncing videos and logs.
+	- Move the debris removal sliders to the General Sliders section. Add a "Clear Debris Now" button and a toggle to always clear the debris vs only during competitions.
 - AI / WM:
 	- Fix AI considering radar missiles not painting them with a radar as incoming.
 - Sensors:

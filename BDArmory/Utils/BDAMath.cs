@@ -109,5 +109,18 @@ namespace BDArmory.Utils
             return Math.Min(Math.Max(value, min), max);  // This is about 50% faster than using conditionals. Oddly, the same doesn't apply for float, which is considerably slower.
             // return value < min ? min : value > max ? max : value;
         }
+
+        /// <summary>
+        /// Equivalent to Mathf.Approximately, but includes a third value used for computing the tolerance.
+        /// This is useful for comparing changing values a and b when they're small relative to an original value c.
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="c"></param>
+        /// <returns></returns>
+        public static bool Approximately(float a, float b, float c = 0f)
+        {
+            return Mathf.Abs(b - a) < Mathf.Max(1E-06f * Mathf.Max(Mathf.Abs(a), Mathf.Abs(b), Mathf.Abs(c)), Mathf.Epsilon * 8f);
+        }
     }
 }

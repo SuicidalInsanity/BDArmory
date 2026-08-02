@@ -5,6 +5,7 @@ using BDArmory.Damage;
 using BDArmory.Initialization;
 using BDArmory.Settings;
 using Expansions.Serenity;
+using System.Linq;
 
 namespace BDArmory.Extensions
 {
@@ -804,6 +805,22 @@ namespace BDArmory.Extensions
         private static bool IsKerbalSeat_1_10(this Part part)
         {
             return part.FindModuleImplementing<KerbalSeat>() != null;
+        }
+    
+        /// <summary>
+        /// Check if a part is attached to the ship in the SPH.
+        /// </summary>
+        /// <param name="part"></param>
+        /// <returns></returns>
+        public static bool ConnectedToShip(this Part part)
+        {
+            if (!HighLogic.LoadedSceneIsEditor) return false;
+            var ship = EditorLogic.fetch.ship;
+            if (ship is null) return false;
+            var shipRoot = ship.Parts.First();
+            while (shipRoot.parent is not null) shipRoot = shipRoot.parent;
+            while (part.parent is not null) part = part.parent;
+            return part == shipRoot;
         }
     }
 }
