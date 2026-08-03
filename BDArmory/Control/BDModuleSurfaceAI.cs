@@ -161,7 +161,7 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_AI_GoesUp", advancedTweakable = true),//Goes up to 
             UI_Toggle(enabledText = "#LOC_BDArmory_AI_GoesUp_enabledText", disabledText = "#LOC_BDArmory_AI_GoesUp_disabledText", scene = UI_Scene.All),]//eleven--ten
         bool upToEleven = false;
-        public bool UpToEleven { get { return upToEleven; } set { if (upToEleven != value) { upToEleven = value; TurnItUpToEleven(); } } }
+        public bool UpToEleven { get { return upToEleven; } set { if (upToEleven != (upToEleven = value)) this.UpdateToggle(Fields[nameof(upToEleven)]); } }
 
         const float AttackAngleAtMaxRange = 30f;
 
@@ -262,10 +262,8 @@ namespace BDArmory.Control
                 motorControl.Deactivate();
         }
 
-        public void SetChooseOptions()
+        void SetChooseOptions()
         {
-            UI_ChooseOption broadside = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(OrbitDirectionName)].uiControlFlight : Fields[nameof(OrbitDirectionName)].uiControlEditor);
-            broadside.onFieldChanged = ChooseOptionsUpdated;
             UI_ChooseOption surface = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(SurfaceTypeName)].uiControlFlight : Fields[nameof(SurfaceTypeName)].uiControlEditor);
             surface.onFieldChanged = ChooseOptionsUpdated;
             ChooseOptionsUpdated(null, null);
@@ -299,12 +297,7 @@ namespace BDArmory.Control
             Fields[nameof(CombatAltitude)].guiActiveEditor = SurfaceType == AIUtils.VehicleMovementType.Submarine;
             Fields[nameof(maintainMinRange)].guiActive = SurfaceType == AIUtils.VehicleMovementType.Land;
             Fields[nameof(maintainMinRange)].guiActiveEditor = SurfaceType == AIUtils.VehicleMovementType.Land;
-            //part.RefreshAssociatedWindows();
-            GUIUtils.UpdateChooseOptionPAW(field, this);
-            if (BDArmoryAIGUI.Instance != null)
-            {
-                BDArmoryAIGUI.Instance.SetChooseOptionSliders();
-            }
+            this.DefaultChooseOptionHandler(field, obj);
         }
 
         public void SetBroadsideDirection(string direction)
@@ -341,6 +334,7 @@ namespace BDArmory.Control
                 field.UpdateLimits(altValues.Item1, altValues.Item2, altValues.Item3);
                 altSemiLogValues[fieldName] = temp;
             }
+            this.UpdateToggle(Fields[nameof(upToEleven)]);
         }
 
         IEnumerator SetVar(string name, float value)

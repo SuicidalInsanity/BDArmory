@@ -5,7 +5,7 @@ using BDArmory.Settings;
 
 namespace BDArmory.Damage
 {
-    public class ModuleMassAdjust : PartModule, IPartMassModifier
+    public class ModuleMassAdjust : BDAPartModule, IPartMassModifier
     {
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => massMod;
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.CONSTANTLY;

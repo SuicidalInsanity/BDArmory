@@ -14,7 +14,7 @@ using BDArmory.VesselSpawning;
 
 namespace BDArmory.CounterMeasure
 {
-    public class CMDropper : PartModule
+    public class CMDropper : BDAPartModule
     {
         public static ObjectPool flarePool;
         public static ObjectPool chaffPool;

@@ -9,7 +9,7 @@ using BDArmory.Extensions;
 
 namespace BDArmory.GameModes
 {
-    public class ModuleSpaceFriction : PartModule
+    public class ModuleSpaceFriction : BDAPartModule
     {
         /// <summary>
         /// Adds friction/drag to craft in null-atmo porportional to AI MaxSpeed setting to ensure craft does not exceed said speed

@@ -15,7 +15,7 @@ using static BDArmory.Weapons.ModuleWeapon;
 
 namespace BDArmory.GameModes
 {
-    class BDAMutator : PartModule
+    class BDAMutator : BDAPartModule
     {
         float startTime;
         bool mutatorEnabled = false;
@@ -255,7 +255,7 @@ namespace BDArmory.GameModes
                     weapon.Current.roundsPerMinute = weapon.Current.baseRPM;
                     weapon.Current.instagib = false;
                     weapon.Current.strengthMutator = 1;
-                    weapon.Current.SetupAmmo(null, null);
+                    weapon.Current.SetupAmmo(null, null, false);
                     weapon.Current.resourceSteal = false;
                 }
             if (engineMult != 1)

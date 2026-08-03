@@ -134,7 +134,7 @@ namespace BDArmory.Utils
             List<string> source = names.Split(';').ToList<string>();
             for (int i = source.Count - 1; i >= 0; i--)
             {
-                if (source[i] == string.Empty)
+                if ((trimWhiteSpace ? source[i].Trim() : source[i]) == string.Empty)
                 {
                     source.RemoveAt(i);
                 }

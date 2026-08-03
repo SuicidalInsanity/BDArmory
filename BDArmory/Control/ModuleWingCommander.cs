@@ -14,7 +14,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Control
 {
-    public class ModuleWingCommander : PartModule
+    public class ModuleWingCommander : BDAPartModule
     {
         public MissileFire WeaponManager
         {

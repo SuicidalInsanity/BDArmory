@@ -14,7 +14,7 @@ using BDArmory.Extensions;
 
 namespace BDArmory.WeaponMounts
 {
-    public class MissileTurret : PartModule
+    public class MissileTurret : BDAPartModule
     {
         [KSPField] public string finalTransformName;
         public Transform finalTransform;

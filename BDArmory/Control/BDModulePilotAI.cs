@@ -1558,6 +1558,7 @@ namespace BDArmory.Control
         public void OnPIDTogglesChanged(BaseField field = null, object obj = null)
         {
             ToggleDynamicPIDFields(); // Reconfigure the dynamic PID fields in the PAW.
+            if (field != null) this.UpdateToggle(field, obj);
         }
         public void ToggleDynamicPIDFields()
         {

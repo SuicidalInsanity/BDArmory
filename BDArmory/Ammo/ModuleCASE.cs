@@ -16,7 +16,7 @@ using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Ammo
 {
-    class ModuleCASE : PartModule, IPartMassModifier, IPartCostModifier
+    class ModuleCASE : BDAPartModule, IPartMassModifier, IPartCostModifier
     {
         public static Dictionary<int, ObjectPool> detSpheres = new Dictionary<int, ObjectPool>();
         GameObject visSphere;

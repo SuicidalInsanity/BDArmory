@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace BDArmory.CounterMeasure
 {
-    public class ModuleCloakingDevice : PartModule
+    public class ModuleCloakingDevice : BDAPartModule
     {
         Coroutine cloakRoutine;
         Coroutine decloakRoutine;

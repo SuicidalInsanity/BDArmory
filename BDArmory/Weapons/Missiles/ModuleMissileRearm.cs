@@ -1,19 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using KSP.UI.Screens;
 using UnityEngine;
 
-using BDArmory.WeaponMounts;
 using BDArmory.Settings;
 using System.Text;
 using BDArmory.Utils;
 
 namespace BDArmory.Weapons.Missiles
 {
-    public class ModuleMissileRearm : PartModule, IPartMassModifier, IPartCostModifier
+    public class ModuleMissileRearm : BDAPartModule, IPartMassModifier, IPartCostModifier
     {
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max((isMultiLauncher ? (int)railAmmo : (int)railAmmo - 1), 0) * missileMass;
 

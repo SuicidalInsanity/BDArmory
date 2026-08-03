@@ -170,7 +170,7 @@ namespace BDArmory.UI
 
         string[] applyWeaponGroupTo;
         string _applyWeaponGroupTo;
-        int _applyWeaponGroupToIndex = 0;
+        int _applyWeaponGroupToIndex = 1; // Default to symmetric belts.
         protected virtual void OnGUI()
         {
             if (save)

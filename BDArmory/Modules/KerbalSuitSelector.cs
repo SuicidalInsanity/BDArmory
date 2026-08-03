@@ -1,4 +1,5 @@
 using System;
+using BDArmory.Utils;
 
 namespace BDArmory.Modules
 {
@@ -6,7 +7,7 @@ namespace BDArmory.Modules
   /// This allows setting the suit worn by EVA kerbals if spawned via BDArmory or via going EVA from a part.
   /// EVA kerbals can't have their suits changed once spawned.
   /// </summary>
-  public class KerbalSuitSelector : PartModule
+  public class KerbalSuitSelector : BDAPartModule
   {
     /// <summary>
     /// Same as ProtoCrewMember.KerbalSuit, but with an extra "Random" option.
@@ -76,7 +77,8 @@ namespace BDArmory.Modules
       Suit = Enum.IsDefined(typeof(ProtoCrewMember.KerbalSuit), (ProtoCrewMember.KerbalSuit)suitType) ?
         (ProtoCrewMember.KerbalSuit)suitType :
         (ProtoCrewMember.KerbalSuit)UnityEngine.Random.Range(0, 4);
-    }
+        this.UpdateChooseOptionPAW(field, obj);
+        }
 
     /// <summary>
     /// Set the suit type.

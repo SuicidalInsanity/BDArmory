@@ -10,7 +10,7 @@ using BDArmory.Extensions;
 
 namespace BDArmory.WeaponMounts
 {
-    public class BDDeployableRail : PartModule
+    public class BDDeployableRail : BDAPartModule
     {
         [KSPField]
         public string deployAnimName = "deployAnim";

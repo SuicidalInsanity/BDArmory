@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace BDArmory.Weapons
 {
-    public class ModuleEMP : PartModule
+    public class ModuleEMP : BDAPartModule
     {
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = false, guiName = "#LOC_BDArmory_EMPBlastRadius"),//EMP Blast Radius
          UI_Label(affectSymCounterparts = UI_Scene.All, controlEnabled = true, scene = UI_Scene.All)]

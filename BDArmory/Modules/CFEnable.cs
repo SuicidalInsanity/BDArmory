@@ -3,7 +3,7 @@
 
 namespace BDArmory.Modules
 {
-    public class CFEnable : PartModule
+    public class CFEnable : BDAPartModule
     {
         // belt-and-suspenders: do this everywhere and everywhen.
         public override void OnLoad(ConfigNode node)

@@ -897,7 +897,18 @@ namespace BDArmory.Weapons
                 Fields[nameof(AmmoTypeNum)].guiActiveEditor = true;
                 useCustomBelt = false;
             }
-            GUIUtils.RefreshAssociatedWindows(part);
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                var wep = sym.GetComponent<ModuleWeapon>();
+                wep.advancedAmmoOption = advancedAmmoOption;
+                wep.Events[nameof(ToggleAmmoConfig)].guiName = Events[nameof(ToggleAmmoConfig)].guiName;
+                wep.Events[nameof(ConfigAmmo)].guiActive = Events[nameof(ConfigAmmo)].guiActive;
+                wep.Events[nameof(ConfigAmmo)].guiActiveEditor = Events[nameof(ConfigAmmo)].guiActiveEditor;
+                wep.Fields[nameof(AmmoTypeNum)].guiActive = Fields[nameof(AmmoTypeNum)].guiActive;
+                wep.Fields[nameof(AmmoTypeNum)].guiActiveEditor = Fields[nameof(AmmoTypeNum)].guiActiveEditor;
+                wep.useCustomBelt = useCustomBelt;
+            }
         }
         [KSPField(advancedTweakable = true, isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_useBelt")]//Using Custom Loadout
         public bool useCustomBelt = false;
@@ -1039,7 +1050,6 @@ namespace BDArmory.Weapons
                                 {
                                     weapon.Current.useThisWeaponForAim = false;
                                     weapon.Current.Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
-                                    GUIUtils.RefreshAssociatedWindows(weapon.Current.part);
                                 }
                             }
                     }
@@ -1853,7 +1863,7 @@ namespace BDArmory.Weapons
 			}*/
             if (eWeaponType != WeaponTypes.Laser)
             {
-                SetupAmmo(null, null);
+                SetupAmmo(null, null, false);
 
                 if (eWeaponType == WeaponTypes.Rocket)
                 {
@@ -2038,45 +2048,41 @@ namespace BDArmory.Weapons
                 Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideTrue");//"Revert Aim Override"
             else
                 Events[nameof(setAimOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_AimOverrideFalse");//"Aim With This Weapon"
-
-            GUIUtils.RefreshAssociatedWindows(part);
         }
 
         [KSPEvent(advancedTweakable = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_FireAngleOverride_Enable", active = true)]//Disable fire angle override
         public void ToggleOverrideAngle()
         {
             FireAngleOverride = !FireAngleOverride;
-            if (!FireAngleOverride)
-            {
-                Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Enable");// Enable Firing Angle Override
-            }
-            else
-            {
-                Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize("#LOC_BDArmory_FireAngleOverride_Disable");// Disable Firing Angle Override
-            }
-
+            Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize(FireAngleOverride ? "#LOC_BDArmory_FireAngleOverride_Disable" : "#LOC_BDArmory_FireAngleOverride_Enable");// Enable/Disable Firing Angle Override
             Fields[nameof(FiringTolerance)].guiActive = FireAngleOverride;
             Fields[nameof(FiringTolerance)].guiActiveEditor = FireAngleOverride;
-
-            GUIUtils.RefreshAssociatedWindows(part);
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                var wep = sym.GetComponent<ModuleWeapon>();
+                wep.FireAngleOverride = FireAngleOverride;
+                wep.Events[nameof(ToggleOverrideAngle)].guiName = StringUtils.Localize(FireAngleOverride ? "#LOC_BDArmory_BurstLengthOverride_Disable" : "#LOC_BDArmory_BurstLengthOverride_Enable");
+                wep.Fields[nameof(FiringTolerance)].guiActive = FireAngleOverride;
+                wep.Fields[nameof(FiringTolerance)].guiActiveEditor = FireAngleOverride;
+            }
         }
         [KSPEvent(advancedTweakable = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_BurstLengthOverride_Enable", active = true)]//Burst length override
         public void ToggleBurstLengthOverride()
         {
             BurstOverride = !BurstOverride;
-            if (!BurstOverride)
-            {
-                Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Enable");// Enable Firing Angle Override
-            }
-            else
-            {
-                Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize("#LOC_BDArmory_BurstLengthOverride_Disable");// Disable Firing Angle Override
-            }
-
+            Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize(BurstOverride ? "#LOC_BDArmory_BurstLengthOverride_Disable" : "#LOC_BDArmory_BurstLengthOverride_Enable");// Enable Firing Angle Override
             Fields[nameof(fireBurstLength)].guiActive = BurstOverride;
             Fields[nameof(fireBurstLength)].guiActiveEditor = BurstOverride;
-
-            GUIUtils.RefreshAssociatedWindows(part);
+            foreach (var sym in part.symmetryCounterparts)
+            {
+                if (sym == null) continue;
+                var wep = sym.GetComponent<ModuleWeapon>();
+                wep.BurstOverride = BurstOverride;
+                wep.Events[nameof(ToggleBurstLengthOverride)].guiName = StringUtils.Localize(BurstOverride ? "#LOC_BDArmory_BurstLengthOverride_Disable" : "#LOC_BDArmory_BurstLengthOverride_Enable");
+                wep.Fields[nameof(fireBurstLength)].guiActive = BurstOverride;
+                wep.Fields[nameof(fireBurstLength)].guiActiveEditor = BurstOverride;
+            }
         }
 
         public bool toggleDeployState = true;
@@ -2085,28 +2091,15 @@ namespace BDArmory.Weapons
         {
             toggleDeployState = !toggleDeployState;
 
-            if (toggleDeployState == false)
+            Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize(toggleDeployState ? "#autoLOC_6001339" : "#autoLOC_6001080");//"Retract" : "Extended"
+            if (deployState != null) deployState.normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleDeployState ? 1 : 0;
+            foreach (var sym in part.symmetryCounterparts)
             {
-                Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize("#autoLOC_6001080");//"Deploy"
-            }
-            else
-            {
-                Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize("#autoLOC_6001339");//""Retract"
-            }
-            if (deployState != null)
-            {
-                deployState.normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleDeployState ? 1 : 0;
-                using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
-                    while (pSym.MoveNext())
-                    {
-                        if (pSym.Current == null) continue;
-                        if (pSym.Current != part && pSym.Current.vessel == vessel)
-                        {
-                            var wep = pSym.Current.FindModuleImplementing<ModuleWeapon>();
-                            if (wep == null) continue;
-                            wep.deployState.normalizedTime = toggleDeployState ? 1 : 0;
-                        }
-                    }
+                if (sym == null) continue;
+                var wep = sym.FindModuleImplementing<ModuleWeapon>();
+                wep.toggleDeployState = toggleDeployState;
+                wep.Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize(toggleDeployState ? "#autoLOC_6001339" : "#autoLOC_6001080");//"Retract" : "Extended"
+                if (wep.deployState != null) wep.deployState.normalizedTime = toggleDeployState ? 1 : 0;
             }
         }
 
@@ -3975,7 +3968,7 @@ namespace BDArmory.Weapons
             if (customAmmoBelt.Count < 1) return;
             if (AmmoIntervalCounter == 0 || (AmmoIntervalCounter > 0 && customAmmoBeltIndexes[AmmoIntervalCounter] != customAmmoBeltIndexes[AmmoIntervalCounter - 1]))
             {
-                SetupAmmo(null, null);
+                SetupAmmo(null, null, false);
             }
             AmmoIntervalCounter++;
             if (AmmoIntervalCounter == customAmmoBelt.Count)
@@ -4220,8 +4213,11 @@ namespace BDArmory.Weapons
             bool manualAiming = false;
             bool staleTarget = false;
             float timeout = 0;
-            if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
-            if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
+			if (wm && wm.guardMode)
+			{
+				if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
+				if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
+			}
             if (aiControlled && !slaved && wm != null && (!targetAcquired || 
                 (staleTarget && timeout > 0)))
             {
@@ -6738,7 +6734,8 @@ namespace BDArmory.Weapons
             }
         }
 
-        public void SetupAmmo(BaseField field, object obj)
+        public void SetupAmmo(BaseField field, object obj) => SetupAmmo(field, obj, true);
+        public void SetupAmmo(BaseField field, object obj, bool updateSymmetric)
         {
             if (useCustomBelt && customAmmoBelt.Count > 0)
             {
@@ -6758,6 +6755,13 @@ namespace BDArmory.Weapons
                 currentTypeIndex = ammoTypeIndex;
             }
             ParseAmmoStats();
+
+            if (updateSymmetric) foreach (var sym in part.symmetryCounterparts)
+                {
+                    if (sym is null) continue;
+                    var wep = sym.GetComponent<ModuleWeapon>();
+                    wep.SetupAmmo(field != null ? wep.Fields[field.name] : null, obj, false);
+                }
         }
         public void ParseAmmoStats()
         {

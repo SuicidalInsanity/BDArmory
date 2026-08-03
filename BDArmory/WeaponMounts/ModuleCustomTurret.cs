@@ -4,17 +4,14 @@ using BDArmory.Guidances;
 using BDArmory.Targeting;
 using BDArmory.UI;
 using BDArmory.Utils;
-using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using Expansions.Serenity;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using static BDArmory.Weapons.Missiles.MissileBase;
 
 namespace BDArmory.WeaponMounts
 {
-    public class ModuleCustomTurret : PartModule
+    public class ModuleCustomTurret : BDAPartModule
     {
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_TurretID"),//Max Pitch
  UI_FloatRange(minValue = 0f, maxValue = 20f, stepIncrement = 1f, scene = UI_Scene.All)]

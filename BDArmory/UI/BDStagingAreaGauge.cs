@@ -7,7 +7,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.UI
 {
-    public class BDStagingAreaGauge : PartModule
+    public class BDStagingAreaGauge : BDAPartModule
     {
         public string AmmoName = "";
 

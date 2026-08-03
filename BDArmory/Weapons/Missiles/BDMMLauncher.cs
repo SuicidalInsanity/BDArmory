@@ -4,7 +4,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Weapons.Missiles
 {
-    public class BDMMLauncher : PartModule
+    public class BDMMLauncher : BDAPartModule
     {
         public override void OnStart(StartState state)
         {

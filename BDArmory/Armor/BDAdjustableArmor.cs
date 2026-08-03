@@ -9,7 +9,7 @@ using BDArmory.Settings;
 
 namespace BDArmory.Armor
 {
-    public class BDAdjustableArmor : PartModule
+    public class BDABDAdjustableArmor : BDAPartModule
     {
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorAdjustParts"),//Move Child Parts
             UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
@@ -63,7 +63,6 @@ namespace BDArmory.Armor
                 Fields[nameof(Width)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorWidth");
                 Events[nameof(ToggleTriTypeOption)].guiName = StringUtils.Localize("#LOC_BDArmory_ArmorTriIso");
             }
-            GUIUtils.RefreshAssociatedWindows(part);
             if (applySym)
             {
                 using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
@@ -109,7 +108,6 @@ namespace BDArmory.Armor
             {
                 Events[nameof(ToggleScaleClamp)].guiName = StringUtils.Localize("#LOC_BDArmory_AI_UnclampTuning_disabledText");
             }
-            GUIUtils.RefreshAssociatedWindows(part);
             if (applySym)
             {
                 using (List<Part>.Enumerator sym = part.symmetryCounterparts.GetEnumerator())
@@ -190,7 +188,6 @@ namespace BDArmory.Armor
 
             armor = GetComponent<HitpointTracker>();
             UpdateScale(Width, Length, scaleneWidth, false);
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         void ParseStackNodePosition()
         {

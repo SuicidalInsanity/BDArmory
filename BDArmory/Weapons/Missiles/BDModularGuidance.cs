@@ -360,7 +360,6 @@ namespace BDArmory.Weapons.Missiles
                 Fields[nameof(RollCorrection)].guiActiveEditor = false;
             }
 
-            GUIUtils.RefreshAssociatedWindows(part);
         }
 
         public override void OnFixedUpdate()
@@ -880,8 +879,6 @@ namespace BDArmory.Weapons.Missiles
             }
             TargetingMode = newTargetingMode;
             _targetingLabel = newTargetingMode.ToString();
-
-            GUIUtils.RefreshAssociatedWindows(part);
         }
 
         void OnEditorPartPlaced(Part p)
@@ -1685,8 +1682,6 @@ namespace BDArmory.Weapons.Missiles
             TimeFired = Time.time;
             guidanceActive = true;
             MissileState = MissileStates.Drop;
-
-            GUIUtils.RefreshAssociatedWindows(part);
 
             HasFired = true;
             DetonationDistanceState = DetonationDistanceStates.NotSafe;

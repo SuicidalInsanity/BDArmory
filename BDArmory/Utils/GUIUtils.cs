@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;
-using System.Collections;
 using System.Linq;
+using System;
 using UnityEngine;
 
 using BDArmory.Control;
@@ -502,8 +502,10 @@ namespace BDArmory.Utils
 
         //Thanks FlowerChild
         //refreshes part action window
-        //public static void RefreshAssociatedWindows(Part part)
-        //{
+        // Note: This was just calling "part.PartActionWindow.UpdateWindow()", which is done every frame by KSP anyway, making this redundant.
+        //       Also, setting "part.PartActionWindow.displayDirty = true" causes a full rebuild of the PAW, which breaks continuous interaction with sliders, so avoid it unless absolutely necessary.
+        public static void RefreshAssociatedWindows(Part part)
+        {
             //if (part == null || part.PartActionWindow == null) return;
             //part.PartActionWindow.UpdateWindow();
             // part.PartActionWindow.displayDirty = true;
@@ -517,8 +519,8 @@ namespace BDArmory.Utils
             //     }
             // }
             // window.Dispose();
-        //}
-
+        }
+        #region PAW
         /// <summary>
         /// Refresh the UI for the given resource in the PAW.
         /// </summary>
@@ -550,29 +552,201 @@ namespace BDArmory.Utils
         }
 
         /// <summary>
+        /// Helper method to avoid having to specify the PartModule type.
+        /// </summary>
+        /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
+        /// <param name="partModule">The PartModule for the field.</param>
+        /// <param name="field">The field being updated.</param>
+        /// <param name="obj">The old value.</param>
+        public static void UpdateChooseOptionPAW<T>(this T _, BaseField field, object obj = null) where T : PartModule => UpdateChooseOptionPAW<T>(field, obj);
+
+        /// <summary>
         /// Update a UI_ChooseOption PAW slider when the field value is changed.
         /// KSP updates most sliders automatically, but not these apparently.
         /// </summary>
-        /// <param name="field">The field to update. If field is null, then all UI_ChooseOption fields are updated.</param>
-        /// <param name="obj">The partmodule object.</param>
-        public static void UpdateChooseOptionPAW(BaseField field, PartModule obj)
+        /// <typeparam name="T">The type of PartModule.</typeparam>
+        /// <param name="field">The field to update. If field is null, then all UI_ChooseOption fields are updated if obj is a PartModule.</param>
+        /// <param name="obj">The value of the control.</param>
+        /// <param name="updateSymmetric">Update the symmetric parts too.</param>
+        public static void UpdateChooseOptionPAW<T>(BaseField field, object obj = null, bool updateSymmetric = true) where T : PartModule
         {
-            if (obj is null) return;
             if (field is null)
             {
-                foreach (var f in obj.Fields)
+                if (obj is not PartModule pm) return;
+                foreach (var f in pm.Fields)
                 {
                     if ((HighLogic.LoadedSceneIsFlight ? f.uiControlFlight : f.uiControlEditor) is UI_ChooseOption)
-                        UpdateChooseOptionPAW(f, obj);
+                        UpdateChooseOptionPAW<T>(f, null);
                 }
                 return;
             }
-            UI_ChooseOption uiControl = (HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) as UI_ChooseOption;
-            var pawChooseOption = uiControl.partActionItem as UIPartActionChooseOption;
-            if (pawChooseOption is null) return; // Not shown.
-            int newIndex = uiControl.options.IndexOf(field.GetValue(obj));
-            if (newIndex != -1) pawChooseOption.slider.value = newIndex;
+            if (field.host is not PartModule partModule) return; // Not a field of a PartModule
+            if ((HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) is not UI_ChooseOption uiControl) return; // Wrong UI_Control type
+            if (uiControl.partActionItem is not UIPartActionChooseOption pawChooseOption) return; // Not shown
+            var value = (string)field.GetValue(partModule);
+            int newIndex = uiControl.options.IndexOf(value);
+            if (newIndex == -1)
+            {
+                Debug.LogWarning($"[BDArmory.GUIUtils]: Invalid value {value} for {field.guiName} ({field.name}) on {partModule.part}");
+                return;
+            }
+            
+            // Debug.Log($"DEBUG Updating ChooseOptionPAW of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name} to {value}, index {pawChooseOption.slider.value}?{newIndex}");
+            bool changed = pawChooseOption.slider.value != newIndex;
+            pawChooseOption.slider.value = newIndex; // Set the value even if it hasn't changed to trigger the slider callback.
+            
+            // When set externally (e.g., from symmetry or the AI GUI) UI_ChooseOption sets the field value (but not the slider) without triggering onFieldChanged!
+            // Thus we have to invoke it here in order for it to trigger the onFieldChanged handlers.
+            // Invoking it here may lead to an extra loop or two of this function, but shouldn't recurse further unless handlers on symmetric parts are behaving asymmetricallyn.
+            // It shouldn't trigger onFieldChanged more than once per part module.
+            if (changed && !updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
+            
+            if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
+            {
+                // Debug.Log($"DEBUG Updating symmetric part {sym.persistentId} of {partModule.part.persistentId}");
+                Type fieldHostType = field.host.GetType();
+                foreach (T pm in sym.GetComponents<T>())
+                {
+                    if (pm.GetType() != fieldHostType) continue; // Wrong PartModule.
+                    List<string> debugString = [];
+                    foreach (var f in pm.Fields) debugString.Add(f.name);
+                    UpdateChooseOptionPAW<T>(pm.Fields[field.name], obj, false); // We need to use the field on the symmetric PartModule, otherwise the wrong UI_Control is grabbed.
+                    break;
+                    }
+                }
+            }
+
+        /// <summary>
+        /// Helper method to avoid having to specify the PartModule type.
+        /// </summary>
+        /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
+        /// <param name="partModule">The PartModule for the field.</param>
+        /// <param name="field">The field being updated.</param>
+        /// <param name="obj">The old value.</param>
+        public static void UpdateToggle<T>(this T _, BaseField field, object obj = null) where T : PartModule => UpdateToggle<T>(field, obj);
+
+        /// <summary>
+        /// Setting a UI_Toggle value externally (e.g., from symmetry or the AI GUI) doesn't trigger the onFieldChanged or onToggle handlers.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="field"></param>
+        /// <param name="partModule"></param>
+        /// <param name="updateSymmetric"></param>
+        public static void UpdateToggle<T>(BaseField field, object obj, bool updateSymmetric = true) where T : PartModule
+        {
+            if (field is null || field.host is not PartModule partModule) return;
+            if ((HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) is not UI_Toggle uiControl) return;
+            if (uiControl.partActionItem is not UIPartActionToggle pawToggle) return;
+            var value = (bool)field.GetValue(partModule);
+            if (pawToggle.toggle.state != value)
+            {
+                // Debug.Log($"DEBUG Updating Toggle of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name}, {pawToggle.toggle.state}?{value}");
+                pawToggle.toggle.SetState(value);
+                pawToggle.toggle.onToggle.Invoke();
+                if (value) pawToggle.toggle.onToggleOn.Invoke();
+                else pawToggle.toggle.onToggleOff.Invoke();
+                if (!updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
+            }
+            if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
+                {
+                    Type fieldHostType = field.host.GetType();
+                    foreach (T pm in sym.GetComponents<T>())
+                    {
+                        if (pm.GetType() != fieldHostType) continue;
+                        UpdateToggle<T>(pm.Fields[field.name], obj, false);
+                        break;
+                    }
+                }
         }
+
+        /// <summary>
+        /// Add the default symmetry-propagating handler for other UI_ChooseOption fields.
+        /// 
+        /// Note: UI_ChooseOption only affects symmetry parts by default in the editor.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="partModule"></param>
+        public static void SetDefaultChooseOptionHandlers<T>(this T partModule) where T : PartModule
+        {
+            foreach (var field in partModule.Fields)
+            {
+                if ((HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) is not UI_ChooseOption uiControl) continue;
+                // if (uiControl.onFieldChanged == null) Debug.Log($"DEBUG Setting onFieldChanged handler for UI_ChooseOption {field.guiName}");
+                if (uiControl.affectSymCounterparts switch
+                {
+                    UI_Scene.All => true,
+                    UI_Scene.Editor when HighLogic.LoadedSceneIsEditor => true,
+                    UI_Scene.Flight when HighLogic.LoadedSceneIsFlight => true,
+                    _ => false
+                })
+                    uiControl.onFieldChanged ??= DefaultChooseOptionHandler<T>;
+            }
+        }
+        static void DefaultChooseOptionHandler<T>(BaseField field, object obj) where T : PartModule
+        {
+            if (field is null || obj is null) return;
+            if (field.host is not PartModule pm) return;
+            // Debug.Log($"DEBUG Handling onFieldChanged for {field.guiName} on {field.host} ({pm.part.persistentId}) with obj: {obj}");
+            UpdateChooseOptionPAW<T>(field, obj);
+            if (pm is BDGenericAIBase && BDArmoryAIGUI.Instance != null && BDArmoryAIGUI.Instance.ActiveAI == pm)
+            {
+                BDArmoryAIGUI.Instance.SetChooseOptionSliders();
+            }
+        }
+        /// <summary>
+        /// Helper method to avoid having to specify the PartModule type.
+        /// </summary>
+        /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
+        /// <param name="partModule">The PartModule for the field.</param>
+        /// <param name="field">The field being updated.</param>
+        /// <param name="obj">The old value.</param>
+        public static void DefaultChooseOptionHandler<T>(this T _, BaseField field, object obj = null) where T : PartModule => DefaultChooseOptionHandler<T>(field, obj);
+
+        /// <summary>
+        /// Set any unhandled UI_Toggle to sync with symmetric PAWs.
+        /// Custom handlers should make sure to end by calling GUIUtils.UpdateToggle(field, obj);
+        /// 
+        /// Note: UI_Toggle only affects symmetry parts by default in the editor.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="partModule"></param>
+        public static void SetDefaultToggleHanders<T>(this T partModule) where T : PartModule
+        {
+            foreach (var field in partModule.Fields)
+            {
+                if ((HighLogic.LoadedSceneIsFlight ? field.uiControlFlight : field.uiControlEditor) is not UI_Toggle uiControl) continue;
+                // Debug.Log($"DEBUG Setting onFieldChanged handler for UI_Toggle {field.guiName}");
+                if (uiControl.affectSymCounterparts switch
+                {
+                    UI_Scene.All => true,
+                    UI_Scene.Editor when HighLogic.LoadedSceneIsEditor => true,
+                    UI_Scene.Flight when HighLogic.LoadedSceneIsFlight => true,
+                    _ => false
+                })
+                    uiControl.onFieldChanged ??= DefaultToggleHandler<T>;
+            }
+        }
+        /// <summary>
+        /// Handle a PartModule toggle being toggled.
+        /// </summary>
+        /// <typeparam name="T">The type of PartModule.</typeparam>
+        /// <param name="field">The field for the toggle.</param>
+        /// <param name="obj">The old value.</param>
+        static void DefaultToggleHandler<T>(BaseField field, object obj) where T : PartModule
+        {
+            if (field.host is not PartModule pm) return;
+            // Debug.Log($"DEBUG Handling onFieldChanged for {field.guiName} on {field.host} ({pm.part.persistentId}) with obj: {obj}");
+            UpdateToggle<T>(field, obj);
+        }
+        /// <summary>
+        /// Helper method to avoid having to specify the PartModule type.
+        /// </summary>
+        /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
+        /// <param name="partModule">The PartModule for the field.</param>
+       /// <param name="field">The field being updated.</param>
+        /// <param name="obj">The old value.</param>
+        public static void DefaultToggleHandler<T>(this T _, BaseField field, object obj = null) where T : PartModule => DefaultToggleHandler<T>(field, obj);
+        #endregion PAW       
 
         /// <summary>
         /// Disable zooming with the scroll wheel if the mouse is over a registered GUI window.

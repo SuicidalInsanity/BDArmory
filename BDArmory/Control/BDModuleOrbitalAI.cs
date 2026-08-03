@@ -457,13 +457,14 @@ namespace BDArmory.Control
         {
             UI_ChooseOption pidmode = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(pidMode)].uiControlFlight : Fields[nameof(pidMode)].uiControlEditor);
             pidmode.onFieldChanged = ChooseOptionsUpdated;
+            UI_ChooseOption rolltowards = (UI_ChooseOption)(HighLogic.LoadedSceneIsFlight ? Fields[nameof(rollTowards)].uiControlFlight : Fields[nameof(rollTowards)].uiControlEditor);
+            rolltowards.onFieldChanged = ChooseOptionsUpdated;
         }
 
         public void ChooseOptionsUpdated(BaseField field, object obj)
         {
-            //this.part.RefreshAssociatedWindows();
-            GUIUtils.UpdateChooseOptionPAW(field, this);
-            if (BDArmoryAIGUI.Instance != null)
+            this.UpdateChooseOptionPAW(field, obj);
+            if (BDArmoryAIGUI.Instance != null && BDArmoryAIGUI.Instance.ActiveAI == this)
             {
                 BDArmoryAIGUI.Instance.SetChooseOptionSliders();
             }

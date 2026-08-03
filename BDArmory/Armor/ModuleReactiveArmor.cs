@@ -9,7 +9,7 @@ using System;
 
 namespace BDArmory.Armor
 {
-    public class ModuleReactiveArmor : PartModule
+    public class ModuleReactiveArmor : BDAPartModule
     {
         [KSPField]
         public string sectionTransformName = "sections";

@@ -18,7 +18,7 @@ using UnityEngine;
 
 namespace BDArmory.Damage
 {
-    public class ModuleDrainEC : PartModule
+    public class ModuleDrainEC : BDAPartModule
     {
         public float incomingDamage = 0; //damage from EMP source
         public float EMPDamage = 0; //total EMP buildup accrued

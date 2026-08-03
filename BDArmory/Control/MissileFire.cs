@@ -25,7 +25,7 @@ using static BDArmory.Weapons.ModuleWeapon;
 
 namespace BDArmory.Control
 {
-    public class MissileFire : PartModule
+    public class MissileFire : BDAPartModule
     {
         #region Declarations
 

@@ -10,7 +10,7 @@ using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.WeaponMounts
 {
-    public class BDRotaryRail : PartModule
+    public class BDRotaryRail : BDAPartModule
     {
         [KSPField] public float maxLength;
 

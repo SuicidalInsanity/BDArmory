@@ -5,7 +5,7 @@ using BDArmory.Control;
 
 namespace BDArmory.Damage
 {
-    public class ModuleDrainIntakes : PartModule
+    public class ModuleDrainIntakes : BDAPartModule
     {
         public float drainRate = 999;
         public float drainDuration = 20;

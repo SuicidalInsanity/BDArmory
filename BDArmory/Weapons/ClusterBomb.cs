@@ -10,7 +10,7 @@ using BDArmory.Weapons.Missiles;
 
 namespace BDArmory.Weapons
 {
-    public class ClusterBomb : PartModule
+    public class ClusterBomb : BDAPartModule
     {
         public List<GameObject> submunitions;
         List<GameObject> fairings;

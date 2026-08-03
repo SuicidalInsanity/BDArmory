@@ -16,7 +16,7 @@ using System;
 
 namespace BDArmory.Targeting
 {
-    public class ModuleTargetingCamera : PartModule
+    public class ModuleTargetingCamera : BDAPartModule
     {
         [KSPField]
         public string cameraTransformName;

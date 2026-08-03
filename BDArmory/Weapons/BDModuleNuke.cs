@@ -16,7 +16,7 @@ using System.Collections.Generic;
 
 namespace BDArmory.Weapons
 {
-    class BDModuleNuke : PartModule
+    class BDModuleNuke : BDAPartModule
     {
         //[KSPField(isPersistant = true, guiActive = true, guiName = "WARNING: Reactor Safeties:", guiActiveEditor = false), UI_Label(affectSymCounterparts = UI_Scene.All, scene = UI_Scene.All)]//Weapon Name
         //public string status = "OFFLINE";

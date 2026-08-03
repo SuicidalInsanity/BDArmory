@@ -6,7 +6,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Control
 {
-    public class BDAirspeedControl : MonoBehaviour //: PartModule
+    public class BDAirspeedControl : MonoBehaviour //: BDAPartModule
     {
         //[KSPField(isPersistant = false, guiActive = true, guiActiveEditor = false, guiName = "TargetSpeed"),
         //	UI_FloatRange(minValue = 1f, maxValue = 420f, stepIncrement = 1f, scene = UI_Scene.All)]
@@ -491,7 +491,7 @@ namespace BDArmory.Control
         }
     }
 
-    public class BDOrbitalControl : MonoBehaviour //: PartModule
+    public class BDOrbitalControl : MonoBehaviour //: BDAPartModule
     {
 
         // /////////////////////////////////////////////////////

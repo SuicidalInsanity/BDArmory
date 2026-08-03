@@ -13,7 +13,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Modules
 {
-    public class ModuleHMD : PartModule, IPartCostModifier
+    public class ModuleHMD : BDAPartModule, IPartCostModifier
     {
         public float GetModuleCost(float defaultCost, ModifierStagingSituation situation)
         {
@@ -40,7 +40,6 @@ namespace BDArmory.Modules
                 Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Remove HMD"
                 _HMDCost = BDArmorySettings.HMDCost + BDArmorySettings.HMDCostPerSeat * part.CrewCapacity;
             }
-            GUIUtils.RefreshAssociatedWindows(part);
             using (List<Part>.Enumerator pSym = part.symmetryCounterparts.GetEnumerator())
                 while (pSym.MoveNext())
                 {
@@ -61,7 +60,6 @@ namespace BDArmory.Modules
                         HMDSym.Events[nameof(ToggleHMD)].guiName = StringUtils.Localize("#LOC_BDArmory_HMD_Off");//"Disable self-sealing tank"
                         HMDSym._HMDCost = BDArmorySettings.HMDCost + BDArmorySettings.HMDCostPerSeat * part.CrewCapacity;
                     }
-                    GUIUtils.RefreshAssociatedWindows(pSym.Current);
                 }
             if (HighLogic.LoadedSceneIsEditor && EditorLogic.fetch != null)
                 GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
@@ -89,7 +87,6 @@ namespace BDArmory.Modules
                 }
                 else part.RemoveModule(this); //don't assign to drone cores
             }
-            GUIUtils.RefreshAssociatedWindows(part);
             if (HighLogic.LoadedSceneIsEditor && EditorLogic.fetch != null)
                 GameEvents.onEditorShipModified.Fire(EditorLogic.fetch.ship);
             if (HighLogic.LoadedSceneIsFlight)

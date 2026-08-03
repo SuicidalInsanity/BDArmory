@@ -5,7 +5,7 @@ using System.Text;
 
 namespace BDArmory.CounterMeasure
 {
-    public class ModuleECMJammer : PartModule
+    public class ModuleECMJammer : BDAPartModule
     {
         [KSPField] public float jammerStrength = 700;
 

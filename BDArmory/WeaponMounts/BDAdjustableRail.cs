@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace BDArmory.WeaponMounts
 {
-    public class BDAdjustableRail : PartModule
+    public class BDAdjustableRail : BDAPartModule
     {
         [KSPField(isPersistant = true)] public float railHeight;
 

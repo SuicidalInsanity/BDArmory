@@ -6,7 +6,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Modules
 {
-    public class ModuleMovingPart : PartModule
+    public class ModuleMovingPart : BDAPartModule
     {
         Transform parentTransform;
         [KSPField] public string parentTransformName = string.Empty;

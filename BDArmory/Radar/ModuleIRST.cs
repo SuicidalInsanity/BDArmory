@@ -15,7 +15,7 @@ using BDArmory.WeaponMounts;
 
 namespace BDArmory.Radar
 {
-    public class ModuleIRST : PartModule
+    public class ModuleIRST : BDAPartModule
     {
         #region KSPFields (Part Configuration)
 

@@ -7,7 +7,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Ammo
 {
-    public class ModuleAmmoSwitch : PartModule, IPartCostModifier
+    public class ModuleAmmoSwitch : BDAPartModule, IPartCostModifier
     {
         [KSPField]
         public string resourceNames = "ElectricCharge;LiquidFuel,Oxidizer;MonoPropellant";

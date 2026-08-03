@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace BDArmory.Weapons
 {
-    public abstract class EngageableWeapon : PartModule, IEngageService
+    public abstract class EngageableWeapon : BDAPartModule, IEngageService
     {
         [KSPField(isPersistant = true)]
         public bool engageEnabled = true;
@@ -70,7 +70,6 @@ namespace BDArmory.Weapons
             Fields[nameof(engageSLW)].guiActive = engageEnabled;
             Fields[nameof(engageSLW)].guiActiveEditor = engageEnabled;
 
-            GUIUtils.RefreshAssociatedWindows(part);
             if (applyToSymmetric)
             {
                 foreach (var sympart in part.symmetryCounterparts)
@@ -94,7 +93,6 @@ namespace BDArmory.Weapons
             Fields[nameof(engageSLW)].guiActive = false;
             Fields[nameof(engageSLW)].guiActiveEditor = false;
 
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         public void OnRangeUpdated(BaseField field, object obj)
         {

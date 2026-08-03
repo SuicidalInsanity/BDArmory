@@ -7,7 +7,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Weapons.Missiles
 {
-    public class ModuleMissileMagazine : PartModule, IPartMassModifier, IPartCostModifier
+    public class ModuleMissileMagazine : BDAPartModule, IPartMassModifier, IPartCostModifier
     {
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => Mathf.Max(ammoCount, 0) * missileMass;
 
@@ -100,7 +100,6 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                 ammoRemaining = ammoCount;
             }
             GUIUtils.RefreshAssociatedWindows(part);
-            StartCoroutine(DelayedStart());
         }
 
         IEnumerator DelayedStart()
@@ -226,7 +225,6 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                                     Fields[nameof(loadedMissileName)].guiActive = true;
                                     Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                                     loadedMissileName = MLConfig.GetShortName();
-                                    GUIUtils.RefreshAssociatedWindows(part);
                                     missileMass = AccountForAmmo ? missile.partInfo.partPrefab.mass : 0;
                                     missileCost = AccountForAmmo ? missile.partInfo.cost : 0;
                                     EditorLogic.DeletePart(missile);

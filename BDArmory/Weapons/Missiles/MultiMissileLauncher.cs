@@ -21,7 +21,7 @@ namespace BDArmory.Weapons.Missiles
     /// Add-on Module to MissileLauncher to extend Launcher functionality to include cluster missiles and multi-missile pods
     /// </summary>
 
-    public class MultiMissileLauncher : PartModule
+    public class MultiMissileLauncher : BDAPartModule
     {
         public static Dictionary<string, ObjectPool> mslDummyPool = new Dictionary<string, ObjectPool>();
         [KSPField(isPersistant = true)]
@@ -312,8 +312,6 @@ namespace BDArmory.Weapons.Missiles
                         missileLauncher.DetonationDistance = missileLauncher.GetInitialDetonationDistance(bRadius);
                     }
                 }
-
-                GUIUtils.RefreshAssociatedWindows(part);
             }
             missileSpawner.UpdateMissileValues();
 
@@ -527,7 +525,6 @@ namespace BDArmory.Weapons.Missiles
                                     Fields[nameof(loadedMissileName)].guiActive = true;
                                     Fields[nameof(loadedMissileName)].guiActiveEditor = true;
                                     loadedMissileName = MLConfig.GetShortName();
-                                    GUIUtils.RefreshAssociatedWindows(part);
                                     if (missileSpawner)
                                     {
                                         missileSpawner.MissileName = subMunitionName;
@@ -550,7 +547,6 @@ namespace BDArmory.Weapons.Missiles
                                             mml.PopulateMissileDummies(true);
                                             mml.LoadoutModified = true;
                                             mml.loadedMissileName = MLConfig.GetShortName();
-                                            GUIUtils.RefreshAssociatedWindows(sym.Current);
                                             if (mml.missileSpawner)
                                             {
                                                 mml.missileSpawner.MissileName = subMunitionName;
@@ -730,7 +726,6 @@ namespace BDArmory.Weapons.Missiles
                 missileLauncher.blastRadius = MLConfig.blastRadius;
             }
             missileLauncher.GetBlastRadius();
-            GUIUtils.RefreshAssociatedWindows(missileLauncher.part);
             missileLauncher.ParseLiftDragSteerTorque();
             missileLauncher.ParseManeuvergLim();
             // Because we already set the values from the true base config, we do **not** check the base config in SetFields

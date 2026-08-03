@@ -12,7 +12,7 @@ using BDArmory.Competition;
 
 namespace BDArmory.Weapons
 {
-    public abstract class BDWarheadBase : PartModule
+    public abstract class BDWarheadBase : BDAPartModule
     {
         protected float distanceFromStart = 500;
 
@@ -41,19 +41,24 @@ namespace BDArmory.Weapons
 
         //PartWindow buttons
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disarm Warhead")]//Toggle
-        public void Toggle()
+        public void ToggleArmed() => ToggleArmed(HighLogic.LoadedSceneIsEditor);
+        public void ToggleArmed(bool updateSymmetric)
         {
             Armed = !Armed;
             if (Armed)
             {
                 guiStatusString = "ARMED";
-                Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+                Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
             }
             else
             {
                 guiStatusString = "Safe";
-                Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
+                Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Arm Warhead");//"Disable Engage Options"
             }
+            if (updateSymmetric) foreach (Part p in part.symmetryCounterparts)
+                {
+                    p.GetComponent<BDWarheadBase>().ToggleArmed(false);
+                }
         }
 
         [KSPField(guiActive = false, guiActiveEditor = false, guiName = "Targeting Logic")]//Status
@@ -61,7 +66,8 @@ namespace BDArmory.Weapons
 
         //PartWindow buttons
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "Disable IFF")]//Toggle
-        public void ToggleIFF()
+        public void ToggleIFF() => ToggleIFF(true);
+        public void ToggleIFF(bool updateSymmetric)
         {
             IFF_On = !IFF_On;
             if (IFF_On)
@@ -74,12 +80,17 @@ namespace BDArmory.Weapons
                 guiIFFString = "Indescriminate";
                 Events[nameof(ToggleIFF)].guiName = StringUtils.Localize("Enable IFF");//"Disable Engage Options"
             }
+            if (updateSymmetric) foreach (Part p in part.symmetryCounterparts)
+            {
+                p.GetComponent<BDWarheadBase>().ToggleIFF(false);
+            }
         }
 
         public string IFFID = null;
 
         [KSPEvent(guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_DetonationDistanceOverride")]//Toggle
-        public void ToggleProx()
+        public void ToggleProx() => ToggleProx(true);
+        public void ToggleProx(bool updateSymmetric)
         {
             manualOverride = !manualOverride;
             if (manualOverride)
@@ -92,7 +103,10 @@ namespace BDArmory.Weapons
                 Fields[nameof(detonationRange)].guiActiveEditor = false;
                 Fields[nameof(detonationRange)].guiActive = false;
             }
-            GUIUtils.RefreshAssociatedWindows(part);
+            if (updateSymmetric) foreach (Part p in part.symmetryCounterparts)
+                {
+                    p.GetComponent<BDWarheadBase>().ToggleProx(false);
+                }
         }
 
         [KSPAction("Arm")]
@@ -100,7 +114,7 @@ namespace BDArmory.Weapons
         {
             Armed = true;
             guiStatusString = "ARMED"; // Future me, this needs localization at some point
-            Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
+            Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Disarm Warhead");//"Enable Engage Options"
         }
 
         [KSPAction("Detonate")]
@@ -179,8 +193,8 @@ namespace BDArmory.Weapons
         {
             if (!isMissile)
             {
-                Events[nameof(Toggle)].guiActiveEditor = true;
-                Events[nameof(Toggle)].guiActive = true;
+                Events[nameof(ToggleArmed)].guiActiveEditor = true;
+                Events[nameof(ToggleArmed)].guiActive = true;
                 Events[nameof(ToggleIFF)].guiActiveEditor = true;
                 Events[nameof(ToggleIFF)].guiActive = true;
                 Events[nameof(ToggleProx)].guiActiveEditor = true;
@@ -192,12 +206,12 @@ namespace BDArmory.Weapons
                 if (Armed)
                 {
                     guiStatusString = "ARMED";
-                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Disarm Warhead");
+                    Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Disarm Warhead");
                 }
                 else
                 {
                     guiStatusString = "Safe";
-                    Events[nameof(Toggle)].guiName = StringUtils.Localize("Arm Warhead");
+                    Events[nameof(ToggleArmed)].guiName = StringUtils.Localize("Arm Warhead");
                 }
                 if (IFF_On)
                 {
@@ -223,8 +237,8 @@ namespace BDArmory.Weapons
             }
             else
             {
-                Events[nameof(Toggle)].guiActiveEditor = false;
-                Events[nameof(Toggle)].guiActive = false;
+                Events[nameof(ToggleArmed)].guiActiveEditor = false;
+                Events[nameof(ToggleArmed)].guiActive = false;
                 Events[nameof(ToggleIFF)].guiActiveEditor = false;
                 Events[nameof(ToggleIFF)].guiActive = false;
                 Events[nameof(ToggleProx)].guiActiveEditor = false;
@@ -238,7 +252,6 @@ namespace BDArmory.Weapons
                 Fields[nameof(detonateAtMinimumDistance)].guiActiveEditor = false;
                 Fields[nameof(detonateAtMinimumDistance)].guiActive = false;
             }
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         protected abstract void WarheadSpecificUISetup();
 

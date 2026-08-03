@@ -17,7 +17,7 @@ using System;
 
 namespace BDArmory.Radar
 {
-    public class RadarWarningReceiver : PartModule
+    public class RadarWarningReceiver : BDAPartModule
     {
         public delegate void RadarPing(Vessel v, Vector3 source, RWRThreatTypes type, float persistTime, Vessel vSource);
 

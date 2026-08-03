@@ -20,7 +20,7 @@ namespace BDArmory.Control
     /// A base class for implementing AI.
     /// Note: You do not have to use it, it is just for convenience, all the game cares about is that you implement the IBDAIControl interface.
     /// </summary>
-    public abstract class BDGenericAIBase : PartModule, IBDAIControl, IBDWMModule
+    public abstract class BDGenericAIBase : BDAPartModule, IBDAIControl, IBDWMModule
     {
         #region declarations
         public virtual AIType aiType => AIType.GenericAI;

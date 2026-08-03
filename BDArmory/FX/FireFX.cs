@@ -444,7 +444,6 @@ namespace BDArmory.FX
                     ec.maxAmount = 0;
                     ec.isVisible = false;
                     if (!parentBeingDestroyed) parentPart.RemoveResource(ec);//destroy battery. not calling part.destroy, since some batteries in cockpits.
-                    GUIUtils.RefreshAssociatedWindows(parentPart);
                 }
                 //tntMassEquivilent *= BDArmorySettings.BD_AMMO_DMG_MULT; //handled by EXP_DMG_MOD_BATTLE_DAMAGE
                 if (BDArmorySettings.DEBUG_OTHER && tntMassEquivalent > 0)

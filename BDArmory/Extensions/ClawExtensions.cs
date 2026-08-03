@@ -5,7 +5,7 @@ using BDArmory.Utils;
 
 namespace BDArmory.Extensions
 {
-    public class ClawExtension : PartModule
+    public class ClawExtension : BDAPartModule
     {
         [KSPAction("Toggle Free Pivot")]
         public void AGToggleFreePivot(KSPActionParam param)

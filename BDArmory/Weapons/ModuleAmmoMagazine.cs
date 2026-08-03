@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace BDArmory.Weapons.Missiles
 {
-    public class ModuleAmmoMagazine : PartModule, IPartMassModifier//, IPartCostModifier
+    public class ModuleAmmoMagazine : BDAPartModule, IPartMassModifier//, IPartCostModifier
     {
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => binMass;//need to have this scale by some amount
 

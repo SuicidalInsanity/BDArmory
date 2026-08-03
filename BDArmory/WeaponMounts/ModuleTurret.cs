@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace BDArmory.WeaponMounts
 {
-    public class ModuleTurret : PartModule
+    public class ModuleTurret : BDAPartModule
     {
         [KSPField] public int turretID = 0;
 
@@ -659,7 +659,7 @@ namespace BDArmory.WeaponMounts
             return false;
         }
     }
-    public class BDAScaleByDistance : PartModule
+    public class BDAScaleByDistance : BDAPartModule
     {
         /// <summary>
         /// Sibling Module to FXModuleLookAtConstraint, causes indicated mesh object to scale based on distance to target transform
