@@ -9,7 +9,7 @@ using BDArmory.Settings;
 
 namespace BDArmory.Armor
 {
-    public class BDABDAdjustableArmor : BDAPartModule
+    public class BDAdjustableArmor : BDAPartModule
     {
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_ArmorAdjustParts"),//Move Child Parts
             UI_Toggle(disabledText = "#LOC_BDArmory_false", enabledText = "#LOC_BDArmory_true")]//false--true
