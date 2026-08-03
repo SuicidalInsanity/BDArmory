@@ -591,7 +591,7 @@ namespace BDArmory.Utils
                 return;
             }
             
-            // Debug.Log($"DEBUG Updating ChooseOptionPAW of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name} to {value}, index {pawChooseOption.slider.value}?{newIndex}");
+            // Debug.Log($"DEBUG Updating ChooseOptionPAW of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name} to {value}, index {pawChooseOption.slider.value}->{newIndex}");
             bool changed = pawChooseOption.slider.value != newIndex;
             pawChooseOption.slider.value = newIndex; // Set the value even if it hasn't changed to trigger the slider callback.
             
@@ -640,7 +640,7 @@ namespace BDArmory.Utils
             var value = (bool)field.GetValue(partModule);
             if (pawToggle.toggle.state != value)
             {
-                // Debug.Log($"DEBUG Updating Toggle of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name}, {pawToggle.toggle.state}?{value}");
+                // Debug.Log($"DEBUG Updating Toggle of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name}, {pawToggle.toggle.state}->{value}");
                 pawToggle.toggle.SetState(value);
                 pawToggle.toggle.onToggle.Invoke();
                 if (value) pawToggle.toggle.onToggleOn.Invoke();

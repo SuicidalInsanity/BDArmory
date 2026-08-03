@@ -2085,7 +2085,7 @@ namespace BDArmory.UI
 
                                     if (AI.ManeuverRCS != (AI.ManeuverRCS = GUI.Toggle(ToggleButtonRect(line, contentWidth), AI.ManeuverRCS,
                                         StringUtils.Localize("#LOC_BDArmory_AIWindow_ManeuverRCS") + " : " + (AI.ManeuverRCS ? StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_enabledText") : StringUtils.Localize("#LOC_BDArmory_AI_ManeuverRCS_disabledText")),
-                                        AAI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
+                                        AI.ManeuverRCS ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle)))
                                         AI.UpdateToggle(AI.Fields[nameof(AI.ManeuverRCS)]);
                                     line += 1.25f;
                                     if (contextTipsEnabled)

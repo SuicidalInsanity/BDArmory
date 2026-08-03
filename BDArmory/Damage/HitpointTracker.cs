@@ -285,7 +285,6 @@ namespace BDArmory.Damage
             {
                 ArmorRemaining = 100;
                 var maxHitPoints_ = CalculateTotalHitpoints();
-                Debug.Log($"[SetupPrefab] postCalCTotalHP = {Armor}");
 
                 if (!_forceUpdateHitpointsUI && previousHitpoints == maxHitPoints_) return false;
 
@@ -310,10 +309,7 @@ namespace BDArmory.Damage
                 {
                     maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
                     Armor = Mathf.Min(Armor, maxSupportedArmor);
-                    Debug.Log($"[SetupPrefab] MaxArmorLimitTriggered; MAL: {BDArmorySettings.MAX_ARMOR_LIMIT}; shouldthisEvenTrigger: {BDArmorySettings.MAX_ARMOR_LIMIT >= 0} Armor = {Armor}; maxSupportedArmor {maxSupportedArmor}");
                 }
-                Debug.Log($"[SetupPrefab] Armor = {Armor}; maxSupportedArmor {maxSupportedArmor}");
-
                 previousHitpoints = maxHitPoints_;
                 return true;
             }
@@ -490,11 +486,8 @@ namespace BDArmory.Damage
             top = part.FindAttachNode("top");
             //if (armorVolume < 0) //check already occurs 429, doubling it results in the PartSize vector3 returning null
             calcPartSize();
-            Debug.Log($"[OnStart] postCalcpartSize Armor = {Armor}");
             SetupPrefab();
-            Debug.Log($"[OnStart] postSetupprefab Armor = {Armor}");
             Armour = Armor;
-            Debug.Log($"[OnStart] Armour = {Armour}");
             StartCoroutine(DelayedOnStart()); // Delay updating mass, armour, hull, HP and cost so mods like proc wings and tweakscale get the right values.
         }
 
@@ -1202,7 +1195,6 @@ namespace BDArmory.Damage
         public void overrideArmorSetFromConfig()
         {
             ArmorSet = true;
-            Debug.Log($"[overrideASFC] Armor = {Armor}; armorThickness: {ArmorThickness}; maxSupported: {maxSupportedArmor}");
 
             if (ArmorThickness > 10 || ArmorPanel) //Mod part set to start with armor, or armor panel
             {
@@ -1211,7 +1203,6 @@ namespace BDArmory.Damage
                     Armor = ArmorThickness;//set Armor amount to .cfg value
                                            //See also ln 1183-1186
             }
-            Debug.Log($"[overrideASFC] Armor = {Armor}");
 
             if (BDArmorySettings.DEBUG_ARMOR)
             {
@@ -1247,7 +1238,6 @@ namespace BDArmory.Damage
             {
                 Debug.Log($"[ARMOR] max supported armor for {part.name} is {maxSupportedArmor}{(part.IsAero() ? $", part is aero, isProcWing: {isProcWing}" : $", partSize: {partSize}, min: {Mathf.Min(partSize.x, partSize.y, partSize.z)}")}");
             }
-            Debug.Log($"[overrideASFC] maxSupported: {maxSupportedArmor}");
             //if maxSupportedArmor > 0 && < armorThickness, that's entirely the fault of the MM patcher
             /*UI_FloatRange armorFieldFlight = (UI_FloatRange)Fields[nameof(Armor)].uiControlFlight;
             armorFieldFlight.minValue = 0f;
@@ -1454,7 +1444,6 @@ namespace BDArmory.Damage
                 if (BDArmorySettings.MAX_ARMOR_LIMIT >= 0)
                 {
                     maxSupportedArmor = Mathf.Min(BDArmorySettings.MAX_ARMOR_LIMIT, maxSupportedArmor);
-                    Debug.Log($"[SetArmor] MaxArmorLimitTriggered; MAL: {BDArmorySettings.MAX_ARMOR_LIMIT}; shouldthisEvenTrigger: {BDArmorySettings.MAX_ARMOR_LIMIT >= 0} Armor = {Armor}; maxSupportedArmor {maxSupportedArmor}");
                 }
                 if (armorFieldEditor.maxValue != maxSupportedArmor)
                 {

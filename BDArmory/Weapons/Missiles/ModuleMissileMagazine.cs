@@ -99,7 +99,7 @@ UI_FloatRange(minValue = 1f, maxValue = 4, stepIncrement = 1f, scene = UI_Scene.
                 ordnance.maxValue = ammoCount;
                 ammoRemaining = ammoCount;
             }
-            GUIUtils.RefreshAssociatedWindows(part);
+            StartCoroutine(DelayedStart());
         }
 
         IEnumerator DelayedStart()
