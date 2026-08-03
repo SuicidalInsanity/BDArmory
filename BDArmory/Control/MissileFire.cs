@@ -942,7 +942,8 @@ namespace BDArmory.Control
                     {
                         rwr.EnableRWR();
                     }
-                    else if (!rwr.displayRWR)
+
+                    if (hasAntiRadiationOrdnance)
                     {
                         rwr.displayRWR = true;
                     }
@@ -3374,7 +3375,7 @@ namespace BDArmory.Control
                             if (rwr)
                             {
                                 if (!rwr.rwrEnabled) rwr.EnableRWR();
-                                if (rwr.rwrEnabled && !rwr.displayRWR) rwr.displayRWR = true;
+                                rwr.displayRWR = true;
                             }
 
                             if (SetCargoBays())
@@ -9313,7 +9314,7 @@ namespace BDArmory.Control
                 if (rwr && (rwr.omniDetection || results.foundRadarMissile)) //enable omniRWRs for all incoming threats. Moving this here as RWRs would be detecting missiles before they reached danger close
                 {
                     if (!rwr.rwrEnabled) rwr.EnableRWR();
-                    else if (!rwr.displayRWR) rwr.displayRWR = true;
+                    rwr.displayRWR = true;
                     rwr.performMWSCheck = false;
                 }
             }
