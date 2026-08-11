@@ -1,3 +1,10 @@
+-Add advanced missile targeting options - The 4 target types can now be independently set for how many missiles to fire against them, 
+or how much cumulative warhead mass should be used against them.
+-RTS-style click-drag bounding box for WingCommander unit selection.
+-Control Groups for easier Wing Commander unit management.
+-Reworked WingCOmmander GUI.
+
+
 IMPROVEMENTS / FIXES
 - General:
 	- Missile magazine missile mass is no longer affected by hull material part mass modifiers.

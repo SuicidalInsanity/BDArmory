@@ -4674,6 +4674,10 @@ namespace BDArmory.UI
             GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_InputSettings_TemporarilyShowMouse")} -", centerLabel);//Temporarily Show Mouse
             InputSettingsList("TEMPORARILY_SHOW_MOUSE", ref inputID, ref line);
             ++line;
+
+            GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_InputSettings_MWC_SelectionBox")} -", centerLabel);//WingCommander Bounding Box
+            InputSettingsList("MWC_", ref inputID, ref line);
+            ++line;
             GUI.EndScrollView();
 
             line = settingsHeight / settingsLineHeight;
