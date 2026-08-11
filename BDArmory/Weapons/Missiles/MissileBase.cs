@@ -1937,10 +1937,60 @@ namespace BDArmory.Weapons.Missiles
                 GUI.Label(new Rect(200, Screen.height - 300, 800, 300), $"{this.shortName} UUID: {vessel.id}\n{debugString}");
             }
         }
-
+        float tntMass = -1;
         public float GetTntMass()
         {
-            return VesselModuleRegistry.GetModules<BDExplosivePart>(vessel).Max(x => x.tntMass);
+            if (tntMass > 0) return tntMass;
+            if (warheadType == WarheadTypes.EMP)
+            {
+                var EMP = part.FindModuleImplementing<ModuleEMP>();
+                if (EMP != null)
+                {
+                    tntMass = EMP.proximity;
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Nuke)
+            {
+                var nuke = part.FindModuleImplementing<BDModuleNuke>();
+                if (nuke != null)
+                {
+                    tntMass = nuke.yield * 1000; /// 000; //Technically should be a x1 million mult, but this keeps things managable for maxTNTOnTarget values
+                    return tntMass;
+                }
+            }
+            else if (warheadType == WarheadTypes.Kinetic)
+            {
+                tntMass = part.mass;
+                return tntMass;
+            }
+            else
+            {
+                var MMG = part.FindModuleImplementing<BDModularGuidance>();
+                if (MMG != null)
+                {
+                    tntMass = MMG.warheadYield;
+                    return tntMass;
+                }
+                var HE = part.FindModuleImplementing<BDExplosivePart>();
+                var MML = part.FindModuleImplementing<MultiMissileLauncher>();
+                if (HE != null)
+                {
+                    List<BDExplosivePart> tntList = part.FindModulesImplementing<BDExplosivePart>();
+                    foreach (BDExplosivePart tnt in tntList)
+                    {
+                        tntMass = Mathf.Max(tntMass, tnt.tntMass);
+                    }
+                    return tntMass;
+                }
+                else if (MML != null)
+                {
+                    tntMass = MML.tntMass;
+                    return tntMass;
+                }
+                else tntMass = 1;
+            }            
+            return tntMass;
         }
 
         public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false)

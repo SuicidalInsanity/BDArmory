@@ -3910,19 +3910,22 @@ namespace BDArmory.Weapons.Missiles
         void SLWGuidance()
         {
             Vector3 SLWTarget;
-            float runningDepth = torpedo ? Mathf.Min(-3, (float)FlightGlobals.getAltitudeAtPos(TargetPosition)) : (float)vessel.radarAltitude;
+            float runningDepth = Mathf.Min(-3, (float)FlightGlobals.getAltitudeAtPos(TargetPosition));
+            if (DetonationDistance != 0) //Using this as a stand-in for under-keel magnetic detonation torpedoes
+            {
+                // If target is above, the we offset below, if target is below, we offset above
+                runningDepth -= (blastRadius > 0f ? Mathf.Min(blastRadius / 3f, DetonationDistance) : 5f);
+            }
             Vector3 upDir = (vessel.transform.position - vessel.mainBody.transform.position).normalized;
             if (TargetAcquired)
             {
                 //DrawDebugLine(transform.position + (part.rb.velocity * Time.fixedDeltaTime), TargetPosition);
                 float timeToImpact;
                 SLWTarget = MissileGuidance.GetAirToAirTarget(TargetPosition, TargetVelocity, TargetAcceleration, vessel, out timeToImpact, optimumAirspeed);
-                if (!torpedo) runningDepth = Mathf.Max(timeToImpact / 5, 0.1f) * 10;
                 //if (VectorUtils.Angle(SLWTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
                 //{
                 //    SLWTarget = TargetPosition;
                 //}
-                if (!torpedo) SLWTarget = SLWTarget - targetVessel.Vessel.up * targetVessel.Vessel.radarAltitude;
                 float longitudinalOffset = 0;
                 if (longitudinalOffset == 0) longitudinalOffset = targetVessel.Vessel.GetRadius() * 0.75f * UnityEngine.Random.Range(-1, 1);
                 SLWTarget += targetVessel.Vessel.vesselTransform.up * longitudinalOffset;
