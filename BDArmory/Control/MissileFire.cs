@@ -1445,8 +1445,11 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
 
         public void SetAFCAA()
         {
-            UI_FloatRange field = (UI_FloatRange)Fields[nameof(AutoFireCosAngleAdjustment)].uiControlEditor;
-            field.onFieldChanged = OnAFCAAUpdated;
+            if (HighLogic.LoadedSceneIsEditor)
+            {
+                UI_FloatRange field = (UI_FloatRange)Fields[nameof(AutoFireCosAngleAdjustment)].uiControlEditor;
+                field.onFieldChanged = OnAFCAAUpdated;
+            }
             // field = (UI_FloatRange)Fields[nameof(AutoFireCosAngleAdjustment)].uiControlFlight; // Not visible in flight mode, use the guard menu instead.
             // field.onFieldChanged = OnAFCAAUpdated;
             OnAFCAAUpdated(null, null);
@@ -1454,7 +1457,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
 
         public void OnAFCAAUpdated(BaseField field, object obj)
         {
-            adjustedAutoFireCosAngle = Mathf.Cos((AutoFireCosAngleAdjustment * Mathf.Deg2Rad));
+            adjustedAutoFireCosAngle = Mathf.Cos(AutoFireCosAngleAdjustment * Mathf.Deg2Rad);
             //if (BDArmorySettings.DEBUG_LABELS) Debug.Log("[BDArmory.MissileFire]: Setting AFCAA to " + adjustedAutoFireCosAngle);
         }
         #endregion KSPFields,events,actions
@@ -4009,28 +4012,41 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                 designatedGPSInfo = new GPSTargetInfo(foundCam.bodyRelativeGTP, "Guard Target");
                             }
                             bombAimerTrajectoryAtTimeFired = [.. bombAimerTrajectory];
+                            var bombToDrop = CurrentMissile as MissileLauncher;
                             FireCurrentMissile(CurrentMissile, true, guardTarget);
                             timeBombReleased = Time.time;
                             yield return new WaitForSecondsFixed(rippleFire ? 60f / rippleRPM : 0.06f);
                             if (firedMissiles >= _MaxMissilesOnTarget || selectedWeapon == null || selectedWeapon.GetWeaponClass() != WeaponClasses.Bomb) // If not, continue bombing until overshooting.
                             {
-                                if (!(pilotAI && pilotAI.divebombing))
-                                    yield return new WaitForSecondsFixed(1f); // Wait briefly to avoid hitting the bomb with the wings (unless dive-bombing).
+                                var bombDropped = PreviousMissile; // Regular bombs.
+                                if (bombToDrop && bombToDrop.multiLauncher && bombToDrop.multiLauncher.missileSpawner) // Reloadable rail => wait for the bomb to spawn.
+                                {
+                                    // Debug.Log($"DEBUG {Time.time} Waiting up to 10s for bomb ({bombToDrop}) to actually drop.");
+                                    yield return bombToDrop.multiLauncher.WaitForSalvo();
+                                    bombDropped = bombToDrop.multiLauncher.GetLastInSalvo();
+                                }
+                                // Debug.Log($"DEBUG {Time.time} Bombs dropped, pull away! Last bomb dropped was {bombDropped}");
                                 if (ai != null && ai.pilotEnabled) switch (ai.aiType)
                                     {
                                         case AIType.PilotAI:
                                             if (pilotAI && pilotAI.divebombing)
                                             {
-                                                pilotAI.RequestExtend("bombs away!", null,
-                                                    1.5f * Mathf.Max(bombAirTime * (float)vessel.srfSpeed, radius),
-                                                    vessel.CoM + 100f * vessel.transform.forward, // Extend in the pitch-up direction to avoid slapping the bomb.
-                                                    ignoreCooldown: true
-                                                );
+                                                pilotAI.RequestExtend(
+                                                    reason: "bombs away!",
+                                                    minDistance: 100f + 1.5f * Mathf.Max(bombAirTime * (float)vessel.srfSpeed, radius),
+                                                    tPosition: vessel.CoM + 100f * vessel.transform.forward, // Extend in the pitch-up direction to avoid slapping the bomb.
+                                                    missile: bombDropped,
+                                                    ignoreCooldown: true);
                                             }
                                             else
                                             {
-                                                // Extend from the place the bomb is expected to fall for 1.5*(half the drop time or the radius if a big explosion).
-                                                pilotAI.RequestExtend("bombs away!", null, 1.5f * Mathf.Max(0.5f * bombAirTime * (float)vessel.srfSpeed, radius), guardTarget ? guardTarget.CoM : vessel.CoM, ignoreCooldown: true);
+                                                // Extend back to roughly the bombing run start distance.
+                                                pilotAI.RequestExtend(
+                                                    reason: "bombs away!",
+                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombAirTime, 1.5f * radius),
+                                                    tPosition: guardTarget ? guardTarget.CoM : bombAimerCPA,
+                                                    missile: bombDropped,
+                                                    ignoreCooldown: true);
                                             }
                                             // Maybe something similar should be adapted for any missiles with nuke warheads...?
                                             break;
@@ -5744,9 +5760,13 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator())
                     while (rd.MoveNext())
                     {
-                        if (rd.Current != null && rd.Current.canLock)
+                        if (rd.Current != null)
                         {
-                            if (rd.Current.maxLocks > 0) MaxRadarLocks += rd.Current.maxLocks;
+                            if (rd.Current.canLock)
+                            {
+                                if (rd.Current.maxLocks > 0) MaxRadarLocks += rd.Current.maxLocks;
+                            }
+                            if (rd.Current.part.FindModuleImplementing<MissileLauncher>()) _radars.Remove(rd.Current); //don't have sonobuoys clog up radar list/Wm GUI
                         }
                     }
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator()) //now refresh lock array size with new maxradarLock value
@@ -7214,7 +7234,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             break;
                                         }
                                     }
-
+                                    //TODO: Sonobuoy select logic
 
                                     if (currMissileType != MissileType.Torpedo || currMissileType != MissileType.ASWMissile) continue;
 
