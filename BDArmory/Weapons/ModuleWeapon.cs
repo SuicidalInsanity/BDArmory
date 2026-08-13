@@ -4213,8 +4213,8 @@ namespace BDArmory.Weapons
             bool manualAiming = false;
             bool staleTarget = false;
             float timeout = 0;
-			if (wm && wm.guardMode)
-			{
+            if (wm && wm.guardMode && lastVisualTargetVessel != null)
+            {
 				if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
 				if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
 			}
