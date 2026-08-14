@@ -5757,16 +5757,29 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 rad.Dispose();
                 */
                 MaxRadarLocks = 0;
+                List<ModuleRadar> tempRadars = new List<ModuleRadar>();
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator())
                     while (rd.MoveNext())
                     {
                         if (rd.Current != null)
                         {
+                            if (rd.Current.isMissileRadar)
+                            {
+                                tempRadars.Add(rd.Current); //don't have sonobuoys clog up radar list/Wm GUI
+                                continue;
+                            }
                             if (rd.Current.canLock)
                             {
                                 if (rd.Current.maxLocks > 0) MaxRadarLocks += rd.Current.maxLocks;
                             }
-                            if (rd.Current.part.FindModuleImplementing<MissileLauncher>()) _radars.Remove(rd.Current); //don't have sonobuoys clog up radar list/Wm GUI
+                        }
+                    }
+                using (List<ModuleRadar>.Enumerator rd = tempRadars.GetEnumerator())
+                    while (rd.MoveNext())
+                    {
+                        if (rd.Current != null)
+                        {
+                            _radars.Remove(rd.Current);
                         }
                     }
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator()) //now refresh lock array size with new maxradarLock value
@@ -7203,9 +7216,11 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         WeaponClasses candidateClass = item.Current.GetWeaponClass();
                         switch (candidateClass)
                         {
+                            case (WeaponClasses.Missile):
                             case (WeaponClasses.SLW):
                                 {
                                     MissileLauncher SLW = item.Current as MissileLauncher;
+                                    if (SLW.GetWeaponClass() == WeaponClasses.Missile && SLW.GetMissileType() != MissileType.ASWMissile) continue;
                                     if (SLW.TargetingMode == MissileBase.TargetingModes.Radar && (!_sonarsEnabled && !SLW.radarLOAL)) continue; //dont select RH missiles when no radar aboard
                                     if (SLW.TargetingMode == MissileBase.TargetingModes.Laser && targetingPods.Count <= 0) continue; //don't select LH missiles when no FLIR aboard
                                     if (SLW.reloadableRail != null && (SLW.reloadableRail.ammoCount < 1 && !BDArmorySettings.INFINITE_ORDINANCE)) continue; //don't select when out of ordnance
@@ -7233,10 +7248,25 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             targetWeaponPriority = candidatePriority;
                                             break;
                                         }
+                                        if (currMissileType == MissileType.Sonobuoy)
+                                        {
+                                            //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
+                                            targetWeapon = item.Current;
+                                            targetWeaponPriority = candidatePriority;
+                                            break;
+                                            //also need to adjust targeting, we just need the buoy within a couple km of target.
+                                            //configure them as missiles to they try to get fired from range, but just fall instead of fly?
+                                            //modify the bombing routine
+                                        }
                                     }
                                     //TODO: Sonobuoy select logic
 
-                                    if (currMissileType != MissileType.Torpedo || currMissileType != MissileType.ASWMissile) continue;
+                                    if (currMissileType == MissileType.ASWMissile)
+                                    {
+                                        heat = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Heat;
+                                        radar = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Radar;
+                                        inertial = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Inertial;
+                                    }
 
                                     if (distance < candidateYield) continue; //don't use explosives within their blast radius
                                                                              //if(firedMissiles >= maxMissilesOnTarget) continue;// Max missiles are fired, try another weapon
@@ -7758,6 +7788,10 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         //if (targetWeapon != null && targetWeapon.GetWeaponClass() == WeaponClasses.Bomb) targetYield = -1; //reset targetyield so larger bomb yields don't supercede missiles
                                         if (targetWeapon != null && targetWeaponPriority > candidatePriority)
                                             continue; //keep higher priority weapon
+                                        if (Missile.GetMissileType() == MissileBase.MissileType.ASWMissile)
+                                        {
+                                            if (targetVessel.Splashed) candidateYield *= 4; //rocket-assisted torpedoes are just as good as standard ones vs boats
+                                        }
                                         if (advancedMissileTgtByYield && Missile.GetTntMass() > (_MaxMissilesOnTarget - firedMissiles) * 1.25f) candidateYield *= 0.001f;
                                         if (srfSpeed < 1) // set higher than 0 in case of physics jitteriness
                                         {

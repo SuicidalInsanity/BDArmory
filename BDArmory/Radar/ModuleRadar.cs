@@ -164,6 +164,7 @@ namespace BDArmory.Radar
         public bool DynamicRadar = false;
 
         MissileLauncher ml = null;
+        public bool isMissileRadar => ml != null;
 
         public enum SonarModes
         {
@@ -429,19 +430,20 @@ namespace BDArmory.Radar
                 // vesselRadarData, save the previous VRD in this if statement, and then queue the link
                 if (swappedVessels)
                     vesselRadarData.RemoveRadar(this);
-
-                vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
-                if (vesselRadarData == null)
-                    vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
-
-                vesselRadarData.weaponManager = WeaponManager;
+                    vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
+                    if (vesselRadarData == null)
+                        vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
+                    vesselRadarData.weaponManager = WeaponManager;
 
                 // Something wasn't right with the previous VRD so make sure we add the radar, primarily to take care of the multi-craft case
                 addRadar = true;
             }
 
             if (addRadar && radarEnabled)
+            {
                 vesselRadarData.AddRadar(this);
+                Debug.Log("[sonobuoyDebug] Adding radar to VRD");
+            }
         }
 
         public void EnableRadar()
@@ -893,7 +895,7 @@ namespace BDArmory.Radar
         {
             if (HighLogic.LoadedSceneIsFlight && FlightGlobals.ready && startupComplete)
             {
-                if (!vessel.IsControllable && radarEnabled)
+                if (!vessel.IsControllable && !isMissileRadar && radarEnabled)
                 {
                     DisableRadar();
                 }

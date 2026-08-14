@@ -1030,6 +1030,7 @@ namespace BDArmory.Radar
                     while (radar.MoveNext())
                     {
                         if (radar.Current == null) continue;
+                        if (radar.Current.isMissileRadar) continue;
                         radar.Current.DisableRadar();
                     }
             }
@@ -2050,6 +2051,11 @@ namespace BDArmory.Radar
                     BDTeam team = null;
                     var mf = v.Current.ActiveController().WM;
                     if (mf != null) team = mf.Team;
+                    else
+                    {
+                        var ml = v.Current.FindPartModuleImplementing<MissileLauncher>();
+                        if (ml != null) team = ml.FiredByWM.Team;
+                    }
                     if (team != weaponManager.Team) continue;
                     VesselRadarData vrd = v.Current.gameObject.GetComponent<VesselRadarData>();
                     if (vrd && vrd.radarCount > 0)
@@ -2109,7 +2115,7 @@ namespace BDArmory.Radar
             if (!receivedData) //don't prevent VRD from e.g. getting datalinked sonar data from an ally boat despite being airborne
             {
                 if (!rData.vessel.LandedOrSplashed && radar.sonarMode != ModuleRadar.SonarModes.None) addContact = false; //Sonar should not detect Aircraft
-                if (rData.vessel.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None && vessel.Splashed) addContact = true; //Sonar only detects underwater vessels // Sonar should only work when in the water
+                if (rData.vessel.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None && radar.vessel.Splashed) addContact = true; //Sonar only detects underwater vessels // Sonar should only work when in the water
             }
 
             if (addContact == false) return;
