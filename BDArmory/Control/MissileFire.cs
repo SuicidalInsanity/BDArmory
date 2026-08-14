@@ -7241,22 +7241,23 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     MissileType currMissileType = item.Current.GetMissileType();
                                     if (!vessel.Splashed || (vessel.Splashed && vessel.altitude > targetVessel.altitude)) //if surfaced or sumberged, but above target, try depthcharges
                                     {
-                                        if (currMissileType == MissileType.DepthCharge)
-                                        {
-                                            if (distance < candidateYield) continue; //could add in prioritization for bigger boom, but how many different options for depth charges are there?
-                                            targetWeapon = item.Current;
-                                            targetWeaponPriority = candidatePriority;
-                                            break;
-                                        }
                                         if (currMissileType == MissileType.Sonobuoy)
                                         {
                                             //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
                                             targetWeapon = item.Current;
                                             targetWeaponPriority = candidatePriority;
                                             break;
-                                            //also need to adjust targeting, we just need the buoy within a couple km of target.
+                                            //also need to adjust targeting, we just need the buoy within a couple km of target. Doc was saying something about adjusting GBR 'close enough' bomb drop routines...?
                                             //configure them as missiles to they try to get fired from range, but just fall instead of fly?
-                                            //modify the bombing routine
+                                            //modify the bombing routine?
+                                            //how many we dropping? all on the craft?
+                                        }
+                                        if (currMissileType == MissileType.DepthCharge)
+                                        {
+                                            if (distance < candidateYield) continue; //could add in prioritization for bigger boom, but how many different options for depth charges are there?
+                                            targetWeapon = item.Current;
+                                            targetWeaponPriority = candidatePriority;
+                                            break;
                                         }
                                     }
                                     //TODO: Sonobuoy select logic
@@ -7266,6 +7267,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         heat = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Heat;
                                         radar = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Radar;
                                         inertial = SLW.TargetingModeTerminal == MissileBase.TargetingModes.Inertial;
+                                        //what sort of priority should ASROCs have over standard torps?
                                     }
 
                                     if (distance < candidateYield) continue; //don't use explosives within their blast radius

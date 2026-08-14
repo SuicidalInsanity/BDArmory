@@ -429,11 +429,13 @@ namespace BDArmory.Radar
                 // without guard mode being enabled post decouple we would add a `QueueVRDLink(vrd)` function to
                 // vesselRadarData, save the previous VRD in this if statement, and then queue the link
                 if (swappedVessels)
+                {
                     vesselRadarData.RemoveRadar(this);
-                    vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
-                    if (vesselRadarData == null)
-                        vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
-                    vesselRadarData.weaponManager = WeaponManager;
+                }
+                vesselRadarData = vessel.gameObject.GetComponent<VesselRadarData>();
+                if (vesselRadarData == null)
+                    vesselRadarData = vessel.gameObject.AddComponent<VesselRadarData>();
+                vesselRadarData.weaponManager = WeaponManager;
 
                 // Something wasn't right with the previous VRD so make sure we add the radar, primarily to take care of the multi-craft case
                 addRadar = true;
@@ -442,14 +444,20 @@ namespace BDArmory.Radar
             if (addRadar && radarEnabled)
             {
                 vesselRadarData.AddRadar(this);
-                Debug.Log("[sonobuoyDebug] Adding radar to VRD");
             }
         }
 
         public void EnableRadar()
         {
             if (deployState != null) StartCoroutine(DeployAnimation(true));
-            else radarEnabled = true;
+            else
+            {
+                radarEnabled = true;
+                RadarSetup();
+            }         
+        }
+        void RadarSetup()
+        {            
             EnsureVesselRadarData(true);
 
             UpdateToggleGuiName();
@@ -462,9 +470,8 @@ namespace BDArmory.Radar
                     wm._radarsEnabled = true;
                 else if (sonarMode == SonarModes.Active)
                     wm._sonarsEnabled = true;
-            }            
+            }
         }
-
         public void DisableRadar()
         {
             if (locked)
@@ -541,6 +548,8 @@ namespace BDArmory.Radar
                 }
                 deployState.normalizedTime = 1;
                 radarEnabled = true;
+                Debug.Log("[parachute debug] radar enabled");
+                RadarSetup();                
             }
             else
             {

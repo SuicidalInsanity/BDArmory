@@ -16,9 +16,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static ModuleDeployablePart;
-
 
 namespace BDArmory.Weapons.Missiles
 {
@@ -318,6 +315,9 @@ namespace BDArmory.Weapons.Missiles
 
         [KSPField]
         public float simpleDrag = 0.02f;
+
+        [KSPField]
+        public float parachuteDrag = 8;
 
         [KSPField]
         public float simpleStableTorque = 5;
@@ -2221,7 +2221,7 @@ namespace BDArmory.Weapons.Missiles
                 Vector3 forward = parachuteCanopy.transform.forward;
                 parachuteCanopy.transform.rotation = Quaternion.LookRotation(lookVector, forward);
             }
-            if (_missileType == MissileType.Sonobuoy && vessel.Splashed)
+            if (launched && _missileType == MissileType.Sonobuoy && vessel.Splashed)
             {
                 Vector3 UpDir = (vessel.transform.position - vessel.mainBody.transform.position).normalized;
                 Vector3 lookVector = MissileReferenceTransform.position - UpDir * 10 - MissileReferenceTransform.transform.position;
@@ -2993,16 +2993,29 @@ namespace BDArmory.Weapons.Missiles
 
         void UpdateThrustForces()
         {
-            if (MissileState == MissileStates.PostThrust) return;
-            if (weaponClass == WeaponClasses.SLW || (_missileType == MissileType.ASWMissile && MissileState == MissileStates.Cruise) && vessel.altitude > 0) return; //#710, no torp thrust out of water
-            if (currentThrust * Throttle > 0)
+            if (parachuteActive)
             {
-                if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                if (part.vessel.speed > 10 && vessel.atmDensity > 0.1)
                 {
-                    debugString.AppendLine($"Missile thrust= {currentThrust * Throttle:F3} kN; Stage: {MissileState}");
-                    debugString.AppendLine($"Missile mass= {part.mass * 1000f:F1} kg");
+                    var speedFraction = (float)part.vessel.speed / 10;
+                    if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
+                    float frictionCoeff = speedFraction * speedFraction * speedFraction * parachuteDrag * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
+                    part.Rigidbody.AddForceAtPosition((parachuteCanopy.transform.forward * frictionCoeff), parachuteCanopy.transform.position + parachuteCanopy.transform.forward * 2, ForceMode.Acceleration);
                 }
-                part.rb.AddRelativeForce(currentThrust * Throttle * Vector3.forward);
+            }
+            else
+            {
+                if (MissileState == MissileStates.PostThrust) return;
+                if ((weaponClass == WeaponClasses.SLW || (_missileType == MissileType.ASWMissile && MissileState == MissileStates.Cruise)) && vessel.altitude > 0) return; //#710, no torp thrust out of water
+                if (currentThrust * Throttle > 0)
+                {
+                    if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_MISSILES)
+                    {
+                        debugString.AppendLine($"Missile thrust= {currentThrust * Throttle:F3} kN; Stage: {MissileState}");
+                        debugString.AppendLine($"Missile mass= {part.mass * 1000f:F1} kg");
+                    }
+                    part.rb.AddRelativeForce(currentThrust * Throttle * Vector3.forward);
+                }
             }
         }
 
@@ -3170,23 +3183,14 @@ namespace BDArmory.Weapons.Missiles
                 Debug.LogWarning("[BDArmory.MissileLauncher]: parachuteSemiState was null, aborting AnimRoutine.");
                 //yield break;
             }
-            yield return new WaitUntilFixed(() => vessel == null || BodyUtils.GetRadarAltitudeAtPos(vessel.CoM) <= parachuteTriggerAlt * 1.5f); //FIXME need better trigger condition
-            Debug.Log($"[Parachute Debug] Triggering parachute!");
+            yield return new WaitUntilFixed(() => vessel == null || BodyUtils.GetRadarAltitudeAtPos(vessel.CoM) <= parachuteTriggerAlt * 1.5f); //TODO better trigger condition?
             if (parachuteCap)
             {
                 parachuteCap.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeed);
             }
             var wait = new WaitForFixedUpdate();
-            Debug.Log($"[Parachute Debug] semideployed!");
             parachuteActive = true;
-            deployed = true;
-            if (vessel.atmDensity > 0.1)
-            {
-                deployed = true;
-                useSimpleDrag = true;
-                deployedDrag /= 2; //TODO: update to parsedDrag?
-                Debug.Log($"[Parachute Debug] adding drag!");
-            }
+            parachuteDrag /= 4; //have separate semi-deployed and full deployed drag values? This is good enough for now
             while (parachuteSemiState.normalizedTime < 1)
             {
                 parachuteSemiState.speed = 1;
@@ -3200,34 +3204,30 @@ namespace BDArmory.Weapons.Missiles
                 Debug.LogWarning("[BDArmory.MissileLauncher]: parachuteStates was null, aborting AnimRoutine.");
                 //yield break;
             }
-            if (vessel.atmDensity > 0.1)
+            if (vessel.atmDensity > 0.1) //only have parachute fully deploy instead of trail in atmo
             {
-                Debug.Log($"[Parachute Debug] full deploy!");
                 part.crashTolerance = waterImpactTolerance;
+                parachuteDrag *= 4;
                 while (parachuteState.normalizedTime < 1)
                 {
                     parachuteState.speed = 1;
                     yield return wait;
                 }
                 parachuteState.normalizedTime = 1;
-                deployedDrag *= 2; //doesn't seem to be applying...
             }
-            Debug.Log($"[Parachute Debug] parachute fully deployed!");
-            yield return new WaitUntilFixed(() => vessel == null || vessel.LandedOrSplashed || vessel.altitude < 1);
-            Debug.Log($"[Parachute Debug] touchdown!");
+            yield return new WaitUntilFixed(() => vessel == null || vessel.LandedOrSplashed || vessel.altitude < 1); //alt trigger due to inconsistent recognition/setting of vessel.situation = Splashed
             parachuteActive = false;
             parachuteSemiState.normalizedTime = 0;
             parachuteState.normalizedTime = 0;
             parachuteCanopy.transform.localScale = Vector3.zero;
-            guidanceActive = true;
-            Debug.Log($"[Parachute Debug] parachute cut");
-            if (vessel == null || vessel.Landed) Detonate(); //have this solely be for SLW, if someone wants to make FASCAM/aerial deployed mine munitions?
+            //guidanceActive = true;
+            if (vessel == null || (weaponClass == WeaponClasses.SLW && vessel.Landed)) Detonate(); //have this solely be for SLW, if someone wants to make FASCAM/aerial deployed mine munitions?
             //else if splashed
             if (_missileType == MissileType.ASWMissile)
-            {               
+            {
                 if (multiLauncher && multiLauncher.isLaunchedClusterMissile)
                 {
-                    Detonate();
+                    Detonate(); //fire off submunition torpedo
                 }
                 else
                 {
@@ -3242,16 +3242,21 @@ namespace BDArmory.Weapons.Missiles
                 }
                 Debug.Log($"[Parachute Debug] torpedo away!");
             }
-            if (_missileType == MissileType.Sonobuoy)
+            else if (_missileType == MissileType.Sonobuoy)
             {
                 guidanceActive = false;
-                targetVessel = null; //remove from firedMissiles tracking to free up the Ai to fire forps or w/e
+                targetVessel = null; //remove from firedMissiles tracking to free up the Ai to fire torps or w/e
                 weaponClass = WeaponClasses.Bomb;
                 GuidanceMode = GuidanceModes.None;
                 var sonar = part.FindModuleImplementing<ModuleRadar>();
                 if (sonar) sonar.EnableRadar();
-                Debug.Log($"[Parachute Debug] buoy active");
             }
+            else //if (weaponClass == WeaponClasses.Bomb)
+            {
+                if (DetonationDistance == 0) Detonate(); //bombs
+                guidanceActive = false;
+                targetVessel = null; //remove from firedMissiles tracking to free up the slot for other ordnance
+            }           
         }
         IEnumerator updateCrashTolerance()
         {
@@ -3546,7 +3551,7 @@ namespace BDArmory.Weapons.Missiles
                         }
                         emitter.Current.maxSize = Mathf.Clamp01(Throttle / Mathf.Clamp((float)vessel.atmDensity, 0.2f, 1f));
                         */
-                        if (weaponClass == WeaponClasses.SLW || (_missileType == MissileType.ASWMissile && MissileState == MissileStates.Cruise) && vessel.altitude > 0) //#710, no torp thrust out of water
+                        if ((weaponClass == WeaponClasses.SLW || _missileType == MissileType.ASWMissile) && vessel.altitude > 0) //#710, no torp thrust out of water
                         {
                             emitter.Current.emit = false; // #710, shut down thrust FX for torps out of water
                         }
@@ -3563,7 +3568,7 @@ namespace BDArmory.Weapons.Missiles
                     while (gpe.MoveNext())
                     {
                         if (gpe.Current == null) continue;
-                        if (weaponClass == WeaponClasses.SLW || (_missileType == MissileType.ASWMissile && MissileState == MissileStates.Cruise) && vessel.altitude > 0) //#710, no torp thrust out of water
+                        if ((weaponClass == WeaponClasses.SLW || _missileType == MissileType.ASWMissile) && vessel.altitude > 0) //#710, no torp thrust out of water
                         {
                             gpe.Current.emit = false; // #710, shut down thrust FX for torps out of water
                         }
@@ -3593,6 +3598,7 @@ namespace BDArmory.Weapons.Missiles
 
         void StartCruise()
         {
+            Debug.Log("[parachute Debug] startCruise()!");
             MissileState = MissileStates.Cruise;
 
             if (audioSource == null) SetupAudio();
@@ -3602,7 +3608,7 @@ namespace BDArmory.Weapons.Missiles
             }
 
             currentThrust = spoolEngine ? 0 : cruiseThrust;
-
+            Debug.Log($"[parachute Debug] currentThrust: {currentThrust}");
             // Set the cruise value
             if (parsedMaxTorque[1] >= 0)
                 currMaxTorque = parsedMaxTorque[1];
@@ -4085,7 +4091,7 @@ namespace BDArmory.Weapons.Missiles
         void SLWGuidance()
         {
             Vector3 SLWTarget;
-            float runningDepth = Mathf.Min(-3, (float)FlightGlobals.getAltitudeAtPos(TargetPosition));
+            float runningDepth = Mathf.Min(-3, targetVessel ? (float)FlightGlobals.getAltitudeAtPos(targetVessel.Vessel.CoM) : 0);
             if (DetonationDistance != 0) //Using this as a stand-in for under-keel magnetic detonation torpedoes
             {
                 // If target is above, the we offset below, if target is below, we offset above
