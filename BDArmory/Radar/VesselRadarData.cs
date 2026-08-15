@@ -2119,8 +2119,11 @@ namespace BDArmory.Radar
             }
             if (radar.isMissileRadar)
             {
-                if (radar.maxDatalinkRange > 0 && (this.vessel.CoM - radar.vessel.CoM).sqrMagnitude > (radar.maxDatalinkRange * radar.maxDatalinkRange)) addContact = false;
-                if (RadarUtils.TerrainCheck(radar.vessel.CoM, vessel.CoM, FlightGlobals.currentMainBody)) addContact = false;
+                if (radar.maxDatalinkRange > 0) //if not, then satcomm link and LoS check unnecessary
+                { 
+                    if ((this.vessel.CoM - radar.vessel.CoM).sqrMagnitude > (radar.maxDatalinkRange * radar.maxDatalinkRange)) addContact = false;
+                    if (RadarUtils.TerrainCheck(radar.vessel.CoM, vessel.CoM, FlightGlobals.currentMainBody)) addContact = false;
+                }
             }
             if (addContact == false) return;
 
