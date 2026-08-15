@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 using BDArmory.Competition;
 using BDArmory.Control;
 using BDArmory.Extensions;
@@ -11,6 +7,10 @@ using BDArmory.UI;
 using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using static UnityEngine.GraphicsBuffer;
 
 namespace BDArmory.Radar
 {
@@ -2117,7 +2117,11 @@ namespace BDArmory.Radar
                 if (!rData.vessel.LandedOrSplashed && radar.sonarMode != ModuleRadar.SonarModes.None) addContact = false; //Sonar should not detect Aircraft
                 if (rData.vessel.Splashed && radar.sonarMode != ModuleRadar.SonarModes.None && radar.vessel.Splashed) addContact = true; //Sonar only detects underwater vessels // Sonar should only work when in the water
             }
-
+            if (radar.isMissileRadar)
+            {
+                if (radar.maxDatalinkRange > 0 && (this.vessel.CoM - radar.vessel.CoM).sqrMagnitude > (radar.maxDatalinkRange * radar.maxDatalinkRange)) addContact = false;
+                if (RadarUtils.TerrainCheck(radar.vessel.CoM, vessel.CoM, FlightGlobals.currentMainBody)) addContact = false;
+            }
             if (addContact == false) return;
 
             rData.signalPersistTime = radar.signalPersistTime;

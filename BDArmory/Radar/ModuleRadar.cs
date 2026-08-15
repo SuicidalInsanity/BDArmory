@@ -165,7 +165,8 @@ namespace BDArmory.Radar
 
         MissileLauncher ml = null;
         public bool isMissileRadar => ml != null;
-
+        [KSPField]
+        public float maxDatalinkRange = -1; //-1 for satellite link/infinite range, else dist in m
         public enum SonarModes
         {
             None = 0,
