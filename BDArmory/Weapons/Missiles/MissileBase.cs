@@ -1999,7 +1999,7 @@ namespace BDArmory.Weapons.Missiles
             return tntMass;
         }
 
-        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false)
+        public void CheckDetonationState(bool separateWarheads = false, bool preventProxyArming = false, bool allowMines = false)
         {
             //Guard clauses
             //if (!TargetAcquired) return;
@@ -2081,7 +2081,7 @@ namespace BDArmory.Weapons.Missiles
 
                 case DetonationDistanceStates.CheckingProximity:
                     {
-                        if (!TargetAcquired) return;
+                        if (!TargetAcquired && !allowMines) return;
 
                         // If impact fuze, or arming delay has prevented the proxy fuze from arming itself
                         if (DetonationDistance == 0 || preventProxyArming)

@@ -459,6 +459,9 @@ namespace BDArmory.Weapons.Missiles
         private bool OldInfAmmo = false;
         private bool StartSetupComplete = false;
 
+        private int landedProximityTimer = 25;
+        private bool checkProximity = false;
+
         //Fuel Burn Variables
         public float GetModuleMass(float baseMass, ModifierStagingSituation situation) => -burnedFuelMass - (boostersDecoupled ? boosterMass : 0);
         public ModifierChangeWhen GetModuleMassChangeWhen() => ModifierChangeWhen.CONSTANTLY;
@@ -2244,63 +2247,85 @@ namespace BDArmory.Weapons.Missiles
 
                 if (HasFired && !HasExploded && part != null)
                 {
-                    part.rb.isKinematic = false;
-                    AntiSpin();
-                    //simpleDrag
-                    if (useSimpleDrag || useSimpleDragTemp)
+                    if (!part.Landed)
                     {
-                        SimpleDrag();
-                    }
+                        part.rb.isKinematic = false;
+                        AntiSpin();
+                        //simpleDrag
+                        if (useSimpleDrag || useSimpleDragTemp)
+                        {
+                            SimpleDrag();
+                        }
 
-                    //flybyaudio
-                    float mCamDistanceSqr = (FlightCamera.fetch.mainCamera.transform.position - vessel.CoM).sqrMagnitude;
-                    float mCamRelVSqr = (float)(FlightGlobals.ActiveVessel.Velocity() - vessel.Velocity()).sqrMagnitude;
-                    if (!hasPlayedFlyby
-                       && FlightGlobals.ActiveVessel != vessel
-                       && FlightGlobals.ActiveVessel != SourceVessel
-                       && mCamDistanceSqr < 400 * 400 && mCamRelVSqr > 300 * 300
-                       && mCamRelVSqr < 800 * 800
-                       && VectorUtils.Angle(vessel.Velocity(), FlightGlobals.ActiveVessel.CoM - vessel.CoM) < 60)
-                    {
-                        if (sfAudioSource == null) SetupAudio();
-                        sfAudioSource.PlayOneShot(SoundUtils.GetAudioClip("BDArmory/Sounds/missileFlyby"));
-                        hasPlayedFlyby = true;
-                    }
-                    if (vessel.isActiveVessel)
-                    {
-                        audioSource.dopplerLevel = 0;
+                        //flybyaudio
+                        float mCamDistanceSqr = (FlightCamera.fetch.mainCamera.transform.position - vessel.CoM).sqrMagnitude;
+                        float mCamRelVSqr = (float)(FlightGlobals.ActiveVessel.Velocity() - vessel.Velocity()).sqrMagnitude;
+                        if (!hasPlayedFlyby
+                           && FlightGlobals.ActiveVessel != vessel
+                           && FlightGlobals.ActiveVessel != SourceVessel
+                           && mCamDistanceSqr < 400 * 400 && mCamRelVSqr > 300 * 300
+                           && mCamRelVSqr < 800 * 800
+                           && VectorUtils.Angle(vessel.Velocity(), FlightGlobals.ActiveVessel.CoM - vessel.CoM) < 60)
+                        {
+                            if (sfAudioSource == null) SetupAudio();
+                            sfAudioSource.PlayOneShot(SoundUtils.GetAudioClip("BDArmory/Sounds/missileFlyby"));
+                            hasPlayedFlyby = true;
+                        }
+                        if (vessel.isActiveVessel)
+                        {
+                            audioSource.dopplerLevel = 0;
+                        }
+                        else
+                        {
+                            audioSource.dopplerLevel = 1f;
+                        }
+
+                        UpdateThrustForces();
+                        UpdateGuidance();
+                        if (TimeIndex > fuzeArmingDelay)
+                        {
+                            CheckAltitudeDetonation();
+                            CheckDetonationState(preventProxyArming: (proximityFuzeInhibitionAlt > 0 && vessel.radarAltitude < proximityFuzeInhibitionAlt)); // this needs to be after UpdateGuidance()
+                            CheckDetonationDistance();
+                        }
+                        else if (!impactFuzeArmingDelay)
+                        {
+                            // Setup, arm and check the impact fuze
+                            CheckDetonationState(preventProxyArming: true);
+                            CheckDetonationDistance();
+                        }
+
+                        CheckCountermeasureDistance();
+
+                        //RaycastCollisions();
+
+                        //Timed detonation
+                        if (isTimed && TimeIndex > detonationTime)
+                        {
+                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher] missile timed out; self-destructing!");
+                            Detonate();
+                        }
+                        //debugString.AppendLine($"crashTol: {part.crashTolerance}; collider: {part.collider.enabled}; usingSimpleDrag: {(useSimpleDrag && useSimpleDragTemp)}; drag: {part.angularDrag.ToString("0.00")}");
                     }
                     else
                     {
-                        audioSource.dopplerLevel = 1f;
+                        landedProximityTimer--;
+                        if (landedProximityTimer <= 0) //every 1/2 second
+                        {
+                            landedProximityTimer = 25;
+                            checkProximity = false;
+                            using (var vee = BDATargetManager.LoadedVessels.AsEnumerable().GetEnumerator())
+                                while (vee.MoveNext())
+                                {
+                                    if (vee.Current == null || !vee.Current.loaded) continue;
+                                    if (!vee.Current.Landed) continue;
+                                    float dist = (vee.Current.CoM - MissileReferenceTransform.position).sqrMagnitude;
+                                    if (dist <= 1225) //35*35 (10m mine radius + margin to catch vees moving up to 50m/s at 1/2sec interval
+                                        checkProximity = true;
+                                }
+                        }
+                        if (checkProximity) CheckDetonationState(allowMines: true);
                     }
-
-                    UpdateThrustForces();
-                    UpdateGuidance();
-                    if (TimeIndex > fuzeArmingDelay)
-                    {
-                        CheckAltitudeDetonation();
-                        CheckDetonationState(preventProxyArming: (proximityFuzeInhibitionAlt > 0 && vessel.radarAltitude < proximityFuzeInhibitionAlt)); // this needs to be after UpdateGuidance()
-                        CheckDetonationDistance();
-                    }
-                    else if (!impactFuzeArmingDelay)
-                    {
-                        // Setup, arm and check the impact fuze
-                        CheckDetonationState(preventProxyArming: true);
-                        CheckDetonationDistance();
-                    }
-
-                    CheckCountermeasureDistance();
-
-                    //RaycastCollisions();
-
-                    //Timed detonation
-                    if (isTimed && TimeIndex > detonationTime)
-                    {
-                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher] missile timed out; self-destructing!");
-                        Detonate();
-                    }
-                    //debugString.AppendLine($"crashTol: {part.crashTolerance}; collider: {part.collider.enabled}; usingSimpleDrag: {(useSimpleDrag && useSimpleDragTemp)}; drag: {part.angularDrag.ToString("0.00")}");
                 }
             }
             catch (Exception e)
@@ -3240,7 +3265,6 @@ namespace BDArmory.Weapons.Missiles
                     yield return new WaitForSecondsFixed(0.5f);
                     part.crashTolerance = 1;
                 }
-                Debug.Log($"[Parachute Debug] torpedo away!");
             }
             else if (_missileType == MissileType.Sonobuoy)
             {
@@ -3256,6 +3280,7 @@ namespace BDArmory.Weapons.Missiles
                 if (DetonationDistance == 0) Detonate(); //bombs
                 guidanceActive = false;
                 targetVessel = null; //remove from firedMissiles tracking to free up the slot for other ordnance
+                DetonationDistanceState = DetonationDistanceStates.CheckingProximity; 
             }           
         }
         IEnumerator updateCrashTolerance()
