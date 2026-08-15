@@ -457,7 +457,12 @@ namespace BDArmory.Radar
             }         
         }
         void RadarSetup()
-        {            
+        {
+            if (isMissileRadar)
+            {
+                maxLocks = 0; //don't allow locks on sonobuoys, etc. They make very little sense
+                canLock = false;
+            }
             EnsureVesselRadarData(true);
 
             UpdateToggleGuiName();
