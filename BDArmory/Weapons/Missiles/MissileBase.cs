@@ -72,7 +72,7 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string missileType = "missile";
 
-        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile, Sonobuoy };
+        public enum MissileType { None = -1, Missile, Bomb, Torpedo, DepthCharge, ASWMissile, Sonobuoy, Mine };
 
         protected MissileType _missileType = MissileType.Missile;
 
@@ -2274,7 +2274,7 @@ namespace BDArmory.Weapons.Missiles
                 BulletHitFX.AttachFlames(pos, col.collider.gameObject.GetComponentInParent<Part>());
             }
 
-            if (HasExploded || !HasFired) return;
+            if (HasExploded || !HasFired || _missileType == MissileType.Mine) return;
 
             if (DetonationDistanceState != DetonationDistanceStates.CheckingProximity) return;
 

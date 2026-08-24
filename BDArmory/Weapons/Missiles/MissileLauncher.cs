@@ -2298,13 +2298,6 @@ namespace BDArmory.Weapons.Missiles
                         CheckCountermeasureDistance();
 
                         //RaycastCollisions();
-
-                        //Timed detonation
-                        if (isTimed && TimeIndex > detonationTime)
-                        {
-                            if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher] missile timed out; self-destructing!");
-                            Detonate();
-                        }
                         //debugString.AppendLine($"crashTol: {part.crashTolerance}; collider: {part.collider.enabled}; usingSimpleDrag: {(useSimpleDrag && useSimpleDragTemp)}; drag: {part.angularDrag.ToString("0.00")}");
                     }
                     else
@@ -2325,6 +2318,12 @@ namespace BDArmory.Weapons.Missiles
                                 }
                         }
                         if (checkProximity) CheckDetonationState(allowMines: true);
+                    }
+                    //Timed detonation
+                    if (isTimed && TimeIndex > detonationTime)
+                    {
+                        if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher] missile timed out; self-destructing!");
+                        Detonate();
                     }
                 }
             }
@@ -3277,10 +3276,13 @@ namespace BDArmory.Weapons.Missiles
             }
             else //if (weaponClass == WeaponClasses.Bomb)
             {
-                if (DetonationDistance == 0) Detonate(); //bombs
+                if (DetonationDistance == 0) Detonate(); //basic impact bombs
+                _missileType = MissileType.Mine;
                 guidanceActive = false;
                 targetVessel = null; //remove from firedMissiles tracking to free up the slot for other ordnance
-                DetonationDistanceState = DetonationDistanceStates.CheckingProximity; 
+                DetonationDistanceState = DetonationDistanceStates.CheckingProximity;
+                isTimed = true;
+                detonationTime = Time.time - TimeFired + detonationTime; 
             }           
         }
         IEnumerator updateCrashTolerance()

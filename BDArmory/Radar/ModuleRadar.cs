@@ -477,6 +477,10 @@ namespace BDArmory.Radar
                 else if (sonarMode == SonarModes.Active)
                     wm._sonarsEnabled = true;
             }
+            if (isMissileRadar)
+            {
+                ml.FiredByWM.vesselRadarData.queueLinks = true;
+            }
         }
         public void DisableRadar()
         {
