@@ -1968,10 +1968,6 @@ namespace BDArmory.Radar
             // guard clauses
             if (!myWpnManager || !myWpnManager.vessel || !radar)
                 return false;
-            if (radar.sonarMode == ModuleRadar.SonarModes.passive)
-            {
-                selfNoise = BDATargetManager.GetVesselAcousticSignature(radar.vessel, position).Item1 / 3;
-            }
             Vessel radarVessel = radar.vessel;
             float radarAlt = FlightGlobals.getAltitudeAtPos(position);
             if (radar.sonarMode != ModuleRadar.SonarModes.None && radarAlt > 0 ||
@@ -1982,6 +1978,11 @@ namespace BDArmory.Radar
                     Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateScanLock}}] Vessel: {radarVessel.vesselName} with UUID: {radarVessel.id}, {(radar.sonarMode == ModuleRadar.SonarModes.None ? "Radar" : "Sonar")}: {radar.name}, not in operating medium, aborting!");
                 }
                 return false; //sonar in air/radar underwater
+            }
+
+            if (radar.sonarMode == ModuleRadar.SonarModes.passive && radar.vessel.horizontalSrfSpeed > 1)
+            {
+                selfNoise = BDATargetManager.GetVesselAcousticSignature(radar.vessel, position).Item1 / 3;
             }
 
             if (BDArmorySettings.DEBUG_RADAR)

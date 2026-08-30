@@ -979,20 +979,16 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         {
                             if (rd.Current != null || rd.Current.canLock)
                             {
-                                if (rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                // Only enable passive sensors, wouldn't want to ping the enemy
+                                if (rd.Current.sonarMode != ModuleRadar.SonarModes.Active)
                                 {
                                     rd.Current.EnableRadar();
                                     float scanSpeed = rd.Current.radarAzFOV / rd.Current.scanRotationSpeed * 2;
                                     if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
-                                    _radarsEnabled = true;
-                                }
-                                else if (rd.Current.sonarMode == ModuleRadar.SonarModes.passive)
-                                // Only enable passive sonar, wouldn't want to ping the enemy
-                                {
-                                    rd.Current.EnableRadar();
-                                    float scanSpeed = rd.Current.radarAzFOV / rd.Current.scanRotationSpeed * 2;
-                                    if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
-                                    //_sonarsEnabled = true;
+                                    if (rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                        _radarsEnabled = true;
+                                    //else
+                                    //  _sonarsEnabled = true;
                                 }
                             }
                         }
@@ -8005,6 +8001,17 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     if (EMP && target.isDebilitated) continue;
                                     // not sure on the desired selection priority algorithm, so placeholder By Yield for now
                                     if (advancedMissileTgtByYield && SLW.GetTntMass() > (_MaxMissilesOnTarget - firedMissiles) * 1.25f) candidateYield *= 0.001f;
+                                    if (item.Current.GetMissileType() == MissileType.Sonobuoy)
+                                    {
+                                        //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
+                                        targetWeapon = item.Current;
+                                        targetWeaponPriority = candidatePriority;
+                                        break;
+                                        //also need to adjust targeting, we just need the buoy within a couple km of target. Doc was saying something about adjusting GBR 'close enough' bomb drop routines...?
+                                        //configure them as missiles to they try to get fired from range, but just fall instead of fly?
+                                        //modify the bombing routine?
+                                        //how many we dropping? all on the craft?
+                                    }
                                     if (SLW.TargetingMode == MissileBase.TargetingModes.Heat && SLW.activeRadarRange < 0 && (rwr && rwr.rwrEnabled)) //we have passive acoustic homing? see if anything has active sonar
                                     {
                                         if (!skipRWRCheck)

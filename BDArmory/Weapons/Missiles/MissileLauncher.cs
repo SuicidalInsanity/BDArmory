@@ -2089,7 +2089,11 @@ namespace BDArmory.Weapons.Missiles
                     }
                         
                 }
-                    
+                if (_missileType == MissileType.Sonobuoy)
+                {
+                    var buoy = part.FindModuleImplementing<ModuleExternalRadar>();
+                    if (buoy != null) buoy.ArmSensor();
+                }
 
                 StartCoroutine(MissileRoutine());
                 List<BDWarheadBase> tntList = part.FindModulesImplementing<BDWarheadBase>();
@@ -3271,8 +3275,6 @@ namespace BDArmory.Weapons.Missiles
                 targetVessel = null; //remove from firedMissiles tracking to free up the Ai to fire torps or w/e
                 weaponClass = WeaponClasses.Bomb;
                 GuidanceMode = GuidanceModes.None;
-                var sonar = part.FindModuleImplementing<ModuleRadar>();
-                if (sonar) sonar.EnableRadar();
             }
             else //if (weaponClass == WeaponClasses.Bomb)
             {
@@ -3312,7 +3314,6 @@ namespace BDArmory.Weapons.Missiles
                 burnRate = boostTime > 0 ? boosterFuelMass / boostTime * Time.fixedDeltaTime : 0;
                 burnedFuelMass = 0f;
             }
-
             StartBoost();
             StartCoroutine(updateCrashTolerance());
 
