@@ -55,7 +55,7 @@ namespace BDArmory.Targeting
             return (vessel ? vessel.id : Guid.Empty);
         }
 
-        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f, float _glintMod = -1f)
+        public TargetSignatureData(Vessel v, float _signalStrength, Part heatpart = null, float _notchVMod = 0f, float _notchRMod = 0f, float _range = -1f, float _glintMod = -1f, ModuleRadar _lockedByRadar = null)
         {
             //orbital = v.InOrbit();
             //orbit = v.orbit;

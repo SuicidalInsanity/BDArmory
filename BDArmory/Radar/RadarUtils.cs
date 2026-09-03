@@ -1742,7 +1742,7 @@ namespace BDArmory.Radar
 
                             if (dataIndex < dataArray.Length)
                             {
-                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _range: distance, _notchVMod: notchVMod, _notchRMod: notchRMod, _glintMod: glintMod);
+                                dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _range: distance, _notchVMod: notchVMod, _notchRMod: notchRMod, _glintMod: glintMod, _lockedByRadar: radar);
                                 dataArray[dataIndex].lockedByRadar = radar;
                                 dataIndex++;
                                 hasLocked = true;
@@ -2107,8 +2107,7 @@ namespace BDArmory.Radar
                                         Array.Resize(ref dataArray, BDATargetManager.LoadedVessels.Count);
                                     }
 
-                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod);
-                                    dataArray[dataIndex].lockedByRadar = radar;
+                                    dataArray[dataIndex] = new TargetSignatureData(loadedvessels.Current, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod, _lockedByRadar: radar);
                                     dataIndex++;
                                     hasLocked = true;
                                 }
@@ -2289,7 +2288,7 @@ namespace BDArmory.Radar
                     if ((signature >= minTrackSig) && (RadarCanDetect(radar, signature, distance)))
                     {
                         // can be tracked
-                        radar.ReceiveContactData(new TargetSignatureData(lockedVessel, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod), locked);
+                        radar.ReceiveContactData(new TargetSignatureData(lockedVessel, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod, _lockedByRadar: locked ? radar : null), locked);
                     }
                     else
                     {
@@ -2303,8 +2302,7 @@ namespace BDArmory.Radar
                                 //    Debug.Log($"[BDArmory.RadarUtils{{RadarUpdateLockTrack}}] Failed to track! signature/baseSignature/minTrackSig: {signature}/{baseSignature}/{minTrackSig}, canDetect: {RadarCanDetect(radar, baseSignature, distance)}, SCR / minTrackSCR: {GetRadarNotchingSCR(baseSignature, fov, distance, terrainR, terrainAngle)}/{radar.radarMinTrackSCR}");
                                 return false;
                             }
-
-                            radar.ReceiveContactData(new TargetSignatureData(lockedVessel, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod), locked);
+                            radar.ReceiveContactData(new TargetSignatureData(lockedVessel, signature, _notchVMod: notchVMod, _notchRMod: notchRMod, _range: 1000f * distance, _glintMod: glintMod, _lockedByRadar: locked ? radar : null), locked);
                         }
                         else
                         {
@@ -2924,12 +2922,15 @@ namespace BDArmory.Radar
                 sqrRange = (float)(a * u * u);
 
                 // If the point of intersection is further than the range we're checking then just ignore this
+                // range < 0 means we just check between the start and end points
                 if (range < 0)
                 {
+                    // In this case, if u > 1.0, then that means the point is *further* than the end point
                     if (u > 1.0)
                         return false;
                 }
                 else if (sqrRange > range * range)
+                    // Otherwise we check if we're within our given range
                     return false;
 
                 if (calcAngle)

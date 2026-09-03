@@ -535,7 +535,7 @@ namespace BDArmory.Weapons.Missiles
                 MissileType.Torpedo => WeaponClasses.SLW,
                 MissileType.DepthCharge => WeaponClasses.SLW,
                 MissileType.ASWMissile => WeaponClasses.Missile,
-                MissileType.Sonobuoy => WeaponClasses.SLW,
+                MissileType.DropSensor => WeaponClasses.SLW, //is there a case for air-deployed ground radars and this should be .Bomb instead? (air deployed seismograph sensors to detect ground craft?)
                 _ => WeaponClasses.Missile
             };
         }
@@ -2089,10 +2089,10 @@ namespace BDArmory.Weapons.Missiles
                     }
                         
                 }
-                if (_missileType == MissileType.Sonobuoy)
+                if (_missileType == MissileType.DropSensor || _missileType == MissileType.SensorMissile)
                 {
-                    var buoy = part.FindModuleImplementing<ModuleExternalRadar>();
-                    if (buoy != null) buoy.ArmSensor();
+                    var sensor = part.FindModuleImplementing<ModuleExternalRadar>();
+                    if (sensor != null) sensor.ArmSensor();
                 }
 
                 StartCoroutine(MissileRoutine());
@@ -2228,7 +2228,7 @@ namespace BDArmory.Weapons.Missiles
                 Vector3 forward = parachuteCanopy.transform.forward;
                 parachuteCanopy.transform.rotation = Quaternion.LookRotation(lookVector, forward);
             }
-            if (launched && _missileType == MissileType.Sonobuoy && vessel.Splashed)
+            if (launched && _missileType == MissileType.DropSensor && vessel.Splashed)
             {
                 Vector3 UpDir = (vessel.transform.position - vessel.mainBody.transform.position).normalized;
                 Vector3 lookVector = MissileReferenceTransform.position - UpDir * 10 - MissileReferenceTransform.transform.position;
@@ -2445,7 +2445,7 @@ namespace BDArmory.Weapons.Missiles
         private void CheckMiss()
         {
             if (weaponClass == WeaponClasses.Bomb) return;
-            if (_missileType == MissileType.Sonobuoy) return;
+            if (_missileType == MissileType.DropSensor) return;
             float sqrDist = (float)((TargetPosition + (TargetVelocity * Time.fixedDeltaTime)) - (vessel.CoM + (vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude;
             bool targetBehindMissile = !TargetAcquired || (!(MissileState != MissileStates.PostThrust && hasRCS) && Vector3.Dot(TargetPosition - vessel.CoM, transform.forward) < 0f); // Target is not acquired or we are behind it and not an RCS missile
             if (sqrDist < 160000 || MissileState == MissileStates.PostThrust || (targetBehindMissile && sqrDist > 1000000)) //missile has come within 400m, is post thrust, or > 1km behind target
@@ -3023,7 +3023,7 @@ namespace BDArmory.Weapons.Missiles
         {
             if (parachuteActive)
             {
-                if (part.vessel.speed > 10 && vessel.atmDensity > 0.1)
+                if (part.vessel.speed > 10 && vessel.atmDensity > 0.1) //TODO: get how KSP does parachutes from Doc's decompile - this works... mostly, though if the vessel vel si too low when the parachute begins it freaks out and gets Krakened
                 {
                     var speedFraction = (float)part.vessel.speed / 10;
                     if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
@@ -3269,7 +3269,7 @@ namespace BDArmory.Weapons.Missiles
                     part.crashTolerance = 1;
                 }
             }
-            else if (_missileType == MissileType.Sonobuoy)
+            else if (_missileType == MissileType.DropSensor)
             {
                 guidanceActive = false;
                 targetVessel = null; //remove from firedMissiles tracking to free up the Ai to fire torps or w/e
@@ -3304,7 +3304,7 @@ namespace BDArmory.Weapons.Missiles
         }
         IEnumerator BoostRoutine()
         {
-            if ((weaponClass == WeaponClasses.SLW && _missileType != MissileType.Sonobuoy) && vessel.altitude > 0) //no torpedo/depthcharge thrust in air
+            if ((weaponClass == WeaponClasses.SLW && _missileType != MissileType.DropSensor) && vessel.altitude > 0) //no torpedo/depthcharge thrust in air
             {
                 yield return new WaitUntilFixed(() => vessel == null || vessel.LandedOrSplashed);//don't start torpedo thrust until underwater
                 if (vessel == null || vessel.Landed) Detonate(); //dropping torpedoes over land is just going to turn them into heavy, expensive bombs...
@@ -3526,7 +3526,6 @@ namespace BDArmory.Weapons.Missiles
 
         IEnumerator CruiseRoutine()
         {
-            Debug.Log("[parachute Debug] starting Cruise Routine!");
             float massToBurn = 0;
             if (useFuel)
             {
@@ -3626,7 +3625,6 @@ namespace BDArmory.Weapons.Missiles
 
         void StartCruise()
         {
-            Debug.Log("[parachute Debug] startCruise()!");
             MissileState = MissileStates.Cruise;
 
             if (audioSource == null) SetupAudio();
@@ -3636,7 +3634,6 @@ namespace BDArmory.Weapons.Missiles
             }
 
             currentThrust = spoolEngine ? 0 : cruiseThrust;
-            Debug.Log($"[parachute Debug] currentThrust: {currentThrust}");
             // Set the cruise value
             if (parsedMaxTorque[1] >= 0)
                 currMaxTorque = parsedMaxTorque[1];

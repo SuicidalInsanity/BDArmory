@@ -442,31 +442,34 @@ namespace BDArmory.Radar
             }
         }
 
-        public void EnableRadar()
+        public void EnableRadar(bool setupRadar = true)
         {
             if (deployState != null)
             {
-                StartCoroutine(DeployAnimation(true));
+                StartCoroutine(DeployAnimation(true, setupRadar));
             }
             else
             {
                 radarEnabled = true;
-                RadarSetup();
+                RadarSetup(setupRadar);
             }         
         }
-        void RadarSetup()
+        void RadarSetup(bool setup)
         {
-            EnsureVesselRadarData(true);
             UpdateToggleGuiName();
-            //vesselRadarData.AddRadar(this); // Moved this to EnsureVesselRadarData() to account for the multi-craft case
-            var wm = WeaponManager;
-            if (wm != null)
+            if (setup)
             {
-                if (wm.guardMode) vesselRadarData.queueLinks = true;
-                if (sonarMode == SonarModes.None)
-                    wm._radarsEnabled = true;
-                else if (sonarMode == SonarModes.Active)
-                    wm._sonarsEnabled = true;
+                EnsureVesselRadarData(true);
+                //vesselRadarData.AddRadar(this); // Moved this to EnsureVesselRadarData() to account for the multi-craft case
+                var wm = WeaponManager;
+                if (wm != null)
+                {
+                    if (wm.guardMode) vesselRadarData.queueLinks = true;
+                    if (sonarMode == SonarModes.None)
+                        wm._radarsEnabled = true;
+                    else if (sonarMode == SonarModes.Active)
+                        wm._sonarsEnabled = true;
+                }
             }
         }
         public void DisableRadar()
@@ -531,7 +534,7 @@ namespace BDArmory.Radar
             }
         }
 
-        IEnumerator DeployAnimation(bool forward)
+        IEnumerator DeployAnimation(bool forward, bool setup = true)
         {
             var wait = new WaitForFixedUpdate();
             yield return wait;
@@ -545,7 +548,7 @@ namespace BDArmory.Radar
                 }
                 deployState.normalizedTime = 1;
                 radarEnabled = true;
-                RadarSetup();                
+                RadarSetup(setup);                
             }
             else
             {
@@ -1524,7 +1527,7 @@ namespace BDArmory.Radar
             }
         }
 
-        public void ReceiveContactData(TargetSignatureData contactData, bool _locked)
+        public virtual void ReceiveContactData(TargetSignatureData contactData, bool _locked)
         {
             if (vesselRadarData)
             {
@@ -1554,6 +1557,11 @@ namespace BDArmory.Radar
         public void RemoveExternalVRD(VesselRadarData vrd)
         {
             linkedToVessels.Remove(vrd);
+        }
+
+        public void UpdateLinkedVessels(List<VesselRadarData> newLinks)
+        {
+            linkedToVessels = newLinks;
         }
 
         void OnGUI()
@@ -1601,8 +1609,13 @@ namespace BDArmory.Radar
             yield return new WaitWhile(() => !vrd.radarsReady || (vrd.vessel is not null && (vrd.vessel.packed || !vrd.vessel.loaded)));
             yield return new WaitForFixedUpdate();
             if (vrd.vessel is null) yield break;
-            vesselRadarData.LinkVRD(vrd);
+            LinkToVRD(vrd);
             if (BDArmorySettings.DEBUG_RADAR) Debug.Log("[BDArmory.ModuleRadar]: Radar data link recovered: Local - " + vessel.vesselName + ", External - " + vrd.vessel.vesselName);
+        }
+
+        public virtual void LinkToVRD(VesselRadarData vrd)
+        {
+            vesselRadarData.LinkVRD(vrd);
         }
 
         public string getRWRType(int i)

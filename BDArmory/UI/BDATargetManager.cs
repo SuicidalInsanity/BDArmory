@@ -26,6 +26,7 @@ namespace BDArmory.UI
         private static Dictionary<BDTeam, List<TargetInfo>> TargetDatabase;
         private static Dictionary<BDTeam, List<GPSTargetInfo>> GPSTargets;
         public static List<ModuleTargetingCamera> ActiveLasers;
+        private static Dictionary<BDTeam, Dictionary<ModuleExternalRadar, ExternalSensorGroup>> ActiveExternalSensors;
         public static List<IBDWeapon> FiredMissiles;
         public static List<PooledBullet> FiredBullets;
         public static List<PooledRocket> FiredRockets;
@@ -88,7 +89,7 @@ namespace BDArmory.UI
 
             //Laser points
             ActiveLasers = new List<ModuleTargetingCamera>();
-
+            ActiveExternalSensors = new Dictionary<BDTeam, Dictionary<ModuleExternalRadar, ExternalSensorGroup>>();
             FiredMissiles = new List<IBDWeapon>();
             FiredBullets = new List<PooledBullet>();
             FiredRockets = new List<PooledRocket>();
@@ -139,6 +140,18 @@ namespace BDArmory.UI
             LoadedVessels.RemoveAll(ves => ves.loaded == false);
         }
 
+        void CleanExternalSensorList()
+        {
+            foreach (Dictionary<ModuleExternalRadar, ExternalSensorGroup> database in ActiveExternalSensors.Values)
+            {
+                foreach (ExternalSensorGroup group in database.Values)
+                {
+
+                    group.externalSensors.RemoveAll(sensor => sensor == null);
+                }
+            }
+        }
+
         void Update()
         {
             if (!FlightGlobals.ready) return;
@@ -168,6 +181,144 @@ namespace BDArmory.UI
             {
                 ActiveLasers.Add(cam);
             }
+        }
+
+        struct ExternalSensorGroup
+        {
+            public List<ModuleExternalRadar> externalSensors;
+            public List<VesselRadarData> connectedVessels;
+
+            public ExternalSensorGroup(List<ModuleExternalRadar> _externalSensors, List<VesselRadarData> _connectedVessels)
+            {
+                externalSensors = _externalSensors;
+                connectedVessels = _connectedVessels;
+            }
+
+            public ExternalSensorGroup()
+            {
+                externalSensors = new List<ModuleExternalRadar>();
+                connectedVessels = new List<VesselRadarData>();
+            }
+        }
+
+        public static void LinkExternalSensorGroup(VesselRadarData vrd, ModuleExternalRadar baseModule)
+        {
+            if (vrd == null || baseModule == null) return;
+            BDTeam team = vrd.weaponManager.Team;
+            if (team == null) return;
+            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(team, baseModule);
+            List<VesselRadarData> connectedVesselList = sensorGroup.connectedVessels;
+            if (!connectedVesselList.Contains(vrd))
+            {
+                // If not yet connected, we add the vessel to the list
+                connectedVesselList.Add(vrd);
+                // And then ensure the link arrays are properly sized...
+                List<ModuleExternalRadar> sensorList = sensorGroup.externalSensors;
+                for (int i = 0; i < sensorList.Count; i++)
+                {
+                    sensorList[i].CheckLinkArraySize();
+                }
+            }
+        }
+
+        public static void UnlinkExternalSensorGroup(VesselRadarData vrd, ModuleExternalRadar baseModule)
+        {
+            if (vrd == null || baseModule == null) return;
+            BDTeam team = vrd.weaponManager.Team;
+            if (team == null) return;
+            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(team, baseModule);
+            List<VesselRadarData> connectedVesselList = sensorGroup.connectedVessels;
+            if (connectedVesselList.Contains(vrd))
+            {
+                // If not yet connected, we add the vessel to the list
+                connectedVesselList.Remove(vrd);
+                MissileFire wpmr = vrd.weaponManager;
+                // And then ensure the link arrays are properly sized...
+                List<ModuleExternalRadar> sensorList = sensorGroup.externalSensors;
+                for (int i = 0; i < sensorList.Count; i++)
+                {
+                    if (sensorList[i].WeaponManager == wpmr)
+                    {
+                        sensorList[i].GetPWPMR();
+                    }
+                }
+            }
+        }
+
+        public static List<VesselRadarData> RegisterExternalSensor(ModuleExternalRadar sensor)
+        {
+            BDTeam sensorTeam = sensor.ParentWeaponManager.Team;
+            if (sensorTeam == null) return null;
+            // Get the sensor group
+            ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor);
+            List<ModuleExternalRadar> sensorList = sensorGroup.externalSensors;
+            if (!sensorList.Contains(sensor))
+            {
+                sensorList.Add(sensor);
+            }
+            // We then return the connectedVessels list
+            return sensorGroup.connectedVessels;
+        }
+
+        public static void RemoveExternalSensor(ModuleExternalRadar sensor)
+        {
+            BDTeam sensorTeam = sensor.ParentWeaponManager.Team;
+            if (sensorTeam == null) return;
+            List<ModuleExternalRadar> sensorList = BDATargetManager.GetExternalSensorList(sensorTeam, sensor);
+            sensorList.Remove(sensor);
+        }
+
+        public static List<ModuleExternalRadar> GetExternalSensorTypes(BDTeam team)
+        {
+            if (!ActiveExternalSensors.TryGetValue(team, out Dictionary<ModuleExternalRadar, ExternalSensorGroup> database))
+            {
+                database = new Dictionary<ModuleExternalRadar, ExternalSensorGroup>();
+                ActiveExternalSensors.Add(team, database);
+            }
+            return database.Keys.ToList();
+        }
+
+        static ExternalSensorGroup GetExternalSensorGroup(BDTeam team, ModuleExternalRadar baseModule)
+        {
+            if (ActiveExternalSensors.TryGetValue(team, out Dictionary<ModuleExternalRadar, ExternalSensorGroup> database))
+            {
+                if (database.TryGetValue(baseModule, out ExternalSensorGroup sensorGroup))
+                {
+                    return sensorGroup;
+                }
+                // If no list, proceed to list creation...
+            }
+            else
+            {
+                // If no database, then we create one first...
+                database = new Dictionary<ModuleExternalRadar, ExternalSensorGroup>();
+                ActiveExternalSensors.Add(team, database);
+            }
+            ExternalSensorGroup newGroup = new ExternalSensorGroup();
+            database.Add(baseModule, newGroup);
+            return newGroup;
+        }
+
+        public static List<ModuleExternalRadar> GetExternalSensorList(BDTeam team, ModuleExternalRadar baseModule)
+        {
+            if (ActiveExternalSensors.TryGetValue(team, out Dictionary<ModuleExternalRadar, ExternalSensorGroup> database))
+            {
+                if (database.TryGetValue(baseModule, out ExternalSensorGroup sensorGroup))
+                {
+                    return sensorGroup.externalSensors;
+                }
+                // If no list, proceed to list creation...
+            }
+            else
+            {
+                // If no database, then we create one first...
+                database = new Dictionary<ModuleExternalRadar, ExternalSensorGroup>();
+                ActiveExternalSensors.Add(team, database);
+            }
+            ExternalSensorGroup newGroup = new ExternalSensorGroup();
+            List<ModuleExternalRadar> newList = newGroup.externalSensors;
+            database.Add(baseModule, newGroup);
+            return newList;
         }
 
         ///// <summary>
@@ -1324,9 +1475,10 @@ namespace BDArmory.UI
         public static void AddTarget(TargetInfo target, BDTeam reportingTeam)
         {
             if (target.Team == null) return;
-            if (!BDATargetManager.TargetList(reportingTeam).Contains(target))
+            List<TargetInfo> targetList = BDATargetManager.TargetList(reportingTeam);
+            if (!targetList.Contains(target))
             {
-                BDATargetManager.TargetList(reportingTeam).Add(target);
+                targetList.Add(target);
             }
         }
 

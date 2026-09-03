@@ -620,6 +620,9 @@ namespace BDArmory.Control
 
         #region KSPFields,events,actions
 
+        [KSPField(isPersistant = true)]
+        public string linkedExternalSensors;
+
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_FiringInterval"),//Firing Interval
             UI_FloatRange(minValue = 0.5f, maxValue = 60f, stepIncrement = 0.5f, scene = UI_Scene.All)]
         public float targetScanInterval = 1;
@@ -7237,7 +7240,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     MissileType currMissileType = item.Current.GetMissileType();
                                     if (!vessel.Splashed || (vessel.Splashed && vessel.altitude > targetVessel.altitude)) //if surfaced or sumberged, but above target, try depthcharges
                                     {
-                                        if (currMissileType == MissileType.Sonobuoy)
+                                        if (currMissileType == MissileType.DropSensor)
                                         {
                                             //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
                                             targetWeapon = item.Current;
@@ -8001,7 +8004,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     if (EMP && target.isDebilitated) continue;
                                     // not sure on the desired selection priority algorithm, so placeholder By Yield for now
                                     if (advancedMissileTgtByYield && SLW.GetTntMass() > (_MaxMissilesOnTarget - firedMissiles) * 1.25f) candidateYield *= 0.001f;
-                                    if (item.Current.GetMissileType() == MissileType.Sonobuoy)
+                                    if (item.Current.GetMissileType() == MissileType.DropSensor)
                                     {
                                         //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
                                         targetWeapon = item.Current;

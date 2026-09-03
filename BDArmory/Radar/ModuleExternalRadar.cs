@@ -52,6 +52,10 @@ namespace BDArmory.Radar
 
         private bool wasEnabled = false;
 
+        protected bool[] linksActive;
+
+        bool isConnected = false;
+
         #endregion KSPFields (Part Configuration)
 
         MissileLauncher ml = null;
@@ -134,7 +138,7 @@ namespace BDArmory.Radar
             if (parentVRD == null)
             {
                 parentVRD = pwpmr.vessel.gameObject.AddComponent<VesselRadarData>();
-                parentVRD.weaponManager = pwpmr;
+                parentVRD.weaponManager = pwpmr; //this will need to update if !onlyLinkToParent and parent dies
             }
         }
 
@@ -145,21 +149,123 @@ namespace BDArmory.Radar
             {
                 yield return wait;
             }
-            mr.EnableRadar();
+            mr.EnableRadar(false);
+            LinkSensorToNet();
             while (!mr.radarEnabled) yield return wait;
             wasEnabled = true;
             if (parentVRD != null)
                 parentVRD.queueLinks = true;
         } 
+        public void LinkSensorToNet()
+        {
+            UpdateLinkedVessels(BDATargetManager.RegisterExternalSensor(this));
+            linksActive = new bool[mr.LinkedVessels.Count];
+            vesselRadarData.AddSensor(this); //otherwise the sensor only registers when vrd.RefreshAvailableLinks() is called
+            vesselRadarData.queueLinks = true;
+        }
+
+        public void UnlinkSensorFromNet()
+        {
+            List<VesselRadarData>.Enumerator vrd = mr.LinkedVessels.GetEnumerator();
+            while (vrd.MoveNext())
+            {
+                if (vrd.Current == null) continue;
+                vrd.Current.RemoveDataFromRadar(this);
+            }
+            vrd.Dispose();
+            UpdateLinkedVessels(null);
+            BDATargetManager.RemoveExternalSensor(this);
+
+        }
+
         public override void OnFixedUpdate()
         {
             if (!HighLogic.LoadedSceneIsFlight) return;
+            if (radarEnabled) CheckLinks();
             if (mr != null && wasEnabled && !mr.radarEnabled) //out of electricity and shut down
             {
+                UnlinkSensorFromNet();
                 if (ml != null)
                     ml.Detonate(); //sonobuoy's dry, remove it
-                Debug.Log($"[ModuleRadar] No juice - disabling");
+                wasEnabled = false;
             }
         }
+
+        public void CheckLinks()
+        {
+            // If < 0 we don't care about EITHER range or LoS
+            if (maxDatalinkRange < 0f)
+            {
+                isConnected = true;
+                for (int i = 0; i < mr.LinkedVessels.Count; i++)
+                {
+                    linksActive[i] = true;
+                }
+                return;
+            }
+            isConnected = false;
+            Vector3 adjustedPos = vessel.LandedOrSplashed ? (vessel.CoM + vessel.up * ((vessel.mainBody.ocean && vessel.altitude < 0f) ? (5f - vessel.altitude) : 5f)) : vessel.CoM;
+            for (int i = 0; i < mr.LinkedVessels.Count; i++)
+            {
+                Vessel currVessel = mr.LinkedVessels[i].vessel;
+                Vector3 currPos = currVessel.CoM;
+                // If range == 0, we don't care about range, only LoS
+                if (maxDatalinkRange > 0f && (currPos - vessel.CoM).sqrMagnitude > maxDatalinkRange * maxDatalinkRange)
+                {
+                    linksActive[i] = false;
+                    continue;
+                }
+                // LoS must not be blocked
+                if (!RadarUtils.TerrainCheck(adjustedPos, currPos, vessel.mainBody))
+                {
+                    linksActive[i] = true;
+                    isConnected = true;
+                }
+                else
+                {
+                    linksActive[i] = false;
+                }
+            }
+        }
+        public override void ReceiveContactData(TargetSignatureData contactData, bool _locked)
+        {
+            if (!isConnected) return;
+            for (int i = 0; i < mr.LinkedVessels.Count; i++)
+            {
+                if (maxDatalinkRange >= 0f && !linksActive[i]) continue;
+                VesselRadarData currVRD = mr.LinkedVessels[i];
+                if (currVRD == null) continue;
+                if (currVRD.canReceiveRadarData && currVRD.vessel != contactData.vessel)
+                {
+                    currVRD.AddRadarContact(this, contactData, _locked, true);
+                }
+            }
+        }
+
+        public void CheckLinkArraySize()
+        {
+            // Check array size...
+            if (linksActive.Length >= mr.LinkedVessels.Count) return;
+
+            // Resize array...
+            linksActive = new bool[mr.LinkedVessels.Count];
+            // Populate array if datalinkRange < 0f
+            // Not technically necessary since we skip this check in the code if
+            // datalinkRange < 0, but this will probably save a headache in case
+            // that gets changed for some reason...
+            if (maxDatalinkRange < 0f)
+            {
+                for (int i = 0; i < linksActive.Length; i++)
+                {
+                    linksActive[i] = true;
+                }
+            }
+        }
+
+        public override void LinkToVRD(VesselRadarData vrd)
+        {
+            BDATargetManager.LinkExternalSensorGroup(vrd, this);
+        }
+
     }
 }
