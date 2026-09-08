@@ -1,6 +1,8 @@
 IMPROVEMENTS / FIXES
 - UI:
 	- Add a global toggle for disabling the Kerbal Suit Selector.
+- Spawning:
+	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 
 v1.13.1.0
 IMPROVEMENTS / FIXES
