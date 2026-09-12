@@ -30,7 +30,7 @@ namespace BDArmory.Utils
                 {
                     availableParts.Add(avPart);
                 }
-                if (avPart.partPrefab.GetComponent<ModuleRadar>() != null)
+                if (avPart.partPrefab.GetComponent<ModuleRadarSensorBase>() != null)
                 {
                     radars.Add(avPart);
                 }
