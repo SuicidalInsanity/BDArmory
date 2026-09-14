@@ -21,7 +21,7 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        private string radarName;
+        private string radarName = null;
 
         [KSPField]
         public int turretID = 0;
@@ -35,10 +35,10 @@ namespace BDArmory.Radar
 
         public override bool CanLock
         {
-            get 
-            { 
+            get
+            {
                 return canLock;
-            } 
+            }
         }
 
         [KSPField]
@@ -323,13 +323,13 @@ namespace BDArmory.Radar
                 sensorName = radarName;
             }
 
-            #pragma warning disable 0612 // Disable obsolete warning for this valid use.
+#pragma warning disable 0612 // Disable obsolete warning for this valid use.
             if (radarEnabled)
             {
                 sensorEnabled = true;
                 radarEnabled = false;
             }
-            #pragma warning restore 0612
+#pragma warning restore 0612
 
             if (HighLogic.LoadedSceneIsFlight)
             {

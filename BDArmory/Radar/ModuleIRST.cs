@@ -19,7 +19,7 @@ namespace BDArmory.Radar
         #region General Configuration
 
         [KSPField]
-        private string IRSTName;
+        private string IRSTName = null;
 
         [KSPField]
         public int turretID = 0;
@@ -233,13 +233,13 @@ namespace BDArmory.Radar
                 sensorName = IRSTName;
             }
 
-            #pragma warning disable 0612 // Disable obsolete warning for this valid use.
+#pragma warning disable 0612 // Disable obsolete warning for this valid use.
             if (irstEnabled)
             {
                 sensorEnabled = true;
                 irstEnabled = false;
             }
-            #pragma warning restore 0612
+#pragma warning restore 0612
 
             if (HighLogic.LoadedSceneIsFlight)
             {
