@@ -816,19 +816,21 @@ namespace BDArmory.Utils
         {
             if (cache == null || cache.Length != 4)
             {
+                float sliderMin = UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin);
+                float sliderMax = UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin);
                 cache = [
-                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Current slider value
-                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Min slider value
-                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Max slider value
-                    (sigFig, Mathf.Pow(10f, 1 - sigFig)) // Slider rounding
+                    (value, Mathf.Clamp(UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin), sliderMin, sliderMax)), // Current slider value
+                    (minValue, sliderMin), // Min slider value
+                    (maxValue, sliderMax), // Max slider value
+                    (sigFig, Mathf.Pow(10f, 1 - Mathf.CeilToInt(sigFig)) * Mathf.Max(10f * (sigFig % 1f), 1f)) // Slider rounding
                 ];
             }
             else
             {
-                if (value != cache[0].Item1) cache[0] = (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (minValue != cache[1].Item1) cache[1] = (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (maxValue != cache[2].Item1) cache[2] = (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
-                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - sigFig));
+                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - Mathf.CeilToInt(sigFig)) * Mathf.Max(10f * (sigFig % 1f), 1f));
+                if (value != cache[0].Item1) cache[0] = (value, Mathf.Clamp(UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin), cache[1].Item2, cache[2].Item2)); // Ensure slider value is within limits to avoid potential NaN.
             }
             float sliderValue = cache[0].Item2;
             float sliderRounding = cache[3].Item2;

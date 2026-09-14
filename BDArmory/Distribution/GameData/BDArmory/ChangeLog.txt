@@ -1,6 +1,10 @@
 IMPROVEMENTS / FIXES
 - UI:
 	- Add a global toggle for disabling the Kerbal Suit Selector.
+- AI / WM:
+	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
+- Spawning:
+	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 
 v1.13.1.0
 IMPROVEMENTS / FIXES
@@ -99,6 +103,7 @@ IMPROVEMENTS / FIXES
 		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
 		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Adjust the climb-slope limiter to allow maintaining a decent slope at high speeds (relative to min speed) even if the TWR drops to almost 0. This is particularly relevant for prop engines.
+	- Add a custom formation editor to the WingCommander.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 	- Armor cost, some stats tweaked to be more reasonable.

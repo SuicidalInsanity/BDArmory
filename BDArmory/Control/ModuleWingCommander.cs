@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -684,16 +683,16 @@ namespace BDArmory.Control
         int formationDragIndex = -1;
         bool numericFields = false;
 
-        readonly Dictionary<int, Vector2> formationIndexToPosition = []; // Formation index => formation position
-        readonly Dictionary<int, NumericInputFieldVector2> formationIndexToPositionNumericFields = [];
+        readonly Dictionary<int, Vector3> formationIndexToPosition = []; // Formation index => formation position (right, ahead, above) relative to commander.
+        readonly Dictionary<int, NumericInputFieldVector3> formationIndexToPositionNumericFields = [];
         /// <summary>
         /// Get the formation position in local coordinates.
         /// </summary>
         /// <param name="index">Formation index</param>
         /// <returns></returns>
-        public Vector2 GetFormationPosition(int index)
+        public Vector3 GetFormationPosition(int index)
         {
-            if (formationIndexToPosition.TryGetValue(index, out Vector2 position))
+            if (formationIndexToPosition.TryGetValue(index, out Vector3 position))
             {
                 return position;
             }
@@ -706,8 +705,13 @@ namespace BDArmory.Control
                 float positionFactor = Mathf.Ceil(indexF / 2);
                 float right = rightSign * positionFactor * spread;
                 float back = -positionFactor * lag;
-                return new Vector2(right, back);
+                return new Vector3(right, back, 0);
             }
+        }
+        public void SetFormationPosition(int index, Vector3 position)
+        {
+            formationIndexToPosition[index] = position;
+            if (numericFields) formationIndexToPositionNumericFields[index].SetCurrentValue(position);
         }
 
         void FormationWindow(int id)
@@ -749,7 +753,7 @@ namespace BDArmory.Control
                 {
                     if (!formationIndexToPositionNumericFields.TryGetValue(wingmanIndex, out var field))
                     {
-                        field = formationIndexToPositionNumericFields[wingmanIndex] = gameObject.AddComponent<NumericInputFieldVector2>().Initialise(Time.time, formationPosition);
+                        field = formationIndexToPositionNumericFields[wingmanIndex] = gameObject.AddComponent<NumericInputFieldVector3>().Initialise(Time.time, formationPosition);
                     }
                     field.TryParseValue(GUI.TextField(new Rect(dragRect.position + new Vector2(formationIconScale / 2 - 50, formationIconScale / 2 + 18), new(100, 20)), field.PossibleValue, 16, field.Style));
                     formationIndexToPosition[wingmanIndex] = field.CurrentValue;
@@ -759,7 +763,7 @@ namespace BDArmory.Control
                 {
                     GUI.Label(
                         new Rect(dragRect.position + new Vector2(formationIconScale / 2 - 100, formationIconScale / 2), new(200, 50)),
-                        $"{formationPosition.ToString("0")}\n{wingmanIndex + 1}: {wingman.vessel.vesselName}",
+                        $"({formationPosition.x:0}, {formationPosition.y:0}{(formationPosition.z != 0 ? $", {formationPosition.z:0}" : "")})\n{wingmanIndex + 1}: {wingman.vessel.vesselName}",
                         formationLabelStyle);
                 }
                 FormationTextures.DrawFormationIcon(wingman, teamColor, dragRect); // Wingmen in team colors
@@ -778,12 +782,41 @@ namespace BDArmory.Control
                 {
                     if (formationDragIndex == 0)
                     {
-                        formationIconOffset += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                        if (GameSettings.MODIFIER_KEY.GetKey())
+                        {
+                            if (Mouse.delta.y != 0)
+                            {
+                                float vertAdjust = Mouse.delta.y > 0 ? -1 : 1;
+                                foreach (var wingman in wingmen)
+                                {
+                                    if (wingman == null) continue;
+                                    int wingmanIndex = wingman.commandFollowIndex;
+                                    var position = GetFormationPosition(wingmanIndex);
+                                    position.z += vertAdjust;
+                                    SetFormationPosition(wingmanIndex, position);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            formationIconOffset += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+                        }
                     }
                     else
                     {
-                        formationIndexToPosition[formationDragIndex - 1] = GetFormationPosition(formationDragIndex - 1) + new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
-                        if (numericFields) formationIndexToPositionNumericFields[formationDragIndex - 1].SetCurrentValue(formationIndexToPosition[formationDragIndex - 1]);
+                        if (GameSettings.MODIFIER_KEY.GetKey())
+                        {
+                            if (Mouse.delta.y != 0)
+                            {
+                                var position = GetFormationPosition(formationDragIndex - 1);
+                                position.z += Mouse.delta.y > 0 ? -1 : 1;
+                                SetFormationPosition(formationDragIndex - 1, position);
+                            }
+                        }
+                        else
+                        {
+                            SetFormationPosition(formationDragIndex - 1, GetFormationPosition(formationDragIndex - 1) + (Vector3)(new Vector2(formationWindowScale, -formationWindowScale) * Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL));
+                        }
                     }
                 }
             }
