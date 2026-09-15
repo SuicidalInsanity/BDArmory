@@ -61,6 +61,19 @@ namespace BDArmory.Extensions
         }
 
         /// <summary>
+        /// Overload for Vector3d, returns Vector3.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 ProjectOnPlanePreNormalized(this Vector3d vector, Vector3d planeNormal)
+        {
+            var dot = Vector3d.Dot(vector, planeNormal);
+            return new Vector3(
+                (float)(vector.x - planeNormal.x * dot),
+                (float)(vector.y - planeNormal.y * dot),
+                (float)(vector.z - planeNormal.z * dot));
+        }
+
+        /// <summary>
         /// Project a vector onto a plane defined by the plane normal (not-necessarily normalized).
         /// 
         /// This implementation is the same as the Unity reference implementation,

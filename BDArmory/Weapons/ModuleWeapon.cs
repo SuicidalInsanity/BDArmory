@@ -1768,9 +1768,9 @@ namespace BDArmory.Weapons
                         turret.yawTransform = fireTransforms[0]; //reasonably certain there aren't any multibarrel fixed guns out there...
                         turret.SetReferenceTransform(fireTransforms[0]);
                         turret.turretWeapon = this;
-						if (isTurreted = false)
+						if (!isTurreted)
 						{
-							turret.minPitch = - BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
+							turret.minPitch = -BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
 							turret.maxPitch = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST / 2;
 							turret.yawRange = BDArmorySettings.CUSTOM_TURRET_AIM_ASSIST;
 							turret.pitchSpeedDPS = 50;
@@ -2073,6 +2073,7 @@ namespace BDArmory.Weapons
                 wep.Fields[nameof(FiringTolerance)].guiActiveEditor = FireAngleOverride;
             }
         }
+
         [KSPEvent(advancedTweakable = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_BurstLengthOverride_Enable", active = true)]//Burst length override
         public void ToggleBurstLengthOverride()
         {
@@ -2096,7 +2097,6 @@ namespace BDArmory.Weapons
         public void ToggleDeploy()
         {
             toggleDeployState = !toggleDeployState;
-
             Events[nameof(ToggleDeploy)].guiName = StringUtils.Localize(toggleDeployState ? "#autoLOC_6001339" : "#autoLOC_6001080");//"Retract" : "Extended"
             if (deployState != null) deployState.normalizedTime = HighLogic.LoadedSceneIsFlight ? 0 : toggleDeployState ? 1 : 0;
             foreach (var sym in part.symmetryCounterparts)
@@ -2983,7 +2983,7 @@ namespace BDArmory.Weapons
                                                 damage += Impulse / 100;
                                             }
                                         }
-                                        if (graviticWeapon)
+                                        if (massAdjustment != 0)
                                         {
                                             if (p.rb != null && p.rb.mass > 0)
                                             {
@@ -3265,7 +3265,7 @@ namespace BDArmory.Weapons
                                                     damage += Impulse / 100;
                                                 }
                                             }
-                                            if (graviticWeapon)
+                                            if (massAdjustment != 0)
                                             {
                                                 if (hitPart.rb != null && hitPart.rb.mass > 0)
                                                 {
@@ -4221,11 +4221,10 @@ namespace BDArmory.Weapons
             float timeout = 0;
             if (wm && wm.guardMode && lastVisualTargetVessel != null)
             {
-				if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
-				if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
-			}
-            if (aiControlled && !slaved && wm != null && (!targetAcquired || 
-                (staleTarget && timeout > 0)))
+                if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
+                if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
+            }
+            if (aiControlled && !slaved && wm != null && (!targetAcquired || (staleTarget && timeout > 0)))
             {
                 if (staleTarget && staleGoodTargetTime > 0 && staleGoodTargetTime <= wm.detectedTargetTimeout[lastVisualTargetVessel]) //cap staletarget prediction to point when target forgotten
                 {
@@ -6763,11 +6762,11 @@ namespace BDArmory.Weapons
             ParseAmmoStats();
 
             if (updateSymmetric) foreach (var sym in part.symmetryCounterparts)
-                {
-                    if (sym is null) continue;
-                    var wep = sym.GetComponent<ModuleWeapon>();
-                    wep.SetupAmmo(field != null ? wep.Fields[field.name] : null, obj, false);
-                }
+            {
+                if (sym is null) continue;
+                var wep = sym.GetComponent<ModuleWeapon>();
+                wep.SetupAmmo(field != null ? wep.Fields[field.name] : null, obj, false);
+            }
         }
         public void ParseAmmoStats()
         {

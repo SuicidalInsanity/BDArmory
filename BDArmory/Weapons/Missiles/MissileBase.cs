@@ -649,6 +649,7 @@ namespace BDArmory.Weapons.Missiles
                 "depthcharge" => MissileType.DepthCharge,
                 "aswmissile" => MissileType.ASWMissile,
                 "dropsensor" => MissileType.DropSensor,
+                "sensormissile" => MissileType.SensorMissile,
                 _ => MissileType.Missile
             };
         }
@@ -1645,7 +1646,7 @@ namespace BDArmory.Weapons.Missiles
         {
             Vector3 TargetCoords_;
             Vector3 TargetLead;
-            ModuleRadar detectedByRadar = null;
+            ModuleRadarSensorBase detectedByRadar = null;
             bool activeDatalink = false;
             if (!setInertialTarget)
             {
@@ -2299,7 +2300,6 @@ namespace BDArmory.Weapons.Missiles
                 cruiseAltitudField.minValue = 500;
                 cruiseAltitudField.stepIncrement = 500f;
             }
-            //this.part.RefreshAssociatedWindows();
         }
 
         public virtual bool HasTurrets()

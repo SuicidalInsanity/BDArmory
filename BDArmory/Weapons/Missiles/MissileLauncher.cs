@@ -1455,7 +1455,6 @@ namespace BDArmory.Weapons.Missiles
             }
 
             ParseAntiRadTargetTypes();
-            //GUIUtils.RefreshAssociatedWindows(part);
         }
 
         /// <summary>
@@ -2091,10 +2090,10 @@ namespace BDArmory.Weapons.Missiles
                 }
                 if (_missileType == MissileType.DropSensor || _missileType == MissileType.SensorMissile)
                 {
-                    var sensor = part.FindModuleImplementing<ModuleExternalRadar>();
+                    var sensor = part.FindModuleImplementing<ModuleExternalSensor>();
                     if (sensor != null) sensor.ArmSensor();
                 }
-
+                
                 StartCoroutine(MissileRoutine());
                 List<BDWarheadBase> tntList = part.FindModulesImplementing<BDWarheadBase>();
                 foreach (BDWarheadBase tnt in tntList)
@@ -2102,6 +2101,7 @@ namespace BDArmory.Weapons.Missiles
                     tnt.Team = Team;
                     tnt.sourcevessel = SourceVessel;
                 }
+
                 if (BDArmorySettings.DEBUG_MISSILES) Debug.Log($"[BDArmory.MissileLauncher]: {Time.time} Missile Launched!");
                 if (BDArmorySettings.CAMERA_SWITCH_INCLUDE_MISSILES && SourceVessel.isActiveVessel) LoadedVesselSwitcher.Instance.ForceSwitchVessel(vessel);
             }
@@ -3290,7 +3290,7 @@ namespace BDArmory.Weapons.Missiles
         IEnumerator updateCrashTolerance()
         {
             yield return new WaitForSecondsFixed(0.5f); //wait half sec after boost motor fires, then set crashTolerance to 1. Torps have already waited until splashdown before this is called.
-            part.crashTolerance = 1;
+            part.crashTolerance = (_missileType == MissileType.DropSensor) ? waterImpactTolerance : 1; //ideallythese would have a a parachute or similar...
             if (useSimpleDragTemp)
             {
                 yield return new WaitForSecondsFixed((clearanceLength * 1.2f) / 2);
@@ -4112,7 +4112,7 @@ namespace BDArmory.Weapons.Missiles
             Vector3 agmTarget = MissileGuidance.GetAirToGroundTarget(targetPosTemp, TargetVelocity, vessel, agmDescentRatio);
             DoAero(agmTarget);
         }
-
+        float longitudinalOffset = 0;
         void SLWGuidance()
         {
             Vector3 SLWTarget;
@@ -4131,9 +4131,8 @@ namespace BDArmory.Weapons.Missiles
                 //if (VectorUtils.Angle(SLWTarget - vessel.CoM, transform.forward) > maxOffBoresight * 0.75f)
                 //{
                 //    SLWTarget = TargetPosition;
-                //}
-                float longitudinalOffset = 0;
-                if (longitudinalOffset == 0) longitudinalOffset = targetVessel.Vessel.GetRadius() * 0.75f * UnityEngine.Random.Range(-1, 1);
+                //}                
+                if (longitudinalOffset == 0) longitudinalOffset = targetVessel.Vessel.GetRadius() * 0.75f * UnityEngine.Random.Range(-1, 1); //crude abstraction to prevent torps from all hitting CoM
                 SLWTarget += targetVessel.Vessel.vesselTransform.up * longitudinalOffset;
                 SLWTarget = vessel.CoM + (SLWTarget - vessel.CoM).normalized * 100;
                 SLWTarget = SLWTarget - ((float)FlightGlobals.getAltitudeAtPos(SLWTarget) * upDir) + upDir * runningDepth;
@@ -4153,7 +4152,6 @@ namespace BDArmory.Weapons.Missiles
                 SLWTarget = (SLWTarget - ((float)FlightGlobals.getAltitudeAtPos(SLWTarget) * upDir)) + upDir * runningDepth;
             }
             DrawDebugLine(vessel.CoM, SLWTarget, Color.blue);
-            //allow inverse contRod-style target offset for srf targets for 'under-the-keel' proximity detonation? or at least not having the torps have a target alt of 0 (and thus be vulnerable to surface PD?)
             if (TimeIndex > dropTime + 0.25f)
             {
                 DoAero(SLWTarget);

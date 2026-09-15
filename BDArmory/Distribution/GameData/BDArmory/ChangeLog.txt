@@ -7,14 +7,24 @@ or how much cumulative warhead mass should be used against them.
 
 
 IMPROVEMENTS / FIXES
+- UI:
+	- Add a global toggle for disabling the Kerbal Suit Selector.
+- AI / WM:
+	- Custom WingCommander formations now include a vertical offset. Hold the modifier key while dragging a vessel's icon to adjust it (or use the numeric inputs). Using the leader's icon adjusts it for the entire wing.
+- Spawning:
+	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
+
+v1.13.1.0
+IMPROVEMENTS / FIXES
 - General:
 	- Missile magazine missile mass is no longer affected by hull material part mass modifiers.
 	- Fix HP values of parts using ModulePartVariants; they should be a bit more sensible now.
 - UI:
 	- Don't drag the targeting window when slewing with the mouse.
-  - Fix 'Selected Weapon: xxx' message spam when under AI control.
+	- Fix 'Selected Weapon: xxx' message spam when under AI control.
 	- Add a 'Log Marker' button to the debugging section to help with syncing videos and logs.
 	- Move the debris removal sliders to the General Sliders section. Add a "Clear Debris Now" button and a toggle to always clear the debris vs only during competitions.
+	- Add hack to TGP camera to work around https://github.com/LGhassen/Scatterer/issues/229 with Scatterer on OpenGL.
 - AI / WM:
 	- Fix AI considering radar missiles not painting them with a radar as incoming.
 	- Fix AI selecting bombs over missiles when missiles have priority.
@@ -22,21 +32,23 @@ IMPROVEMENTS / FIXES
 	- Stale Target parameter for object permanence tracking of targets that have dipped out of sight now tracked per vessel.
 	- Fix staleTarget timeout not timing out.
 	- Target selection now properly takes LoS into account; no more AI fixation on a target behind cover when there's another target out in the open it can shoot.
+	- Improved roll and extending behaviour for bombing (post-drop wing-slapping should no longer occur).
+	- Fix high-frequency fly-to direction oscillation due to squiggly squid direction incorrectly switching every frame.
 - Sensors:
 	- Split `HMDCost` into `HMDCost` which represents a fixed per-cockpit cost of the system, and `HMDCostPerSeat` which represents a per-seat cost of the system. Defaults to 1500 and 500 respectively.
 	- Replaced ventral RCS editor view with polar plot showing RCS values by craft azimuth when “Real-Time Aspected RCS” is enabled.
 - Weapons:
 	- Account for Krakensbane frame velocity in GPS and targeting camera targets.
 	- Fix rocket RoF not matching selected value.
-  - Bullets:
+	- Bullets:
 		- Fix bulletDmgMult not applying to shaped charge kinetic damage.
 	- Missiles:
 		- Improved missile "maxOffBoresight" limiting. Missiles will now try to turn as hard as they can in the commanded direction while keeping the target inside "maxOffBoresight".
 		- Added new "terminalMaxOffBoresight" field to "MissileLauncher" missiles. When a missile has a "terminalGuidanceType", "terminalMaxOffBoresight" replaces "maxOffBoresight" (if specified) when targeting gets handed over to "terminalGuidanceType".
 		- Fixed "CLOS"'s commanded acceleration being incorrect.
 		- Fixed "maxTorque = 0" + "maxAeroTorque = 0" missiles bugging out and potentially causing crashes.
-    - Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
-   - Custom Turrets:
+		- Expand "LoftAltitudeAdvMax" slider limits to 10,000 m.
+	- Custom Turrets:
 		- Custom Turrets can now be set to add an amount of aim-assist to fixed guns or turrets with < 2deg traverse that are mounted on them, to help with stock robotics granularity.
 		- Adds new BDA settings field - CUSTOM_TURRET_AIM_ASSIST - to set degrees of aim assist to apply.
 	- Ammo:
@@ -99,6 +111,7 @@ IMPROVEMENTS / FIXES
 		- Move bombing-related options into their own section of the PAW and AI GUI. This includes bombing altitude, divebombing angle, extending for bombing (which gets adjusted by the estimated time-to-impact) and PIDs for finetuning the bomb release point (default values should work for most craft).
 		- Fix the bomb aimer not working when the bomb's rigidbody and parent part's rigidbody are both null.
 	- Adjust the climb-slope limiter to allow maintaining a decent slope at high speeds (relative to min speed) even if the TWR drops to almost 0. This is particularly relevant for prop engines.
+	- Add a custom formation editor to the WingCommander.
 - Armor:
 	- Limit Adjustable Armor thickness to the minimum of length / width of the armor plate to prevent unphysical armor calculations.
 	- Armor cost, some stats tweaked to be more reasonable.

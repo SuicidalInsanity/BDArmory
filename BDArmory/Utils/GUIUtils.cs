@@ -500,27 +500,11 @@ namespace BDArmory.Utils
             return scaledRect.Contains(inverseMousePos);
         }
 
-        //Thanks FlowerChild
-        //refreshes part action window
-        // Note: This was just calling "part.PartActionWindow.UpdateWindow()", which is done every frame by KSP anyway, making this redundant.
-        //       Also, setting "part.PartActionWindow.displayDirty = true" causes a full rebuild of the PAW, which breaks continuous interaction with sliders, so avoid it unless absolutely necessary.
-        public static void RefreshAssociatedWindows(Part part)
-        {
-            //if (part == null || part.PartActionWindow == null) return;
-            //part.PartActionWindow.UpdateWindow();
-            // part.PartActionWindow.displayDirty = true;
-            // IEnumerator<UIPartActionWindow> window = Object.FindObjectsOfType(typeof(UIPartActionWindow)).Cast<UIPartActionWindow>().GetEnumerator();
-            // while (window.MoveNext())
-            // {
-            //     if (window.Current == null) continue;
-            //     if (window.Current.part == part)
-            //     {
-            //         window.Current.displayDirty = true;
-            //     }
-            // }
-            // window.Dispose();
-        }
         #region PAW
+        // Notes:
+        // The previous "RefreshAssociatedWindows(Part part)" function was just calling "part.PartActionWindow.UpdateWindow()", which is done every frame by KSP anyway, making this redundant.
+        // The other variant was setting "part.PartActionWindow.displayDirty = true", which causes a full rebuild of the PAW and breaks continuous interaction with sliders, so avoid it unless absolutely necessary.
+
         /// <summary>
         /// Refresh the UI for the given resource in the PAW.
         /// </summary>
@@ -590,17 +574,16 @@ namespace BDArmory.Utils
                 Debug.LogWarning($"[BDArmory.GUIUtils]: Invalid value {value} for {field.guiName} ({field.name}) on {partModule.part}");
                 return;
             }
-            
+
             // Debug.Log($"DEBUG Updating ChooseOptionPAW of {field.guiName} ({field.name}) on {partModule.part.persistentId} of type {typeof(T).Name} to {value}, index {pawChooseOption.slider.value}->{newIndex}");
             bool changed = pawChooseOption.slider.value != newIndex;
             pawChooseOption.slider.value = newIndex; // Set the value even if it hasn't changed to trigger the slider callback.
-            
+
             // When set externally (e.g., from symmetry or the AI GUI) UI_ChooseOption sets the field value (but not the slider) without triggering onFieldChanged!
             // Thus we have to invoke it here in order for it to trigger the onFieldChanged handlers.
             // Invoking it here may lead to an extra loop or two of this function, but shouldn't recurse further unless handlers on symmetric parts are behaving asymmetricallyn.
             // It shouldn't trigger onFieldChanged more than once per part module.
             if (changed && !updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
-            
             if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
             {
                 // Debug.Log($"DEBUG Updating symmetric part {sym.persistentId} of {partModule.part.persistentId}");
@@ -612,9 +595,9 @@ namespace BDArmory.Utils
                     foreach (var f in pm.Fields) debugString.Add(f.name);
                     UpdateChooseOptionPAW<T>(pm.Fields[field.name], obj, false); // We need to use the field on the symmetric PartModule, otherwise the wrong UI_Control is grabbed.
                     break;
-                    }
                 }
             }
+        }
 
         /// <summary>
         /// Helper method to avoid having to specify the PartModule type.
@@ -648,15 +631,15 @@ namespace BDArmory.Utils
                 if (!updateSymmetric && uiControl.onFieldChanged != null) uiControl.onFieldChanged.Invoke(field, obj);
             }
             if (updateSymmetric) foreach (Part sym in partModule.part.symmetryCounterparts)
+            {
+                Type fieldHostType = field.host.GetType();
+                foreach (T pm in sym.GetComponents<T>())
                 {
-                    Type fieldHostType = field.host.GetType();
-                    foreach (T pm in sym.GetComponents<T>())
-                    {
-                        if (pm.GetType() != fieldHostType) continue;
-                        UpdateToggle<T>(pm.Fields[field.name], obj, false);
-                        break;
-                    }
+                    if (pm.GetType() != fieldHostType) continue;
+                    UpdateToggle<T>(pm.Fields[field.name], obj, false);
+                    break;
                 }
+            }
         }
 
         /// <summary>
@@ -743,7 +726,7 @@ namespace BDArmory.Utils
         /// </summary>
         /// <typeparam name="T">The subclass Type of the PartModule.</typeparam>
         /// <param name="partModule">The PartModule for the field.</param>
-       /// <param name="field">The field being updated.</param>
+        /// <param name="field">The field being updated.</param>
         /// <param name="obj">The old value.</param>
         public static void DefaultToggleHandler<T>(this T _, BaseField field, object obj = null) where T : PartModule => DefaultToggleHandler<T>(field, obj);
         #endregion PAW       
@@ -833,19 +816,21 @@ namespace BDArmory.Utils
         {
             if (cache == null || cache.Length != 4)
             {
+                float sliderMin = UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin);
+                float sliderMax = UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin);
                 cache = [
-                    (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Current slider value
-                    (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Min slider value
-                    (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin)), // Max slider value
-                    (sigFig, Mathf.Pow(10f, 1 - sigFig)) // Slider rounding
+                    (value, Mathf.Clamp(UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin), sliderMin, sliderMax)), // Current slider value
+                    (minValue, sliderMin), // Min slider value
+                    (maxValue, sliderMax), // Max slider value
+                    (sigFig, Mathf.Pow(10f, 1 - Mathf.CeilToInt(sigFig)) * Mathf.Max(10f * (sigFig % 1f), 1f)) // Slider rounding
                 ];
             }
             else
             {
-                if (value != cache[0].Item1) cache[0] = (value, UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (minValue != cache[1].Item1) cache[1] = (minValue, UI_FloatSemiLogRange.ToSliderValue(withZero ? 0 : minValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
                 if (maxValue != cache[2].Item1) cache[2] = (maxValue, UI_FloatSemiLogRange.ToSliderValue(maxValue, minValue, sigFig, withZero, reducedPrecisionAtMin));
-                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - sigFig));
+                if (sigFig != cache[3].Item1) cache[3] = (sigFig, Mathf.Pow(10f, 1 - Mathf.CeilToInt(sigFig)) * Mathf.Max(10f * (sigFig % 1f), 1f));
+                if (value != cache[0].Item1) cache[0] = (value, Mathf.Clamp(UI_FloatSemiLogRange.ToSliderValue(value, minValue, sigFig, withZero, reducedPrecisionAtMin), cache[1].Item2, cache[2].Item2)); // Ensure slider value is within limits to avoid potential NaN.
             }
             float sliderValue = cache[0].Item2;
             float sliderRounding = cache[3].Item2;

@@ -2184,8 +2184,8 @@ namespace BDArmory.UI
                         {
                             if (mr.Current == null) continue;
                             numberOfModules++;
-                            GUIStyle moduleStyle = mr.Current.radarEnabled ? centerLabelBlue : centerLabel;
-                            string label = mr.Current.radarName;
+                            GUIStyle moduleStyle = mr.Current.sensorEnabled ? centerLabelBlue : centerLabel;
+                            string label = mr.Current.sensorName;
                             if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), columnWidth - 2 * leftIndent, entryHeight),
                                 label, moduleStyle))
                             {
@@ -2198,8 +2198,8 @@ namespace BDArmory.UI
                         {
                             if (mr.Current == null) continue;
                             numberOfModules++;
-                            GUIStyle moduleStyle = mr.Current.irstEnabled ? centerLabelBlue : centerLabel;
-                            string label = mr.Current.IRSTName;
+                            GUIStyle moduleStyle = mr.Current.sensorEnabled ? centerLabelBlue : centerLabel;
+                            string label = mr.Current.sensorName;
                             if (GUI.Button(new Rect(leftIndent, +(moduleLines * entryHeight), columnWidth - 2 * leftIndent, entryHeight),
                                 label, moduleStyle))
                             {
@@ -2748,6 +2748,8 @@ namespace BDArmory.UI
                     BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI = GUI.Toggle(SLeftRect(++line, 1), BDArmorySettings.DISPLAY_COMPETITION_STATUS_WITH_HIDDEN_UI, StringUtils.Localize("#LOC_BDArmory_Settings_DisplayCompetitionStatusHiddenUI"));
                 }
                 BDArmorySettings.CAMERA_SWITCH_INCLUDE_MISSILES = GUI.Toggle(SLeftRect(++line), BDArmorySettings.CAMERA_SWITCH_INCLUDE_MISSILES, StringUtils.Localize("#LOC_BDArmory_Settings_CameraSwitchIncludeMissiles"));
+                if (BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION != (BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION = GUI.Toggle(SRightRect(line), BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION, StringUtils.Localize("#LOC_BDArmory_Settings_DisableKerbalSuitSelector"))))
+                    KerbalSuitSelector.EnableKerbalSuitSelection(!BDArmorySettings.DISABLE_KERBAL_SUIT_SELECTION);
                 if (HighLogic.LoadedSceneIsEditor && BDArmorySettings.ADVANCED_USER_SETTINGS)
                 {
                     if (BDArmorySettings.SHOW_CATEGORIES != (BDArmorySettings.SHOW_CATEGORIES = GUI.Toggle(SLeftRect(++line), BDArmorySettings.SHOW_CATEGORIES, StringUtils.Localize("#LOC_BDArmory_Settings_ShowEditorSubcategories"))))//"Show Editor Subcategories"

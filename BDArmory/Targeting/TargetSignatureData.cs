@@ -97,7 +97,7 @@ namespace BDArmory.Targeting
             vesselJammer = v.gameObject.GetComponent<VesselECMJInfo>();
 
             //pingPosition = Vector2.zero;
-            lockedByRadar = null;
+            lockedByRadar = _lockedByRadar;
         }
 
         public TargetSignatureData(CMFlare flare, float _signalStrength)

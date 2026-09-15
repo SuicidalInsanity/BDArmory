@@ -980,13 +980,13 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                     using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                         while (rd.MoveNext())
                         {
-                            if (rd.Current != null || rd.Current.canLock)
+                            if (rd.Current != null || rd.Current.CanLock)
                             {
-                                // Only enable passive sensors, wouldn't want to ping the enemy
+                                // Only enable radars and passive sonar, wouldn't want to ping the enemy
                                 if (rd.Current.sonarMode != ModuleRadar.SonarModes.Active)
                                 {
-                                    rd.Current.EnableRadar();
-                                    float scanSpeed = rd.Current.radarAzFOV / rd.Current.scanRotationSpeed * 2;
+                                    rd.Current.EnableSensor();
+                                    float scanSpeed = rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                     if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
                                     if (rd.Current.sonarMode == ModuleRadar.SonarModes.None)
                                         _radarsEnabled = true;
@@ -1003,8 +1003,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         {
                             if (rd.Current != null)
                             {
-                                rd.Current.EnableIRST();
-                                float scanSpeed = rd.Current.directionalFieldOfView / rd.Current.scanRotationSpeed * 2;
+                                rd.Current.EnableSensor();
+                                float scanSpeed = rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                 if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
                                 _irstsEnabled = true;
                             }
@@ -1297,7 +1297,6 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
         {
             BDArmorySettings.USE_DLZ_LAUNCH_RANGE = !BDArmorySettings.USE_DLZ_LAUNCH_RANGE;
             Events[nameof(ToggleDLZ)].guiName = $" {StringUtils.Localize("#LOC_BDArmory_MissilesRange")}: {(BDArmorySettings.USE_DLZ_LAUNCH_RANGE ? StringUtils.Localize("#LOC_BDArmory_true") : StringUtils.Localize("#LOC_BDArmory_false"))}";//"Use Dynamic Launch Range: True/False
-            GUIUtils.RefreshAssociatedWindows(part);
         }
         */
         IBDWeapon sw;
@@ -2779,9 +2778,9 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                             while (rd.MoveNext())
                             {
-                                if ((rd.Current != null || rd.Current.canLock) && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                if ((rd.Current != null || rd.Current.CanLock) && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
                                 {
-                                    rd.Current.EnableRadar();
+                                    rd.Current.EnableSensor();
                                     _radarsEnabled = true;
                                 }
                             }
@@ -4011,7 +4010,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                 designatedGPSInfo = new GPSTargetInfo(foundCam.bodyRelativeGTP, "Guard Target");
                             }
                             bombAimerTrajectoryAtTimeFired = [.. bombAimerTrajectory];
-                            var bombToDrop = CurrentMissile as MissileLauncher;
+                            MissileLauncher bombToDrop = CurrentMissile as MissileLauncher;
+                            float bombDropTime = bombAirTime; // Cache this here as it gets reset before the extend request below.
                             FireCurrentMissile(CurrentMissile, true, guardTarget);
                             timeBombReleased = Time.time;
                             yield return new WaitForSecondsFixed(rippleFire ? 60f / rippleRPM : 0.06f);
@@ -4032,7 +4032,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             {
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: 100f + 1.5f * Mathf.Max(bombAirTime * (float)vessel.srfSpeed, radius),
+                                                    minDistance: 100f + 1.5f * Mathf.Max(bombDropTime * (float)vessel.srfSpeed, radius),
                                                     tPosition: vessel.CoM + 100f * vessel.transform.forward, // Extend in the pitch-up direction to avoid slapping the bomb.
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);
@@ -4042,7 +4042,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                                 // Extend back to roughly the bombing run start distance.
                                                 pilotAI.RequestExtend(
                                                     reason: "bombs away!",
-                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombAirTime, 1.5f * radius),
+                                                    minDistance: Mathf.Max(pilotAI.extendDistanceBombing + Mathf.Max((float)vessel.srfSpeed, pilotAI.idleSpeed) * bombDropTime, 1.5f * radius),
                                                     tPosition: guardTarget ? guardTarget.CoM : bombAimerCPA,
                                                     missile: bombDropped,
                                                     ignoreCooldown: true);
@@ -5007,7 +5007,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                             //antiradTargets.Union(OtherUtils.ParseEnumArray<RadarWarningReceiver.RWRThreatTypes>(ml != null ? ml.antiradTargetTypes : "0,5"));
                             antiradTargets |= (ml != null ? ml.antiradTargets : BDModularGuidance.modularGuidanceAntiRadTargetTypes);
                         }
-                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;                        
+                        if (weapon.Current.GetMissileType() == MissileType.Bomb) hasBombs = true;
                     }
                 }
 
@@ -5756,35 +5756,18 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 rad.Dispose();
                 */
                 MaxRadarLocks = 0;
-                List<ModuleRadar> tempRadars = new List<ModuleRadar>();
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator())
                     while (rd.MoveNext())
                     {
-                        if (rd.Current != null)
+                        if (rd.Current != null && rd.Current.CanLock)
                         {
-                            if (rd.Current.isMissileRadar)
-                            {
-                                tempRadars.Add(rd.Current); //don't have sonobuoys clog up radar list/Wm GUI
-                                continue;
-                            }
-                            if (rd.Current.canLock)
-                            {
-                                if (rd.Current.maxLocks > 0) MaxRadarLocks += rd.Current.maxLocks;
-                            }
-                        }
-                    }
-                using (List<ModuleRadar>.Enumerator rd = tempRadars.GetEnumerator())
-                    while (rd.MoveNext())
-                    {
-                        if (rd.Current != null)
-                        {
-                            _radars.Remove(rd.Current);
+                            if (rd.Current.maxLocks > 0) MaxRadarLocks += rd.Current.maxLocks;
                         }
                     }
                 using (List<ModuleRadar>.Enumerator rd = _radars.GetEnumerator()) //now refresh lock array size with new maxradarLock value
                     while (rd.MoveNext())
                     {
-                        if (rd.Current != null && rd.Current.canLock)
+                        if (rd.Current != null && rd.Current.CanLock)
                         {
                             rd.Current.RefreshLockArray();
                         }
@@ -8238,10 +8221,10 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                 using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                     while (rd.MoveNext())
                                     {
-                                        if (rd.Current != null && rd.Current.canLock && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                        if (rd.Current != null && rd.Current.CanLock && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
                                         {
                                             if (results.foundAntiRadiationMissile && rd.Current.DynamicRadar) continue;
-                                            rd.Current.EnableRadar();
+                                            rd.Current.EnableSensor();
                                             _radarsEnabled = true;
                                         }
                                     }
@@ -8256,9 +8239,9 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             if (rd.Current != null && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
                                             {
                                                 if (rd.Current.DynamicRadar && results.foundAntiRadiationMissile) continue; //don't enable radar if incoming HARM, unless radar is specifically set to be used regardless
-                                                float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.radarAzFOV / rd.Current.scanRotationSpeed * 2;
+                                                float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                                 if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
-                                                rd.Current.EnableRadar();
+                                                rd.Current.EnableSensor();
                                                 if (ml.GetWeaponClass() != WeaponClasses.SLW) _radarsEnabled = true;
                                                 else _sonarsEnabled = true;
                                             }
@@ -8271,9 +8254,9 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         {
                                             if (rd.Current != null)
                                             {
-                                                float scanSpeed = rd.Current.directionalFieldOfView / rd.Current.scanRotationSpeed * 2;
+                                                float scanSpeed = rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                                 if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
-                                                rd.Current.EnableIRST();
+                                                rd.Current.EnableSensor ();
                                                 _irstsEnabled = true;
                                             }
                                             _irstsEnabled = true;
@@ -8300,10 +8283,10 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         using (List<ModuleRadar>.Enumerator rd = radars.GetEnumerator())
                                             while (rd.MoveNext())
                                             {
-                                                if (rd.Current != null && rd.Current.canLock && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
+                                                if (rd.Current != null && rd.Current.CanLock && rd.Current.sonarMode == ModuleRadar.SonarModes.None)
                                                 {
                                                     if (results.foundAntiRadiationMissile && rd.Current.DynamicRadar) continue;
-                                                    rd.Current.EnableRadar();
+                                                    rd.Current.EnableSensor();
                                                     _radarsEnabled = true;
                                                 }
                                             }
@@ -8347,13 +8330,13 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         if (distanceToTarget < engageableWeapon.GetEngagementRangeMin()) return false;
                         if (!vessel.LandedOrSplashed) // TODO: bomb always allowed?
                             using (var bomb = VesselModuleRegistry.GetModules<MissileBase>(vessel).GetEnumerator())
-                            while (bomb.MoveNext())
-                            {
-                                if (bomb.Current == null) continue;
-                                if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
-                                if (bomb.Current.launched) continue;
-                                return true;
-                            }
+                                while (bomb.MoveNext())
+                                {
+                                    if (bomb.Current == null) continue;
+                                    if (bomb.Current.GetWeaponChannel() > weaponChannel) continue;
+                                    if (bomb.Current.launched) continue;
+                                    return true;
+                                }
                         break;
 
                     case WeaponClasses.Rocket:
@@ -8415,7 +8398,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         if (rd.Current != null && rd.Current.sonarMode == ModuleRadar.SonarModes.Active)
                                         {
                                             if (results.foundTorpedo && results.foundHeatMissile && rd.Current.DynamicRadar) continue;
-                                            rd.Current.EnableRadar();
+                                            rd.Current.EnableSensor();
                                             _sonarsEnabled = true;
                                         }
 
@@ -8429,10 +8412,10 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         if (rd.Current != null && rd.Current.sonarMode != ModuleRadar.SonarModes.None)
                                         {
                                             if (rd.Current.sonarMode == ModuleRadar.SonarModes.Active && results.foundTorpedo && results.foundHeatMissile && rd.Current.DynamicRadar) continue;
-                                            rd.Current.EnableRadar();
+                                            rd.Current.EnableSensor();
                                             _sonarsEnabled = true;
                                         }
-                                        float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.radarAzFOV / rd.Current.scanRotationSpeed * 2;
+                                        float scanSpeed = (rd.Current.locked && rd.Current.lockedTarget.vessel == targetVessel) ? rd.Current.multiLockFOV : rd.Current.sensorAzFOV / rd.Current.scanRotationSpeed * 2;
                                         if (GpsUpdateMax > 0 && scanSpeed < GpsUpdateMax) GpsUpdateMax = scanSpeed;
                                     }
                             }
@@ -8585,7 +8568,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 if (detected)
                 {
                     detectedTargetTimeout.Add(target.Vessel, 0);
-                    staleTarget.Add(target.Vessel,false);
+                    staleTarget.Add(target.Vessel, false);
                     return TargetVisibility.Visible;
                 }
                 //carrying antirads and picking up RWR pings?
@@ -9534,7 +9517,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                 while (rd.MoveNext())
                                 {
                                     if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
-                                        rd.Current.DisableRadar();
+                                        rd.Current.DisableSensor();
                                     _radarsEnabled = false;
                                 }
                             StopECM(); //disable jammers
@@ -9554,7 +9537,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                         while (rd.MoveNext())
                                         {
                                             if (rd.Current != null && (rd.Current.DynamicRadar || DynamicRadarOverride))
-                                                rd.Current.DisableRadar();
+                                                rd.Current.DisableSensor();
                                             _radarsEnabled = false;
                                         }
                                 }
@@ -9628,7 +9611,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     while (rd.MoveNext())
                                     {
                                         if (rd.Current != null && rd.Current.sonarMode == ModuleRadar.SonarModes.Active) //kill active sonar
-                                            rd.Current.DisableRadar();
+                                            rd.Current.DisableSensor();
                                     }
                                 _sonarsEnabled = false;
                             }
@@ -10076,7 +10059,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                                 if (item.Current == null) continue;
                                                 if (!viableTarget) continue;
                                                 //if (TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon))
-                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) || 
+                                                if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.currentPosition - kbCorrection, weapon)) ||
                                                     (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.currentPosition - kbCorrection)))
                                                 {
                                                     weapon.tgtRocket = item.Current;
@@ -10115,7 +10098,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                             if (item.Current.Vessel == null) continue;
                                             if (!viableTarget) continue;
                                             //if (TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon))
-                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) || 
+                                            if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) ||
                                                 (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.Vessel.CoM)))
                                             {
                                                 weapon.visualTargetPart = item.Current.Vessel.rootPart;
@@ -10526,7 +10509,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         //TODO - don't assign two missiles on the same custom turret to two different targets check
                         customTurreted = true;
                     }
-                    if (BDArmorySettings.DEBUG_APS) 
+                    if (BDArmorySettings.DEBUG_APS)
                         Debug.Log($"[PD Missile Debug - {vessel.GetName()}]viable: {viableTarget}; turreted: {turreted}; inRange: {(turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))}");
                     if (viableTarget && turreted ? TargetInTurretRange(mT.turret, mT.fireFOV, targetVessel.CoM) : (customTurreted ? TargetInCustomTurretRange(null, 5, targetVessel.CoM, currMissile) : GetLaunchAuthorization(targetVessel, this, currMissile)))
                     {
@@ -11167,6 +11150,39 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
         }
 
         string bombAimerDebugString = "";
+        static RaycastHit[] bombAimerHits;
+        static bool BombAimerClosestNonParentHit(Ray ray, out RaycastHit hit, float distance, Vessel parentVessel)
+        {
+            bombAimerHits ??= new RaycastHit[16];
+            const int layerMask = (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA);
+            hit = default;
+
+            var hitCount = Physics.RaycastNonAlloc(ray, bombAimerHits, distance, layerMask);
+            if (hitCount == bombAimerHits.Length)
+            {
+                bombAimerHits = Physics.RaycastAll(ray, distance, layerMask);
+                hitCount = bombAimerHits.Length;
+            }
+            if (hitCount == 0) return false;
+
+            float closestNonParentHit = float.MaxValue;
+            int closestNonParentHitIndex = -1; // Use indexing to avoid copying structs unnecessarily.
+            for (int i = 0; i < hitCount; ++i)
+            {
+                Part part = bombAimerHits[i].collider.GetComponentInParent<Part>();
+                if (part != null && part.vessel == parentVessel) continue; // Ignore self-hits.
+                if (bombAimerHits[i].distance < closestNonParentHit)
+                {
+                    closestNonParentHit = bombAimerHits[i].distance;
+                    closestNonParentHitIndex = i;
+                }
+            }
+            if (closestNonParentHitIndex == -1) return false;
+
+            hit = bombAimerHits[closestNonParentHitIndex];
+            return true;
+        }
+
         float BombAimer()
         {
             var bomb = selectedWeapon; // Avoid repeated calls to selectedWeapon.get().
@@ -11268,8 +11284,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 if (Mathf.Floor(simVelocity.magnitude / 10f) != Mathf.Floor(lastSimSpeed / 10f)) logstring.Append($"; {simVelocity.magnitude}: {AoA}, {liftForce}, {dragForce}");
 
                 var (distance, direction) = (currPos - prevPos).MagNorm();
-                Ray ray = new(prevPos, direction);
-                if (Physics.Raycast(ray, out RaycastHit hitInfo, distance, simTime < ml.dropTime ? (int)LayerMasks.Scenery : (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA))) // Only consider scenery during the drop time to avoid self hits.
+                if (BombAimerClosestNonParentHit(new(prevPos, direction), out RaycastHit hitInfo, distance, vessel))
                 {
                     bombAimerPosition = hitInfo.point;
                     simTime += (distance - hitInfo.distance) / distance * simDeltaTime;
@@ -11309,8 +11324,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         }
                         bombAimerCPA = AIUtils.PredictPosition(prevPos, simVelocity, simAcceleration, timeToCPA);
                         (distance, direction) = (bombAimerCPA - prevPos).MagNorm();
-                        if (timeToCPA > 0 && Physics.Raycast(prevPos, direction, out hitInfo, distance, simTime < ml.dropTime ? (int)LayerMasks.Scenery : (int)(LayerMasks.Scenery | LayerMasks.Parts | LayerMasks.EVA)))
-                            bombAimerPosition = hitInfo.point; // Check for scenery hit on approach to target.
+                        if (timeToCPA > 0 && BombAimerClosestNonParentHit(new(prevPos, direction), out hitInfo, distance, vessel))
+                            bombAimerPosition = hitInfo.point; // Check for hit on approach to target.
                         else bombAimerPosition = bombAimerCPA;
                         simTime += timeToCPA;
                         if (BDArmorySettings.DEBUG_TELEMETRY || BDArmorySettings.DEBUG_WEAPONS) bombAimerDebugString = $"Target CPA at {simTime:0.00}s";
@@ -11351,8 +11366,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 }
 
                 // AoA varies wildly for some bombs, e.g., JDAM (10—30°), B-83 (4—3.5°). The following is a rough approx from fitting data points from a JDAM and a B-83.
-                /*AoA = liftArea > 0 && launcher != null && simTime > launcher.dropTime ?
-                    Mathf.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - launcher.dropTime)) :
+                /*AoA = liftArea > 0 && launcher != null && simTime > dropTime ?
+                    Mathf.Min(launcher.maxAoA, (170f / CoDOffsetSqrt / (1 + simSpeedSquared / 1200f) + 2f / CoDOffset) * Mathf.Clamp01(simTime - dropTime)) :
                     0;*/
                 pointingDirection = Vector3.RotateTowards(simVelocityDir, upDirection, Mathf.Deg2Rad * AoA, 0);
 
