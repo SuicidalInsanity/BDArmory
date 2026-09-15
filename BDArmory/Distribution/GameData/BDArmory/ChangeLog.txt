@@ -3,6 +3,7 @@ or how much cumulative warhead mass should be used against them.
 -RTS-style click-drag bounding box for WingCommander unit selection.
 -Control Groups for easier Wing Commander unit management.
 -Reworked WingCOmmander GUI.
+-Support for nukes/EMP warkeads on Modular Missiles.
 
 
 IMPROVEMENTS / FIXES
