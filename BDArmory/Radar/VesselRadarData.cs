@@ -1686,7 +1686,7 @@ namespace BDArmory.Radar
             {
                 guiDispOmni = false;
 
-                directionalFieldOfView = (availableRadars.Count > 0) ? (availableRadars[0].sensorMinMaxAzLimits[1]) : (availableIRSTs[0].sensorMinMaxAzLimits[1]);
+                directionalFieldOfView = (availableRadars.Count > 0) ? (availableRadars[0].sensorMinMaxAzLimits[1]) : (availableIRSTs.Count > 0) ? 0.5f * (float)availableIRSTs[0].sensorMinMaxAzLimits[1] : availableExternalSensors[0].sensorMinMaxAzLimits[1];
                 Rect scanRect = new Rect(0, 0, RadarDisplayRect.width, RadarDisplayRect.height);
 
                 //if (BDArmorySettings.DEBUG_RADAR)
