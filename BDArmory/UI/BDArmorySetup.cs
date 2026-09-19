@@ -4622,6 +4622,7 @@ namespace BDArmory.UI
         }
 
         private static Vector2 _displayViewerPosition = Vector2.zero;
+        static int numInputSections = 0;
 
         void InputSettings()
         {
@@ -4635,9 +4636,10 @@ namespace BDArmory.UI
             settingsWidth = origSettingsWidth - 2 * settingsMargin;
             settingsHeight = origSettingsHeight - 100;
             Rect viewRect = new Rect(2, 20, settingsWidth + GUI.skin.verticalScrollbar.fixedWidth, settingsHeight);
-            Rect scrollerRect = new Rect(0, 0, settingsWidth - GUI.skin.verticalScrollbar.fixedWidth - 1, inputFields != null ? (inputFields.Length + 2 * 9) * settingsLineHeight : settingsHeight);
+            Rect scrollerRect = new Rect(0, 0, settingsWidth - GUI.skin.verticalScrollbar.fixedWidth - 1, inputFields != null ? (inputFields.Length + 2 * numInputSections) * settingsLineHeight : settingsHeight);
 
             _displayViewerPosition = GUI.BeginScrollView(viewRect, _displayViewerPosition, scrollerRect, false, true);
+            numInputSections = 0;
 
 #if DEBUG
             GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_Settings_DebugSettingsToggle")} -", centerLabel); //Debugging
@@ -4700,6 +4702,7 @@ namespace BDArmory.UI
         {
             if (inputFields != null)
             {
+                ++numInputSections;
                 for (int i = 0; i < inputFields.Length; i++)
                 {
                     string fieldName = inputFields[i].Name;

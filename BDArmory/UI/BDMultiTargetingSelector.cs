@@ -12,7 +12,7 @@ namespace BDArmory.UI
     {
         public static BDMultiTargetingSelector Instance;
 
-        const float width = 250;
+        const float width = 350;
         const float margin = 5;
         const float buttonHeight = 20;
         const float buttonGap = 2;
@@ -39,18 +39,18 @@ namespace BDArmory.UI
         }
         Rect SRect(float line, float indent = 0, float margin = 20)
         {
-            return new Rect(10 + indent, line, width - margin, 20);
+            return new Rect(10 + indent, line * buttonHeight, width - margin, buttonHeight);
         }
         private void TargetingSelectorWindow(int id)
         {
-            height = margin;
+            height = 0.25f;
             GUIStyle labelStyle = BDArmorySetup.BDGuiSkin.label;
-            GUI.Label(new Rect(margin, height, width - 2 * margin, buttonHeight), StringUtils.Localize("#LOC_BDArmory_MultiTarget_Config"), labelStyle);
+            GUI.Label(new Rect(margin, height++, width - 2 * margin, buttonHeight), StringUtils.Localize("#LOC_BDArmory_MultiTarget_Config"), labelStyle);
             if (GUI.Button(new Rect(width - 18, 2, 16, 16), " X", BDArmorySetup.CloseButtonStyle))
             {
                 SetVisible(false);
             }
-            height += buttonHeight;
+            height++;
             /*
             GUI.Toggle(SRect(height++), targetWeaponManager.advancedMultiTargeting, StringUtils.Localize("#LOC_BDArmory_MultiTargetTurret_Config"), labelStyle);
             if (targetWeaponManager.advancedMultiTargeting)
@@ -75,52 +75,58 @@ namespace BDArmory.UI
             }
             */
             GUIStyle adVStyle = targetWeaponManager.advancedMissileTargeting ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle;
-            if (GUI.Button(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_MultiTargetMsl_Config"), adVStyle))
+            if (GUI.Button(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MultiTargetMsl_Config"), adVStyle))
                 targetWeaponManager.advancedMissileTargeting = !targetWeaponManager.advancedMissileTargeting;
             if (targetWeaponManager.advancedMissileTargeting)
             {
                 adVStyle = targetWeaponManager.advancedMissileTgtByYield ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle;
-                if (GUI.Button(SRect(height += buttonHeight, 30, 60), StringUtils.Localize("#LOC_BDArmory_MultiTargetMslYield_Config"), adVStyle))
+                if (GUI.Button(SRect(height++, 30, 60), StringUtils.Localize("#LOC_BDArmory_MultiTargetMslYield_Config"), adVStyle))
                     targetWeaponManager.advancedMissileTgtByYield = !targetWeaponManager.advancedMissileTgtByYield;
                 if (targetWeaponManager.advancedMissileTgtByYield)
                 {
-                    height += buttonGap;
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), labelStyle);
+                    height++;
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxTNTOnTargetAir, 0, 1000);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxTNTOnTargetSrf, 0, 1000);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Sea"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Sea"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxTNTOnTargetSea, 0, 1000);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxTNTOnTargetMsl, 0, 1000);
-                    height += buttonGap;
+                    height++;
                 }
                 else
                 {
-                    height += buttonGap;
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), labelStyle);
+                    height++;
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxMissilesOnTargetAir, 0, 10);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxMissilesOnTargetSrf, 0, 10);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Sea"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Sea"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxMissilesOnTargetSea, 0, 10);
-                    height += buttonGap;
+                    height++;
 
-                    GUI.Label(SRect(height += buttonHeight), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), labelStyle);
+                    GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), labelStyle);
                     GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxMissilesOnTargetMsl, 0, 10);
-                    height += buttonGap;
-                    targetWeaponManager.maxMissilesOnTarget = Mathf.Max(targetWeaponManager.maxMissilesOnTargetAir, targetWeaponManager.maxMissilesOnTargetSrf, targetWeaponManager.maxMissilesOnTargetSea, targetWeaponManager.maxMissilesOnTargetMsl);
+                    height++;
                 }
+                targetWeaponManager.maxMissilesOnTarget = Mathf.Max(targetWeaponManager.maxMissilesOnTargetAir, targetWeaponManager.maxMissilesOnTargetSrf, targetWeaponManager.maxMissilesOnTargetSea, targetWeaponManager.maxMissilesOnTargetMsl);
+            }
+            else
+            {
+                GUI.Label(SRect(height++), StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget"), labelStyle);
+                GUI.HorizontalSlider(SRect(height, 100, 110), targetWeaponManager.maxMissilesOnTarget, 0, 1000);
+                height++;
             }
             GUIUtils.RepositionWindow(ref window);
             GUIUtils.UseMouseEventInRect(window);

@@ -680,7 +680,7 @@ namespace BDArmory.Control
         public float multiTargetNumMsl = 1;
         */
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiMissileTgtNum = 1;
 
@@ -689,6 +689,12 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
             UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTarget = 1;
+
+        [KSPEvent(guiActive = true, guiActiveEditor = true, active = true, guiName = "#LOC_BDArmory_MultiTarget_Config")]//Select Targeting Option
+        public void SelectMultiTargeting()
+        {
+            BDMultiTargetingSelector.Instance.Open(this, new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y));
+        }
 
         private float _MaxMissilesOnTarget => guardTarget != null ? advancedMissileTgtByYield ?
             (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
@@ -702,43 +708,37 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true)]
         public bool advancedMissileTgtByYield = false;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetSrf = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
-    UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetSea = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetMsl = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
 UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetAir = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetSrf = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetSea = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
-    UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+            UI_FloatRange(minValue = 1f, maxValue = 1000f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetMsl = 15;
-
-        [KSPEvent(guiActive = true, guiActiveEditor = true, active = true, guiName = "#LOC_BDArmory_MultiTarget_Config")]//Select Targeting Option
-        public void SelectMultiTargeting()
-        {
-            BDMultiTargetingSelector.Instance.Open(this, new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y));
-        }
 
         #endregion
 
@@ -1573,7 +1573,8 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
 
                 StartCoroutine(StartupListUpdater());
                 //firedMissiles = 0;
-                missilesAway = new Dictionary<TargetInfo, int[]>();
+                //missilesAway = new Dictionary<TargetInfo, int[]>();
+                missilesAway = [];
                 rippleGunCount = [];
                 queuedLaunches = [];
 
@@ -10080,7 +10081,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                             if (PDMslTgts[TurretID].Vessel != null)
                             {
                                 bool viableTarget = true;
-                                if (BDArmorySettings.BULLET_WATER_DRAG && weapon.eWeaponType == ModuleWeapon.WeaponTypes.Ballistic && PDMslTgts[TurretID].Vessel.Splashed) viableTarget = false;
+                                if (BDArmorySettings.BULLET_WATER_DRAG && weapon.eWeaponType == ModuleWeapon.WeaponTypes.Ballistic && PDMslTgts[TurretID].Vessel.Splashed) viableTarget = false; //todo - gun turrets and abovewater laser/rocket turrets should not be firing on torpedoes regardless of waterdrag setting
                                 //if (viableTarget && TargetInTurretRange(weapon.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon))
                                 if (viableTarget && (weapon.turret && TargetInTurretRange(weapon.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon)) ||
                                     (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, PDMslTgts[TurretID].Vessel.CoM)))

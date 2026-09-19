@@ -70,10 +70,11 @@ namespace BDArmory.Control
             MissileFire.OnChangeTeam += OnToggleTeam;
 
             screenMessage = new ScreenMessage("", 2, ScreenMessageStyle.LOWER_CENTER);
-            CtrlGroup = new Dictionary<int, List<IBDAIControl>>();
+            //CtrlGroup = new Dictionary<int, List<IBDAIControl>>();
+            CtrlGroup = [];
             for (int d = 0; d < 10; d++)
             {
-                CtrlGroup.Add(d, new List<IBDAIControl>());
+                CtrlGroup.Add(d, []);
             }
         }
 
@@ -149,7 +150,7 @@ namespace BDArmory.Control
                 selectedWingmen.Clear();
                 return;
             }
-            var previouslySelected = selectedWingmen;
+            var previouslySelected = selectedWingmen.Where(ai => ai != null).ToList();
             friendlies.Clear();
             selectedWingmen.Clear();
             foreach (var v in BDATargetManager.LoadedVessels)
@@ -404,7 +405,7 @@ namespace BDArmory.Control
                     GUIUtils.DrawRectangle(bottomRect, Color.white);
                     GUIUtils.DrawRectangle(rightRect, Color.white);
                 }
-                float size = 50 * BDTISettings.ICONSCALE;
+                float size = 30 * BDTISettings.ICONSCALE;
                 if (selectedWingmen.Count > 0)
                 {
                     foreach (var unit in selectedWingmen)
@@ -475,8 +476,7 @@ namespace BDArmory.Control
             {
                 showGUI = false;
             }
-            Rect CtrlGroupRect = new Rect(margin, margin + buttonHeight, buttonHeight, buttonHeight * 10);
-
+            Rect CtrlGroupRect = new Rect(margin, margin + buttonHeight, buttonHeight, (buttonHeight + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom) * CtrlGroup.Count);
             GUILayout.BeginArea(CtrlGroupRect, GUIContent.none, BDArmorySetup.SelectedButtonStyle);
             for (int g = 0; g < 10; g++)
             {
@@ -484,7 +484,7 @@ namespace BDArmory.Control
                 {
                     GroupButton((CtrlGroup[g].Count).ToString(), false, g);
                 }
-                else GUILayout.Space(buttonHeight);
+                else GUILayout.Space(buttonHeight + GUI.skin.button.margin.top + GUI.skin.button.margin.bottom);
             }
             GUILayout.EndArea();
             Rect CraftListRect = new Rect(margin + buttonHeight, margin + buttonHeight, windowSize.x / 2, windowSize.y - buttonHeight - margin * 2);
@@ -610,8 +610,11 @@ namespace BDArmory.Control
                 if (setter)
                 {
                     CtrlGroup[index].Clear();
-                    foreach (var craft in selectedWingmen)
-                        CtrlGroup[index].Add(craft);
+                    if (Event.current.button != 1)
+                    {
+                        foreach (var craft in selectedWingmen)
+                            CtrlGroup[index].Add(craft);
+                    }
                 }
                 else
                 {
@@ -621,12 +624,7 @@ namespace BDArmory.Control
                             CtrlGroup[index].Clear();
                             break;
                         default:
-                            foreach (var wingman in CtrlGroup[index])
-                            {
-                                if (wingman != null)
-                                    if (!selectedWingmen.Contains(wingman))
-                                        selectedWingmen.Add(wingman);
-                            }
+                            selectedWingmen = [.. CtrlGroup[index]];
                             break;
                     }
                 }
@@ -711,7 +709,7 @@ namespace BDArmory.Control
 
         void SelectAll(IBDAIControl wingman, object data)
         {
-            selectedWingmen = friendlies;
+            selectedWingmen = [.. friendlies.Where(ai => ai != null)];
         }
 
         void SelectNone(IBDAIControl wingman, object data)

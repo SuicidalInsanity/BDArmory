@@ -3026,7 +3026,7 @@ namespace BDArmory.Weapons.Missiles
                 if (part.vessel.speed > 10 && vessel.atmDensity > 0.1) //TODO: get how KSP does parachutes from Doc's decompile - this works... mostly, though if the vessel vel si too low when the parachute begins it freaks out and gets Krakened
                 {
                     var speedFraction = (float)part.vessel.speed / 10;
-                    if (speedFraction > 1) speedFraction = Mathf.Max(2, speedFraction);
+                    speedFraction = Mathf.Min(speedFraction, 2);
                     float frictionCoeff = speedFraction * speedFraction * speedFraction * parachuteDrag * (float)vessel.atmDensity; //at maxSpeed, have friction be 100% of vessel's engines thrust
                     part.Rigidbody.AddForceAtPosition((parachuteCanopy.transform.forward * frictionCoeff), parachuteCanopy.transform.position + parachuteCanopy.transform.forward * 2, ForceMode.Acceleration);
                 }
@@ -3217,6 +3217,7 @@ namespace BDArmory.Weapons.Missiles
                 parachuteCap.AddComponent<DecoupledBooster>().DecoupleBooster(part.rb.velocity, boosterDecoupleSpeed);
             }
             var wait = new WaitForFixedUpdate();
+            yield return wait;
             parachuteActive = true;
             parachuteDrag /= 4; //have separate semi-deployed and full deployed drag values? This is good enough for now
             while (parachuteSemiState.normalizedTime < 1)

@@ -6,10 +6,8 @@ using BDArmory.Utils;
 using BDArmory.Weapons.Missiles;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using static BDArmory.Radar.ModuleRadar;
 
 namespace BDArmory.Radar
 {
@@ -155,7 +153,6 @@ namespace BDArmory.Radar
 
             linkedToVessels = BDATargetManager.RegisterExternalSensor(this);
             linksActive = new bool[linkedToVessels.Count];
-            yield break;
         }
 
         public override void DisableSensor()

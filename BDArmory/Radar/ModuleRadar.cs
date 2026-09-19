@@ -266,7 +266,6 @@ namespace BDArmory.Radar
                 else if (sonarMode == SonarModes.Active)
                     wm._sonarsEnabled = true;
             }
-            yield break;
         }
 
 

@@ -207,7 +207,6 @@ namespace BDArmory.Radar
             {
                 weaponManager._irstsEnabled = true;
             }
-            yield break;
         }
 
         public override void DisableSensor()

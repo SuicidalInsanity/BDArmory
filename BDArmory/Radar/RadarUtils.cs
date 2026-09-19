@@ -14,7 +14,6 @@ using BDArmory.Utils;
 using BDArmory.Weapons;
 using BDArmory.Weapons.Missiles;
 using BDArmory.Damage;
-using System.Net;
 
 namespace BDArmory.Radar
 {
@@ -2817,7 +2816,7 @@ namespace BDArmory.Radar
                     {
                         bool canSeeTarget = (vesselDistanceSqr < maxViewDistance * maxViewDistance &&
                             VectorUtils.Angle(vesselProjectedDirection, lookDirection) < fov &&
-                            myWpnManager.CanSeeTarget(tInfo, false, false) == MissileFire.TargetVisibility.Visible); //should target being (deep?) underwater affect visrange?
+                            myWpnManager.CanSeeTarget(tInfo, false, false) == MissileFire.TargetVisibility.Visible);
 
                         MissileFire tgtMF = loadedvessels.Current.ActiveController().WM;
 
