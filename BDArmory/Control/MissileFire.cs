@@ -2765,7 +2765,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                             }
                     }
 
-                    if (!guardTarget || (guardTarget.CoM - vessel.CoM).sqrMagnitude > guardRange * guardRange)
+                    if (!guardTarget || (guardTarget.CoM - vessel.CoM).sqrMagnitude > guardRange * guardRange && !slavingTurrets) //if we have non-visual detection on target don't null target
                     {
                         SetTarget(null); //disengage, sensors unavailable.
                         yield break;
@@ -8962,14 +8962,14 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         if (getTarget && targetVessel)
                         {
                             if (!targetCoM && targetNum >= targetParts.Count) targetNum -= targetParts.Count * Mathf.FloorToInt((targetNum / targetParts.Count));
-                            if ((designatedGPSInfo.worldPos - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > 100)
+                            if ((designatedGPSInfo.worldPos - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < 100)
                             {
                                 ml.targetGPSCoords = designatedGPSCoords;
                                 ml.TargetAcquired = true;
                                 validTarget = true;
                             }
                             //else if (foundCam && (foundCam.groundTargetPosition - targetVessel.CoM).sqrMagnitude > Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
-                            else if (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude > Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
+                            else if (foundCam && (foundCam.groundTargetPosition - (targetCoM ? targetVessel.CoM : targetParts[targetNum].transform.position)).sqrMagnitude < Mathf.Max(400, 0.013f * (float)targetVessel.srfSpeed * (float)targetVessel.srfSpeed))
                             {
                                 ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(foundCam.groundTargetPosition, vessel.mainBody);
                                 ml.TargetAcquired = true;

@@ -501,10 +501,12 @@ namespace BDArmory.Radar
         {
             string linkedSensorGroups = "";
 
-            for (int i = 0; i < externalSensors.Count; i++)
-            {
-                linkedSensorGroups += $"{externalSensors[i].part.partName},";
-            }
+            using (List<ModuleExternalSensor>.Enumerator v = externalSensors.GetEnumerator())
+                while (v.MoveNext())
+                {
+                    if (v.Current == null) continue;
+                    linkedSensorGroups += $"{v.Current.part.partName},";
+                }
             weaponManager.linkedExternalSensors = linkedSensorGroups;
         }
         int externalSensorsToBeRecovered;

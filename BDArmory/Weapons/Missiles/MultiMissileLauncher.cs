@@ -1146,7 +1146,6 @@ namespace BDArmory.Weapons.Missiles
                                             if (targetNum >= FiredByWM.targetParts.Count) targetNum -= FiredByWM.targetParts.Count * Mathf.FloorToInt((targetNum / FiredByWM.targetParts.Count));
                                             ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(FiredByWM.targetParts[targetNum].transform.position, vessel.mainBody);
                                         }
-                                        else ml.targetGPSCoords = VectorUtils.WorldPositionToGeoCoords(targetsAssigned[TargetID].Vessel.CoM, vessel.mainBody);
                                         ml.TargetAcquired = true;
                                     }
                                     if (ml.TargetingMode == TargetingModes.Inertial)
@@ -1349,6 +1348,7 @@ namespace BDArmory.Weapons.Missiles
                                             }
                                         }
                                         ml.targetGPSCoords = targetGEOPos;
+                                        ml.vrd = FiredByWM.vesselRadarData;
                                         ml.lockedCamera = missileLauncher.lockedCamera;
                                         ml.TargetAcquired = (targetGEOPos != Vector3.zero);
                                         break;

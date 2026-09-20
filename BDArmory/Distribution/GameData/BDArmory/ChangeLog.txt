@@ -11,6 +11,7 @@ IMPROVEMENTS / FIXES
 - Spawning:
 	- Add an intra-team spawn distance slider (default "auto"). Adjusted "auto" spacing to be looser at larger spawn distances.
 - Weapons:
+	- Fix guns not firing on targets locked by sensors but beyond max visual range.
 	- Missiles:
 		-Support for nukes/EMP warkeads on Modular Missiles.
 
