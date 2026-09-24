@@ -686,15 +686,9 @@ namespace BDArmory.Control
 
         public const float maxAllowableMissilesOnTarget = 18f;
 
-        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MissilesOnTarget"),//Missiles/Target
-            UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MissilesOnTarget", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+    UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTarget = 1;
-
-        [KSPEvent(guiActive = true, guiActiveEditor = true, active = true, guiName = "#LOC_BDArmory_MultiTarget_Config")]//Select Targeting Option
-        public void SelectMultiTargeting()
-        {
-            BDMultiTargetingSelector.Instance.Open(this, new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y));
-        }
 
         private float _MaxMissilesOnTarget => guardTarget != null ? advancedMissileTgtByYield ?
             (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
@@ -703,40 +697,43 @@ namespace BDArmory.Control
             (guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ? 
             maxMissilesOnTargetSea : !guardTarget.IsMissile() ? maxMissilesOnTargetAir : maxMissilesOnTargetMsl) : maxMissilesOnTarget : maxMissilesOnTarget;
 
-        [KSPField(isPersistant = true)]
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetMsl_Config", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
         public bool advancedMissileTargeting = false;
-        [KSPField(isPersistant = true)]
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetMslYield_Config", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
         public bool advancedMissileTgtByYield = false;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetSrf = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
 UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetSea = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrement = 1f, scene = UI_Scene.All)]
         public float maxMissilesOnTargetMsl = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
 UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetAir = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetSrf = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
     UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetSea = 15;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
             UI_FloatRange(minValue = 1f, maxValue = 1000f, stepIncrement = 5f, scene = UI_Scene.All)]
         public float maxTNTOnTargetMsl = 15;
 
@@ -1458,6 +1455,59 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
             adjustedAutoFireCosAngle = Mathf.Cos(AutoFireCosAngleAdjustment * Mathf.Deg2Rad);
             //if (BDArmorySettings.DEBUG_LABELS) Debug.Log("[BDArmory.MissileFire]: Setting AFCAA to " + adjustedAutoFireCosAngle);
         }
+
+        public void SetMslCfg()
+        {
+            UI_Toggle advMsl;
+            if (HighLogic.LoadedSceneIsEditor)
+                advMsl = (UI_Toggle)Fields[nameof(advancedMissileTargeting)].uiControlEditor;
+            else
+                advMsl = (UI_Toggle)Fields[nameof(advancedMissileTargeting)].uiControlFlight;
+            advMsl.onFieldChanged = OnMslCfgUpdated;
+            OnMslCfgUpdated(null, null);
+
+            UI_Toggle advMslTNT;
+            if (HighLogic.LoadedSceneIsEditor)
+                advMslTNT = (UI_Toggle)Fields[nameof(advancedMissileTgtByYield)].uiControlEditor;
+            else
+                advMslTNT = (UI_Toggle)Fields[nameof(advancedMissileTgtByYield)].uiControlFlight;
+            advMslTNT.onFieldChanged = OnMslCfgUpdated;
+            OnMslCfgUpdated(null, null);
+        }
+
+        public void OnMslCfgUpdated(BaseField field, object obj)
+        {
+            if (advancedMissileTargeting)
+            {
+                Fields[nameof(maxMissilesOnTarget)].guiActiveEditor = false;
+                Fields[nameof(maxMissilesOnTarget)].guiActive = false;
+            }
+            else
+            {
+                Fields[nameof(maxMissilesOnTarget)].guiActiveEditor = true;
+                Fields[nameof(maxMissilesOnTarget)].guiActive = true;
+            }
+            Fields[nameof(advancedMissileTgtByYield)].guiActiveEditor = advancedMissileTargeting;
+            Fields[nameof(advancedMissileTgtByYield)].guiActive = advancedMissileTargeting;
+
+            Fields[nameof(maxMissilesOnTargetAir)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetAir)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetSrf)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetSrf)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetSea)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetSea)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetMsl)].guiActiveEditor = advancedMissileTargeting && !advancedMissileTgtByYield;
+            Fields[nameof(maxMissilesOnTargetMsl)].guiActive = advancedMissileTargeting && !advancedMissileTgtByYield;
+
+            Fields[nameof(maxTNTOnTargetAir)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetAir)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetSrf)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetSrf)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetSea)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetSea)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetMsl)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
+            Fields[nameof(maxTNTOnTargetMsl)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
+        }
         #endregion KSPFields,events,actions
 
         RaycastHit[] clearanceHits = new RaycastHit[10];
@@ -1514,6 +1564,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
             Team = BDTeam.Deserialize(team);
             UpdateMaxGuardRange();
             SetAFCAA();
+            SetMslCfg();
             startTime = Time.time;
             if (HighLogic.LoadedSceneIsFlight)
             {

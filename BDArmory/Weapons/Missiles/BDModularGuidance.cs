@@ -765,16 +765,6 @@ namespace BDArmory.Weapons.Missiles
                 if (BDArmorySettings.DEBUG_MISSILES)
                     Debug.Log($"[BDArmory.BDModularGuidance]: OnStart missile {shortName}: setting default locktrackcurve with maxrange/minrcs: {activeRadarLockTrackCurve.maxTime} / {RadarUtils.MISSILE_DEFAULT_LOCKABLE_RCS}");
             }
-/*
-            var explosiveParts = VesselModuleRegistry.GetModules<BDExplosivePart>(vessel);
-            if (explosiveParts != null)
-            {
-                foreach (var explosivePart in explosiveParts) //this is grabbing every warhead on the vessel, not the MMG...
-                {
-                    if (warheadYield < explosivePart.blastRadius) warheadYield = explosivePart.blastRadius;
-                }
-            }
-*/
         }
 
         private void SetupsFields()

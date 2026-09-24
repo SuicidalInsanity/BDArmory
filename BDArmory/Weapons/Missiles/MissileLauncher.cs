@@ -303,7 +303,8 @@ namespace BDArmory.Weapons.Missiles
         [KSPField]
         public string parachuteDeployAnimName;
 
-        [KSPField]
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_DeployAltitude"),//Deploy Altitude
+ UI_FloatRange(minValue = 50f, maxValue = 1000, stepIncrement = 25f, scene = UI_Scene.Editor)]
         public float parachuteTriggerAlt = 500; //make this a slider?
 
         bool parachuteActive = false;
@@ -748,6 +749,7 @@ namespace BDArmory.Weapons.Missiles
                             if (t.Current == null) continue;
                             parachuteCanopy = t.Current.gameObject;
                             hasParachute = true;
+                            Fields[nameof(parachuteTriggerAlt)].guiActiveEditor = true;                            
                             break;
                         }
                 }
@@ -2227,6 +2229,8 @@ namespace BDArmory.Weapons.Missiles
                 Vector3 lookVector = MissileReferenceTransform.position + -vessel.Velocity().normalized * 10 - parachuteCanopy.transform.position;
                 Vector3 forward = parachuteCanopy.transform.forward;
                 parachuteCanopy.transform.rotation = Quaternion.LookRotation(lookVector, forward);
+                Vector3 worldUp = VectorUtils.GetUpDirection(MissileReferenceTransform.position);
+                parachuteCanopy.transform.rotation = Quaternion.LookRotation(forward, worldUp);
             }
             if (launched && _missileType == MissileType.DropSensor && vessel.Splashed)
             {
@@ -2234,6 +2238,8 @@ namespace BDArmory.Weapons.Missiles
                 Vector3 lookVector = MissileReferenceTransform.position - UpDir * 10 - MissileReferenceTransform.transform.position;
                 Vector3 forward = MissileReferenceTransform.transform.forward;
                 MissileReferenceTransform.transform.rotation = Quaternion.LookRotation(lookVector, forward);
+                Vector3 worldUp = VectorUtils.GetUpDirection(MissileReferenceTransform.position);
+                parachuteCanopy.transform.rotation = Quaternion.LookRotation(forward, worldUp);
             }
         }
 

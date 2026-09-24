@@ -57,9 +57,6 @@ namespace BDArmory.Settings
         public static BDInputInfo GUI_WM_TOGGLE = new BDInputInfo("[*]", "Toggle WM GUI");
         public static BDInputInfo GUI_AI_TOGGLE = new BDInputInfo("[/]", "Toggle AI GUI");
 
-        //WingManager
-        public static BDInputInfo MWC_SELECTIONBOX = new BDInputInfo("WingCommander Batch Select");
-
         //DEBUG
         public static BDInputInfo DEBUG_CLEAR_DEV_CONSOLE = new BDInputInfo("Clear Development Console");
 

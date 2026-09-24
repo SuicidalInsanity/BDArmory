@@ -5,11 +5,9 @@ using System.IO.Compression;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System;
 using UnityEngine;
-using KSP.Localization;
 using KSP.UI.Screens;
 
 using BDArmory.Armor;
@@ -48,7 +46,7 @@ namespace BDArmory.UI
         [BDAWindowSettingsField] public static Rect WindowRectVesselSwitcher;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIHidden;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIVisible;
-        [BDAWindowSettingsField] public static Rect WindowRectWingCommander = new Rect(45, 75, 240, 800);
+        [BDAWindowSettingsField] public static Rect WindowRectWingCommander = new Rect(45, 75, 180, 800);
         [BDAWindowSettingsField] public static Rect WindowRectTargetingCam;
 
         [BDAWindowSettingsField] public static Rect WindowRectRemoteOrchestration;// = new Rect(45, 100, 200, 200);
@@ -898,40 +896,40 @@ namespace BDArmory.UI
         public void ConfigTextFields(MissileFire weaponManager)
         {
             textNumFields = new Dictionary<string, NumericInputField> {
-                { "rippleRPM", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
-                { "targetScanInterval", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
-                { "fireBurstLength", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
-                { "AutoFireCosAngleAdjustment", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
-                { "guardAngle", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
-                { "guardRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
-                { "gunRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
-                { "multiTargetNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
-                { "multiMissileTgtNum", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
-                { "maxMissilesOnTarget", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
-                { "maxMissilesOnTargetAir", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget) },
-                { "maxMissilesOnTargetSrf", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSrf, 1, MissileFire.maxAllowableMissilesOnTarget) },
-                { "maxMissilesOnTargetSea", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSea, 1, MissileFire.maxAllowableMissilesOnTarget) },
-                { "maxMissilesOnTargetMsl", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetMsl, 1, MissileFire.maxAllowableMissilesOnTarget) },
-                { "maxTNTOnTargetAir", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetAir, 1, 10000) },
-                { "maxTNTOnTargetSrf", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSrf, 1, 10000) },
-                { "maxTNTOnTargetSea", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSea, 1, 10000) },
-                { "maxTNTOnTargetMsl", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetMsl, 1, 1000) },
-                { "targetBias", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
-                { "targetWeightRange", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
-                { "targetWeightAirPreference", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
-                { "targetWeightATA", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
-                { "targetWeightAoD", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
-                { "targetWeightAccel", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
-                { "targetWeightClosureTime", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
-                { "targetWeightWeaponNumber", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
-                { "targetWeightMass", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
-                { "targetWeightDamage", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
-                { "targetWeightFriendliesEngaging", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
-                { "targetWeightThreat", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
-                { "targetWeightProtectTeammate", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
-                { "targetWeightProtectVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
-                { "targetWeightAttackVIP", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
-                { "targetWeightUncontrolled", gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
+                { nameof(weaponManager.rippleRPM), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.rippleRPM, 0, 1600) },
+                { nameof(weaponManager.targetScanInterval), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetScanInterval, 0.5f, 60f) },
+                { nameof(weaponManager.fireBurstLength), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.fireBurstLength, 0, 10) },
+                { nameof(weaponManager.AutoFireCosAngleAdjustment), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.AutoFireCosAngleAdjustment, 0, 4) },
+                { nameof(weaponManager.guardAngle), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardAngle, 10, 360) },
+                { nameof(weaponManager.guardRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.guardRange, 100, BDArmorySettings.MAX_GUARD_VISUAL_RANGE) },
+                { nameof(weaponManager.gunRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.gunRange, 0, weaponManager.maxGunRange) },
+                { nameof(weaponManager.multiTargetNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiTargetNum, 1, 10) },
+                { nameof(weaponManager.multiMissileTgtNum), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.multiMissileTgtNum, 1, 10) },
+                { nameof(weaponManager.maxMissilesOnTarget), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTarget, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetAir, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSrf, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetSea, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxMissilesOnTargetMsl), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxMissilesOnTargetMsl, 1, MissileFire.maxAllowableMissilesOnTarget) },
+                { nameof(weaponManager.maxTNTOnTargetAir), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetAir, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetSrf), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSrf, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetSea), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetSea, 1, 10000) },
+                { nameof(weaponManager.maxTNTOnTargetMsl), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.maxTNTOnTargetMsl, 1, 1000) },
+                { nameof(weaponManager.targetBias), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetBias, 0, 10) },
+                { nameof(weaponManager.targetWeightRange), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightRange, -10, 10) },
+                { nameof(weaponManager.targetWeightAirPreference), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAirPreference, -10, 10) },
+                { nameof(weaponManager.targetWeightATA), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightATA, -10, 10) },
+                { nameof(weaponManager.targetWeightAoD), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAoD, -10, 10) },
+                { nameof(weaponManager.targetWeightAccel), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAccel,-10, 10) },
+                { nameof(weaponManager.targetWeightClosureTime), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightClosureTime, -10, 10) },
+                { nameof(weaponManager.targetWeightWeaponNumber), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightWeaponNumber, -10, 10) },
+                { nameof(weaponManager.targetWeightMass), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightMass,-10, 10) },
+                { nameof(weaponManager.targetWeightDamage), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightDamage,-10, 10) },
+                { nameof(weaponManager.targetWeightFriendliesEngaging), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightFriendliesEngaging, -10, 10) },
+                { nameof(weaponManager.targetWeightThreat), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightThreat, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectTeammate), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectTeammate, -10, 10) },
+                { nameof(weaponManager.targetWeightProtectVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightProtectVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightAttackVIP), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightAttackVIP, -10, 10) },
+                { nameof(weaponManager.targetWeightUncontrolled), gameObject.AddComponent<NumericInputField>().Initialise(0, weaponManager.targetWeightUncontrolled, -10, 10) },
             };
         }
 
@@ -1570,7 +1568,7 @@ namespace BDArmory.UI
                         OnGUIWM.multiTargetNum = (float)field.CurrentValue;
                     }
 
-                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Turret targets "
+                    GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiMissileNum"), leftLabel);//"Max Missile targets "
                     if (!NumFieldsEnabled)
                     {
                         OnGUIWM.multiMissileTgtNum = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.multiMissileTgtNum, 1, 10));
@@ -1704,12 +1702,14 @@ namespace BDArmory.UI
                         if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMslYield_Config"), OnGUIWM.advancedMissileTgtByYield ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
                         {
                             OnGUIWM.advancedMissileTgtByYield = !OnGUIWM.advancedMissileTgtByYield;
+                            OnGUIWM.OnMslCfgUpdated(null, null);
                         }
                         guardLines += 0.25f;
                     }
                     if (GUI.Button(ButtonRect(++guardLines), StringUtils.Localize("#LOC_BDArmory_MultiTargetMsl_Config"), OnGUIWM.advancedMissileTargeting ? SelectedButtonStyle : ButtonStyle))//"Advanced Missile Targeting"
                     {
                         OnGUIWM.advancedMissileTargeting = !OnGUIWM.advancedMissileTargeting;
+                        OnGUIWM.OnMslCfgUpdated(null, null);
                     }
                     guardLines += 0.25f; 
                     showTargetOptions = GUI.Toggle(ButtonRect(++guardLines), showTargetOptions, StringUtils.Localize("#LOC_BDArmory_Settings_Adv_Targeting"), showTargetOptions ? SelectedButtonStyle : ButtonStyle);//"Advanced Targeting"
@@ -4677,10 +4677,6 @@ namespace BDArmory.UI
 
             GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_InputSettings_TemporarilyShowMouse")} -", centerLabel);//Temporarily Show Mouse
             InputSettingsList("TEMPORARILY_SHOW_MOUSE", ref inputID, ref line);
-            ++line;
-
-            GUI.Label(SLineRect(line++), $"- {StringUtils.Localize("#LOC_BDArmory_InputSettings_MWC_SelectionBox")} -", centerLabel);//WingCommander Bounding Box
-            InputSettingsList("MWC_", ref inputID, ref line);
             ++line;
             GUI.EndScrollView();
 
