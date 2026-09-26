@@ -4221,7 +4221,7 @@ namespace BDArmory.Weapons
             float timeout = 0;
             if (wm && wm.guardMode && lastVisualTargetVessel != null)
             {
-                if (wm.staleTarget.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.staleTarget[lastVisualTargetVessel];
+                if (wm.TargetDetection.ContainsKey(lastVisualTargetVessel)) staleTarget = wm.TargetDetection[lastVisualTargetVessel];
                 if (wm.detectedTargetTimeout.ContainsKey(lastVisualTargetVessel)) timeout = wm.detectedTargetTimeout[lastVisualTargetVessel];
             }
             if (aiControlled && !slaved && wm != null && (!targetAcquired || (staleTarget && timeout > 0)))
@@ -5168,7 +5168,7 @@ namespace BDArmory.Weapons
                 var wm = WeaponManager;
                 if (autoFire && (lastVisualTargetVessel != null && lastVisualTargetVessel.LandedOrSplashed && vessel.LandedOrSplashed))
                 {
-                    if (wm.staleTarget.ContainsKey(lastVisualTargetVessel) && wm.staleTarget[lastVisualTargetVessel])
+                    if (wm.TargetDetection.ContainsKey(lastVisualTargetVessel) && wm.TargetDetection[lastVisualTargetVessel])
                     {
                         autoFire = false; //ground Vee engaging another ground Vee which has ducked out of sight, don't fire
                                           // won't catch cloaked tanks, but oh well.

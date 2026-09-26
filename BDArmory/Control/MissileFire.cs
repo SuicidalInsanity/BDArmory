@@ -692,17 +692,19 @@ namespace BDArmory.Control
 
         private float _MaxMissilesOnTarget => guardTarget != null ? advancedMissileTgtByYield ?
             (guardTarget.Landed ? maxTNTOnTargetSrf : guardTarget.Splashed ?
-            maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) : 
+            maxTNTOnTargetSea : !guardTarget.IsMissile() ? maxTNTOnTargetAir : maxTNTOnTargetMsl) * 
+            (TargetDetection[guardTarget] ? guardTarget.GetTotalMass() : guardTarget.Landed ? 40 : guardTarget.Splashed ?
+            500 : !guardTarget.IsMissile() ? 15 : 1) : //If AI can't see target to assess mass, guess based on target type
             advancedMissileTargeting ?
-            (guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ? 
+            (guardTarget.Landed ? maxMissilesOnTargetSrf : guardTarget.Splashed ?
             maxMissilesOnTargetSea : !guardTarget.IsMissile() ? maxMissilesOnTargetAir : maxMissilesOnTargetMsl) : maxMissilesOnTarget : maxMissilesOnTarget;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetMsl_Config", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
+    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
         public bool advancedMissileTargeting = false;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetMslYield_Config", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All),]
+    UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
         public bool advancedMissileTgtByYield = false;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_MissilesOnTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
@@ -722,20 +724,20 @@ UI_FloatRange(minValue = 1f, maxValue = maxAllowableMissilesOnTarget, stepIncrem
         public float maxMissilesOnTargetMsl = 1;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
-        public float maxTNTOnTargetAir = 15;
+UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float maxTNTOnTargetAir = 1.5f;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Surface"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-    UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
-        public float maxTNTOnTargetSrf = 15;
+    UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float maxTNTOnTargetSrf = 2;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-    UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Scene.All)]
-        public float maxTNTOnTargetSea = 15;
+    UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Scene.All)]
+        public float maxTNTOnTargetSea = 2;
 
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = $"{"#LOC_BDArmory_YieldPerTarget"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "missileTargeting", groupDisplayName = "#LOC_BDArmory_MissilesOnTarget", groupStartCollapsed = true),//Missiles/target
-            UI_FloatRange(minValue = 1f, maxValue = 1000f, stepIncrement = 5f, scene = UI_Scene.All)]
-        public float maxTNTOnTargetMsl = 15;
+            UI_FloatRange(minValue = 1f, maxValue = 20f, stepIncrement = 0.5f, scene = UI_Scene.All)]
+        public float maxTNTOnTargetMsl = 10;
 
         #endregion
 
@@ -949,7 +951,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 SetMissileTurrets();
                 SetDeployableRails();
                 SetRotaryRails();
-                staleTarget.Clear();
+                TargetDetection.Clear();
                 staleTargetDebugString.Clear();
                 detectedTargetTimeout.Clear();
                 if (IsPrimaryWM) // Disabling guard mode on the primary disables guard mode on any non-primary WMs on the craft.
@@ -7250,8 +7252,9 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         WeaponClasses candidateClass = item.Current.GetWeaponClass();
                         switch (candidateClass)
                         {
-                            case (WeaponClasses.Missile):
-                            case (WeaponClasses.SLW):
+                            case (WeaponClasses.Bomb): //sonobuoys
+                            case (WeaponClasses.Missile): //ASROCs
+                            case (WeaponClasses.SLW): //torps/depthcharges
                                 {
                                     MissileLauncher SLW = item.Current as MissileLauncher;
                                     if (SLW.GetWeaponClass() == WeaponClasses.Missile && SLW.GetMissileType() != MissileType.ASWMissile) continue;
@@ -7723,6 +7726,14 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     double srfSpeed = targetVessel.horizontalSrfSpeed;
 
                                     if (EMP && target.isDebilitated) continue;
+                                    if (item.Current.GetMissileType() == MissileType.DropSensor)
+                                    {
+                                        if (vesselRadarData && vesselRadarData.detectedRadarTarget(targetVessel, this).exists) continue; //we already have detection of target, don't need a sonobuoy
+                                        targetWeapon = item.Current;
+                                        targetWeaponPriority = candidatePriority;
+                                        break;
+                                    }
+
                                     if (targetWeapon != null && targetWeaponPriority > candidatePriority)
                                         continue; //keep higher priority weapon
                                     if (distance < candidateYield)
@@ -8039,17 +8050,6 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                                     if (EMP && target.isDebilitated) continue;
                                     // not sure on the desired selection priority algorithm, so placeholder By Yield for now
                                     if (advancedMissileTgtByYield && SLW.GetTntMass() > (_MaxMissilesOnTarget - firedMissiles) * 1.25f) candidateYield *= 0.001f;
-                                    if (item.Current.GetMissileType() == MissileType.DropSensor)
-                                    {
-                                        //if (vrd.receivingSonarData) //have check in VRD for getting sonar data or not to determine if we need a buoy?
-                                        targetWeapon = item.Current;
-                                        targetWeaponPriority = candidatePriority;
-                                        break;
-                                        //also need to adjust targeting, we just need the buoy within a couple km of target. Doc was saying something about adjusting GBR 'close enough' bomb drop routines...?
-                                        //configure them as missiles to they try to get fired from range, but just fall instead of fly?
-                                        //modify the bombing routine?
-                                        //how many we dropping? all on the craft?
-                                    }
                                     if (SLW.TargetingMode == MissileBase.TargetingModes.Heat && SLW.activeRadarRange < 0 && (rwr && rwr.rwrEnabled)) //we have passive acoustic homing? see if anything has active sonar
                                     {
                                         if (!skipRWRCheck)
@@ -8571,7 +8571,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 if (currentTarget)
                 {
                     currentTarget.Disengage(this);
-                    staleTarget.Remove(currentTarget.Vessel); //reset staletarget bool if no target
+                    TargetDetection.Remove(currentTarget.Vessel); //reset staletarget bool if no target
                 }
                 guardTarget = null;
                 currentTarget = null;
@@ -8580,7 +8580,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
 
         #endregion Smart Targeting
         public Dictionary<Vessel, float> detectedTargetTimeout = [];
-        public Dictionary<Vessel, bool> staleTarget = new Dictionary<Vessel, bool>();
+        public Dictionary<Vessel, bool> TargetDetection = new Dictionary<Vessel, bool>();
         Dictionary<Vessel, string> staleTargetDebugString = new Dictionary<Vessel, string>();
 
         FloatCurve SurfaceVisionOffset = null;
@@ -8610,7 +8610,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
 
             if (target == null || target.Vessel == null) return TargetVisibility.NotVisible;
             if (staleTargetDebugString.ContainsKey(target.Vessel)) staleTargetDebugString.Remove(target.Vessel);
-            if (staleTarget.ContainsKey(target.Vessel)) staleTarget.Remove(target.Vessel);
+            if (TargetDetection.ContainsKey(target.Vessel)) TargetDetection.Remove(target.Vessel);
             if (detectedTargetTimeout.ContainsKey(target.Vessel)) detectedTargetTimeout.Remove(target.Vessel);
             // First check for radar/IRST detection, because that's the cheapest
             if (checkForNonVisualDetection)
@@ -8620,7 +8620,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 if (detected)
                 {
                     detectedTargetTimeout.Add(target.Vessel, 0);
-                    staleTarget.Add(target.Vessel, false);
+                    TargetDetection.Add(target.Vessel, false);
                     return TargetVisibility.Visible;
                 }
                 //carrying antirads and picking up RWR pings?
@@ -8634,7 +8634,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         if (currPing.exists && RadarWarningReceiver.CanDetectRWRThreat(antiradTargets, currPing.signalType) && (currPing.position - target.position).sqrMagnitude < 20f * 20f)
                         {
                             detectedTargetTimeout.Add(target.Vessel, 0);
-                            staleTarget.Add(target.Vessel, false);
+                            TargetDetection.Add(target.Vessel, false);
                             return TargetVisibility.Visible;
                         }
                     }
@@ -8669,11 +8669,11 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         {
                             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: Distant tgt {target.name} last seen {Time.time - detectedTime} seconds ago. Recalling last known position");
                             detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
-                            staleTarget.Add(target.Vessel, true);
+                            TargetDetection.Add(target.Vessel, true);
                             staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago at long range");
                             return TargetVisibility.RecentlyVisible;
                         }
-                        staleTarget.Add(target.Vessel, true);
+                        TargetDetection.Add(target.Vessel, true);
                         return TargetVisibility.RecentlyVisible;
                     }
                 }
@@ -8686,17 +8686,17 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                         {
                             if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: {target.name} last seen {Time.time - detectedTime} seconds ago. Recalling last known position");
                             detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
-                            staleTarget.Add(target.Vessel, true);
+                            TargetDetection.Add(target.Vessel, true);
                             staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago at close range");
                             return TargetVisibility.RecentlyVisible;
                         }
-                        staleTarget.Add(target.Vessel, true);
+                        TargetDetection.Add(target.Vessel, true);
                         return TargetVisibility.RecentlyVisible;
                     }
                 }
 
                 detectedTargetTimeout.Add(target.Vessel, 0);
-                staleTarget.Add(target.Vessel, false);
+                TargetDetection.Add(target.Vessel, false);
                 return TargetVisibility.Visible;
             }
 
@@ -8707,7 +8707,7 @@ UI_FloatRange(minValue = 1f, maxValue = 1000, stepIncrement = 5f, scene = UI_Sce
                 {
                     if (BDArmorySettings.DEBUG_AI) Debug.Log($"[BDArmory.MissileFire]: {target.name} last detected {Time.time - detectedTime} seconds ago. Recalling last known position");
                     detectedTargetTimeout.Add(target.Vessel, Time.time - detectedTime);
-                    staleTarget.Add(target.Vessel, true);
+                    TargetDetection.Add(target.Vessel, true);
                     staleTargetDebugString.Add(target.Vessel, $" {target.name} seen {Time.time - detectedTime:0.00}s ago ({(target.Vessel.CoM - vessel.CoM).magnitude:0.0}m/{visDistance:0.0}m, {VectorUtils.Angle(-vessel.ReferenceTransform.forward, target.Vessel.CoM - vessel.CoM):0.0}°/{guardAngle * 1.1f / 2:0.0}°)");
                     return TargetVisibility.RecentlyVisible;
                 }

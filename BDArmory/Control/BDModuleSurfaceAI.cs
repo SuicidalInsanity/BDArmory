@@ -770,7 +770,7 @@ namespace BDArmory.Control
                                     if (maintainMinRange) //for some reason ignored if both vessel and targetvessel using Mk2roverCans?
                                     {
                                         //Add LoS provisions if target is behind hill/building?
-										if (!weaponManager.staleTarget.ContainsKey(targetVessel) || !weaponManager.staleTarget[targetVessel])
+										if (!weaponManager.TargetDetection.ContainsKey(targetVessel) || !weaponManager.TargetDetection[targetVessel])
                                         {
                                             if (distance <= MinEngagementRange) //rolled to a stop inside minRange/target has encroached
                                             {

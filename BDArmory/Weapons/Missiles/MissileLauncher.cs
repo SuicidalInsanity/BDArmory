@@ -536,7 +536,7 @@ namespace BDArmory.Weapons.Missiles
                 MissileType.Torpedo => WeaponClasses.SLW,
                 MissileType.DepthCharge => WeaponClasses.SLW,
                 MissileType.ASWMissile => WeaponClasses.Missile,
-                MissileType.DropSensor => WeaponClasses.SLW, //is there a case for air-deployed ground radars and this should be .Bomb instead? (air deployed seismograph sensors to detect ground craft?)
+                MissileType.DropSensor => WeaponClasses.Bomb, 
                 _ => WeaponClasses.Missile
             };
         }
@@ -2451,7 +2451,6 @@ namespace BDArmory.Weapons.Missiles
         private void CheckMiss()
         {
             if (weaponClass == WeaponClasses.Bomb) return;
-            if (_missileType == MissileType.DropSensor) return;
             float sqrDist = (float)((TargetPosition + (TargetVelocity * Time.fixedDeltaTime)) - (vessel.CoM + (vessel.Velocity() * Time.fixedDeltaTime))).sqrMagnitude;
             bool targetBehindMissile = !TargetAcquired || (!(MissileState != MissileStates.PostThrust && hasRCS) && Vector3.Dot(TargetPosition - vessel.CoM, transform.forward) < 0f); // Target is not acquired or we are behind it and not an RCS missile
             if (sqrDist < 160000 || MissileState == MissileStates.PostThrust || (targetBehindMissile && sqrDist > 1000000)) //missile has come within 400m, is post thrust, or > 1km behind target
@@ -3297,7 +3296,7 @@ namespace BDArmory.Weapons.Missiles
         IEnumerator updateCrashTolerance()
         {
             yield return new WaitForSecondsFixed(0.5f); //wait half sec after boost motor fires, then set crashTolerance to 1. Torps have already waited until splashdown before this is called.
-            part.crashTolerance = (_missileType == MissileType.DropSensor) ? waterImpactTolerance : 1; //ideallythese would have a a parachute or similar...
+            part.crashTolerance = (_missileType == MissileType.DropSensor) ? waterImpactTolerance : 1; //ideally these would have a parachute or similar...
             if (useSimpleDragTemp)
             {
                 yield return new WaitForSecondsFixed((clearanceLength * 1.2f) / 2);
@@ -3311,7 +3310,7 @@ namespace BDArmory.Weapons.Missiles
         }
         IEnumerator BoostRoutine()
         {
-            if ((weaponClass == WeaponClasses.SLW && _missileType != MissileType.DropSensor) && vessel.altitude > 0) //no torpedo/depthcharge thrust in air
+            if ((weaponClass == WeaponClasses.SLW || _missileType == MissileType.DropSensor) && vessel.altitude > 0) //no torpedo/depthcharge thrust in air
             {
                 yield return new WaitUntilFixed(() => vessel == null || vessel.LandedOrSplashed);//don't start torpedo thrust until underwater
                 if (vessel == null || vessel.Landed) Detonate(); //dropping torpedoes over land is just going to turn them into heavy, expensive bombs...

@@ -1653,8 +1653,8 @@ namespace BDArmory.UI
                             GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Air"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetAir, 1, 10000));
-                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTNTOnTargetAir.ToString(), leftLabel);
+                                OnGUIWM.maxTNTOnTargetAir = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetAir, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetAir:F2} - {(OnGUIWM.maxTNTOnTargetAir * 20):F2} vs 20t", leftLabel);
                             }
                             else
                             {
@@ -1665,8 +1665,8 @@ namespace BDArmory.UI
                             GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Surface"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSrf, 1, 10000));
-                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTNTOnTargetSrf.ToString(), leftLabel);
+                                OnGUIWM.maxTNTOnTargetSrf = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSrf, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSrf:F2} - {(OnGUIWM.maxTNTOnTargetSrf * 50):F2} vs 50t", leftLabel);
                             }
                             else
                             {
@@ -1677,8 +1677,8 @@ namespace BDArmory.UI
                             GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSea, 1, 10000));
-                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTNTOnTargetSea.ToString(), leftLabel);
+                                OnGUIWM.maxTNTOnTargetSea = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetSea, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetSea:F2} - {(OnGUIWM.maxTNTOnTargetSea * 500):F2} vs 500t", leftLabel);
                             }
                             else
                             {
@@ -1689,8 +1689,8 @@ namespace BDArmory.UI
                             GUI.Label(LabelRect(++guardLines, guardLabelWidth), StringUtils.Localize("#LOC_BDArmory_YieldPerTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missile"), leftLabel);//"Missiles/Tgt"
                             if (!NumFieldsEnabled)
                             {
-                                OnGUIWM.maxTNTOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetMsl, 1, 1000));
-                                GUI.Label(RightLabelRect(guardLines), OnGUIWM.maxTNTOnTargetMsl.ToString(), leftLabel);
+                                OnGUIWM.maxTNTOnTargetMsl = Mathf.Round(GUI.HorizontalSlider(SliderRect(guardLines, guardLabelWidth), OnGUIWM.maxTNTOnTargetMsl, 1, 10));
+                                GUI.Label(RightLabelRect(guardLines), $"{OnGUIWM.maxTNTOnTargetMsl:F2} - {(OnGUIWM.maxTNTOnTargetMsl * 0.75f):F2} vs 750kg", leftLabel);
                             }
                             else
                             {

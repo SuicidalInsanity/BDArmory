@@ -249,7 +249,7 @@ namespace BDArmory.UI
 
         public static List<VesselRadarData> RegisterExternalSensor(ModuleExternalSensor sensor)
         {
-            BDTeam sensorTeam = sensor.Team; //TODO - changing team support - if craft A drops sensor B, then changes to the opposite team, do they lose access to their sensor, or does it come over to the Op4 datanet?
+            BDTeam sensorTeam = sensor.Team; 
             if (sensorTeam == null) return null;
             // Get the sensor group
             ExternalSensorGroup sensorGroup = BDATargetManager.GetExternalSensorGroup(sensorTeam, sensor);
@@ -1423,7 +1423,7 @@ namespace BDArmory.UI
                         {
                             info.detected[reporter.Team] = true;
                         }
-                        if (reporter.staleTarget.ContainsKey(v) && reporter.staleTarget[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
+                        if (reporter.TargetDetection.ContainsKey(v) && reporter.TargetDetection[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
                     }
                 }
                 else
@@ -1458,7 +1458,7 @@ namespace BDArmory.UI
                 {
                     info.detected[reporter.Team] = true; //target is under radar detection
                 }
-                if (reporter.staleTarget.ContainsKey(v) && reporter.staleTarget[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
+                if (reporter.TargetDetection.ContainsKey(v) && reporter.TargetDetection[v]) Debug.LogError($"DEBUG {info.name} detected at {Time.time} by {reporter.vessel.GetName()} on team {reporter.Team}");
             }
         }
 

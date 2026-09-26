@@ -16,25 +16,25 @@ namespace BDArmory.Radar
         #region KSPFields (Part Configuration)
 
         [KSPField]
-        public float datalinkRange = 5000f;
+        public float datalinkRange = 5000f; //Link range; -1 for infinite range
 
         [KSPField]
-        public bool detonateOnDisable = true; //reason for not wanting sensor to auto-cleanup when battery dry?
+        public bool detonateOnDisable = true; //Does the sensor detonate upon running out of battery to auto-remove
 
         [KSPField]
-        public bool requireDirectConnection = false; //if datalinkrange > 0, this is intrinsically true, if we're assuming a sat link...
+        public bool requireDirectConnection = false; //Set connection type - if true only vessels in LOS can receive data
 
         [KSPField]
-        public float deployDelay = -1f;
+        public float deployDelay = -1f; //delay (seconds) for playing deploy anim after landing
 
         [KSPField]
-        public bool deployAltitudeTrigger = false; //irrelevant? would be true if deployAlt > 1 unless for whatever reason we need sonars that only activate after sinking x hundred meters
+        public bool deployAltitudeTrigger = false; //does the sensor activate at a trigger alt isntead of surface touchdown
 
         [KSPField]
-        public float deployAltitude = -1f;
+        public float deployAltitude = -1f; //alt to trigger if above is true
 
         [KSPField]
-        public bool deployWhenLanded = false; //is this *landedOrSplashed*, or specifically for ground touchdown?
+        public bool deployWhenLanded = false; //deploy when sensor has landed/splashed down
 
         #endregion KSPFields (Part Configuration)
 
@@ -94,23 +94,20 @@ namespace BDArmory.Radar
                 WeaponManager = Missile.FiredByWM;
                 return;
             }
-            //if (!requireDirectConnection)
-            //{
-                // If dead, return the first linkedToVessels
-                if (linkedToVessels == null)
+            // If dead, return the first linkedToVessels
+            if (linkedToVessels == null)
+            {
+                WeaponManager = null;
+                return;
+            }
+            for (int i = 0; i < linkedToVessels.Count; i++)
+            {
+                if (linkedToVessels[i] != null)
                 {
-                    WeaponManager = null;
+                    WeaponManager = linkedToVessels[i].weaponManager;
                     return;
                 }
-                for (int i = 0; i < linkedToVessels.Count; i++)
-                {
-                    if (linkedToVessels[i] != null)
-                    {
-                        WeaponManager = linkedToVessels[i].weaponManager;
-                        return;
-                    }
-                }
-            //}
+            }
             WeaponManager = null;
             return;
         }
