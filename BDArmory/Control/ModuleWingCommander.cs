@@ -787,10 +787,28 @@ namespace BDArmory.Control
                     selectedWingmen.Clear();
                     break;
                 default:
-                    selectedWingmen = [.. friendlies.Where(ai => ai != null)];
-                    foreach (var index in craftFilters.Keys.ToList())
+                    foreach (var visibleWings in friendlies)
                     {
-                        craftFilters[index] = true;
+                        if (visibleWings != null)
+                        {
+                            string VeeType = visibleWings.aiType switch
+                            {
+                                AIType.PilotAI => "Plane",
+                                AIType.VTOLAI => "VTOL",
+                                AIType.SurfaceAI => (visibleWings as BDModuleSurfaceAI).SurfaceType switch
+                                {
+                                    AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious => "Tank",
+                                    AIUtils.VehicleMovementType.Water => "Boat",
+                                    AIUtils.VehicleMovementType.Submarine => "Sub",
+                                    AIUtils.VehicleMovementType.Stationary => "Emplacement",
+                                    _ => "Generic"
+                                },
+                                _ => "Generic"
+                            };
+                            if (!craftFilters[VeeType == "Sub" ? "Boat" : VeeType]) continue;
+
+                            selectedWingmen.Add(visibleWings);
+                        }
                     }
                     break;
             }
