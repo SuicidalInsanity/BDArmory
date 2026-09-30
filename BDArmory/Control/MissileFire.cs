@@ -2672,7 +2672,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             if (weapon.visualTargetVessel != null && weapon.visualTargetVessel.loaded)
                             {
                                 bool staleTgt = false;
-                                if (staleTarget.ContainsKey(weapon.visualTargetVessel)) staleTgt = staleTarget[weapon.visualTargetVessel];
+                                if (TargetDetection.ContainsKey(weapon.visualTargetVessel)) staleTgt = TargetDetection[weapon.visualTargetVessel];
                                 string stDebugTelem = "";
                                 if (staleTargetDebugString.TryGetValue(weapon.visualTargetVessel, out string debug)) stDebugTelem = debug;
                                 weaponAimDebugStrings.Add($" - Visual target {(weapon.visualTargetPart != null ? weapon.visualTargetPart.name : "CoM")} on {weapon.visualTargetVessel.vesselName}, distance: {(weapon.fireTransforms[0] != null ? (weapon.finalAimTarget - weapon.fireTransforms[0].position).magnitude : 0):F1}, radius: {weapon.targetRadius:F1} ({weapon.visualTargetVessel.GetBounds()}), max deviation: {weapon.maxDeviation}, firing tolerance: {weapon.FiringTolerance}, stale target: {staleTgt}{(staleTgt ? $" ({weapon.staleGoodTargetTime:0.0}s/{detectedTargetTimeout:0.0}s){stDebugTelem}" : "")}");

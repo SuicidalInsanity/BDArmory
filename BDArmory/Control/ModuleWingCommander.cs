@@ -282,7 +282,8 @@ namespace BDArmory.Control
                 if (screenPos.x < Mathf.Min(boxStartPos.x, boxEndPos.x) || screenPos.x > Mathf.Max(boxStartPos.x, boxEndPos.x)) continue;
                 if (screenPos.y < Mathf.Min(boxStartPos.y, boxEndPos.y) || screenPos.y > Mathf.Max(boxStartPos.y, boxEndPos.y)) continue;
                 if (!selectedWingmen.Contains(friend)) selectedWingmen.Add(friend);
-            }            
+            }
+            selectionBoxEnabled = false;
             boundingBoxRoutine = null;
         }
 
@@ -333,7 +334,8 @@ namespace BDArmory.Control
         float margin = 6;
         bool resizingWindow = false;
         public bool autoResizingWindow = true;
-        Vector2 windowSize = new(240, 444);
+        const float windowMinWidth = 308, windowMinHeight = 514;
+        Vector2 windowSize = new(windowMinWidth, windowMinHeight);
         GUIStyle wingmanButtonStyle;
         GUIStyle wingmanButtonSelectedStyle;
         GUIStyle labelStyle, formationLabelStyle;
@@ -352,19 +354,16 @@ namespace BDArmory.Control
                     else if (formationDragIndex >= 0) formationDragIndex = -1;
                 }
                 BDArmorySetup.SetGUIOpacity();
-                if (autoResizingWindow)
+                if (resizingWindow)
                 {
-                    windowSize.y = Mathf.Clamp(windowSize.y, 444 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 240), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    windowSize.x = Mathf.Clamp(windowSize.x, windowMinWidth, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
+                    windowSize.y = Mathf.Clamp(windowSize.y, windowMinHeight, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
+                    BDArmorySetup.WindowRectWingCommander.size = windowSize;
                 }
-                else
+                else if (autoResizingWindow)
                 {
-                    if (resizingWindow)
-                    {
-                        windowSize.x = Mathf.Clamp(windowSize.x, 308, Screen.width - BDArmorySetup.WindowRectWingCommander.x);
-                        windowSize.y = Mathf.Clamp(windowSize.y, 514, Screen.height - BDArmorySetup.WindowRectWingCommander.y);
-                    }
+                    BDArmorySetup.WindowRectWingCommander.height = Mathf.Min(windowMinHeight - 70 + Mathf.Clamp(Mathf.Min(friendlies.Count, filteredFriendlies) * 30, 30, 300), Screen.height - BDArmorySetup.WindowRectWingCommander.y);
                 }
-                BDArmorySetup.WindowRectWingCommander.size = windowSize;
                 var guiMatrix = GUI.matrix;
                 if (BDArmorySettings.UI_SCALE_ACTUAL != 1) GUIUtility.ScaleAroundPivot(BDArmorySettings.UI_SCALE_ACTUAL * Vector2.one, BDArmorySetup.WindowRectWingCommander.position);
                 BDArmorySetup.WindowRectWingCommander = GUI.Window(
@@ -545,18 +544,18 @@ namespace BDArmory.Control
             GUILayout.Space(buttonHeight / 2f);
             GUILayout.Label($"{StringUtils.Localize("#LOC_BDArmory_Evolution_Group")}:", labelStyle, GUILayout.ExpandWidth(true));//Group
             GUILayout.BeginHorizontal();
-            GroupButton("1", true, 0);
-            GroupButton("2", true, 1);
-            GroupButton("3", true, 2);
-            GroupButton("4", true, 3);
-            GroupButton("5", true, 4);
+            GroupButton("1",0);
+            GroupButton("2", 1);
+            GroupButton("3", 2);
+            GroupButton("4", 3);
+            GroupButton("5", 4);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            GroupButton("6", true, 5);
-            GroupButton("7", true, 6);
-            GroupButton("8", true, 7);
-            GroupButton("9", true, 8);
-            GroupButton("10", true, 9);
+            GroupButton("6", 5);
+            GroupButton("7", 6);
+            GroupButton("8", 7);
+            GroupButton("9", 8);
+            GroupButton("10", 9);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle);//"Command Self"
@@ -578,11 +577,10 @@ namespace BDArmory.Control
             //spacecraft filter button?
             GUILayout.EndHorizontal();
 
-            bool prevScroll = false;
-            if (!autoResizingWindow || filteredFriendlies > 10)
+            bool useScroll = !autoResizingWindow || filteredFriendlies > 10;
+            if (useScroll)
             {
                 wingmenScrollPos = GUILayout.BeginScrollView(wingmenScrollPos, GUI.skin.box);
-                prevScroll = true;
             }
             filteredFriendlies = 0;
             foreach (var wingman in friendlies)
@@ -618,7 +616,7 @@ namespace BDArmory.Control
                     }
                 }
             }
-            if (!autoResizingWindow || filteredFriendlies > 10 || prevScroll) GUILayout.EndScrollView(); //needs to be based on windowHeight
+            if (useScroll) GUILayout.EndScrollView(); //needs to be based on windowHeight
             GUILayout.EndVertical();
 
             var resizeRect = new Rect(windowSize.x - 16, windowSize.y - 16, 16, 16);
@@ -667,11 +665,13 @@ namespace BDArmory.Control
                 }
             }
         }
-        void GroupButton(string buttonLabel, bool setter, int index)
+        void GroupButton(string buttonLabel, int index)
         {
-            if (GUILayout.Button(buttonLabel, BDArmorySetup.ButtonStyle))
+            bool getter = CtrlGroup[index].Count > 0;
+            //if nothing in the group, l-click to fill it; if group has stuff in it, l-click to select, r-click to clear
+            if (GUILayout.Button(buttonLabel, getter ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
-                if (setter)
+                if (!getter)
                 {
                     CtrlGroup[index].Clear();
                     if (Event.current.button != 1)
@@ -781,10 +781,18 @@ namespace BDArmory.Control
 
         void SelectAll(IBDAIControl wingman, object data)
         {
-            selectedWingmen = [.. friendlies.Where(ai => ai != null)];
-            foreach (var index in craftFilters.Keys)
+            switch (Event.current.button)
             {
-                craftFilters[index] = true;
+                case 1: // right click
+                    selectedWingmen.Clear();
+                    break;
+                default:
+                    selectedWingmen = [.. friendlies.Where(ai => ai != null)];
+                    foreach (var index in craftFilters.Keys.ToList())
+                    {
+                        craftFilters[index] = true;
+                    }
+                    break;
             }
         }
 

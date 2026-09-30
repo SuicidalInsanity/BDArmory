@@ -5,6 +5,7 @@ using System.IO.Compression;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System;
 using UnityEngine;
@@ -46,7 +47,7 @@ namespace BDArmory.UI
         [BDAWindowSettingsField] public static Rect WindowRectVesselSwitcher;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIHidden;
         [BDAWindowSettingsField] static Rect _WindowRectVesselSwitcherUIVisible;
-        [BDAWindowSettingsField] public static Rect WindowRectWingCommander = new Rect(45, 75, 180, 800);
+        [BDAWindowSettingsField] public static Rect WindowRectWingCommander = new Rect(45, 75, 240, 800);
         [BDAWindowSettingsField] public static Rect WindowRectTargetingCam;
 
         [BDAWindowSettingsField] public static Rect WindowRectRemoteOrchestration;// = new Rect(45, 100, 200, 200);
