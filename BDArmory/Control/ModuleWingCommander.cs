@@ -560,7 +560,7 @@ namespace BDArmory.Control
             GUILayout.BeginHorizontal();
             commandSelf = GUILayout.Toggle(commandSelf, StringUtils.Localize("#LOC_BDArmory_WingCommander_CommandSelf"), BDArmorySetup.BDGuiSkin.toggle);//"Command Self"
             GUILayout.FlexibleSpace();
-            if (friendlies.Count == selectedWingmen.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
+            if (filteredFriendlies == selectedWingmen.Count) CommandButton(SelectNone, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectNone"), false, false);
             else CommandButton(SelectAll, StringUtils.Localize("#LOC_BDArmory_WingCommander_SelectAll"), false, false);//"Select All"
             if (GUILayout.Button(StringUtils.Localize("#LOC_BDArmory_WingCommander_BoxSelect"), selectionBoxEnabled ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle))
             {
@@ -587,21 +587,8 @@ namespace BDArmory.Control
             {
                 if (wingman != null)
                 {
-                    string VeeType = wingman.aiType switch
-                    {
-                        AIType.PilotAI => "Plane",
-                        AIType.VTOLAI => "VTOL",
-                        AIType.SurfaceAI => (wingman as BDModuleSurfaceAI).SurfaceType switch
-                        {
-                            AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious => "Tank",
-                            AIUtils.VehicleMovementType.Water => "Boat",
-                            AIUtils.VehicleMovementType.Submarine => "Sub",
-                            AIUtils.VehicleMovementType.Stationary => "Emplacement",
-                            _ => "Generic"
-                        },
-                        _ => "Generic"
-                    };
-                    if (!craftFilters[VeeType == "Sub" ? "Boat" : VeeType]) continue;
+                    string VeeType = GetVeeType(wingman);
+                    if (!craftFilters[VeeType]) continue;
                     filteredFriendlies++;
                     if (GUILayout.Button($"{wingman.vessel.vesselName} ({wingman.currentStatus}) - {VeeType}", selectedWingmen.Contains(wingman) ? wingmanButtonSelectedStyle : wingmanButtonStyle))
                     {
@@ -636,6 +623,31 @@ namespace BDArmory.Control
             }
             else GUIUtils.DragWindow();
             if (resizingWindow && Event.current.type == EventType.Repaint) windowSize += Mouse.delta / BDArmorySettings.UI_SCALE_ACTUAL;
+        }
+
+        string GetVeeType(IBDAIControl ai)
+        {
+            return ai.aiType switch
+            {
+                AIType.PilotAI => "Plane",
+                AIType.VTOLAI => "VTOL",
+                AIType.SurfaceAI => (ai as BDModuleSurfaceAI).SurfaceType switch
+                {
+                    AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious => "Tank",
+                    AIUtils.VehicleMovementType.Water => "Boat",
+                    AIUtils.VehicleMovementType.Submarine => "Boat", //technically this should be VehicleType 'Sub', but we currently aren't making a distinction between surface/subsurface watercraft
+                    AIUtils.VehicleMovementType.Stationary => "Emplacement",
+                    _ => "Generic"
+                },
+                _ => "Generic"
+            };
+        }
+        bool IsVisibleInFilter(IBDAIControl ai)
+        {
+            if (ai == null) return false;
+            string VeeType = GetVeeType(ai);
+            //return craftFilters[VeeType == "Sub" ? "Boat" : VeeType]; //uncomment if we add a submarines filter
+            return craftFilters[VeeType];
         }
 
         void CommandButton(CommandFunction func, string buttonLabel, bool sendToWingmen, bool pressed, object data = null)
@@ -688,6 +700,13 @@ namespace BDArmory.Control
                             CtrlGroup[index].Clear();
                             break;
                         default:
+                            foreach (var wingman in CtrlGroup[index])
+                            {
+                                if (wingman == null) continue;
+                                string VeeType = GetVeeType(wingman);
+                                //craftFilters[VeeType == "Sub" ? "Boat" : VeeType] = true; // uncomment if adding "Sub" filter
+                                craftFilters[VeeType] = true; // Re-enable relevant vehicle type filters for craft in the ctrl group.
+                            }
                             selectedWingmen = [.. CtrlGroup[index]];
                             break;
                     }
@@ -701,6 +720,10 @@ namespace BDArmory.Control
             if (GUILayout.Button(image, (craftFilters[index] == true ? BDArmorySetup.SelectedButtonStyle : BDArmorySetup.ButtonStyle), GUILayout.MaxHeight(buttonHeight * 1.5f)))
             {
                 craftFilters[index] = !craftFilters[index];
+            }
+            if (!craftFilters[index]) //if filter off, remove craft of that type from selectedWingman list
+            {
+                selectedWingmen = [.. selectedWingmen.Where(IsVisibleInFilter)];
             }
         }
         void CommandRelease(IBDAIControl wingman, object data)
@@ -787,28 +810,11 @@ namespace BDArmory.Control
                     selectedWingmen.Clear();
                     break;
                 default:
-                    foreach (var visibleWings in friendlies)
+                    selectedWingmen.Clear();
+                    foreach (var visibleWingmen in friendlies)
                     {
-                        if (visibleWings != null)
-                        {
-                            string VeeType = visibleWings.aiType switch
-                            {
-                                AIType.PilotAI => "Plane",
-                                AIType.VTOLAI => "VTOL",
-                                AIType.SurfaceAI => (visibleWings as BDModuleSurfaceAI).SurfaceType switch
-                                {
-                                    AIUtils.VehicleMovementType.Land or AIUtils.VehicleMovementType.Amphibious => "Tank",
-                                    AIUtils.VehicleMovementType.Water => "Boat",
-                                    AIUtils.VehicleMovementType.Submarine => "Sub",
-                                    AIUtils.VehicleMovementType.Stationary => "Emplacement",
-                                    _ => "Generic"
-                                },
-                                _ => "Generic"
-                            };
-                            if (!craftFilters[VeeType == "Sub" ? "Boat" : VeeType]) continue;
-
-                            selectedWingmen.Add(visibleWings);
-                        }
+                        if(IsVisibleInFilter(visibleWingmen))     
+                            selectedWingmen.Add(visibleWingmen);
                     }
                     break;
             }

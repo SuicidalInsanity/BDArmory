@@ -4970,7 +4970,7 @@ namespace BDArmory.UI
             var tic = Time.realtimeSinceStartup;
             string result = "";
             for (int i = 0; i < N; ++i)
-                result = Localizer.Format("#LOC_BDArmory_Settings_GUIBackgroundOpacity");
+                result = KSP.Localization.Localizer.Format("#LOC_BDArmory_Settings_GUIBackgroundOpacity");
             var dt = Time.realtimeSinceStartup - tic;
             Debug.Log($"DEBUG Result {result} with Localizer.Format took {dt / N:G3}s");
             yield return null;
