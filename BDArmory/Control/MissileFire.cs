@@ -77,6 +77,8 @@ namespace BDArmory.Control
         bool pointDefenseMissileHasAntiRad = false;
         float maxTargetingLaserRange = -1;
 
+        Dictionary<string, int> TurretsAssigned = [];
+
         // extension for feature_engagementenvelope: specific lists by weapon engagement type
         private List<IBDWeapon> weaponTypesAir = [];
         private List<IBDWeapon> weaponTypesMissile = [];
@@ -424,7 +426,6 @@ namespace BDArmory.Control
         public TargetInfo currentTarget;
         public int engagedTargets = 0;
         public List<TargetInfo> targetsAssigned; //secondary targets list
-        public List<TargetInfo> missilesAssigned; //secondary missile targets list
         public List<TargetInfo> PDMslTgts; //pointDefense/APS targets list
         public List<PooledBullet> PDBulletTgts; //pointDefense/APS targets list
         public List<PooledRocket> PDRktTgts; //pointDefense/APS targets list
@@ -662,27 +663,30 @@ namespace BDArmory.Control
         [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiTargetNum"),//Max Turret Targets
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNum = 1;
-        /*
-        [KSPField(isPersistant = true)]
+
+        public float _multiTargetNum => advancedMultiTargeting ? Mathf.Max(multiTargetNumSrf, multiTargetNumSea, multiTargetNumAir) : multiTargetNum ;
+
+        [KSPField(isPersistant = true, guiActive = true, guiActiveEditor = true, guiName = "#LOC_BDArmory_MultiTargetTurret_Config", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Missiles/target
+UI_Toggle(enabledText = "#LOC_BDArmory_Enabled", disabledText = "#LOC_BDArmory_Disabled", scene = UI_Scene.All)]
         public bool advancedMultiTargeting = false;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_WMWindow_MultiTargetNum"),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetNum"}: {"#LOC_BDArmory_Air"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
     UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNumAir = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_WMWindow_MultiTargetNum"),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetNum"}: {"#LOC_BDArmory_land"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
     UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNumSrf = 1;
 
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_WMWindow_MultiTargetNum"),//Max Turret Targets
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetNum"}: {"#LOC_BDArmory_SLW"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
     UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiTargetNumSea = 1;
-
-        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = "#LOC_BDArmory_WMWindow_MultiTargetNum"),//Max Turret Targets
-    UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
-        public float multiTargetNumMsl = 1;
+        //have max Turrets per Tgt as well?
+        /*
+        [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = false, guiName = $"{"#LOC_BDArmory_WMWindow_MultiTargetNum"}: {"#LOC_BDArmory_Missile"}", advancedTweakable = true, groupName = "gunTargeting", groupDisplayName = "#LOC_BDArmory_WMWindow_MultiTargetNum", groupStartCollapsed = true),//Max Turret Targets
+UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
+        public float maxTurretsPerTgtMsl = 1;
         */
-
         [KSPField(isPersistant = true, guiActive = false, guiActiveEditor = true, guiName = "#LOC_BDArmory_WMWindow_MultiMissileNum"),//Max Missile Targets
             UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.All)]
         public float multiMissileTgtNum = 1;
@@ -1519,6 +1523,36 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             Fields[nameof(maxTNTOnTargetMsl)].guiActiveEditor = advancedMissileTargeting && advancedMissileTgtByYield;
             Fields[nameof(maxTNTOnTargetMsl)].guiActive = advancedMissileTargeting && advancedMissileTgtByYield;
         }
+        public void SetTurrCfg()
+        {
+            UI_Toggle advGun;
+            if (HighLogic.LoadedSceneIsEditor)
+                advGun = (UI_Toggle)Fields[nameof(advancedMultiTargeting)].uiControlEditor;
+            else
+                advGun = (UI_Toggle)Fields[nameof(advancedMultiTargeting)].uiControlFlight;
+            advGun.onFieldChanged = OnTurrCfgUpdated;
+            OnTurrCfgUpdated(null, null);
+        }
+
+        public void OnTurrCfgUpdated(BaseField field, object obj)
+        {
+            if (advancedMultiTargeting)
+            {
+                Fields[nameof(multiTargetNum)].guiActiveEditor = false;
+                Fields[nameof(multiTargetNum)].guiActive = false;
+            }
+            else
+            {
+                Fields[nameof(multiTargetNum)].guiActiveEditor = true;
+                Fields[nameof(multiTargetNum)].guiActive = true;
+            }
+            Fields[nameof(multiTargetNumAir)].guiActiveEditor = advancedMultiTargeting;
+            Fields[nameof(multiTargetNumAir)].guiActive = advancedMultiTargeting;
+            Fields[nameof(multiTargetNumSrf)].guiActiveEditor = advancedMultiTargeting;
+            Fields[nameof(multiTargetNumSrf)].guiActive = advancedMultiTargeting;
+            Fields[nameof(multiTargetNumSea)].guiActiveEditor = advancedMultiTargeting;
+            Fields[nameof(multiTargetNumSea)].guiActive = advancedMultiTargeting;
+        }
         #endregion KSPFields,events,actions
 
         RaycastHit[] clearanceHits = new RaycastHit[10];
@@ -1576,6 +1610,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             UpdateMaxGuardRange();
             SetAFCAA();
             SetMslCfg();
+            SetTurrCfg();
             startTime = Time.time;
             if (HighLogic.LoadedSceneIsFlight)
             {
@@ -1637,6 +1672,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 missilesAway = [];
                 rippleGunCount = [];
                 queuedLaunches = [];
+                TurretsAssigned.Add("air", 0);
+                TurretsAssigned.Add("land", 0);
+                TurretsAssigned.Add("sea", 0);
 
                 GameEvents.onPartJointBreak.Add(OnPartJointBreak);
                 GameEvents.onPartDie.Add(OnPartDie);
@@ -5878,7 +5916,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             List<TargetInfo> targetsTried = [];
             string targetDebugText = "";
             targetsAssigned.Clear(); //fixes fixed guns not firing if Multitargeting >1
-            missilesAssigned.Clear();
             if (multiMissileTgtNum > 1 && BDATargetManager.TargetList(Team).Count > 1)
             {
                 if (CurrentMissile || PreviousMissile)  //if there are multiple potential targets, see how many can be fired at with missiles
@@ -6174,63 +6211,12 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     secTgt.Current.Disengage(this);
                 }
             targetsAssigned.Clear();
-            using (List<TargetInfo>.Enumerator mslTgt = missilesAssigned.GetEnumerator())
-                while (mslTgt.MoveNext())
-                {
-                    if (mslTgt.Current == null) continue;
-                    if (mslTgt.Current == currentTarget) continue;
-                    mslTgt.Current.Disengage(this);
-                }
-            missilesAssigned.Clear();
-            if (!currentTarget.isMissile)
-            {
-                targetsAssigned.Add(currentTarget);
-            }
-            else
-            {
-                missilesAssigned.Add(currentTarget);
-            }
+            targetsAssigned.Add(currentTarget);
             List<TargetInfo> targetsTried = [];
 
             //Secondary targeting priorities
-            //1. incoming missile threats
-            //2. highest priority non-targeted target
-            //3. closest non-targeted target
-            if (targetMissiles)
-            {
-                //for (int i = 0; i < Math.Max((advancedMultiTargeting ? multiTargetNumMsl : multiTargetNum), multiMissileTgtNum) - 1; i++)
-                for (int i = 0; i < Math.Max(multiTargetNum, multiMissileTgtNum) - 1; i++)
-                {
-                    TargetInfo potentialMissileTarget = null;
-                    //=========MISSILES=============
-                    //prioritize incoming missiles
-                    potentialMissileTarget = BDATargetManager.GetMissileTarget(this, true);
-                    if (potentialMissileTarget)
-                    {
-                        missilesAssigned.Add(potentialMissileTarget);
-                        targetsTried.Add(potentialMissileTarget);
-                        if (BDArmorySettings.DEBUG_AI)
-                            Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} targeting missile {potentialMissileTarget.Vessel.GetName()}:{potentialMissileTarget.Vessel.parts[0].persistentId} as a secondary target");
-                    }
-                    //then provide point defense umbrella
-                    potentialMissileTarget = BDATargetManager.GetClosestMissileTarget(this);
-                    if (potentialMissileTarget)
-                    {
-                        missilesAssigned.Add(potentialMissileTarget);
-                        targetsTried.Add(potentialMissileTarget);
-                        if (BDArmorySettings.DEBUG_AI)
-                            Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} targeting closest missile {potentialMissileTarget.Vessel.GetName()}:{potentialMissileTarget.Vessel.parts[0].persistentId} as a secondary target");
-                    }
-                    potentialMissileTarget = BDATargetManager.GetUnengagedMissileTarget(this);
-                    if (potentialMissileTarget)
-                    {
-                        missilesAssigned.Add(potentialMissileTarget);
-                        targetsTried.Add(potentialMissileTarget);
-                        if (BDArmorySettings.DEBUG_AI)
-                            Debug.Log($"[BDArmory.MissileFire]: {vessel.vesselName} targeting free missile {potentialMissileTarget.Vessel.GetName()}:{potentialMissileTarget.Vessel.parts[0].persistentId} as a secondary target");
-                    }
-                }
-            }
+            //1. highest priority non-targeted target
+            //2. closest non-targeted target
 
             for (int i = 0; i < Math.Max(multiTargetNum, multiMissileTgtNum) - 1; i++) //primary target already added, so subtract 1 from nultitargetnum
             {
@@ -6279,7 +6265,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     }
                 }
             }
-            if (targetsAssigned.Count + missilesAssigned.Count == 0)
+            if (targetsAssigned.Count == 0)
             {
                 if (BDArmorySettings.DEBUG_AI)
                     Debug.Log("[BDArmory.MissileFire]: No available secondary targets");
@@ -8494,7 +8480,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 }
                 currentTarget = target;
                 guardTarget = target.Vessel;
-                if (multiTargetNum > 1 || multiMissileTgtNum > 1)
+                if (_multiTargetNum > 1 || multiMissileTgtNum > 1)
                 {
                     SmartFindSecondaryTargets();
                     using (List<TargetInfo>.Enumerator secTgt = targetsAssigned.GetEnumerator())
@@ -8503,13 +8489,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             if (secTgt.Current == null) continue;
                             if (secTgt.Current == currentTarget) continue;
                             secTgt.Current.Engage(this);
-                        }
-                    using (List<TargetInfo>.Enumerator mslTgt = missilesAssigned.GetEnumerator())
-                        while (mslTgt.MoveNext())
-                        {
-                            if (mslTgt.Current == null) continue;
-                            if (mslTgt.Current == currentTarget) continue;
-                            mslTgt.Current.Engage(this);
                         }
                 }
                 MissileBase ml = CurrentMissile;
@@ -9750,7 +9729,9 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
             if (!guardTarget) return;
             if (selectedWeapon == null) return;
             int TurretID = 0;
-            int MissileTgtID = 0;
+            TurretsAssigned["air"] = 0;
+            TurretsAssigned["land"] = 0;
+            TurretsAssigned["sea"] = 0;
             List<TargetInfo> firedTargets = [];
             using (var weapon = VesselModuleRegistry.GetModules<ModuleWeapon>(vessel).GetEnumerator())
                 while (weapon.MoveNext())
@@ -9766,7 +9747,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         continue;
                     }
 
-                    if (multiTargetNum > 1)
+                    if (_multiTargetNum > 1)
                     {
                         if ((weapon.Current.turret && (weapon.Current.maxPitch > weapon.Current.minPitch || weapon.Current.yawRange > 0)) || weapon.Current.customTurret.Count > 0)
                         {
@@ -9776,14 +9757,15 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             }
                             if (targetsAssigned.Count > 0 && targetsAssigned[TurretID].Vessel != null)
                             {
-                                if (((weapon.Current.engageAir && targetsAssigned[TurretID].isFlying) ||
-                                    (weapon.Current.engageGround && targetsAssigned[TurretID].isLandedOrSurfaceSplashed) ||
-                                    (weapon.Current.engageSLW && targetsAssigned[TurretID].isUnderwater)) //check engagement envelope
+                                if (((weapon.Current.engageAir && targetsAssigned[TurretID].isFlying && (!advancedMultiTargeting || TurretsAssigned["air"] < multiTargetNumAir)) ||
+                                    (weapon.Current.engageGround && targetsAssigned[TurretID].Vessel.Landed && (!advancedMultiTargeting || TurretsAssigned["land"] < multiTargetNumSrf)) ||
+                                    (weapon.Current.engageSLW && targetsAssigned[TurretID].isSplashed && (!advancedMultiTargeting || TurretsAssigned["sea"] < multiTargetNumSea))) //check engagement envelope
                                     && weapon.Current.turret ? TargetInTurretRange(weapon.Current.turret, 7, targetsAssigned[TurretID].Vessel.CoM, weapon.Current) :
                                     TargetInCustomTurretRange(weapon.Current, 7, targetsAssigned[TurretID].Vessel.CoM))
                                 {
                                     weapon.Current.visualTargetVessel = targetsAssigned[TurretID].Vessel; // if target within turret fire zone, assign
                                     firedTargets.Add(targetsAssigned[TurretID]);
+                                    TurretsAssigned[targetsAssigned[TurretID].isFlying ? "air" : targetsAssigned[TurretID].isSplashed ? "sea" : "land"]++;
                                 }
                                 else //else try remaining targets
                                 {
@@ -9791,52 +9773,21 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                         while (item.MoveNext())
                                         {
                                             if (item.Current.Vessel == null) continue;
-                                            if ((weapon.Current.engageAir && !item.Current.isFlying) ||
-                                            (weapon.Current.engageGround && !item.Current.isLandedOrSurfaceSplashed) ||
-                                            (weapon.Current.engageSLW && !item.Current.isUnderwater)) continue;
+                                            if (!((weapon.Current.engageAir && item.Current.isFlying && (!advancedMultiTargeting || TurretsAssigned["air"] < multiTargetNumAir)) ||
+                                            (weapon.Current.engageGround && item.Current.Vessel.Landed && (!advancedMultiTargeting || TurretsAssigned["land"] < multiTargetNumSrf)) ||
+                                            (weapon.Current.engageSLW && item.Current.isSplashed && (!advancedMultiTargeting || TurretsAssigned["sea"] < multiTargetNumSea)))) continue;
                                             if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current)) ||
                                                 (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, item.Current.Vessel.CoM)))
                                             {
                                                 weapon.Current.visualTargetVessel = item.Current.Vessel;
                                                 firedTargets.Add(item.Current);
+                                                TurretsAssigned[item.Current.isFlying ? "air" : item.Current.isSplashed ? "sea" : "land"]++;
                                                 break;
                                             }
                                         }
                                 }
                                 TurretID++;
-                            }
-                            if (MissileTgtID >= Mathf.Min(missilesAssigned.Count, multiTargetNum))
-                            {
-                                MissileTgtID = 0; //if more turrets than targets, loop target list
-                            }
-                            if (missilesAssigned.Count > 0 && missilesAssigned[MissileTgtID].Vessel != null) //if missile, override non-missile target - Wouldn't this be already handled by the PD code?
-                            {
-                                if (weapon.Current.engageMissile)
-                                {
-                                    if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, missilesAssigned[MissileTgtID].Vessel.CoM, weapon.Current)) ||
-    (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, missilesAssigned[MissileTgtID].Vessel.CoM)))
-                                    {
-                                        weapon.Current.visualTargetVessel = missilesAssigned[MissileTgtID].Vessel; // if target within turret fire zone, assign
-                                        firedTargets.Add(missilesAssigned[MissileTgtID]);
-                                    }
-                                    else //assigned target outside turret arc, try the other targets on the list
-                                    {
-                                        using (List<TargetInfo>.Enumerator item = missilesAssigned.GetEnumerator())
-                                            while (item.MoveNext())
-                                            {
-                                                if (item.Current.Vessel == null) continue;
-                                                if ((weapon.Current.turret && TargetInTurretRange(weapon.Current.turret, 7, item.Current.Vessel.CoM, weapon.Current)) ||
-                                                    (weapon.Current.customTurret.Count > 0 && TargetInCustomTurretRange(weapon.Current, 7, item.Current.Vessel.CoM)))
-                                                {
-                                                    weapon.Current.visualTargetVessel = item.Current.Vessel;
-                                                    firedTargets.Add(item.Current);
-                                                    break;
-                                                }
-                                            }
-                                    }
-                                }
-                                MissileTgtID++;
-                            }
+                            }                         
                         }
                         else
                         {
@@ -9852,12 +9803,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                     }
                     weapon.Current.targetCOM = targetCoM;
                     using (List<TargetInfo>.Enumerator Tgt = targetsAssigned.GetEnumerator())
-                        while (Tgt.MoveNext())
-                        {
-                            if (!firedTargets.Contains(Tgt.Current))
-                                Tgt.Current.Disengage(this);
-                        }
-                    using (List<TargetInfo>.Enumerator Tgt = missilesAssigned.GetEnumerator())
                         while (Tgt.MoveNext())
                         {
                             if (!firedTargets.Contains(Tgt.Current))
@@ -10116,8 +10061,12 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                             if (PDMslTgts[TurretID].Vessel != null)
                             {
                                 bool viableTarget = true;
-                                if (BDArmorySettings.BULLET_WATER_DRAG && weapon.eWeaponType == ModuleWeapon.WeaponTypes.Ballistic && PDMslTgts[TurretID].Vessel.Splashed) viableTarget = false; //todo - gun turrets and abovewater laser/rocket turrets should not be firing on torpedoes regardless of waterdrag setting
-                                //if (viableTarget && TargetInTurretRange(weapon.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon))
+                                if (PDMslTgts[TurretID].Vessel.Splashed &&
+                                    (FlightGlobals.getAltitudeAtPos(weapon.fireTransforms[0].position) > 0
+                                    || (weapon.eWeaponType == ModuleWeapon.WeaponTypes.Ballistic && BDArmorySettings.BULLET_WATER_DRAG)))
+                                    viableTarget = false; //gun turrets and abovewater laser/rocket turrets should not be firing on torpedoes regardless of waterdrag setting
+
+                                //if (viableTarget && TargetInTurretRange(weapon.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon)) 
                                 if (viableTarget && (weapon.turret && TargetInTurretRange(weapon.turret, 7, PDMslTgts[TurretID].Vessel.CoM, weapon)) ||
                                     (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, PDMslTgts[TurretID].Vessel.CoM)))
                                 {
@@ -10132,7 +10081,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                         while (item.MoveNext())
                                         {
                                             if (item.Current.Vessel == null) continue;
-                                            if (!viableTarget) continue;
+                                            if (!viableTarget && item.Current.Vessel.Splashed) continue; //this is also underwater, also not viable
                                             //if (TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon))
                                             if ((weapon.turret && TargetInTurretRange(weapon.turret, 7, item.Current.Vessel.CoM, weapon)) ||
                                                 (weapon.customTurret.Count > 0 && TargetInCustomTurretRange(weapon, 7, item.Current.Vessel.CoM)))
