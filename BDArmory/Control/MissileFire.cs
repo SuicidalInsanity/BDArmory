@@ -698,7 +698,7 @@ UI_FloatRange(minValue = 1, maxValue = 10, stepIncrement = 1, scene = UI_Scene.A
         public float maxMissilesOnTarget = 1;
 
         private float _MaxMissilesOnTarget => guardTarget != null ? 
-                advancedMissileTgtByYield ? //if Yield, check if > max missiles have been fired, if not, continue to use tield
+                advancedMissileTgtByYield ? //if Yield, check if > max missiles have been fired, if not, continue to use yield
                 currMsl >= maxMsl ? maxMsl : 
                 maxTNT :
                 advancedMissileTargeting ?
