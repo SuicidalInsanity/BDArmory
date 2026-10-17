@@ -1598,7 +1598,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 Fields[nameof(multiTargetNumSrf)].guiName = turrTgtSrf;
                 string turrTgtSea = StringUtils.Localize("#LOC_BDArmory_WMWindow_MultiTargetTurret_Config") + ": " + StringUtils.Localize("#LOC_BDArmory_SLW");
                 Fields[nameof(multiTargetNumSea)].guiName = turrTgtSea;
-                /* MTMN
+                /* MTNM
                 string turrTgtMsl = StringUtils.Localize("#LOC_BDArmory_MissilesOnTarget") + ": " + StringUtils.Localize("#LOC_BDArmory_Missle");
                 Fields[nameof(multiTargetNumMsl)].guiName = turrTgtMsl;
                 */
@@ -1766,6 +1766,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                 TurretsAssigned.Add("air", 0);
                 TurretsAssigned.Add("land", 0);
                 TurretsAssigned.Add("sea", 0);
+				// TurretsAssigned.Add("msl", 0); MTNM
 
                 GameEvents.onPartJointBreak.Add(OnPartJointBreak);
                 GameEvents.onPartDie.Add(OnPartDie);
@@ -9894,7 +9895,6 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                                 (targetsAssigned[TurretID].Vessel.Landed && TurretsAssigned["land"] >= multiTargetNumSrf) ||
                                 (targetsAssigned[TurretID].isSplashed && TurretsAssigned["sea"] >= multiTargetNumSea)) //check engagement envelope
                                     TurretID = 0; //if more turrets than max targets of this type, loop target list
-                                //if ((target.Vessel.IsMissile() && TurretsAssigned["msl"] >= multiTargetNumMsl) TurretID = 0; //MTNM
                             }
                             if (targetsAssigned.Count > 0 && targetsAssigned[TurretID].Vessel != null)
                             {
@@ -10203,6 +10203,7 @@ UI_FloatRange(minValue = 1f, maxValue = 10, stepIncrement = 0.1f, scene = UI_Sce
                         }
                         else weapon.tgtRocket = null;
                         if (TurretID >= PDMslTgts.Count) TurretID = 0;
+						//if ((target.Vessel.IsMissile() && TurretsAssigned["msl"] >= multiTargetNumMsl) TurretID = 0; //MTNM
                         if (PDMslTgts.Count > 0)
                         {
                             if (PDMslTgts[TurretID].Vessel != null && PDMslTgts[TurretID].position.FurtherFromThan(weapon.fireTransforms[0].position, weapon.engageRangeMax * 1.25f)) TurretID = 0; //reset cycle so out of range guns engage closer targets
